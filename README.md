@@ -2,7 +2,9 @@
 
 Editor web standalone de edição de emendas a MPV.
 
-https://www.congressonacional.leg.br/editor-emendas
+A aplicação Javascript fica em /jsapp
+
+Aplicação em produção: https://www.congressonacional.leg.br/editor-emendas
 
 **Restrições**
 - Apenas emendas ao texto principal da MPV. Não contempla emenda a anexos.
