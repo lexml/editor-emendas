@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="Description" content="Put your description here.">
+  <base href="/">
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      /* background-color: #ededed; */
+    }
+  </style>
+  <title>Editor de Emendas</title>
+  <script src="./assets/js/lexml-eta/index.min.js" type="module"></script>
+</head>
+
+<body>
+  <script type="text/javascript">
+    // HACK(keanulee): The Redux package assumes `process` exists - mock it here before
+    // the module is loaded.
+    window.process = {
+      env: {
+        NODE_ENV: 'production',
+      },
+    };
+  </script>
+  <script type="module" src="./out-tsc/src/index.js"></script>
+  <edt-app></edt-app>
+</body>
+
+</html>
