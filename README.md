@@ -34,6 +34,6 @@ Desejável
 - Interface responsiva acessível em desktop, tablet e celular
 - Utilizar HTTPS
 - Domínio do congresso
-- Implementar com lint e shoelace
+- Implementar com lit e shoelace
 - Utilizar cores do Congresso
 - Executar no Chrome, Edge e Safari
