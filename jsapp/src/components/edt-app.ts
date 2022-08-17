@@ -1,7 +1,11 @@
+import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
+import { getUrn, buildContent } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { appStyles } from './app.css';
+import { Proposicao } from '../model/Proposicao';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -16,8 +20,14 @@ export class EdtApp extends LitElement {
   @query('lexml-emenda-comando')
   private lexmlComandoEmenda!: any;
 
+  @query('edt-modal-nova-emenda')
+  private modalNovaEmenda!: any;
+
   @state()
   private jsonixProposicao: any = {};
+
+  @state()
+  private proposicao: Proposicao = {};
 
   createRenderRoot(): LitElement {
     return this;
@@ -31,20 +41,36 @@ export class EdtApp extends LitElement {
     this.lexmlComandoEmenda.emenda = this.lexmlEta.getComandoEmenda();
   }
 
-  private async loadMPV(): Promise<any> {
-    this.jsonixProposicao = await getProposicaoJsonix('MPV', '1089', 2021);
+  private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
+    const { sigla, numero, ano } = proposicao;
+    this.jsonixProposicao = await getProposicaoJsonix(
+      sigla!,
+      numero!,
+      Number(ano)
+    );
+    const urn = getUrn(this.jsonixProposicao);
+    this.proposicao = {
+      urn,
+      sigla: getSigla(urn),
+      numero: getNumero(urn),
+      ano: getAno(urn),
+      ementa: buildContent(
+        this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial?.ementa
+          .content
+      ),
+    };
+    this.proposicao.nomeProposicao =
+      this.proposicao.sigla +
+      ' ' +
+      this.proposicao.numero +
+      '/' +
+      this.proposicao.ano;
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
-      this.loadMPV();
+      this.modalNovaEmenda.show();
     }
-  }
-
-  private renderNotasVersao(): TemplateResult {
-    return this.isJsonixProposicaoLoaded()
-      ? html``
-      : html` <edt-notas-versao></edt-notas-versao> `;
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -53,6 +79,16 @@ export class EdtApp extends LitElement {
         class="editor-emendas"
         style=${this.isJsonixProposicaoLoaded() ? '' : 'display: none;'}
       >
+        <div class="detalhe-emenda">
+          <div>
+            <strong>${this.proposicao.nomeProposicao} - </strong>
+            <span>${unsafeHTML(this.proposicao.ementa)}</span>
+          </div>
+          <div>
+            <input type="text" placeholder="Digite o título para a emenda" />
+          </div>
+        </div>
+
         <lexml-emenda
           @onchange=${this.onChange}
           modo="emenda"
@@ -60,6 +96,11 @@ export class EdtApp extends LitElement {
         ></lexml-emenda>
         <lexml-emenda-comando></lexml-emenda-comando>
       </div>
+
+      <edt-modal-nova-emenda
+        @nova-emenda=${(ev: CustomEvent): Promise<void> =>
+          this.loadTextoProposicao(ev.detail.proposicao)}
+      ></edt-modal-nova-emenda>
     `;
   }
 
@@ -68,7 +109,12 @@ export class EdtApp extends LitElement {
       <edt-cabecalho></edt-cabecalho>
       <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
       <hr />
-      <main>${this.renderNotasVersao()} ${this.renderEditorEmenda()}</main>
+      <main>
+        ${this.isJsonixProposicaoLoaded()
+          ? ''
+          : html`<edt-notas-versao></edt-notas-versao>`}
+        ${this.renderEditorEmenda()}
+      </main>
       <edt-rodape></edt-rodape>
     `;
   }
