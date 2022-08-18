@@ -5,10 +5,6 @@ import { customElement, query, state } from 'lit/decorators.js';
 
 @customElement('edt-modal-nova-emenda')
 export class EdtModalNovaEmenda extends LitElement {
-  createRenderRoot(): LitElement {
-    return this;
-  }
-
   @state()
   private sigla = 'MPV';
 
