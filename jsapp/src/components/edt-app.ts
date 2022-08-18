@@ -9,7 +9,7 @@ import { Proposicao } from '../model/Proposicao';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
-  static styles = appStyles;
+  // static styles = appStyles;
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -80,26 +80,53 @@ export class EdtApp extends LitElement {
 
   private renderEditorEmenda(): TemplateResult {
     return html`
+      ${appStyles}
       <div
         class="editor-emendas"
         style=${this.isJsonixProposicaoLoaded() ? '' : 'display: none;'}
       >
         <div class="detalhe-emenda">
-          <div>
-            <strong>${this.proposicao.nomeProposicao} - </strong>
-            <span>${unsafeHTML(this.proposicao.ementa)}</span>
-          </div>
+          <a
+            href="#"
+            onclick="document.querySelector('.dialog-emenda').show();"
+            class="detalhe-emenda--titulo"
+          >
+            <span class="detalhe-emenda--nome-proposicao"
+              >${this.proposicao.nomeProposicao} -
+            </span>
+            <span class="detalhe-emenda--ementa"
+              >${unsafeHTML(this.proposicao.ementa)}</span
+            >
+          </a>
           <div>
             <input type="text" placeholder="Digite o título para a emenda" />
           </div>
+          <sl-dialog
+            label="${this.proposicao.nomeProposicao} - Ementa"
+            class="dialog-emenda"
+          >
+            ${unsafeHTML(this.proposicao.ementa)}
+            <sl-button
+              slot="footer"
+              onclick="document.querySelector('.dialog-emenda').hide()"
+              variant="primary"
+              >Fechar</sl-button
+            >
+          </sl-dialog>
         </div>
-
-        <lexml-emenda
-          @onchange=${this.onChange}
-          modo="emenda"
-          .projetoNorma=${this.jsonixProposicao}
-        ></lexml-emenda>
-        <lexml-emenda-comando></lexml-emenda-comando>
+        <sl-split-panel position="60" style="--divider-width: 15px;">
+          <sl-icon slot="handle" name="grip-vertical"></sl-icon>
+          <div slot="start" data-observe-resizes>
+            <lexml-emenda
+              @onchange=${this.onChange}
+              modo="emenda"
+              .projetoNorma=${this.jsonixProposicao}
+            ></lexml-emenda>
+          </div>
+          <div slot="end">
+            <lexml-emenda-comando></lexml-emenda-comando>
+          </div>
+        </sl-split-panel>
       </div>
 
       <edt-modal-nova-emenda
@@ -115,7 +142,6 @@ export class EdtApp extends LitElement {
     return html`
       <edt-cabecalho></edt-cabecalho>
       <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
-      <hr />
       <main>
         ${this.isJsonixProposicaoLoaded()
           ? ''

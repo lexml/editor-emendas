@@ -8,5 +8,6 @@ import './components/edt-menu';
 import './components/edt-nota-versao';
 import './components/edt-modal-nova-emenda';
 import './components/edt-modal-visualizar-pdf';
+import '@shoelace-style/shoelace/dist/components/split-panel/split-panel';
 
 export { EdtApp } from './components/edt-app';

@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
-
+import { menuStyles } from './app.css';
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
   createRenderRoot(): LitElement {
@@ -19,18 +19,21 @@ export class EdtMenu extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <nav>
-        <ul>
-          <li @click=${(): void => this.emitirEvento('nova')}>Nova</li>
-          <li>Abrir</li>
-          <li>Salvar</li>
-          <li @click=${(): void => this.emitirEvento('visualizar')}>
-            Visualizar
-          </li>
-          <li>Outros tipos</li>
-          <li>Ajuda</li>
-        </ul>
-      </nav>
+      ${menuStyles}
+      <sl-button size="small" @click=${(): void => this.emitirEvento('nova')}
+        >Nova</sl-button
+      >
+      <sl-button size="small">Abrir</sl-button>
+      <sl-button size="small">Salvar</sl-button>
+      <sl-button size="small" @click=${(): void => this.emitirEvento('visualizar')}>Visualizar</sl-button>
+      <sl-dropdown>
+        <sl-button size="small" slot="trigger" caret>Outros tipos</sl-button>
+        <sl-menu>
+          <sl-menu-item> Onde couber </sl-menu-item>
+          <sl-menu-item> Texto livre </sl-menu-item>
+        </sl-menu>
+      </sl-dropdown>
+      <sl-button size="small">Ajuda</sl-button>
     `;
   }
 }
