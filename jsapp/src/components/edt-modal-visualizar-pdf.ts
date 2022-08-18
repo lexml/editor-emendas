@@ -7,10 +7,18 @@ export class EdtModalVisualizarPdf extends LitElement {
   @state()
   private pdfBase64: any = '';
 
+  @state()
+  private nomeProposicao?: string;
+
+  @state()
+  private tituloEmenda?: string;
+
   @query('sl-dialog')
   private slDialog!: any;
 
-  public show(): void {
+  public show(nomeProposicao?: string, tituloEmenda?: string): void {
+    this.nomeProposicao = nomeProposicao;
+    this.tituloEmenda = tituloEmenda;
     this.slDialog.show();
   }
 
@@ -30,8 +38,12 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   render(): TemplateResult {
+    const tituloModal = [this.nomeProposicao, this.tituloEmenda]
+      .filter(Boolean)
+      .join(' - ');
+
     return html`
-      <sl-dialog label="Selecionar proposição - nova emenda">
+      <sl-dialog label=${'Visualizar ' + tituloModal}>
         <div class="pdf-area">
           <embed
             src=${this.pdfBase64}
