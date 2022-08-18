@@ -7,5 +7,6 @@ import './components/edt-rodape';
 import './components/edt-menu';
 import './components/edt-nota-versao';
 import './components/edt-modal-nova-emenda';
+import './components/edt-modal-visualizar-pdf';
 
 export { EdtApp } from './components/edt-app';

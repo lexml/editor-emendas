@@ -23,6 +23,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-nova-emenda')
   private modalNovaEmenda!: any;
 
+  @query('edt-modal-visualizar-pdf')
+  private modalVisualizarPdf!: any;
+
   @state()
   private jsonixProposicao: any = {};
 
@@ -70,6 +73,8 @@ export class EdtApp extends LitElement {
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
       this.modalNovaEmenda.show();
+    } else if (ev.detail.itemMenu === 'visualizar') {
+      this.modalVisualizarPdf.show();
     }
   }
 
@@ -101,6 +106,8 @@ export class EdtApp extends LitElement {
         @nova-emenda=${(ev: CustomEvent): Promise<void> =>
           this.loadTextoProposicao(ev.detail.proposicao)}
       ></edt-modal-nova-emenda>
+
+      <edt-modal-visualizar-pdf></edt-modal-visualizar-pdf>
     `;
   }
 

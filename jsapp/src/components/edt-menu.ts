@@ -24,7 +24,9 @@ export class EdtMenu extends LitElement {
           <li @click=${(): void => this.emitirEvento('nova')}>Nova</li>
           <li>Abrir</li>
           <li>Salvar</li>
-          <li>Visualizar</li>
+          <li @click=${(): void => this.emitirEvento('visualizar')}>
+            Visualizar
+          </li>
           <li>Outros tipos</li>
           <li>Ajuda</li>
         </ul>
