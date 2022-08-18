@@ -114,19 +114,11 @@ export class EdtApp extends LitElement {
             >
           </sl-dialog>
         </div>
-        <sl-split-panel position="60" style="--divider-width: 15px;">
-          <sl-icon slot="handle" name="grip-vertical"></sl-icon>
-          <div slot="start" data-observe-resizes>
-            <lexml-emenda
-              @onchange=${this.onChange}
-              modo="emenda"
-              .projetoNorma=${this.jsonixProposicao}
-            ></lexml-emenda>
-          </div>
-          <div slot="end">
-            <lexml-emenda-comando></lexml-emenda-comando>
-          </div>
-        </sl-split-panel>
+        <lexml-emenda
+          @onchange=${this.onChange}
+          modo="emenda"
+          .projetoNorma=${this.jsonixProposicao}
+        ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
