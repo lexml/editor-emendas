@@ -43,18 +43,30 @@ export class EdtModalVisualizarPdf extends LitElement {
       .join(' - ');
 
     return html`
-      <sl-dialog label=${'Visualizar ' + tituloModal}>
+      <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">
         <div class="pdf-area">
+          <style>
+            .pdf-area,
+            embed {
+              width: 100%;
+              height: 80vh;
+              min-height: 480px;
+            }
+            sl-dialog {
+              --body-spacing: 0;
+              border: 1px solid red;
+            }
+          </style>
+
           <embed
             src=${this.pdfBase64}
             type="application/pdf"
             frameborder="0"
             width="100%"
-            height="450px"
           />
         </div>
 
-        <sl-button
+        <!-- <sl-button
           slot="footer"
           variant="default"
           @click=${(): void => this.slDialog.hide()}
@@ -71,7 +83,7 @@ export class EdtModalVisualizarPdf extends LitElement {
           variant="primary"
           @click=${(): void => this.slDialog.hide()}
           >Imprimir</sl-button
-        >
+        > -->
       </sl-dialog>
     `;
   }

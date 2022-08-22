@@ -57,19 +57,19 @@ export class EdtModalNovaEmenda extends LitElement {
     return !this.proposicoes.length
       ? html``
       : html`
-          <table>
+          <table class="lista-proposicao">
             <thead>
               <tr>
-                <th>Proposição</th>
-                <th>Ementa</th>
+                <th class="col-1">Proposição</th>
+                <th class="col-2">Ementa</th>
               </tr>
             </thead>
             <tbody>
               ${this.proposicoes.map(p => {
                 return html`
                   <tr @click=${(): any => (this.proposicaoSelecionada = p)}>
-                    <td>${p.nomeProposicao}</td>
-                    <td>${p.ementa}</td>
+                    <td class="col-1">${p.nomeProposicao}</td>
+                    <td class="col-2">${p.ementa}</td>
                   </tr>
                 `;
               })}
@@ -80,39 +80,83 @@ export class EdtModalNovaEmenda extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <sl-dialog label="Selecionar proposição - nova emenda">
-        <div>
-          <select
+      <style>
+        table,
+        span {
+          font-size: var(--sl-font-size-small);
+        }
+        thead {
+          display: block;
+          table-layout: fixed;
+        }
+        tbody {
+          height: 280px;
+          overflow: hidden;
+          overflow-y: scroll;
+          display: block;
+          table-layout: fixed;
+        }
+        td {
+          border-top: 1px solid #ddd;
+        }
+        th {
+          height: 30px;
+          border-top: 1px solid #ddd;
+        }
+        .col-1 {
+          width: 130px;
+          white-space: nowrap;
+        }
+        .col-2 {
+        }
+        .tipo-proposicao,
+        .numero-proposicao,
+        .ano-proposicao {
+          width: 120px;
+          display: inline-block;
+        }
+      </style>
+      <sl-dialog
+        label="Selecionar proposição - nova emenda"
+        style="--width: 80vw;"
+      >
+        <div style="min-height: 50vh;">
+          <sl-select
+            class="tipo-proposicao"
+            size="small"
+            value="mpv"
             @input=${(ev: Event): any =>
               (this.sigla = (ev.target as HTMLInputElement).value)}
           >
-            <option value="MPV" selected>MPV</option>
-          </select>
-          <input
-            type="search"
+            <sl-menu-item value="mpv">MPV</sl-menu-item>
+            <sl-menu-item value="...">...</sl-menu-item>
+          </sl-select>
+          <sl-input
+            class="numero-proposicao"
+            size="small"
             placeholder="Número"
-            aria-label="Número"
+            clearable
             @input=${(ev: Event): any =>
               (this.numero = (ev.target as HTMLInputElement).value)}
-          />
-          <input
-            type="search"
+          ></sl-input>
+          <sl-input
+            class="ano-proposicao"
+            size="small"
             placeholder="Ano"
-            aria-label="Ano"
-            required
+            clearable
             @input=${(ev: Event): any =>
               (this.ano = (ev.target as HTMLInputElement).value)}
-          />
-          <button
-            id="btnPesquisar"
-            type="button"
+          ></sl-input>
+          <sl-button
+            variant="primary"
+            size="small"
             @click=${(): any => this.pesquisar()}
             ?disabled=${!(this.sigla && this.ano)}
+            >Pesquisar</sl-button
           >
-            Pesquisar
-          </button>
-
+          <br />
           <div>${this.renderProposicoes()}</div>
+          <br />
           <div class="ementa">
             <span>Ementa</span>
             <div id="ementa">${this.proposicaoSelecionada?.ementa ?? ''}</div>
