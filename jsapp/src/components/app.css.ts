@@ -26,6 +26,7 @@ export const appStyles = html`
     html {
       height: 100%;
       width: 100%;
+      font-size: var(--sl-font-size-small);
     }
 
     edt-app {
