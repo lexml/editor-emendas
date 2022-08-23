@@ -12,7 +12,7 @@ export class EdtModalNovaEmenda extends LitElement {
   private numero = '';
 
   @state()
-  private ano = '';
+  private ano = new Date().getFullYear().toString();
 
   @state()
   private proposicoes: Proposicao[] = [];
@@ -47,11 +47,6 @@ export class EdtModalNovaEmenda extends LitElement {
       })
     );
     this.slDialog.hide();
-  }
-
-  protected firstUpdated(): void {
-    this.ano = '2022';
-    this.btnPesquisar.disabled = true;
   }
 
   private renderProposicoes(): TemplateResult {
@@ -171,7 +166,7 @@ export class EdtModalNovaEmenda extends LitElement {
             class="ano-proposicao"
             size="small"
             placeholder="Ano"
-            value="2022"
+            value=${new Date().getFullYear().toString()}
             clearable
             @input=${(ev: Event): any =>
               (this.ano = (ev.target as HTMLInputElement).value)}
