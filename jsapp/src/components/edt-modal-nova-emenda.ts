@@ -1,7 +1,7 @@
 import { pesquisarProposicoes } from './../servicos/proposicoes';
 import { Proposicao } from './../model/proposicao';
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query, state } from 'lit/decorators.js';
+import { customElement, query, queryAll, state } from 'lit/decorators.js';
 
 @customElement('edt-modal-nova-emenda')
 export class EdtModalNovaEmenda extends LitElement {
@@ -20,11 +20,11 @@ export class EdtModalNovaEmenda extends LitElement {
   @state()
   private proposicaoSelecionada?: Proposicao;
 
-  @query('#btnPesquisar')
-  private btnPesquisar!: HTMLButtonElement;
-
   @query('sl-dialog')
   private slDialog!: any;
+
+  @queryAll('tr.proposicao')
+  private trProposicoes!: HTMLElement[];
 
   public show(): void {
     this.slDialog.show();
@@ -49,6 +49,12 @@ export class EdtModalNovaEmenda extends LitElement {
     this.slDialog.hide();
   }
 
+  private selecionarProposicao(proposicao: Proposicao, evt: Event): void {
+    this.proposicaoSelecionada = proposicao;
+    this.trProposicoes.forEach(tr => tr.removeAttribute('selected'));
+    (evt.target as HTMLElement).parentElement!.setAttribute('selected', 'true');
+  }
+
   private renderProposicoes(): TemplateResult {
     return !this.proposicoes.length
       ? html``
@@ -61,17 +67,13 @@ export class EdtModalNovaEmenda extends LitElement {
               </tr>
             </thead>
             <tbody>
-              <tr selected="selected">
-                <td class="col-1">MPV 01096/2022</td>
-                <td class="col-2">
-                  Abre crédito extraordinário, em favor do Ministério do
-                  Desenvolvimento Regional, no valor de R$ 550.000.000,00, para
-                  o fim que especifica.
-                </td>
-              </tr>
               ${this.proposicoes.map(p => {
                 return html`
-                  <tr @click=${(): any => (this.proposicaoSelecionada = p)}>
+                  <tr
+                    class="proposicao"
+                    @click=${(evt: Event): any =>
+                      this.selecionarProposicao(p, evt)}
+                  >
                     <td class="col-1">${p.nomeProposicao}</td>
                     <td class="col-2">${p.ementa}</td>
                   </tr>
@@ -113,7 +115,7 @@ export class EdtModalNovaEmenda extends LitElement {
         tr {
           cursor: pointer;
         }
-        tr[selected='selected'] {
+        tr[selected] {
           background-color: #f7ff9c;
         }
         tr:hover {
