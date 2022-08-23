@@ -25,12 +25,17 @@ export class EdtMenu extends LitElement {
       >
       <sl-button size="small">Abrir</sl-button>
       <sl-button size="small">Salvar</sl-button>
-      <sl-button size="small" @click=${(): void => this.emitirEvento('visualizar')}>Visualizar</sl-button>
+      <sl-button
+        size="small"
+        @click=${(): void => this.emitirEvento('visualizar')}
+        >Visualizar</sl-button
+      >
       <sl-dropdown>
         <sl-button size="small" slot="trigger" caret>Outros tipos</sl-button>
         <sl-menu>
-          <sl-menu-item> Onde couber </sl-menu-item>
-          <sl-menu-item> Texto livre </sl-menu-item>
+          <sl-menu-item @click=${(): void => this.emitirEvento('onde-couber')}
+            >Onde couber</sl-menu-item
+          >
         </sl-menu>
       </sl-dropdown>
       <sl-button size="small">Ajuda</sl-button>
