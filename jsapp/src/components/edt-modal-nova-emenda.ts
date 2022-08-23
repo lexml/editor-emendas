@@ -50,6 +50,7 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   protected firstUpdated(): void {
+    this.ano = '2022';
     this.btnPesquisar.disabled = true;
   }
 
@@ -65,6 +66,14 @@ export class EdtModalNovaEmenda extends LitElement {
               </tr>
             </thead>
             <tbody>
+              <tr selected="selected">
+                <td class="col-1">MPV 01096/2022</td>
+                <td class="col-2">
+                  Abre crédito extraordinário, em favor do Ministério do
+                  Desenvolvimento Regional, no valor de R$ 550.000.000,00, para
+                  o fim que especifica.
+                </td>
+              </tr>
               ${this.proposicoes.map(p => {
                 return html`
                   <tr @click=${(): any => (this.proposicaoSelecionada = p)}>
@@ -81,9 +90,11 @@ export class EdtModalNovaEmenda extends LitElement {
   render(): TemplateResult {
     return html`
       <style>
-        table,
-        span {
+        :host {
           font-size: var(--sl-font-size-small);
+        }
+        table {
+          border-spacing: 0;
         }
         thead {
           display: block;
@@ -97,11 +108,21 @@ export class EdtModalNovaEmenda extends LitElement {
           table-layout: fixed;
         }
         td {
+          padding: 0.5rem;
           border-top: 1px solid #ddd;
         }
         th {
           height: 30px;
           border-top: 1px solid #ddd;
+        }
+        tr {
+          cursor: pointer;
+        }
+        tr[selected='selected'] {
+          background-color: #f7ff9c;
+        }
+        tr:hover {
+          background-color: #fcffdd;
         }
         .col-1 {
           width: 130px;
@@ -114,6 +135,13 @@ export class EdtModalNovaEmenda extends LitElement {
         .ano-proposicao {
           width: 120px;
           display: inline-block;
+        }
+        #ementa {
+          width: 100%;
+          font-family: var(--sl-font-size-small);
+        }
+        label {
+          font-weight: bold;
         }
       </style>
       <sl-dialog
@@ -143,6 +171,7 @@ export class EdtModalNovaEmenda extends LitElement {
             class="ano-proposicao"
             size="small"
             placeholder="Ano"
+            value="2022"
             clearable
             @input=${(ev: Event): any =>
               (this.ano = (ev.target as HTMLInputElement).value)}
@@ -158,8 +187,19 @@ export class EdtModalNovaEmenda extends LitElement {
           <div>${this.renderProposicoes()}</div>
           <br />
           <div class="ementa">
-            <span>Ementa</span>
-            <div id="ementa">${this.proposicaoSelecionada?.ementa ?? ''}</div>
+            <label for="ementa"
+              >Ementa
+              ${this.proposicaoSelecionada?.sigla
+                ? this.proposicaoSelecionada?.sigla +
+                  ' ' +
+                  this.proposicaoSelecionada?.numero +
+                  '/' +
+                  this.proposicaoSelecionada?.ano
+                : ''}</label
+            >
+            <textarea id="ementa" cols="40" rows="3" disabled>
+${this.proposicaoSelecionada?.ementa ?? ''}</textarea
+            >
           </div>
         </div>
 
