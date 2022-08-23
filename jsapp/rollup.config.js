@@ -5,6 +5,7 @@ import { importMetaAssets } from '@web/rollup-plugin-import-meta-assets';
 import { terser } from 'rollup-plugin-terser';
 import { generateSW } from 'rollup-plugin-workbox';
 import path from 'path';
+import copy from 'rollup-plugin-copy';
 
 export default {
   input: 'index.html',
@@ -79,6 +80,10 @@ export default {
       skipWaiting: true,
       clientsClaim: true,
       runtimeCaching: [{ urlPattern: 'polyfills/*.js', handler: 'CacheFirst' }],
+    }),
+    copy({
+      targets: [{ src: 'dist/*', dest: '../src/main/resources/static' }],
+      hook: 'closeBundle'
     }),
   ],
 };
