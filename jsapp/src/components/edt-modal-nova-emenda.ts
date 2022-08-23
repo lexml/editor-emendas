@@ -30,7 +30,16 @@ export class EdtModalNovaEmenda extends LitElement {
     this.slDialog.show();
   }
 
+  private processarKeyup(evt: KeyboardEvent): void {
+    if (!evt.ctrlKey && !evt.altKey && !evt.metaKey && evt.key === 'Enter') {
+      this.pesquisar();
+    }
+  }
+
   private async pesquisar(): Promise<void> {
+    if (!(this.sigla && this.ano)) {
+      return;
+    }
     this.proposicoes = await pesquisarProposicoes(
       this.sigla,
       this.numero,
@@ -145,23 +154,22 @@ export class EdtModalNovaEmenda extends LitElement {
         label="Selecionar proposição - nova emenda"
         style="--width: 80vw;"
       >
-        <div style="min-height: 50vh;">
+        <div style="min-height: 50vh;" @keyup=${this.processarKeyup}>
           <sl-select
             class="tipo-proposicao"
             size="small"
             value="mpv"
-            @input=${(ev: Event): any =>
+            @sl-input=${(ev: Event): any =>
               (this.sigla = (ev.target as HTMLInputElement).value)}
           >
             <sl-menu-item value="mpv">MPV</sl-menu-item>
-            <sl-menu-item value="...">...</sl-menu-item>
           </sl-select>
           <sl-input
             class="numero-proposicao"
             size="small"
             placeholder="Número"
             clearable
-            @input=${(ev: Event): any =>
+            @sl-input=${(ev: Event): any =>
               (this.numero = (ev.target as HTMLInputElement).value)}
           ></sl-input>
           <sl-input
@@ -170,13 +178,13 @@ export class EdtModalNovaEmenda extends LitElement {
             placeholder="Ano"
             value=${new Date().getFullYear().toString()}
             clearable
-            @input=${(ev: Event): any =>
+            @sl-input=${(ev: Event): any =>
               (this.ano = (ev.target as HTMLInputElement).value)}
           ></sl-input>
           <sl-button
             variant="primary"
             size="small"
-            @click=${(): any => this.pesquisar()}
+            @click=${this.pesquisar}
             ?disabled=${!(this.sigla && this.ano)}
             >Pesquisar</sl-button
           >
