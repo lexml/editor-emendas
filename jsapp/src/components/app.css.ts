@@ -26,7 +26,7 @@ export const appStyles = html`
     html {
       height: 100%;
       width: 100%;
-      font-size: var(--sl-font-size-small);
+      font-family: var(--sl-font-sans);
     }
 
     edt-app {
@@ -54,14 +54,21 @@ export const appStyles = html`
       background-color: #dfe9ff;
       margin: 10px;
       border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     .detalhe-emenda--titulo {
       display: flex;
       flex-direction: row;
+      gap: 5px;
+      text-decoration: none;
+      color: #1a2b42;
+      font-size: var(--sl-font-size-small);
     }
     .detalhe-emenda--nome-proposicao {
-      margin-right: 5px;
       white-space: nowrap;
+      font-weight: bold;
     }
     .detalhe-emenda--ementa {
       display: block;
