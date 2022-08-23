@@ -26,6 +26,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-visualizar-pdf')
   private modalVisualizarPdf!: any;
 
+  @query('edt-modal-onde-couber')
+  private modalOndeCouber!: any;
+
   @state()
   private jsonixProposicao: any = {};
 
@@ -75,6 +78,8 @@ export class EdtApp extends LitElement {
       this.modalNovaEmenda.show();
     } else if (ev.detail.itemMenu === 'visualizar') {
       this.modalVisualizarPdf.show();
+    } else if (ev.detail.itemMenu === 'onde-couber') {
+      this.modalOndeCouber.show();
     }
   }
 
@@ -91,15 +96,19 @@ export class EdtApp extends LitElement {
             onclick="document.querySelector('.dialog-emenda').show();"
             class="detalhe-emenda--titulo"
           >
-            <span class="detalhe-emenda--nome-proposicao"
-              >${this.proposicao.nomeProposicao} -
+            <span class="detalhe-emenda--nome-proposicao">
+              ${this.proposicao.nomeProposicao} -
             </span>
-            <span class="detalhe-emenda--ementa"
-              >${unsafeHTML(this.proposicao.ementa)}</span
-            >
+            <span class="detalhe-emenda--ementa">
+              ${unsafeHTML(this.proposicao.ementa)}
+            </span>
           </a>
           <div>
-            <input type="text" placeholder="Digite o título para a emenda" />
+            <sl-input
+              placeholder="Digite o título para a emenda"
+              size="small"
+              clearable
+            ></sl-input>
           </div>
           <sl-dialog
             label="${this.proposicao.nomeProposicao} - Ementa"
@@ -110,8 +119,8 @@ export class EdtApp extends LitElement {
               slot="footer"
               onclick="document.querySelector('.dialog-emenda').hide()"
               variant="primary"
-              >Fechar</sl-button
-            >
+              >Fechar
+            </sl-button>
           </sl-dialog>
         </div>
         <lexml-emenda
@@ -124,9 +133,10 @@ export class EdtApp extends LitElement {
       <edt-modal-nova-emenda
         @nova-emenda=${(ev: CustomEvent): Promise<void> =>
           this.loadTextoProposicao(ev.detail.proposicao)}
-      ></edt-modal-nova-emenda>
-
+      >
+      </edt-modal-nova-emenda>
       <edt-modal-visualizar-pdf></edt-modal-visualizar-pdf>
+      <edt-modal-onde-couber></edt-modal-onde-couber>
     `;
   }
 
