@@ -28,7 +28,6 @@ export const appStyles = html`
       width: 100%;
       font-family: var(--sl-font-sans);
     }
-
     edt-app {
       height: 100%;
       width: 100%;
@@ -36,13 +35,11 @@ export const appStyles = html`
       display: flex;
       flex-direction: column;
     }
-
     main {
       flex: auto;
       overflow: hidden;
       overflow-y: scroll;
     }
-
     .editor-emendas {
       height: calc(100% - 100px);
       width: 100%;
@@ -101,6 +98,10 @@ export const cabecalhoStyles = html`
       margin-inline-start: 0;
       margin-inline-end: 0;
       font-weight: bold;
+    }
+    edt-cabecalho a {
+      color: white;
+      text-decoration: none;
     }
   </style>
 `;
