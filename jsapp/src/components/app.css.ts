@@ -114,11 +114,23 @@ export const menuStyles = html`
       padding: 0.5rem;
       background: #eee;
       flex-flow: wrap;
+      gap: 2px;
     }
 
     edt-menu sl-button {
       display: flex;
-      row-gap: 10px;
+    }
+    .sidebar-toggle {
+      display: none;
+      cursor: pointer;
+    }
+    @media (max-width: 576px) {
+      .sidebar-toggle {
+        display: flex;
+      }
+      edt-menu sl-button {
+        display: none;
+      }
     }
   </style>
 `;
