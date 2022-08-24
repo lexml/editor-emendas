@@ -29,6 +29,7 @@ export class EdtNotasVersao extends LitElement {
           height: 0;
           overflow: hidden;
           margin: 15px 0 5px 0;
+          box-shadow: var(--sl-shadow-x-large);
         }
         .video-container iframe,
         .video-container object,
