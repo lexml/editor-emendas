@@ -99,6 +99,12 @@ export class EdtModalNovaEmenda extends LitElement {
         :host {
           font-size: var(--sl-font-size-small);
         }
+        .form-group {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
         table {
           border-spacing: 0;
         }
@@ -140,7 +146,6 @@ export class EdtModalNovaEmenda extends LitElement {
         .numero-proposicao,
         .ano-proposicao {
           width: 120px;
-          display: inline-block;
         }
         #ementa {
           width: 100%;
@@ -154,41 +159,53 @@ export class EdtModalNovaEmenda extends LitElement {
         label="Selecionar proposição - nova emenda"
         style="--width: 80vw;"
       >
-        <div style="min-height: 50vh;" @keyup=${this.processarKeyup}>
-          <sl-select
-            class="tipo-proposicao"
-            size="small"
-            value="mpv"
-            @sl-input=${(ev: Event): any =>
-              (this.sigla = (ev.target as HTMLInputElement).value)}
-          >
-            <sl-menu-item value="mpv">MPV</sl-menu-item>
-          </sl-select>
-          <sl-input
-            class="numero-proposicao"
-            size="small"
-            placeholder="Número"
-            clearable
-            @sl-input=${(ev: Event): any =>
-              (this.numero = (ev.target as HTMLInputElement).value)}
-          ></sl-input>
-          <sl-input
-            class="ano-proposicao"
-            size="small"
-            placeholder="Ano"
-            value=${new Date().getFullYear().toString()}
-            clearable
-            @sl-input=${(ev: Event): any =>
-              (this.ano = (ev.target as HTMLInputElement).value)}
-          ></sl-input>
-          <sl-button
-            variant="primary"
-            size="small"
-            autofocus
-            @click=${this.pesquisar}
-            ?disabled=${!(this.sigla && this.ano)}
-            >Pesquisar</sl-button
-          >
+        <div @keyup=${this.processarKeyup}>
+          <div class="form-group">
+            <sl-select
+              class="tipo-proposicao"
+              size="small"
+              value="mpv"
+              @sl-input=${(ev: Event): any =>
+                (this.sigla = (ev.target as HTMLInputElement).value)}
+            >
+              <sl-menu-item value="mpv">MPV</sl-menu-item>
+            </sl-select>
+            <sl-input
+              class="numero-proposicao"
+              size="small"
+              placeholder="Número"
+              max="99999"
+              max-length="5"
+              type="number"
+              inputmode="numeric"
+              enterkeyhint="enter"
+              clearable
+              @sl-input=${(ev: Event): any =>
+                (this.numero = (ev.target as HTMLInputElement).value)}
+            ></sl-input>
+            <sl-input
+              class="ano-proposicao"
+              size="small"
+              placeholder="Ano"
+              value=${new Date().getFullYear().toString()}
+              max="9999"
+              max-length="4"
+              type="number"
+              inputmode="numeric"
+              enterkeyhint="enter"
+              clearable
+              @sl-input=${(ev: Event): any =>
+                (this.ano = (ev.target as HTMLInputElement).value)}
+            ></sl-input>
+            <sl-button
+              variant="primary"
+              size="small"
+              autofocus
+              @click=${this.pesquisar}
+              ?disabled=${!(this.sigla && this.ano)}
+              >Pesquisar</sl-button
+            >
+          </div>
           <br />
           <div>${this.renderProposicoes()}</div>
           <br />
@@ -204,7 +221,7 @@ export class EdtModalNovaEmenda extends LitElement {
                 : ''}</label
             >
             <textarea id="ementa" cols="40" rows="3" disabled>
-${this.proposicaoSelecionada?.ementa ?? ''}</textarea
+              ${this.proposicaoSelecionada?.ementa ?? ''}</textarea
             >
           </div>
         </div>
