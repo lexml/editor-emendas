@@ -29,8 +29,8 @@
 		</dependency>
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
-			<artifactId>eta-services</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<artifactId>eta-backend-services</artifactId>
+			<version>0.0.2</version>
 		</dependency>
 	</dependencies>
 
