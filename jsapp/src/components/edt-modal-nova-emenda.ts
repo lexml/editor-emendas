@@ -158,11 +158,13 @@ export class EdtModalNovaEmenda extends LitElement {
         label {
           font-weight: bold;
         }
+        @media (max-width: 768px) {
+          tbody {
+            height: 250px;
+          }
+        }
       </style>
-      <sl-dialog
-        label="Selecionar proposição - nova emenda"
-        style="--width: 80vw;"
-      >
+      <sl-dialog label="Nova emenda" style="--width: 80vw;">
         <div @keyup=${this.processarKeyup}>
           <div class="form-group">
             <sl-select
