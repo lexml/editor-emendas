@@ -227,7 +227,7 @@ export class EdtModalNovaEmenda extends LitElement {
                 : ''}</label
             >
             <textarea id="ementa" cols="40" rows="3" disabled>
-              ${this.proposicaoSelecionada?.ementa ?? ''}</textarea
+${this.proposicaoSelecionada?.ementa ?? ''}</textarea
             >
           </div>
         </div>
