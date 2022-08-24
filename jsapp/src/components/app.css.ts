@@ -44,7 +44,7 @@ export const appStyles = html`
     }
 
     .editor-emendas {
-      height: 100%;
+      height: calc(100% - 100px);
       width: 100%;
       display: flex;
       flex-direction: column;
