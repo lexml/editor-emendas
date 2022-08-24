@@ -10,6 +10,13 @@ export class EdtNotasVersao extends LitElement {
   render(): TemplateResult {
     return html`
       <style>
+        :host {
+          font-size: var(--sl-font-size-medium);
+        }
+        .titulo {
+          margin-block-end: 0;
+          font-size: var(--sl-font-size-2x-large);
+        }
         .conteudo {
           display: grid;
           grid-template-columns: 2fr 1fr;
@@ -21,9 +28,8 @@ export class EdtNotasVersao extends LitElement {
           padding-top: 30px;
           height: 0;
           overflow: hidden;
-          margin: 15px 0;
+          margin: 15px 0 5px 0;
         }
-
         .video-container iframe,
         .video-container object,
         .video-container embed {
@@ -33,136 +39,69 @@ export class EdtNotasVersao extends LitElement {
           width: 100%;
           height: 100%;
         }
-
+        .legenda {
+          font-size: var(--sl-font-size-small);
+          color: var(--sl-color-neutral-500);
+        }
         @media (max-width: 768px) {
           .conteudo {
             display: flex;
             flex-direction: column-reverse;
           }
           .video-container {
-            margin: 20px 0 0 0;
+            margin: 20px 0 5px 0;
           }
         }
       </style>
-      <h1>Nota de versão</h1>
+      <h1 class="titulo">Nota de versão</h1>
+      <span class="data-versao">Setembro 2022 - v1.0</span>
       <div class="conteudo">
         <div class="conteudo-esquerdo">
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean
-            congue, dui vel efficitur ultrices, magna leo ultricies ligula, sed
-            mattis nibh dui sollicitudin diam. Nam blandit nisi ut ligula
-            sodales, id molestie turpis mattis. Proin consectetur magna ut
-            semper cursus. Sed mattis ullamcorper velit in porta. Quisque non
-            elit sapien. Integer vitae ipsum ac ante egestas mollis vitae semper
-            nunc. Duis pellentesque metus id feugiat consequat. Donec ac auctor
-            lacus. Vivamus at lorem a nibh vulputate posuere. Nullam bibendum a
-            est vitae lacinia. Praesent et dui faucibus sapien elementum
-            lobortis vel nec metus. Praesent aliquam massa neque, at vulputate
-            justo sodales in. Duis facilisis eget ante sed faucibus. Nulla
-            facilisi. Quisque dictum venenatis lectus nec porta. Donec bibendum,
-            lectus vitae accumsan feugiat, quam nisl facilisis est, a iaculis
-            velit metus vel urna. Orci varius natoque penatibus et magnis dis
-            parturient montes, nascetur ridiculus mus. Nulla hendrerit, ipsum in
-            facilisis euismod, felis ante vestibulum magna, non consequat nisl
-            orci sed odio. Vivamus commodo, erat vitae rhoncus hendrerit, nulla
-            diam congue ligula, sed facilisis est ipsum vitae urna. Mauris
-            placerat, enim tincidunt ultricies congue, ex sem commodo lorem, eu
-            convallis metus purus sed mauris. Fusce felis dui, tempus non
-            condimentum a, hendrerit ut erat. Maecenas a mi sit amet libero
-            molestie laoreet. Nullam maximus quis arcu vel congue. Donec luctus,
-            orci id condimentum varius, tellus quam varius libero, a viverra
-            sapien orci quis magna. Sed ullamcorper mi vitae lorem sodales
-            tincidunt. Donec vehicula facilisis viverra. Etiam venenatis et eros
-            ac pretium. In hac habitasse platea dictumst. Ut tempus sagittis
-            turpis, sed rhoncus purus pretium sit amet.
+            A autoria de normas jurídicas pode se beneficiar de uma solução que
+            codifique as regras de técnica legislativa estabelecidas em normas
+            jurídicas como também as regras convencionadas pela tradição
+            legislativa do Brasil.
           </p>
           <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean
-            congue, dui vel efficitur ultrices, magna leo ultricies ligula, sed
-            mattis nibh dui sollicitudin diam. Nam blandit nisi ut ligula
-            sodales, id molestie turpis mattis. Proin consectetur magna ut
-            semper cursus. Sed mattis ullamcorper velit in porta. Quisque non
-            elit sapien. Integer vitae ipsum ac ante egestas mollis vitae semper
-            nunc. Duis pellentesque metus id feugiat consequat. Donec ac auctor
-            lacus. Vivamus at lorem a nibh vulputate posuere. Nullam bibendum a
-            est vitae lacinia. Praesent et dui faucibus sapien elementum
-            lobortis vel nec metus. Praesent aliquam massa neque, at vulputate
-            justo sodales in. Duis facilisis eget ante sed faucibus. Nulla
-            facilisi. Quisque dictum venenatis lectus nec porta. Donec bibendum,
-            lectus vitae accumsan feugiat, quam nisl facilisis est, a iaculis
-            velit metus vel urna. Orci varius natoque penatibus et magnis dis
-            parturient montes, nascetur ridiculus mus. Nulla hendrerit, ipsum in
-            facilisis euismod, felis ante vestibulum magna, non consequat nisl
-            orci sed odio. Vivamus commodo, erat vitae rhoncus hendrerit, nulla
-            diam congue ligula, sed facilisis est ipsum vitae urna. Mauris
-            placerat, enim tincidunt ultricies congue, ex sem commodo lorem, eu
-            convallis metus purus sed mauris. Fusce felis dui, tempus non
-            condimentum a, hendrerit ut erat. Maecenas a mi sit amet libero
-            molestie laoreet. Nullam maximus quis arcu vel congue. Donec luctus,
-            orci id condimentum varius, tellus quam varius libero, a viverra
-            sapien orci quis magna. Sed ullamcorper mi vitae lorem sodales
-            tincidunt. Donec vehicula facilisis viverra. Etiam venenatis et eros
-            ac pretium. In hac habitasse platea dictumst. Ut tempus sagittis
-            turpis, sed rhoncus purus pretium sit amet.
+            Uma norma jurídica se expressa por meio de textos e outros elementos
+            visuais, sendo todos eles manifestados em edições de algum periódico
+            oficial. Além de texto hierárquico e articulado, a norma jurídica
+            pode se manifestar por outros meios, tais como fórmulas, figuras,
+            tabelas, texto corrido não articulado e partitura.
           </p>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean
-            congue, dui vel efficitur ultrices, magna leo ultricies ligula, sed
-            mattis nibh dui sollicitudin diam. Nam blandit nisi ut ligula
-            sodales, id molestie turpis mattis. Proin consectetur magna ut
-            semper cursus. Sed mattis ullamcorper velit in porta. Quisque non
-            elit sapien. Integer vitae ipsum ac ante egestas mollis vitae semper
-            nunc. Duis pellentesque metus id feugiat consequat. Donec ac auctor
-            lacus. Vivamus at lorem a nibh vulputate posuere. Nullam bibendum a
-            est vitae lacinia. Praesent et dui faucibus sapien elementum
-            lobortis vel nec metus. Praesent aliquam massa neque, at vulputate
-            justo sodales in. Duis facilisis eget ante sed faucibus. Nulla
-            facilisi. Quisque dictum venenatis lectus nec porta. Donec bibendum,
-            lectus vitae accumsan feugiat, quam nisl facilisis est, a iaculis
-            velit metus vel urna. Orci varius natoque penatibus et magnis dis
-            parturient montes, nascetur ridiculus mus. Nulla hendrerit, ipsum in
-            facilisis euismod, felis ante vestibulum magna, non consequat nisl
-            orci sed odio. Vivamus commodo, erat vitae rhoncus hendrerit, nulla
-            diam congue ligula, sed facilisis est ipsum vitae urna. Mauris
-            placerat, enim tincidunt ultricies congue, ex sem commodo lorem, eu
-            convallis metus purus sed mauris. Fusce felis dui, tempus non
-            condimentum a, hendrerit ut erat. Maecenas a mi sit amet libero
-            molestie laoreet. Nullam maximus quis arcu vel congue. Donec luctus,
-            orci id condimentum varius, tellus quam varius libero, a viverra
-            sapien orci quis magna. Sed ullamcorper mi vitae lorem sodales
-            tincidunt. Donec vehicula facilisis viverra. Etiam venenatis et eros
-            ac pretium. In hac habitasse platea dictumst. Ut tempus sagittis
-            turpis, sed rhoncus purus pretium sit amet.
-          </p>
-          <p>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean
-            congue, dui vel efficitur ultrices, magna leo ultricies ligula, sed
-            mattis nibh dui sollicitudin diam. Nam blandit nisi ut ligula
-            sodales, id molestie turpis mattis. Proin consectetur magna ut
-            semper cursus. Sed mattis ullamcorper velit in porta. Quisque non
-            elit sapien. Integer vitae ipsum ac ante egestas mollis vitae semper
-            nunc. Duis pellentesque metus id feugiat consequat. Donec ac auctor
-            lacus. Vivamus at lorem a nibh vulputate posuere. Nullam bibendum a
-            est vitae lacinia. Praesent et dui faucibus sapien elementum
-            lobortis vel nec metus. Praesent aliquam massa neque, at vulputate
-            justo sodales in. Duis facilisis eget ante sed faucibus. Nulla
-            facilisi. Quisque dictum venenatis lectus nec porta. Donec bibendum,
-            lectus vitae accumsan feugiat, quam nisl facilisis est, a iaculis
-            velit metus vel urna. Orci varius natoque penatibus et magnis dis
-            parturient montes, nascetur ridiculus mus. Nulla hendrerit, ipsum in
-            facilisis euismod, felis ante vestibulum magna, non consequat nisl
-            orci sed odio. Vivamus commodo, erat vitae rhoncus hendrerit, nulla
-            diam congue ligula, sed facilisis est ipsum vitae urna. Mauris
-            placerat, enim tincidunt ultricies congue, ex sem commodo lorem, eu
-            convallis metus purus sed mauris. Fusce felis dui, tempus non
-            condimentum a, hendrerit ut erat. Maecenas a mi sit amet libero
-            molestie laoreet. Nullam maximus quis arcu vel congue. Donec luctus,
-            orci id condimentum varius, tellus quam varius libero, a viverra
-            sapien orci quis magna. Sed ullamcorper mi vitae lorem sodales
-            tincidunt. Donec vehicula facilisis viverra. Etiam venenatis et eros
-            ac pretium. In hac habitasse platea dictumst. Ut tempus sagittis
-            turpis, sed rhoncus purus pretium sit amet.
-          </p>
+          <p>Principais funcionalidades:</p>
+          <ul>
+            <li>
+              Apresentar o texto articulado em consonância com padrões previstos
+              em normas vigentes (LC 95 e Decreto 9.191/2017, entre outros);
+            </li>
+            <li>
+              Permitir que sejam utilizadas mais de uma instância do editor para
+              a edição de textos articulados;
+            </li>
+            <li>
+              Oferecer recursos de navegação com o teclado, de maneira similar
+              ao que ocorre em processadores de texto;
+            </li>
+            <li>
+              Permitir a criação e edição do texto articulado em consonância com
+              as normas vigentes (LC 95) e a especificação contida no padrão
+              LexML;
+            </li>
+            <li>
+              Oferecer recursos básicos de formatação de dispositivo, quando
+              isso for permitido;
+            </li>
+            <li>
+              Numerar automaticamente os dispositivos do texto articulado que
+              estejam em consonância com as normas vigentes;
+            </li>
+            <li>
+              Permitir a numeração manual do dispositivo quando se tratar de
+              alteração de norma existente;
+            </li>
+          </ul>
         </div>
         <div class="conteudo-direito">
           <div class="video-container">
@@ -173,6 +112,10 @@ export class EdtNotasVersao extends LitElement {
               allowfullscreen
             ></iframe>
           </div>
+          <span class="legenda"
+            >Vídeo com os principais funcionalidades do editor de textos
+            articulados.</span
+          >
         </div>
       </div>
     `;
