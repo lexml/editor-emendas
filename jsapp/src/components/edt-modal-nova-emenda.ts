@@ -108,9 +108,10 @@ export class EdtModalNovaEmenda extends LitElement {
         table {
           border-spacing: 0;
         }
-        thead {
-          display: block;
-          table-layout: fixed;
+        thead tr {
+          display: flex;
+          flex-direction: row;
+          border-bottom: 2px solid #000;
         }
         tbody {
           height: 280px;
@@ -121,23 +122,26 @@ export class EdtModalNovaEmenda extends LitElement {
         }
         td {
           padding: 0.5rem;
-          border-top: 1px solid #ddd;
+          border-bottom: 1px solid #ddd;
         }
         th {
-          height: 30px;
-          border-top: 1px solid #ddd;
+          padding: 0.5rem;
         }
         tr {
           cursor: pointer;
         }
+        tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
         tr[selected] {
           background-color: #f7ff9c;
         }
-        tr:hover {
+        tbody tr:hover {
           background-color: #fcffdd;
         }
         .col-1 {
-          width: 130px;
+          width: 120px;
+          text-align: center;
           white-space: nowrap;
         }
         .col-2 {
