@@ -184,6 +184,7 @@ export class EdtModalNovaEmenda extends LitElement {
           <sl-button
             variant="primary"
             size="small"
+            autofocus
             @click=${this.pesquisar}
             ?disabled=${!(this.sigla && this.ano)}
             >Pesquisar</sl-button
