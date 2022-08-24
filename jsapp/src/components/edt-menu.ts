@@ -20,6 +20,31 @@ export class EdtMenu extends LitElement {
   render(): TemplateResult {
     return html`
       ${menuStyles}
+
+      <sl-dropdown>
+        <sl-button class="sidebar-toggle" slot="trigger" size="small">
+          <sl-icon name="list" label="Menu"></sl-icon>
+        </sl-button>
+        <sl-menu>
+          <sl-menu-item @click=${(): void => this.emitirEvento('nova')}>
+            Nova
+          </sl-menu-item>
+          <sl-menu-item>Abrir</sl-menu-item>
+          <sl-menu-item>Salvar</sl-menu-item>
+          <sl-menu-item @click=${(): void => this.emitirEvento('visualizar')}>
+            Visualizar
+          </sl-menu-item>
+          <sl-divider></sl-divider>
+          <sl-menu-item disabled> Outros tipos</sl-menu-item>
+          <sl-menu-item @click=${(): void => this.emitirEvento('onde-couber')}>
+            <sl-icon slot="prefix" name=""></sl-icon>
+            Onde Couber
+          </sl-menu-item>
+          <sl-divider></sl-divider>
+          <sl-menu-item> Ajuda </sl-menu-item>
+        </sl-menu>
+      </sl-dropdown>
+
       <sl-button size="small" @click=${(): void => this.emitirEvento('nova')}
         >Nova</sl-button
       >
