@@ -134,6 +134,7 @@ export const menuStyles = html`
     }
   </style>
 `;
+
 export const rodapeStyles = html`
   <style>
     edt-rodape {
@@ -141,6 +142,141 @@ export const rodapeStyles = html`
       display: block;
       padding: 0.5rem;
       background: #3b5998;
+    }
+  </style>
+`;
+
+export const novaEmendaStyles = html`
+  <style>
+    :host {
+      font-size: var(--sl-font-size-small);
+    }
+    .form-group {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    table {
+      border-spacing: 0;
+    }
+    thead tr {
+      display: flex;
+      flex-direction: row;
+      border-bottom: 2px solid #000;
+    }
+    tbody {
+      height: 280px;
+      overflow: hidden;
+      overflow-y: scroll;
+      display: block;
+      table-layout: fixed;
+    }
+    td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      padding: 0.5rem;
+    }
+    tr {
+      cursor: pointer;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr[selected] {
+      background-color: #f7ff9c;
+    }
+    tbody tr:hover {
+      background-color: #fcffdd;
+    }
+    .col-1 {
+      width: 120px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .col-2 {
+    }
+    .tipo-proposicao,
+    .numero-proposicao,
+    .ano-proposicao {
+      width: 120px;
+    }
+    #ementa {
+      width: 100%;
+      font-family: var(--sl-font-size-small);
+    }
+    label {
+      font-weight: bold;
+    }
+    @media (max-width: 768px) {
+      tbody {
+        height: 250px;
+      }
+    }
+  </style>
+`;
+
+export const notaVersaoStyles = html`
+  <style>
+    :host {
+      font-size: var(--sl-font-size-medium);
+    }
+    .titulo {
+      margin-block-end: 0;
+      font-size: var(--sl-font-size-2x-large);
+    }
+    .conteudo {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      grid-gap: 30px;
+    }
+    .video-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      padding-top: 30px;
+      height: 0;
+      overflow: hidden;
+      margin: 15px 0 5px 0;
+      box-shadow: var(--sl-shadow-x-large);
+    }
+    .video-container iframe,
+    .video-container object,
+    .video-container embed {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .legenda {
+      font-size: var(--sl-font-size-small);
+      color: var(--sl-color-neutral-500);
+    }
+    @media (max-width: 768px) {
+      .conteudo {
+        display: flex;
+        flex-direction: column-reverse;
+      }
+      .video-container {
+        margin: 20px 0 5px 0;
+      }
+    }
+  </style>
+`;
+
+export const visualizarPdfStyles = html`
+  <style>
+    .pdf-area,
+    embed {
+      width: 100%;
+      height: 80vh;
+      min-height: 480px;
+    }
+    sl-dialog {
+      --body-spacing: 0;
+      border: 1px solid red;
     }
   </style>
 `;

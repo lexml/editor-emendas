@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
-
+import { notaVersaoStyles } from './app.css';
 @customElement('edt-notas-versao')
 export class EdtNotasVersao extends LitElement {
   createRenderRoot(): LitElement {
@@ -9,51 +9,7 @@ export class EdtNotasVersao extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <style>
-        :host {
-          font-size: var(--sl-font-size-medium);
-        }
-        .titulo {
-          margin-block-end: 0;
-          font-size: var(--sl-font-size-2x-large);
-        }
-        .conteudo {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          grid-gap: 30px;
-        }
-        .video-container {
-          position: relative;
-          padding-bottom: 56.25%;
-          padding-top: 30px;
-          height: 0;
-          overflow: hidden;
-          margin: 15px 0 5px 0;
-          box-shadow: var(--sl-shadow-x-large);
-        }
-        .video-container iframe,
-        .video-container object,
-        .video-container embed {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-        .legenda {
-          font-size: var(--sl-font-size-small);
-          color: var(--sl-color-neutral-500);
-        }
-        @media (max-width: 768px) {
-          .conteudo {
-            display: flex;
-            flex-direction: column-reverse;
-          }
-          .video-container {
-            margin: 20px 0 5px 0;
-          }
-        }
-      </style>
+      ${notaVersaoStyles}
       <h1 class="titulo">Nota de versão</h1>
       <span class="data-versao">Setembro 2022 - v1.0</span>
       <div class="conteudo">

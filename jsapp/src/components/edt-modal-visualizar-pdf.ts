@@ -1,6 +1,7 @@
 import { blobToBase64, downloadBase64 } from './../servicos/blobUtil';
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
+import { visualizarPdfStyles } from './app.css';
 
 @customElement('edt-modal-visualizar-pdf')
 export class EdtModalVisualizarPdf extends LitElement {
@@ -43,21 +44,9 @@ export class EdtModalVisualizarPdf extends LitElement {
       .join(' - ');
 
     return html`
+      ${visualizarPdfStyles}
       <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">
         <div class="pdf-area">
-          <style>
-            .pdf-area,
-            embed {
-              width: 100%;
-              height: 80vh;
-              min-height: 480px;
-            }
-            sl-dialog {
-              --body-spacing: 0;
-              border: 1px solid red;
-            }
-          </style>
-
           <embed
             src=${this.pdfBase64}
             type="application/pdf"
