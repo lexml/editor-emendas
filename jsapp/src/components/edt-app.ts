@@ -1,4 +1,4 @@
-import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
+// import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
 import { getUrn, buildContent } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { LitElement, html, TemplateResult } from 'lit';
@@ -33,6 +33,9 @@ export class EdtApp extends LitElement {
   private jsonixProposicao: any = {};
 
   @state()
+  private modo = 'emenda';
+
+  @state()
   private proposicao: Proposicao = {};
 
   createRenderRoot(): LitElement {
@@ -41,10 +44,6 @@ export class EdtApp extends LitElement {
 
   private isJsonixProposicaoLoaded(): boolean {
     return 'value' in this.jsonixProposicao;
-  }
-
-  private onChange(): void {
-    this.lexmlComandoEmenda.emenda = this.lexmlEta.getComandoEmenda();
   }
 
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
@@ -57,9 +56,9 @@ export class EdtApp extends LitElement {
     const urn = getUrn(this.jsonixProposicao);
     this.proposicao = {
       urn,
-      sigla: getSigla(urn),
-      numero: getNumero(urn),
-      ano: getAno(urn),
+      sigla, //sigla: getSigla(urn),
+      numero, //numero: getNumero(urn),
+      ano, //ano: getAno(urn),
       ementa: buildContent(
         this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial?.ementa
           .content
@@ -81,6 +80,13 @@ export class EdtApp extends LitElement {
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.modalOndeCouber.show();
     }
+  }
+
+  private criarNovaEmendaArtigoOndeCouber(): void {
+    this.modo = 'emendaArtigoOndeCouber';
+    this.jsonixProposicao = { ...this.jsonixProposicao };
+    // TODO: a linha abaixo deveria ficar dentro do lexml-eta
+    this.lexmlComandoEmenda.emenda = [];
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -141,8 +147,7 @@ export class EdtApp extends LitElement {
           </sl-dialog>
         </div>
         <lexml-emenda
-          @onchange=${this.onChange}
-          modo="emenda"
+          modo=${this.modo}
           .projetoNorma=${this.jsonixProposicao}
         ></lexml-emenda>
       </div>
@@ -153,7 +158,9 @@ export class EdtApp extends LitElement {
       >
       </edt-modal-nova-emenda>
       <edt-modal-visualizar-pdf></edt-modal-visualizar-pdf>
-      <edt-modal-onde-couber></edt-modal-onde-couber>
+      <edt-modal-onde-couber
+        @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
+      ></edt-modal-onde-couber>
     `;
   }
 

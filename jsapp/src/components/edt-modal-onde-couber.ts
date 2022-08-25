@@ -10,8 +10,18 @@ export class EdtModalOndeCouber extends LitElement {
     this.slDialog.show();
   }
 
+  private emitirEvento(): void {
+    this.dispatchEvent(
+      new CustomEvent('nova-emenda-artigo-onde-couber', {
+        composed: true,
+        bubbles: true,
+      })
+    );
+    this.slDialog.hide();
+  }
+
   render(): TemplateResult {
-    const tituloModal = 'Criar emenda onde couber';
+    const tituloModal = 'Criar emenda "artigo onde couber"';
 
     return html`
       <sl-dialog label=${tituloModal}>
@@ -34,10 +44,7 @@ export class EdtModalOndeCouber extends LitElement {
           vestibulum magna, non consequat nisl orci sed odio.
         </span>
 
-        <sl-button
-          slot="footer"
-          variant="default"
-          @click=${(): void => this.slDialog.hide()}
+        <sl-button slot="footer" variant="default" @click=${this.emitirEvento}
           >Criar emenda</sl-button
         >
 
