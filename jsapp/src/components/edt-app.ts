@@ -85,8 +85,6 @@ export class EdtApp extends LitElement {
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.jsonixProposicao = { ...this.jsonixProposicao };
-    // TODO: a linha abaixo deveria ficar dentro do lexml-eta
-    this.lexmlComandoEmenda.emenda = [];
   }
 
   private renderEditorEmenda(): TemplateResult {
