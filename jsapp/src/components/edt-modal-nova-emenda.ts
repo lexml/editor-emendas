@@ -49,7 +49,7 @@ export class EdtModalNovaEmenda extends LitElement {
 
   private emitirEvento(): void {
     this.dispatchEvent(
-      new CustomEvent('nova-emenda', {
+      new CustomEvent('nova-emenda-padrao', {
         detail: { proposicao: this.proposicaoSelecionada },
         composed: true,
         bubbles: true,

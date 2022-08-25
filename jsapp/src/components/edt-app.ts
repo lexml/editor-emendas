@@ -82,6 +82,11 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private criarNovaEmendaPadrao(proposicao: Proposicao): void {
+    this.modo = 'emenda';
+    this.loadTextoProposicao(proposicao);
+  }
+
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.jsonixProposicao = { ...this.jsonixProposicao };
@@ -151,12 +156,14 @@ export class EdtApp extends LitElement {
       </div>
 
       <edt-modal-nova-emenda
-        @nova-emenda=${(ev: CustomEvent): Promise<void> =>
-          this.loadTextoProposicao(ev.detail.proposicao)}
+        @nova-emenda-padrao=${(ev: CustomEvent): void =>
+          this.criarNovaEmendaPadrao(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
       <edt-modal-visualizar-pdf></edt-modal-visualizar-pdf>
       <edt-modal-onde-couber
+        @nova-emenda-padrao=${(): any =>
+          this.criarNovaEmendaPadrao({ ...this.proposicao })}
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
     `;
