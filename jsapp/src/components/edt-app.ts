@@ -46,6 +46,29 @@ export class EdtApp extends LitElement {
     return 'value' in this.jsonixProposicao;
   }
 
+  private async salvarPdf(): Promise<void> {
+    const emenda = this.lexmlEmenda.getEmenda();
+    if (emenda) {
+      const apiURL = 'http://localhost:8001/api/';
+      const response = await fetch(apiURL, {
+        method: 'POST',
+        body: JSON.stringify(emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+      const content = await response.blob();
+      const fileName = `${emenda.proposicao?.urn}.emenda.pdf`;
+      const objectUrl = URL.createObjectURL(content);
+      const a = document.createElement('a');
+
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+    }
+  }
+
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
     const { sigla, numero, ano } = proposicao;
     this.jsonixProposicao = await getProposicaoJsonix(
@@ -79,6 +102,8 @@ export class EdtApp extends LitElement {
       this.modalVisualizarPdf.show();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.modalOndeCouber.show();
+    } else if (ev.detail.itemMenu === 'salvar') {
+      this.salvarPdf();
     }
   }
 
