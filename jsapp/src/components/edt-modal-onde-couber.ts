@@ -21,7 +21,7 @@ export class EdtModalOndeCouber extends LitElement {
   }
 
   render(): TemplateResult {
-    const tituloModal = 'Criar emenda "artigo onde couber"';
+    const tituloModal = 'Criar emenda "dispositivos onde couber"';
 
     return html`
       ${ondeCouberStyles}
