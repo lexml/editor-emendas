@@ -84,7 +84,9 @@ export class EdtModalNovaEmenda extends LitElement {
                       this.selecionarProposicao(p, evt)}
                   >
                     <td class="col-1">${p.nomeProposicao}</td>
-                    <td class="col-2">${p.ementa}</td>
+                    <td class="col-2">
+                      <span class="ementa">${p.ementa}</span>
+                    </td>
                   </tr>
                 `;
               })}

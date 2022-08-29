@@ -188,6 +188,11 @@ export const novaEmendaStyles = html`
     tr[selected] {
       background-color: #f7ff9c;
     }
+
+    tr[selected]:hover {
+      background-color: #f7ff9c;
+    }
+
     tbody tr:hover {
       background-color: #fcffdd;
     }
@@ -196,7 +201,13 @@ export const novaEmendaStyles = html`
       text-align: center;
       white-space: nowrap;
     }
-    .col-2 {
+    .ementa {
+      overflow: clip;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      text-overflow: ellipsis;
+      pointer-events: none;
     }
     .tipo-proposicao,
     .numero-proposicao,
