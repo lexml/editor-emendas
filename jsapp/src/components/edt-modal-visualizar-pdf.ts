@@ -1,4 +1,4 @@
-import { blobToBase64, downloadBase64 } from './../servicos/blobUtil';
+import { blobToBase64 } from './../servicos/blobUtil';
 import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { visualizarPdfStyles } from './app.css';
@@ -8,20 +8,13 @@ export class EdtModalVisualizarPdf extends LitElement {
   @state()
   private pdfBase64: any = '';
 
-  @state()
-  private nomeProposicao?: string;
-
-  // @state()
-  // private tituloEmenda?: string;
-
   @property({ type: String }) tituloEmenda = '';
   @property({ type: Object }) emenda = {};
 
   @query('sl-dialog')
   private slDialog!: any;
 
-  public show(nomeProposicao?: string): void {
-    this.nomeProposicao = nomeProposicao;
+  public show(): void {
     this.slDialog.show();
   }
 
@@ -59,19 +52,8 @@ export class EdtModalVisualizarPdf extends LitElement {
     return changedProperties.has('emenda') && changedProperties.get('emenda');
   }
 
-  private async download(): Promise<void> {
-    // const newHandle = await (window as any).showSaveFilePicker();
-    // const writableStream = await newHandle.createWritable();
-    // await writableStream.write(base64ToBlob(this.pdfBase64, 'application/pdf'));
-    // await writableStream.close();
-    downloadBase64(this.pdfBase64, 'teste123.pdf');
-    // this.slDialog.hide();
-  }
-
   render(): TemplateResult {
-    const tituloModal = [this.nomeProposicao, this.tituloEmenda]
-      .filter(Boolean)
-      .join(' - ');
+    const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
 
     return html`
       ${visualizarPdfStyles}
@@ -84,25 +66,6 @@ export class EdtModalVisualizarPdf extends LitElement {
             width="100%"
           />
         </div>
-
-        <!-- <sl-button
-          slot="footer"
-          variant="default"
-          @click=${(): void => this.slDialog.hide()}
-          >Fechar</sl-button
-        >
-        <sl-button
-          slot="footer"
-          variant="primary"
-          @click=${(): any => this.download()}
-          >Download</sl-button
-        >
-        <sl-button
-          slot="footer"
-          variant="primary"
-          @click=${(): void => this.slDialog.hide()}
-          >Imprimir</sl-button
-        > -->
       </sl-dialog>
     `;
   }
