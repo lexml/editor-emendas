@@ -1,6 +1,6 @@
 import { blobToBase64, downloadBase64 } from './../servicos/blobUtil';
-import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query, state } from 'lit/decorators.js';
+import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { visualizarPdfStyles } from './app.css';
 
 @customElement('edt-modal-visualizar-pdf')
@@ -11,22 +11,52 @@ export class EdtModalVisualizarPdf extends LitElement {
   @state()
   private nomeProposicao?: string;
 
-  @state()
-  private tituloEmenda?: string;
+  // @state()
+  // private tituloEmenda?: string;
+
+  @property({ type: String }) tituloEmenda = '';
+  @property({ type: Object }) emenda = {};
 
   @query('sl-dialog')
   private slDialog!: any;
 
-  public show(nomeProposicao?: string, tituloEmenda?: string): void {
+  public show(nomeProposicao?: string): void {
     this.nomeProposicao = nomeProposicao;
-    this.tituloEmenda = tituloEmenda;
     this.slDialog.show();
   }
 
   protected async firstUpdated(): Promise<void> {
-    const resp = await fetch('/assets/exemplo.pdf');
-    const pdf = await resp.blob();
-    this.pdfBase64 = await blobToBase64(pdf);
+    if (Object.keys(this.emenda).length > 0) {
+      const apiURL = 'api/';
+      const resp = await fetch(apiURL, {
+        method: 'POST',
+        body: JSON.stringify(this.emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+      const pdf = await resp.blob();
+      this.pdfBase64 = await blobToBase64(pdf);
+    }
+  }
+
+  protected async updated(changedProperties: PropertyValues): Promise<void> {
+    if (this.hasChangedEmenda(changedProperties)) {
+      const apiURL = 'api/';
+      const resp = await fetch(apiURL, {
+        method: 'POST',
+        body: JSON.stringify(this.emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+      const pdf = await resp.blob();
+      this.pdfBase64 = await blobToBase64(pdf);
+    }
+  }
+
+  private hasChangedEmenda(changedProperties: PropertyValues): boolean {
+    return changedProperties.has('emenda') && changedProperties.get('emenda');
   }
 
   private async download(): Promise<void> {

@@ -12,6 +12,7 @@ export class EdtApp extends LitElement {
   // static styles = appStyles;
 
   @property({ type: String }) tituloEmenda = '';
+  @property({ type: Object }) emenda = {};
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -49,11 +50,11 @@ export class EdtApp extends LitElement {
   }
 
   private async salvarPdf(): Promise<void> {
-    const emenda = this.lexmlEmenda.getEmenda();
-    if (emenda) {
+    this.emenda = this.lexmlEmenda.getEmenda();
+    if (this.emenda) {
       const response = await fetch('api/', {
         method: 'POST',
-        body: JSON.stringify(emenda),
+        body: JSON.stringify(this.emenda),
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
@@ -100,6 +101,7 @@ export class EdtApp extends LitElement {
     if (ev.detail.itemMenu === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.itemMenu === 'visualizar') {
+      this.loadEmenda();
       this.modalVisualizarPdf.show();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.modalOndeCouber.show();
@@ -120,6 +122,10 @@ export class EdtApp extends LitElement {
 
   private atualizarTituloEmenda(evt: Event): void {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
+  }
+
+  private loadEmenda(): void {
+    this.emenda = this.lexmlEmenda.getEmenda();
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -193,7 +199,10 @@ export class EdtApp extends LitElement {
           this.criarNovaEmendaPadrao(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
-      <edt-modal-visualizar-pdf></edt-modal-visualizar-pdf>
+      <edt-modal-visualizar-pdf
+        tituloEmenda=${this.tituloEmenda}
+        .emenda=${this.emenda}
+      ></edt-modal-visualizar-pdf>
       <edt-modal-onde-couber
         @nova-emenda-padrao=${(): any =>
           this.criarNovaEmendaPadrao({ ...this.proposicao })}
