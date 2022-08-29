@@ -10,10 +10,10 @@ export class EdtNotasVersao extends LitElement {
   render(): TemplateResult {
     return html`
       ${notaVersaoStyles}
-      <h1 class="titulo">Nota de versão</h1>
-      <span class="data-versao">Setembro 2022 - v1.0</span>
       <div class="conteudo">
         <div class="conteudo-esquerdo">
+          <h1 class="titulo">Nota de versão</h1>
+          <span class="data-versao">Setembro 2022 - v1.0</span>
           <p>
             A autoria de normas jurídicas pode se beneficiar de uma solução que
             codifique as regras de técnica legislativa estabelecidas em normas
@@ -61,6 +61,24 @@ export class EdtNotasVersao extends LitElement {
           </ul>
         </div>
         <div class="conteudo-direito">
+          <sl-button
+            class="botao-emenda"
+            variant="primary"
+            size="large"
+            @click=${(): void => console.log('Nova emenda')}
+          >
+            <sl-icon slot="prefix" name="plus-square"></sl-icon>
+            Nova Emenda
+          </sl-button>
+          <sl-button
+            class="botao-emenda"
+            variant="primary"
+            size="large"
+            @click=${(): void => console.log('Nova emenda')}
+          >
+            <sl-icon slot="prefix" name="box-arrow-up-right"></sl-icon>
+            Abrir Emenda
+          </sl-button>
           <div class="video-container">
             <iframe
               src="https://www.youtube.com/embed/isJpwhicJX8"

@@ -229,8 +229,15 @@ export const notaVersaoStyles = html`
     }
     .conteudo {
       display: grid;
-      grid-template-columns: 2fr 1fr;
+      grid-template-columns: 3fr 1fr;
       grid-gap: 30px;
+    }
+    .conteudo-direito {
+      padding: 40px 0 5px 0;
+    }
+    .botao-emenda {
+      width: 100%;
+      margin-bottom: var(--sl-spacing-small);
     }
     .video-container {
       position: relative;
@@ -238,7 +245,6 @@ export const notaVersaoStyles = html`
       padding-top: 30px;
       height: 0;
       overflow: hidden;
-      margin: 15px 0 5px 0;
       box-shadow: var(--sl-shadow-x-large);
     }
     .video-container iframe,
@@ -254,13 +260,36 @@ export const notaVersaoStyles = html`
       font-size: var(--sl-font-size-small);
       color: var(--sl-color-neutral-500);
     }
+    @media (max-width: 992px) {
+      .conteudo {
+        grid-template-columns: 2fr 1fr;
+      }
+    }
     @media (max-width: 768px) {
+      .titulo {
+        margin: 0;
+      }
       .conteudo {
         display: flex;
         flex-direction: column-reverse;
       }
       .video-container {
-        margin: 20px 0 5px 0;
+        margin: 20px 0 0 0;
+      }
+      .conteudo-direito {
+        padding: 20px 0 5px 0;
+      }
+      .botao-emenda {
+        width: auto;
+        margin-right: var(--sl-spacing-x-small);
+        margin-bottom: 0;
+      }
+    }
+    @media (max-width: 480px) {
+      .botao-emenda {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: var(--sl-spacing-x-small);
       }
     }
   </style>
@@ -277,6 +306,34 @@ export const visualizarPdfStyles = html`
     sl-dialog {
       --body-spacing: 0;
       border: 1px solid red;
+    }
+  </style>
+`;
+
+export const ondeCouberStyles = html`
+  <style>
+    sl-dialog {
+      --width: 50vw;
+    }
+    @media (max-width: 1032px) {
+      sl-dialog {
+        --width: 70vw;
+      }
+    }
+    @media (max-width: 768px) {
+      sl-dialog {
+        --width: 100vw;
+      }
+    }
+    @media (max-width: 576px) {
+      sl-dialog {
+        --width: 100vw;
+      }
+      sl-button {
+        margin-left: 0;
+        width: 100%;
+        margin-bottom: var(--sl-spacing-x-small);
+      }
     }
   </style>
 `;
