@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query } from 'lit/decorators.js';
-
+import { ondeCouberStyles } from './app.css';
 @customElement('edt-modal-onde-couber')
 export class EdtModalOndeCouber extends LitElement {
   @query('sl-dialog')
@@ -24,19 +24,13 @@ export class EdtModalOndeCouber extends LitElement {
     const tituloModal = 'Criar emenda "artigo onde couber"';
 
     return html`
+      ${ondeCouberStyles}
       <sl-dialog label=${tituloModal}>
         <span>
           Orienta-se o uso preferencial de emendas padrão, com posicionamento
           dos novos dispositivos propostos, em vez de emendas de dispositivos
           onde couber.
         </span>
-
-        <sl-button
-          slot="footer"
-          variant="primary"
-          @click=${(): void => this.emitirEvento('nova-emenda-padrao')}
-          >Nova emenda padrão</sl-button
-        >
 
         <sl-button
           slot="footer"
@@ -52,6 +46,14 @@ export class EdtModalOndeCouber extends LitElement {
           autofocus
           @click=${(): void => this.slDialog.hide()}
           >Cancelar</sl-button
+        >
+
+        <sl-button
+          slot="footer"
+          variant="primary"
+          autofocus
+          @click=${(): void => this.emitirEvento('nova-emenda-padrao')}
+          >Nova emenda padrão</sl-button
         >
       </sl-dialog>
     `;
