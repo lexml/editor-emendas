@@ -3,8 +3,7 @@ package br.gov.lexml.editoremendas;
 import br.gov.lexml.eta.etaservices.parsing.xml.EmendaXmlUnmarshaller;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGeneratorBean;
-import br.gov.lexml.eta.etaservices.printing.pdf.TemplateLoaderBean;
-import br.gov.lexml.eta.etaservices.printing.pdf.VelocityTemplateProcessor;
+import br.gov.lexml.eta.etaservices.printing.pdf.VelocityTemplateProcessorFactory;
 import br.gov.lexml.eta.etaservices.printing.xml.EmendaXmlMarshaller;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,12 +21,12 @@ public class EmendaXmlConfiguration {
     }
 
     @Bean
-    VelocityTemplateProcessor velocityTemplateProcessor() {
-        return new VelocityTemplateProcessor(new TemplateLoaderBean());
+    VelocityTemplateProcessorFactory velocityTemplateProcessor() {
+        return new VelocityTemplateProcessorFactory();
     }
 
     @Bean
-    PdfGenerator pdfGenerator(VelocityTemplateProcessor templateProcessor, EmendaXmlMarshaller emendaXmlMarshaller) {
-        return new PdfGeneratorBean(templateProcessor, emendaXmlMarshaller);
+    PdfGenerator pdfGenerator(VelocityTemplateProcessorFactory templateProcessorFactory, EmendaXmlMarshaller emendaXmlMarshaller) {
+        return new PdfGeneratorBean(templateProcessorFactory, emendaXmlMarshaller);
     }
 }
