@@ -118,7 +118,7 @@ export class EdtApp extends LitElement {
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
-  private onInputChange(evt: Event): void {
+  private atualizarTituloEmenda(evt: Event): void {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
   }
 
@@ -163,7 +163,7 @@ export class EdtApp extends LitElement {
             <sl-input
               id="titulo-emenda"
               .value=${this.tituloEmenda.toString()}
-              @input=${(ev: Event): void => this.onInputChange(ev)}
+              @input=${(ev: Event): void => this.atualizarTituloEmenda(ev)}
               placeholder="Digite o título para a emenda"
               size="small"
               clearable
