@@ -176,6 +176,7 @@ export class EdtApp extends LitElement {
             ${unsafeHTML(this.proposicao.ementa)}
             <sl-button
               slot="footer"
+              autofocus
               onclick="document.querySelector('.dialog-emenda').hide()"
               variant="primary"
               >Fechar

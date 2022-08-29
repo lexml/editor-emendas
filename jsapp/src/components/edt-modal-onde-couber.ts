@@ -43,7 +43,6 @@ export class EdtModalOndeCouber extends LitElement {
         <sl-button
           slot="footer"
           variant="default"
-          autofocus
           @click=${(): void => this.slDialog.hide()}
           >Cancelar</sl-button
         >
