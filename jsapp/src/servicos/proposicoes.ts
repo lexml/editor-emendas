@@ -1,4 +1,4 @@
-import { Proposicao } from '../model/Proposicao';
+import { Proposicao } from '../model/proposicao';
 
 export const getProposicaoJsonix = async (
   sigla: string,
