@@ -221,9 +221,15 @@ export const novaEmendaStyles = html`
     label {
       font-weight: bold;
     }
+    sl-dialog {
+      --width: 80vw;
+    }
     @media (max-width: 768px) {
       tbody {
         height: 250px;
+      }
+      sl-dialog {
+        --width: 100vw;
       }
     }
   </style>

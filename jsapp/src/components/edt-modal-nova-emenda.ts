@@ -79,6 +79,7 @@ export class EdtModalNovaEmenda extends LitElement {
               ${this.proposicoes.map(p => {
                 return html`
                   <tr
+                    tabindex="0"
                     class="proposicao"
                     @click=${(evt: Event): any =>
                       this.selecionarProposicao(p, evt)}
@@ -98,7 +99,7 @@ export class EdtModalNovaEmenda extends LitElement {
   render(): TemplateResult {
     return html`
       ${novaEmendaStyles}
-      <sl-dialog label="Nova emenda" style="--width: 80vw;">
+      <sl-dialog label="Nova emenda">
         <div @keyup=${this.processarKeyup}>
           <div class="form-group">
             <sl-select
