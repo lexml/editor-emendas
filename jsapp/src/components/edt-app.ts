@@ -5,7 +5,7 @@ import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { appStyles } from './app.css';
-import { Proposicao } from '../model/Proposicao';
+import { Proposicao } from '../model/proposicao';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
