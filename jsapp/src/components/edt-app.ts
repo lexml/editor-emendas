@@ -2,7 +2,7 @@
 import { getUrn, buildContent } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { appStyles } from './app.css';
 import { Proposicao } from '../model/Proposicao';
@@ -10,6 +10,8 @@ import { Proposicao } from '../model/Proposicao';
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   // static styles = appStyles;
+
+  @property({ type: String }) tituloEmenda = '';
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -49,8 +51,7 @@ export class EdtApp extends LitElement {
   private async salvarPdf(): Promise<void> {
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
-      const apiURL = 'http://localhost:8001/api/';
-      const response = await fetch(apiURL, {
+      const response = await fetch('api/', {
         method: 'POST',
         body: JSON.stringify(emenda),
         headers: {
@@ -58,7 +59,7 @@ export class EdtApp extends LitElement {
         },
       });
       const content = await response.blob();
-      const fileName = `${emenda.proposicao?.urn}.emenda.pdf`;
+      const fileName = `${this.tituloEmenda || 'nova'}.emenda.pdf`;
       const objectUrl = URL.createObjectURL(content);
       const a = document.createElement('a');
 
@@ -117,6 +118,10 @@ export class EdtApp extends LitElement {
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
+  private onInputChange(evt: Event): void {
+    this.tituloEmenda = (evt.target as HTMLInputElement).value;
+  }
+
   private renderEditorEmenda(): TemplateResult {
     return html`
       ${appStyles}
@@ -156,6 +161,9 @@ export class EdtApp extends LitElement {
           </a>
           <div>
             <sl-input
+              id="titulo-emenda"
+              .value=${this.tituloEmenda.toString()}
+              @input=${(ev: Event): void => this.onInputChange(ev)}
               placeholder="Digite o título para a emenda"
               size="small"
               clearable
