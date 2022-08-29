@@ -30,7 +30,9 @@ export class EdtMenu extends LitElement {
             Nova
           </sl-menu-item>
           <sl-menu-item>Abrir</sl-menu-item>
-          <sl-menu-item>Salvar</sl-menu-item>
+          <sl-menu-item @click=${(): void => this.emitirEvento('salvar')}>
+            Salvar
+          </sl-menu-item>
           <sl-menu-item @click=${(): void => this.emitirEvento('visualizar')}>
             Visualizar
           </sl-menu-item>
@@ -49,7 +51,9 @@ export class EdtMenu extends LitElement {
         >Nova</sl-button
       >
       <sl-button size="small">Abrir</sl-button>
-      <sl-button size="small">Salvar</sl-button>
+      <sl-button size="small" @click=${(): void => this.emitirEvento('salvar')}
+        >Salvar</sl-button
+      >
       <sl-button
         size="small"
         @click=${(): void => this.emitirEvento('visualizar')}
