@@ -10,6 +10,24 @@ export class EdtNotasVersao extends LitElement {
   render(): TemplateResult {
     return html`
       ${notaVersaoStyles}
+      <sl-button
+        class="botao-emenda"
+        variant="primary"
+        size="large"
+        @click=${(): void => console.log('Nova emenda')}
+      >
+        <sl-icon slot="prefix" name="plus-square"></sl-icon>
+        Nova Emenda
+      </sl-button>
+      <sl-button
+        class="botao-emenda"
+        variant="primary"
+        size="large"
+        @click=${(): void => console.log('Nova emenda')}
+      >
+        <sl-icon slot="prefix" name="box-arrow-up-right"></sl-icon>
+        Abrir Emenda
+      </sl-button>
       <div class="conteudo">
         <div class="conteudo-esquerdo">
           <h1 class="titulo">Nota de versão</h1>
@@ -61,24 +79,6 @@ export class EdtNotasVersao extends LitElement {
           </ul>
         </div>
         <div class="conteudo-direito">
-          <sl-button
-            class="botao-emenda"
-            variant="primary"
-            size="large"
-            @click=${(): void => console.log('Nova emenda')}
-          >
-            <sl-icon slot="prefix" name="plus-square"></sl-icon>
-            Nova Emenda
-          </sl-button>
-          <sl-button
-            class="botao-emenda"
-            variant="primary"
-            size="large"
-            @click=${(): void => console.log('Nova emenda')}
-          >
-            <sl-icon slot="prefix" name="box-arrow-up-right"></sl-icon>
-            Abrir Emenda
-          </sl-button>
           <div class="video-container">
             <iframe
               src="https://www.youtube.com/embed/isJpwhicJX8"

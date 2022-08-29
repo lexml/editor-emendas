@@ -241,20 +241,27 @@ export const notaVersaoStyles = html`
       font-size: var(--sl-font-size-medium);
     }
     .titulo {
-      margin-block-end: 0;
+      margin: 10px 0 0 0;
       font-size: var(--sl-font-size-2x-large);
+      color: var(--sl-color-gray-900);
+    }
+    .data-versao {
+      color: var(--sl-color-gray-500);
     }
     .conteudo {
       display: grid;
-      grid-template-columns: 3fr 1fr;
+      grid-template-columns: 2fr 1fr;
       grid-gap: 30px;
     }
     .conteudo-direito {
-      padding: 40px 0 5px 0;
+      padding: 20px 0 5px 0;
+    }
+    .conteudo-esquerdo {
+      padding: 0 0 20px 0;
     }
     .botao-emenda {
-      width: 100%;
-      margin-bottom: var(--sl-spacing-small);
+      margin-top: var(--sl-spacing-large);
+      margin-right: var(--sl-spacing-small);
     }
     .video-container {
       position: relative;
@@ -277,11 +284,6 @@ export const notaVersaoStyles = html`
       font-size: var(--sl-font-size-small);
       color: var(--sl-color-neutral-500);
     }
-    @media (max-width: 992px) {
-      .conteudo {
-        grid-template-columns: 2fr 1fr;
-      }
-    }
     @media (max-width: 768px) {
       .titulo {
         margin: 0;
@@ -289,12 +291,13 @@ export const notaVersaoStyles = html`
       .conteudo {
         display: flex;
         flex-direction: column-reverse;
+        grid-gap: 10px;
       }
       .video-container {
         margin: 20px 0 0 0;
       }
       .conteudo-direito {
-        padding: 20px 0 5px 0;
+        padding: 0 0 5px 0;
       }
       .botao-emenda {
         width: auto;
@@ -305,8 +308,8 @@ export const notaVersaoStyles = html`
     @media (max-width: 480px) {
       .botao-emenda {
         width: 100%;
+        margin-top: var(--sl-spacing-medium);
         margin-right: 0;
-        margin-bottom: var(--sl-spacing-x-small);
       }
     }
   </style>
