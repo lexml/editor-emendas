@@ -81,7 +81,7 @@ export const appStyles = html`
     }
 
     sl-split-panel {
-      --divider-width: 10px !important;
+      --divider-width: 15px !important;
     }
 
     sl-split-panel::part(divider) {
