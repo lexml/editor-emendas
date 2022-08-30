@@ -22,7 +22,7 @@ export class EdtMenu extends LitElement {
       ${menuStyles}
 
       <sl-dropdown>
-        <sl-button class="sidebar-toggle" slot="trigger" size="small">
+        <sl-button class="menu-toggle" slot="trigger" size="small">
           <sl-icon name="list" label="Menu"></sl-icon>
         </sl-button>
         <sl-menu>

@@ -47,13 +47,12 @@ export const appStyles = html`
       flex-direction: column;
     }
     .detalhe-emenda {
-      padding: 10px;
+      padding: 15px 15px;
       background-color: #dfe9ff;
-      margin: 10px;
       border-radius: 5px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 5px;
     }
     .detalhe-emenda--titulo {
       display: flex;
@@ -79,6 +78,14 @@ export const appStyles = html`
     edt-notas-versao {
       display: block;
       padding: 0 20px;
+    }
+
+    sl-split-panel {
+      --divider-width: 10px !important;
+    }
+
+    sl-split-panel::part(divider) {
+      background-color: #dfe9ff;
     }
   </style>
 `;
@@ -111,22 +118,37 @@ export const menuStyles = html`
     edt-menu {
       display: flex;
       flex-direction: row;
-      padding: 0.5rem;
-      background: #eee;
+      padding: 0px 5px;
+      background: var(--sl-color-gray-200);
+      border-bottom: 1px solid var(--sl-color-gray-300);
       flex-flow: wrap;
-      gap: 2px;
+      gap: 0;
+      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
     }
 
     edt-menu sl-button {
       display: flex;
     }
-    .sidebar-toggle {
+
+    edt-menu sl-icon {
+      font-size: 28px;
+    }
+
+    edt-menu sl-button::part(base) {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--sl-color-neutral-700);
+    }
+    .menu-toggle {
       display: none;
       cursor: pointer;
     }
     @media (max-width: 576px) {
-      .sidebar-toggle {
+      .menu-toggle {
         display: flex;
+      }
+      edt-menu sl-button::part(label) {
+        padding: 0 4px;
       }
       edt-menu sl-button {
         display: none;
@@ -260,8 +282,7 @@ export const notaVersaoStyles = html`
       padding: 0 0 20px 0;
     }
     .botao-emenda {
-      margin-top: var(--sl-spacing-large);
-      margin-right: var(--sl-spacing-small);
+      margin: 30px 20px 20px 0;
     }
     .video-container {
       position: relative;
