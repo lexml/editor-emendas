@@ -41,7 +41,7 @@ export const appStyles = html`
       overflow-y: scroll;
     }
     .editor-emendas {
-      height: calc(100% - 100px);
+      height: calc(100% - 84px);
       width: 100%;
       display: flex;
       flex-direction: column;
