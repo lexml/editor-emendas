@@ -10,7 +10,11 @@ export class EdtRodape extends LitElement {
   render(): TemplateResult {
     return html`
       ${rodapeStyles}
-      <footer>Congresso Nacional</footer>
+      <footer>
+        <a href="https://www.congressonacional.leg.br/" target="_blank"
+          >Congresso Nacional</a
+        >
+      </footer>
     `;
   }
 }
