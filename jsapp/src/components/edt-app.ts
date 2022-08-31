@@ -95,6 +95,8 @@ export class EdtApp extends LitElement {
       this.proposicao.numero +
       '/' +
       this.proposicao.ano;
+
+    this.tituloEmenda = 'Emenda à ' + this.proposicao.nomeProposicao;
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
@@ -170,7 +172,7 @@ export class EdtApp extends LitElement {
               id="titulo-emenda"
               .value=${this.tituloEmenda.toString()}
               @input=${(ev: Event): void => this.atualizarTituloEmenda(ev)}
-              placeholder="Digite o título para a emenda"
+              placeholder="Emenda à ${this.proposicao.nomeProposicao}"
               size="small"
               clearable
             ></sl-input>
