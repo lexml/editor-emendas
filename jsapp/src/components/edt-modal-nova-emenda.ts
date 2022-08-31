@@ -99,7 +99,7 @@ export class EdtModalNovaEmenda extends LitElement {
   render(): TemplateResult {
     return html`
       ${novaEmendaStyles}
-      <sl-dialog label="Nova emenda">
+      <sl-dialog label="Selecionar texto para emendamento">
         <div @keyup=${this.processarKeyup}>
           <div class="form-group">
             <sl-select
