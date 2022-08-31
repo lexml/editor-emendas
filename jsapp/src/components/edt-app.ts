@@ -52,7 +52,7 @@ export class EdtApp extends LitElement {
   private async salvarPdf(): Promise<void> {
     this.emenda = this.lexmlEmenda.getEmenda();
     if (this.emenda) {
-      const response = await fetch('api/', {
+      const response = await fetch('api/emenda/json2pdf', {
         method: 'POST',
         body: JSON.stringify(this.emenda),
         headers: {

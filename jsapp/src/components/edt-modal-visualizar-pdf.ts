@@ -20,7 +20,7 @@ export class EdtModalVisualizarPdf extends LitElement {
 
   protected async firstUpdated(): Promise<void> {
     if (Object.keys(this.emenda).length > 0) {
-      const apiURL = 'api/';
+      const apiURL = 'api/emenda/json2pdf';
       const resp = await fetch(apiURL, {
         method: 'POST',
         body: JSON.stringify(this.emenda),
@@ -35,7 +35,7 @@ export class EdtModalVisualizarPdf extends LitElement {
 
   protected async updated(changedProperties: PropertyValues): Promise<void> {
     if (this.hasChangedEmenda(changedProperties)) {
-      const apiURL = 'api/';
+      const apiURL = 'api/emenda/json2pdf';
       const resp = await fetch(apiURL, {
         method: 'POST',
         body: JSON.stringify(this.emenda),
