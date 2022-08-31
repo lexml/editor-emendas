@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
@@ -55,6 +56,12 @@ public class EditorApiController {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     	byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
         jsonGenerator.extractJsonFromPdf(new ByteArrayInputStream(pdfBytes), response.getWriter());
+    }
+    
+    @PostMapping(path = "/emenda/pdf2jsonBinary", produces = MediaType.APPLICATION_JSON_VALUE)
+    public void abreEmendaBase64(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
     }
     
     // TODO Remover se a outra forma for melhor
