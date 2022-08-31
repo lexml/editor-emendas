@@ -97,7 +97,7 @@ export class EdtApp extends LitElement {
       this.proposicao.ano;
     if (this.modo === 'emendaArtigoOndeCouber') {
       this.tituloEmenda =
-        'Emenda Artigo Onde Couber à ' + this.proposicao.nomeProposicao;
+        'Emenda Dispositivos Onde Couber à ' + this.proposicao.nomeProposicao;
     } else if (this.modo === 'emenda') {
       this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
     }
@@ -125,7 +125,7 @@ export class EdtApp extends LitElement {
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda =
-      'Emenda Artigo Onde Couber à ' + this.proposicao.nomeProposicao;
+      'Emenda Dispositivos Onde Couber à ' + this.proposicao.nomeProposicao;
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
