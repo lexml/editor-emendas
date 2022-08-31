@@ -2,6 +2,7 @@
 
 /** Use Hot Module replacement by adding --hmr to the start command */
 const hmr = process.argv.includes('--hmr');
+import proxy from 'koa-proxies';
 
 export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
   open: '/',
@@ -10,6 +11,13 @@ export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
   nodeResolve: {
     exportConditions: ['browser', 'development'],
   },
+
+  port: 8000,
+  middleware: [
+    proxy('/api/', {
+      target: 'http://localhost:8080/',
+    }),
+  ],
   
   /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
   // esbuildTarget: 'auto'
