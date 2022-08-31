@@ -95,8 +95,12 @@ export class EdtApp extends LitElement {
       this.proposicao.numero +
       '/' +
       this.proposicao.ano;
-
-    this.tituloEmenda = 'Emenda à ' + this.proposicao.nomeProposicao;
+    if (this.modo === 'emendaArtigoOndeCouber') {
+      this.tituloEmenda =
+        'Emenda Artigo Onde Couber à ' + this.proposicao.nomeProposicao;
+    } else if (this.modo === 'emenda') {
+      this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+    }
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
@@ -114,11 +118,14 @@ export class EdtApp extends LitElement {
 
   private criarNovaEmendaPadrao(proposicao: Proposicao): void {
     this.modo = 'emenda';
+    this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
     this.loadTextoProposicao(proposicao);
   }
 
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
+    this.tituloEmenda =
+      'Emenda Artigo Onde Couber à ' + this.proposicao.nomeProposicao;
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
