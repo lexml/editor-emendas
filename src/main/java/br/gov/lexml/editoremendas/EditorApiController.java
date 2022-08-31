@@ -1,7 +1,9 @@
 package br.gov.lexml.editoremendas;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -48,15 +50,16 @@ public class EditorApiController {
         pdfGenerator.generate(emenda, response.getOutputStream());
     }
     
-//    @PostMapping(path = "/emenda/pdf2json", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-//    public void abreEmenda(@RequestBody final String pdfBase64, HttpServletResponse response) throws Exception {
-//    	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-//    	byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64.getBytes());
-//        jsonGenerator.extractJsonFromPdf(new ByteArrayInputStream(pdfBytes), response.getWriter());
-//    }
+    @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
+    public void abreEmendaBase64(@RequestBody final byte[] pdfBase64, HttpServletResponse response) throws Exception {
+    	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+    	byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
+        jsonGenerator.extractJsonFromPdf(new ByteArrayInputStream(pdfBytes), response.getWriter());
+    }
     
-    @PostMapping(path = "/emenda/pdf2json", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmenda(@RequestParam("file") MultipartFile file, HttpServletResponse response) throws Exception {
+    // TODO Remover se a outra forma for melhor
+    @PostMapping(path = "/emenda/pdf2jsonMultipart", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void abreEmendaMultipart(@RequestParam("file") MultipartFile file, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     	jsonGenerator.extractJsonFromPdf(file.getInputStream(), response.getWriter());
     }
