@@ -178,7 +178,7 @@ ${this.proposicaoSelecionada?.ementa ?? ''}</textarea
           variant="primary"
           @click=${(): void => this.emitirEvento()}
           ?disabled=${!this.proposicaoSelecionada}
-          >Ok</sl-button
+          >Selecionar</sl-button
         >
       </sl-dialog>
     `;
