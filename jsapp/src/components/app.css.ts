@@ -2,25 +2,8 @@ import { html } from 'lit';
 export const appStyles = html`
   <style>
     :host {
-      /* min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        font-size: calc(10px + 2vmin);
-        color: #1a2b42;
-        max-width: 960px;
-        margin: 0 auto;
-        text-align: center; */
       background-color: var(--editor-emendas-background-color);
     }
-
-    /* * {
-      height: 100%;
-      width: 100%;
-      padding: 0;
-      margin: 0;
-    } */
 
     body,
     html {
@@ -87,6 +70,12 @@ export const appStyles = html`
     sl-split-panel::part(divider) {
       background-color: #dfe9ff;
     }
+
+    @media (max-width: 768px) {
+      sl-split-panel {
+        --divider-width: 0px !important;
+      }
+    }
   </style>
 `;
 
@@ -119,8 +108,8 @@ export const menuStyles = html`
       display: flex;
       flex-direction: row;
       padding: 0px 5px;
-      background: var(--sl-color-gray-200);
-      border-bottom: 1px solid var(--sl-color-gray-300);
+      background: var(--sl-color-gray-100);
+      border-bottom: 1px solid var(--sl-color-gray-200);
       flex-flow: wrap;
       gap: 0;
       box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
