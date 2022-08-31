@@ -154,6 +154,11 @@ export const rodapeStyles = html`
       padding: 0.5rem;
       background: #3b5998;
     }
+
+    edt-rodape a {
+      color: white;
+      text-decoration: none;
+    }
   </style>
 `;
 
