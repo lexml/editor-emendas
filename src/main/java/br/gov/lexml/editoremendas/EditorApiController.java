@@ -1,6 +1,7 @@
 package br.gov.lexml.editoremendas;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -46,9 +47,11 @@ public class EditorApiController {
     }
 
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-    public void salvaEmenda(@RequestBody final EmendaPojo emenda, HttpServletResponse response) throws IOException {
+    public byte[] salvaEmenda(@RequestBody final EmendaPojo emenda) throws IOException {
         LOGGER.info("emenda: {}", emenda);
-        pdfGenerator.generate(emenda, response.getOutputStream());
+        final ByteArrayOutputStream os = new ByteArrayOutputStream();
+        pdfGenerator.generate(emenda, os);
+        return os.toByteArray();
     }
     
     @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
