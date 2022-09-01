@@ -73,10 +73,7 @@ export class EdtApp extends LitElement {
   }
 
   private abrirPdf(): void {
-    const fileUpload = document.getElementById('fileUpload');
-    if (fileUpload !== null) {
-      fileUpload.click();
-    }
+    (document.querySelector('#fileUpload') as HTMLInputElement).click();
   }
 
   private async selecionaArquivo(event: Event): Promise<void> {
@@ -85,6 +82,7 @@ export class EdtApp extends LitElement {
     if (fileInput && fileInput.files) {
       const data = new FormData();
       data.append('file', fileInput.files[0]);
+
       const response = await fetch('api/emenda/pdf2jsonBinary/', {
         method: 'POST',
         body: data,
@@ -93,9 +91,11 @@ export class EdtApp extends LitElement {
         },
       });
       const content = await response.json();
-      this.loadTextoProposicao(content.proposicao);
+
+      await this.loadTextoProposicao(content.proposicao);
       this.lexmlEmenda.setEmenda(content);
-      console.log(content);
+
+      (document.querySelector('#fileUpload') as HTMLInputElement).value = '';
     }
   }
 
@@ -270,7 +270,7 @@ export class EdtApp extends LitElement {
         type="file"
         id="fileUpload"
         accept="application/pdf"
-        @change="${this.selecionaArquivo}"
+        @input="${this.selecionaArquivo}"
         style="display: none"
       />
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
