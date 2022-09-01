@@ -79,8 +79,24 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private selecionaArquivo(event: Event): void {
-    console.log(event);
+  private async selecionaArquivo(event: Event): Promise<void> {
+    const fileInput = event.target as HTMLInputElement;
+
+    if (fileInput && fileInput.files) {
+      const data = new FormData();
+      data.append('file', fileInput.files[0]);
+      const response = await fetch('api/emenda/pdf2jsonBinary/', {
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/pdf;charset=UTF-8',
+        },
+      });
+      const content = await response.json();
+      this.loadTextoProposicao(content.proposicao);
+      this.lexmlEmenda.setEmenda(content);
+      console.log(content);
+    }
   }
 
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
