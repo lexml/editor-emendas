@@ -12,6 +12,7 @@ export class EdtApp extends LitElement {
   // static styles = appStyles;
 
   @property({ type: String }) tituloEmenda = '';
+  @property({ type: String }) labelTipoEmenda = '';
   @property({ type: Object }) emenda = {};
 
   @query('lexml-emenda')
@@ -97,9 +98,11 @@ export class EdtApp extends LitElement {
       this.proposicao.ano;
     if (this.modo === 'emendaArtigoOndeCouber') {
       this.tituloEmenda =
-        'Emenda Dispositivos Onde Couber à ' + this.proposicao.nomeProposicao;
+        'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
+      this.labelTipoEmenda = 'Emenda onde couber';
     } else if (this.modo === 'emenda') {
       this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+      this.labelTipoEmenda = 'Emenda padrão';
     }
   }
 
@@ -119,13 +122,15 @@ export class EdtApp extends LitElement {
   private criarNovaEmendaPadrao(proposicao: Proposicao): void {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+    this.labelTipoEmenda = 'Emenda padrão';
     this.loadTextoProposicao(proposicao);
   }
 
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda =
-      'Emenda Dispositivos Onde Couber à ' + this.proposicao.nomeProposicao;
+      'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
+    this.labelTipoEmenda = 'Emenda onde couber';
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
@@ -155,6 +160,9 @@ export class EdtApp extends LitElement {
             <span class="detalhe-emenda--nome-proposicao">
               ${this.proposicao.nomeProposicao} -
             </span>
+            <sl-tag variant="primary" size="small" pill
+              >${this.labelTipoEmenda}</sl-tag
+            >
             <span class="detalhe-emenda--ementa">
               ${unsafeHTML(this.proposicao.ementa)}
             </span>

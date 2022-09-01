@@ -40,6 +40,7 @@ export const appStyles = html`
     .detalhe-emenda--titulo {
       display: flex;
       flex-direction: row;
+      align-items: center;
       gap: 5px;
       text-decoration: none;
       color: #1a2b42;
