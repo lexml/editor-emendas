@@ -54,7 +54,7 @@ pipeline {
                 branch 'develop'
             }
             steps {
-                build job: 'stack-leg-editor-emendas/main',
+                build job: 'stack-leg-editor-emendas/master',
                         parameters: [
                                 string(name: 'ambiente', value: 'desenvolvimento'),
                                 imageTag(imageName: 'leg/editor-emendas', imageTag: 'latest', name: 'image')]
