@@ -23,7 +23,7 @@ pipeline {
                 dir('jsapp') {
                     withNPM(npmrcConfig: 'a609eeee-735e-43fa-b15e-a9e30841616c') {
                         sh 'npm install'
-                        sh 'npm run build-dsv'
+                        sh 'npm run build'
                     }
                 }
             }
@@ -54,7 +54,7 @@ pipeline {
                 branch 'develop'
             }
             steps {
-                build job: 'informacao-juridica/stack-leg-editor-emendas/main',
+                build job: 'stack-leg-editor-emendas',
                         parameters: [
                                 string(name: 'ambiente', value: 'desenvolvimento'),
                                 imageTag(imageName: 'leg/editor-emendas', imageTag: 'latest', name: 'image')]
