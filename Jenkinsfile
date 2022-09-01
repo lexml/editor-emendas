@@ -23,7 +23,7 @@ pipeline {
                 dir('jsapp') {
                     withNPM(npmrcConfig: 'a609eeee-735e-43fa-b15e-a9e30841616c') {
                         sh 'npm install'
-                        sh 'npm run build-dsv'
+                        sh 'npm run build'
                     }
                 }
             }
