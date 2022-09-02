@@ -30,7 +30,7 @@ export const appStyles = html`
       flex-direction: column;
     }
     .detalhe-emenda {
-      padding: 15px 15px;
+      padding: 9px 15px 14px 15px;
       background-color: #dfe9ff;
       border-radius: 5px;
       display: flex;
