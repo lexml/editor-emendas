@@ -15,10 +15,10 @@ export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
   port: 8000,
   middleware: [
     proxy('/api/', {
-      target: 'http://localhost:8080/',
+      target: 'http://localhost:8080/editor-emendas/',
     }),
   ],
-  
+
   /** Compile JS for older browsers. Requires @web/dev-server-esbuild plugin */
   // esbuildTarget: 'auto'
 
