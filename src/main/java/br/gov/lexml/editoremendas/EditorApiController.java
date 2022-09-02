@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.client.RestTemplate;
 
 import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
 import br.gov.lexml.eta.etaservices.printing.json.EmendaPojo;
@@ -67,11 +68,18 @@ public class EditorApiController {
         jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
     }
     
-    // TODO Remover se a outra forma for melhor
-    @PostMapping(path = "/emenda/pdf2jsonMultipart", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmendaMultipart(@RequestParam("file") MultipartFile file, HttpServletResponse response) throws Exception {
-    	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-    	jsonGenerator.extractJsonFromPdf(file.getInputStream(), response.getWriter());
+    // Proxy para evitar problemas de cross origin
+    @GetMapping(path = "/proposicoes", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String listaProposicoes(@RequestParam() String sigla, 
+    		@RequestParam() String ano, @RequestParam(required = false) String numero, 
+    		RestTemplate restTemplate) throws Exception {   	
+
+    	// https://legis.senado.gov.br/legis/resources/lex/proposicoes/MPV/2022?numero=1096
+    	String url = "https://legis.senado.gov.br/legis/resources/lex/proposicoes/" +
+    			sigla + "/" + ano + (numero != null ? "?numero=" + numero : "");
+    	
+    	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
+    	return entity.getBody();
     }
     
 }
