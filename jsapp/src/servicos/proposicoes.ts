@@ -22,13 +22,12 @@ export const pesquisarProposicoes = async (
   numero: string,
   ano: number
 ): Promise<Proposicao[]> => {
-  const url = new URL('https://emendas-api.herokuapp.com/proposicoes');
-  url.search = new URLSearchParams(
+  const searchParams = new URLSearchParams(
     numero
       ? { sigla, numero, ano: ano.toString() }
       : { sigla, ano: ano.toString() }
   ).toString();
-  const resp = await fetch(url);
+  const resp = await fetch('api/proposicoes?' + searchParams);
   const proposicoes = await resp.json();
   return proposicoes.map((p: any) => ({
     sigla: p.sigla,
