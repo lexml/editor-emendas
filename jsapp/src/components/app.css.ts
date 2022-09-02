@@ -23,6 +23,9 @@ export const appStyles = html`
       overflow: hidden;
       overflow-y: scroll;
     }
+    .no-scroll {
+      overflow-y: hidden;
+    }
     .editor-emendas {
       height: calc(100% - 84px);
       width: 100%;
@@ -45,10 +48,14 @@ export const appStyles = html`
       text-decoration: none;
       color: #1a2b42;
       font-size: var(--sl-font-size-small);
+      height: 24px;
     }
     .detalhe-emenda--nome-proposicao {
       white-space: nowrap;
       font-weight: bold;
+    }
+    sl-tag::part(base) {
+      box-sizing: border-box;
     }
     .detalhe-emenda--ementa {
       display: block;

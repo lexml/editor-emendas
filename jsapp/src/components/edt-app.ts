@@ -160,9 +160,13 @@ export class EdtApp extends LitElement {
             <span class="detalhe-emenda--nome-proposicao">
               ${this.proposicao.nomeProposicao} -
             </span>
-            <sl-tag variant="primary" size="small" pill
-              >${this.labelTipoEmenda}</sl-tag
-            >
+
+            ${this.modo === 'emendaArtigoOndeCouber'
+              ? html`<sl-tag variant="primary" size="small" pill
+                  >${this.labelTipoEmenda}</sl-tag
+                >`
+              : ''}
+
             <span class="detalhe-emenda--ementa">
               ${unsafeHTML(this.proposicao.ementa)}
             </span>
@@ -233,7 +237,7 @@ export class EdtApp extends LitElement {
     return html`
       <edt-cabecalho></edt-cabecalho>
       <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
-      <main>
+      <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
           ? ''
           : html`<edt-notas-versao></edt-notas-versao>`}
