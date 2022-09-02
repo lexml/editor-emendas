@@ -5,15 +5,12 @@ export const getProposicaoJsonix = async (
   numero: string,
   ano: number
 ): Promise<any> => {
-  const url = new URL(
-    'https://emendas-api.herokuapp.com/proposicao/texto-lexml/json'
-  );
-  url.search = new URLSearchParams({
+  const searchParams = new URLSearchParams({
     sigla,
     numero,
     ano: ano.toString(),
   }).toString();
-  const resp = await fetch(url);
+  const resp = await fetch('api/proposicao/texto-json?' + searchParams);
   return await resp.json();
 };
 

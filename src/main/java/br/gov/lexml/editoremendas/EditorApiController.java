@@ -82,4 +82,17 @@ public class EditorApiController {
     	return entity.getBody();
     }
     
+    // Proxy para chamar serviço temporário heroku em aplicação hospedada no senado
+    @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getTextoJson(@RequestParam() String sigla, 
+    		@RequestParam() String ano, @RequestParam() String numero,
+    		RestTemplate restTemplate, HttpServletRequest request) throws Exception {   	
+
+    	String url = "https://emendas-api.herokuapp.com/proposicao/texto-lexml/json" +
+    			"?sigla=" + sigla + "&numero=" + numero + "&ano=" + ano;
+    	
+    	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
+    	return entity.getBody();
+    }
+    
 }

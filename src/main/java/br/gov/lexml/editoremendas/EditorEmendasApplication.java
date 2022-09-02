@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 public class EditorEmendasApplication {
 
 	public static void main(String[] args) {
+		System.setProperty("java.net.useSystemProxies", "true");
 		SpringApplication.run(EditorEmendasApplication.class, args);
 	}
 	
