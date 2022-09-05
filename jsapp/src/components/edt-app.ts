@@ -92,6 +92,8 @@ export class EdtApp extends LitElement {
       });
       const content = await response.json();
 
+      this.lexmlEmenda.resetaEmenda();
+
       await this.loadTextoProposicao(content.proposicao);
       this.lexmlEmenda.setEmenda(content);
 
