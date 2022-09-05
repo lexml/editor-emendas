@@ -1,11 +1,11 @@
 // import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
-import { getUrn, buildContent } from './../model/lexml/jsonixUtil';
-import { getProposicaoJsonix } from './../servicos/proposicoes';
-import { LitElement, html, TemplateResult } from 'lit';
+import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
-import { appStyles } from './app.css';
 import { Proposicao } from '../model/proposicao';
+import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
+import { getProposicaoJsonix } from './../servicos/proposicoes';
+import { appStyles } from './app.css';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -139,7 +139,7 @@ export class EdtApp extends LitElement {
     if (ev.detail.itemMenu === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.itemMenu === 'visualizar') {
-      this.loadEmenda();
+      this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.modalOndeCouber.show();

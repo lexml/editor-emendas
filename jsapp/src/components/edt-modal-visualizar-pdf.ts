@@ -1,6 +1,6 @@
-import { blobToBase64 } from './../servicos/blobUtil';
-import { LitElement, html, TemplateResult, PropertyValues } from 'lit';
+import { html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+import { blobToBase64 } from './../servicos/blobUtil';
 import { visualizarPdfStyles } from './app.css';
 
 @customElement('edt-modal-visualizar-pdf')
@@ -31,7 +31,7 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   protected firstUpdated(): void {
-    if (Object.keys(this.emenda).length > 0) {
+    if (this.emenda && Object.keys(this.emenda).length > 0) {
       this.atualizaEmendaEmPDF();
     }
   }
