@@ -72,6 +72,35 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private abrirPdf(): void {
+    (document.querySelector('#fileUpload') as HTMLInputElement).click();
+  }
+
+  private async selecionaArquivo(event: Event): Promise<void> {
+    const fileInput = event.target as HTMLInputElement;
+
+    if (fileInput && fileInput.files) {
+      const data = new FormData();
+      data.append('file', fileInput.files[0]);
+
+      const response = await fetch('api/emenda/pdf2jsonBinary/', {
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/pdf;charset=UTF-8',
+        },
+      });
+      const content = await response.json();
+
+      this.lexmlEmenda.resetaEmenda();
+
+      await this.loadTextoProposicao(content.proposicao);
+      this.lexmlEmenda.setEmenda(content);
+
+      (document.querySelector('#fileUpload') as HTMLInputElement).value = '';
+    }
+  }
+
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
     const { sigla, numero, ano } = proposicao;
     this.jsonixProposicao = await getProposicaoJsonix(
@@ -116,6 +145,8 @@ export class EdtApp extends LitElement {
       this.modalOndeCouber.show();
     } else if (ev.detail.itemMenu === 'salvar') {
       this.salvarPdf();
+    } else if (ev.detail.itemMenu === 'abrir') {
+      this.abrirPdf();
     }
   }
 
@@ -237,6 +268,13 @@ export class EdtApp extends LitElement {
     return html`
       <edt-cabecalho></edt-cabecalho>
       <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
+      <input
+        type="file"
+        id="fileUpload"
+        accept="application/pdf"
+        @input="${this.selecionaArquivo}"
+        style="display: none"
+      />
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
           ? ''

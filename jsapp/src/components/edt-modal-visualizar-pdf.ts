@@ -18,33 +18,27 @@ export class EdtModalVisualizarPdf extends LitElement {
     this.slDialog.show();
   }
 
-  protected async firstUpdated(): Promise<void> {
+  private async atualizaEmendaEmPDF(): Promise<void> {
+    const resp = await fetch('api/emenda/json2pdf', {
+      method: 'POST',
+      body: JSON.stringify(this.emenda),
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8',
+      },
+    });
+    const pdf = await resp.blob();
+    this.pdfBase64 = await blobToBase64(pdf);
+  }
+
+  protected firstUpdated(): void {
     if (Object.keys(this.emenda).length > 0) {
-      const apiURL = 'api/emenda/json2pdf';
-      const resp = await fetch(apiURL, {
-        method: 'POST',
-        body: JSON.stringify(this.emenda),
-        headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
-        },
-      });
-      const pdf = await resp.blob();
-      this.pdfBase64 = await blobToBase64(pdf);
+      this.atualizaEmendaEmPDF();
     }
   }
 
-  protected async updated(changedProperties: PropertyValues): Promise<void> {
+  protected updated(changedProperties: PropertyValues): void {
     if (this.hasChangedEmenda(changedProperties)) {
-      const apiURL = 'api/emenda/json2pdf';
-      const resp = await fetch(apiURL, {
-        method: 'POST',
-        body: JSON.stringify(this.emenda),
-        headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
-        },
-      });
-      const pdf = await resp.blob();
-      this.pdfBase64 = await blobToBase64(pdf);
+      this.atualizaEmendaEmPDF();
     }
   }
 
