@@ -261,7 +261,10 @@ export class EdtApp extends LitElement {
   render(): TemplateResult {
     return html`
       <edt-cabecalho></edt-cabecalho>
-      <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
+      <edt-menu
+        .proposicao=${this.proposicao}
+        @item-selecionado=${this.onItemMenuSelecionado}
+      ></edt-menu>
       <input
         type="file"
         id="fileUpload"
