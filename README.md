@@ -28,3 +28,7 @@
 ## Como usar
 
 
+## Glossário
+
+Disponível no site do Congresso Nacional em https://www.congressonacional.leg.br/legislacao-e-publicacoes/glossario-legislativo
+
