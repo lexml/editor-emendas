@@ -7,6 +7,16 @@ export class EdtNotasVersao extends LitElement {
     return this;
   }
 
+  private emitirEvento(botaoNotasVersao: string): void {
+    this.dispatchEvent(
+      new CustomEvent('botao-selecionado', {
+        detail: { botaoNotasVersao },
+        composed: true,
+        bubbles: true,
+      })
+    );
+  }
+
   render(): TemplateResult {
     return html`
       ${notaVersaoStyles}
@@ -14,7 +24,7 @@ export class EdtNotasVersao extends LitElement {
         class="botao-emenda"
         variant="primary"
         size="large"
-        @click=${(): void => console.log('Nova emenda')}
+        @click=${(): void => this.emitirEvento('nova')}
       >
         <sl-icon slot="prefix" name="plus-square"></sl-icon>
         Nova Emenda
@@ -23,7 +33,7 @@ export class EdtNotasVersao extends LitElement {
         class="botao-emenda"
         variant="primary"
         size="large"
-        @click=${(): void => console.log('Nova emenda')}
+        @click=${(): void => this.emitirEvento('abrir')}
       >
         <sl-icon slot="prefix" name="box-arrow-up-right"></sl-icon>
         Abrir Emenda
