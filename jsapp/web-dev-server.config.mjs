@@ -15,8 +15,14 @@ export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
 
   port: 8000,
   middleware: [
+    // proxy('/api/', {
+    //   target: 'http://localhost:8080/editor-emendas',
+    // }),
     proxy('/api/', {
-      target: 'http://localhost:8080/editor-emendas/',
+      target: 'https://www6ghml.senado.leg.br/',
+      rewrite: path => path.replace(/^\/api/, '/editor-emendas/api'),
+      logs: true,
+      changeOrigin: true
     }),
   ],
 
