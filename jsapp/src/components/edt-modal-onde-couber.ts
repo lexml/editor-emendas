@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query } from 'lit/decorators.js';
 import { ondeCouberStyles } from './app.css';
@@ -42,17 +43,9 @@ export class EdtModalOndeCouber extends LitElement {
 
         <sl-button
           slot="footer"
-          variant="default"
+          variant="primary"
           @click=${(): void => this.slDialog.hide()}
           >Cancelar</sl-button
-        >
-
-        <sl-button
-          slot="footer"
-          variant="primary"
-          autofocus
-          @click=${(): void => this.emitirEvento('nova-emenda-padrao')}
-          >Nova emenda padrão</sl-button
         >
       </sl-dialog>
     `;
