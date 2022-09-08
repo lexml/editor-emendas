@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
+
 import { blobToBase64 } from './../servicos/blobUtil';
 import { visualizarPdfStyles } from './app.css';
 
@@ -19,7 +21,7 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
-    const resp = await fetch('api/emenda/json2pdf', {
+    const resp = await fetch('./api/emenda/json2pdf', {
       method: 'POST',
       body: JSON.stringify(this.emenda),
       headers: {

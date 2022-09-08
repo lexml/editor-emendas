@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+
 import { Proposicao } from '../model/proposicao';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
@@ -52,7 +54,7 @@ export class EdtApp extends LitElement {
   private async salvarPdf(): Promise<void> {
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
-      const response = await fetch('api/emenda/json2pdf', {
+      const response = await fetch('./api/emenda/json2pdf', {
         method: 'POST',
         body: JSON.stringify(emenda),
         headers: {
@@ -82,7 +84,7 @@ export class EdtApp extends LitElement {
       const data = new FormData();
       data.append('file', fileInput.files[0]);
 
-      const response = await fetch('api/emenda/pdf2jsonBinary/', {
+      const response = await fetch('./api/emenda/pdf2jsonBinary/', {
         method: 'POST',
         body: data,
         headers: {
