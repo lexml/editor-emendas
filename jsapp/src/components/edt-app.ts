@@ -13,7 +13,6 @@ export class EdtApp extends LitElement {
 
   @property({ type: String }) tituloEmenda = '';
   @property({ type: String }) labelTipoEmenda = '';
-  @property({ type: Object }) emenda = {};
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -51,11 +50,11 @@ export class EdtApp extends LitElement {
   }
 
   private async salvarPdf(): Promise<void> {
-    this.emenda = this.lexmlEmenda.getEmenda();
-    if (this.emenda) {
+    const emenda = this.lexmlEmenda.getEmenda();
+    if (emenda) {
       const response = await fetch('api/emenda/json2pdf', {
         method: 'POST',
-        body: JSON.stringify(this.emenda),
+        body: JSON.stringify(emenda),
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
@@ -169,10 +168,6 @@ export class EdtApp extends LitElement {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
   }
 
-  private loadEmenda(): void {
-    this.emenda = this.lexmlEmenda.getEmenda();
-  }
-
   private renderEditorEmenda(): TemplateResult {
     return html`
       ${appStyles}
@@ -254,7 +249,6 @@ export class EdtApp extends LitElement {
       </edt-modal-nova-emenda>
       <edt-modal-visualizar-pdf
         tituloEmenda=${this.tituloEmenda}
-        .emenda=${this.emenda}
       ></edt-modal-visualizar-pdf>
       <edt-modal-onde-couber
         @nova-emenda-padrao=${(): any =>
