@@ -5,11 +5,12 @@
 - É livre sua utilização por qualquer pessoa que queira produzir emendas legislativas;
 - Software de código aberto desenvolvido em parceria pela Câmara dos Deputados e pelo Senado Federal.
 
-## Restrições
+## O que ainda não é possível fazer no editor
 
 - Inicialmente contempla apenas emendas a Medidas Provisórias;
 - Não permite emendamento de anexos;
-- Não permite enviar a emenda a sistemas de protocolo legislativo das casas(SEDOL e Autenticador) diretamente pelo editor
+- Não permite enviar a emenda a sistemas de protocolo legislativo das casas(SEDOL e Autenticador) diretamente pelo editor;
+- Poucas operações sobre agrupadores de artigo.
 
 ## Características Principais
 
@@ -20,7 +21,7 @@
   - Em geral, a formatação é gerada pelo próprio editor, garantindo-se a adoção dos padrões já definidos em normas legais;
   - A situação da emenda é sempre validada, sendo apresentadas diversas mensagens de alerta sempre que for identificado um erro ou mesmo uma situação indesejada; 
   - As ações permitidas sempre dependem do contexto de edição, garantindo assim aderência às normas legais.
-- O editor salva a emenda em formato PDF, em formato definido por ambas as Casas Legislativas;
+- O editor salva a emenda em PDF, em formato definido por ambas as Casas Legislativas;
 - A emenda pode ser salva onde o usuário achar melhor: em seu computador, em área compartilhada na rede local ou na cloud;
 - O arquivo PDF pode ser compartilhado com outras pessoas que poderão editá-lo também no editor mas se a alteração for feita em outro software a emenda passa a ser inválida.
 
