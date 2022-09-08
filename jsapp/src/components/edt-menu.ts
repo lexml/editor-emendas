@@ -1,11 +1,14 @@
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { menuStyles } from './app.css';
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
   createRenderRoot(): LitElement {
     return this;
   }
+
+  @state()
+  private proposicao: any = {};
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
@@ -32,18 +35,26 @@ export class EdtMenu extends LitElement {
           <sl-menu-item @click=${(): void => this.emitirEvento('abrir')}
             >Abrir</sl-menu-item
           >
-          <sl-menu-item @click=${(): void => this.emitirEvento('salvar')}>
-            Salvar
-          </sl-menu-item>
-          <sl-menu-item @click=${(): void => this.emitirEvento('visualizar')}>
-            Visualizar
-          </sl-menu-item>
-          <sl-divider></sl-divider>
-          <sl-menu-item disabled> Outros tipos</sl-menu-item>
-          <sl-menu-item @click=${(): void => this.emitirEvento('onde-couber')}>
-            <sl-icon slot="prefix" name=""></sl-icon>
-            Onde Couber
-          </sl-menu-item>
+          ${Object.keys(this.proposicao).length > 0
+            ? html`
+                <sl-menu-item @click=${(): void => this.emitirEvento('salvar')}>
+                  Salvar
+                </sl-menu-item>
+                <sl-menu-item
+                  @click=${(): void => this.emitirEvento('visualizar')}
+                >
+                  Visualizar
+                </sl-menu-item>
+                <sl-divider></sl-divider>
+                <sl-menu-item disabled> Outros tipos</sl-menu-item>
+                <sl-menu-item
+                  @click=${(): void => this.emitirEvento('onde-couber')}
+                >
+                  <sl-icon slot="prefix" name=""></sl-icon>
+                  Onde Couber
+                </sl-menu-item>
+              `
+            : ''}
           <sl-divider></sl-divider>
           <sl-menu-item> Ajuda </sl-menu-item>
         </sl-menu>
@@ -55,22 +66,31 @@ export class EdtMenu extends LitElement {
       <sl-button size="small" @click=${(): void => this.emitirEvento('abrir')}
         >Abrir</sl-button
       >
-      <sl-button size="small" @click=${(): void => this.emitirEvento('salvar')}
-        >Salvar</sl-button
-      >
-      <sl-button
-        size="small"
-        @click=${(): void => this.emitirEvento('visualizar')}
-        >Visualizar</sl-button
-      >
-      <sl-dropdown>
-        <sl-button size="small" slot="trigger" caret>Outros tipos</sl-button>
-        <sl-menu>
-          <sl-menu-item @click=${(): void => this.emitirEvento('onde-couber')}
-            >Onde couber</sl-menu-item
-          >
-        </sl-menu>
-      </sl-dropdown>
+      ${Object.keys(this.proposicao).length > 0
+        ? html`
+            <sl-button
+              size="small"
+              @click=${(): void => this.emitirEvento('salvar')}
+              >Salvar</sl-button
+            >
+            <sl-button
+              size="small"
+              @click=${(): void => this.emitirEvento('visualizar')}
+              >Visualizar</sl-button
+            >
+            <sl-dropdown>
+              <sl-button size="small" slot="trigger" caret
+                >Outros tipos</sl-button
+              >
+              <sl-menu>
+                <sl-menu-item
+                  @click=${(): void => this.emitirEvento('onde-couber')}
+                  >Onde couber</sl-menu-item
+                >
+              </sl-menu>
+            </sl-dropdown>
+          `
+        : ''}
       <sl-button size="small">Ajuda</sl-button>
     `;
   }
