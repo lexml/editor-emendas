@@ -1,10 +1,7 @@
 # Editor de emendas
 
-#### :page_facing_up: Editor especializado em edição de emendas legislativas, em processo de implantação no Congresso Nacional. 
-
-## Fatos
-
-- Disponível em https://www.congressonacional.leg.br/editor-emendas;
+- Editor especializado em edição de emendas legislativas, em processo de implantação no Congresso Nacional
+- Disponível em breve: https://www.congressonacional.leg.br/editor-emendas. Veja como usar mais abaixo;
 - É livre sua utilização por qualquer pessoa que queira produzir emendas legislativas;
 - Software de código aberto desenvolvido em parceria pela Câmara dos Deputados e pelo Senado Federal.
 
