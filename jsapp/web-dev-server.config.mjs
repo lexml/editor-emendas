@@ -5,9 +5,9 @@ const hmr = process.argv.includes('--hmr');
 import proxy from 'koa-proxies';
 
 export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
-  open: '/editor-emendas',
+  // open: '/editor-emendas',
   watch: !hmr,
-  appIndex: 'index.html',
+  // appIndex: 'index.html',
   /** Resolve bare module imports */
   nodeResolve: {
     exportConditions: ['browser', 'development'],

@@ -82,7 +82,16 @@ export default {
       runtimeCaching: [{ urlPattern: 'polyfills/*.js', handler: 'CacheFirst' }],
     }),
     copy({
-      targets: [{ src: 'dist/*', dest: '../src/main/resources/static' }],
+      targets: [
+        {
+          src: 'dist/*',
+          dest: '../src/main/resources/static'
+        },
+        {
+          src: 'assets/icons',
+          dest: '../src/main/resources/static/assets'
+        }
+      ],
       hook: 'closeBundle'
     }),
   ],
