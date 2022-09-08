@@ -63,13 +63,11 @@ export class EdtMenu extends LitElement {
       <sl-button size="small" @click=${(): void => this.emitirEvento('nova')}
         >Nova</sl-button
       >
+      <sl-button size="small" @click=${(): void => this.emitirEvento('abrir')}
+        >Abrir</sl-button
+      >
       ${Object.keys(this.proposicao).length > 0
         ? html`
-            <sl-button
-              size="small"
-              @click=${(): void => this.emitirEvento('abrir')}
-              >Abrir</sl-button
-            >
             <sl-button
               size="small"
               @click=${(): void => this.emitirEvento('salvar')}
