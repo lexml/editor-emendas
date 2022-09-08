@@ -1,39 +1,32 @@
 # Editor de emendas
 
-Editor web standalone de edição de emendas a MPV.
+#### :page_facing_up: Editor especializado em edição de emendas legislativas, em processo de implantação no Congresso Nacional. 
 
-A aplicação Javascript fica em /jsapp
+## Fatos
 
-Aplicação em produção: https://www.congressonacional.leg.br/editor-emendas
+- Disponível em https://www.congressonacional.leg.br/editor-emendas;
+- É livre sua utilização por qualquer pessoa que queira produzir emendas legislativas;
+- Software de código aberto desenvolvido em parceria pela Câmara dos Deputados e pelo Senado Federal.
 
-**Restrições**
-- Apenas emendas ao texto principal da MPV. Não contempla emenda a anexos.
-- Não contempla proposição de novos agrupadores de artigo.
-- Não integra com nenhuma outra aplicação (SEDOL, Autenticador etc.)
-- Não tem autenticação.
-- Não armazena emenda em servidor de banco de dados ou outro tipo de repositório.
+## Restrições
 
-**Requisitos funcionais:**
+- Inicialmente contempla apenas emendas a Medidas Provisórias;
+- Não permite emendamento de anexos;
+- Não permite enviar a emenda a sistemas de protocolo legislativo das casas(SEDOL e Autenticador) diretamente pelo editor
 
-Essencial
-- Criar nova emenda
-  - Selecionar MP para emendamento.
-  - Selecionar tipo de emenda (emenda padrão ou artigo onde couber)
-- Nomear e renomear a emenda em edição (nome do arquivo)
-- Exportar/Baixar/Download de emenda em PDF
-- Importar/Upload de  emenda em PDF
-- Visualizar PDF da emenda
-- Tutoriais em vídeo
+## Características Principais
 
-Desejável
-- Salvar e abrir emenda no file system (**avaliar possibilidade**)
-- Listar emendas recentes para facilitar abrir
-- Ajuda textual
+- Edição em browser;
+- A operação se faz sobre a própria proposição. Isso proporciona diversas vantagens:
+  - O comando da emenda é gerado pelo editor sempre que houver uma modificação, evitando dubiedade e inconsistências entre o comando e a citação dos dispositivos;
+  - A numeração é gerada automaticamente, sempre que possível, o que impede erros que poderiam ocorrer durante o processo de edição;
+  - Em geral, a formatação é gerada pelo próprio editor, garantindo-se a adoção dos padrões já definidos em normas legais;
+  - A situação da emenda é sempre validada, sendo apresentadas diversas mensagens de alerta sempre que for identificado um erro ou mesmo uma situação indesejada; 
+  - As ações permitidas sempre dependem do contexto de edição, garantindo assim aderência às normas legais.
+- O editor salva a emenda em formato PDF, em formato definido por ambas as Casas Legislativas;
+- A emenda pode ser salva onde o usuário achar melhor: em seu computador, em área compartilhada na rede local ou na cloud;
+- O arquivo PDF pode ser compartilhado com outras pessoas que poderão editá-lo também no editor mas se a alteração for feita em outro software a emenda passa a ser inválida.
 
-**Requisitos não funcionais**
-- Interface responsiva acessível em desktop, tablet e celular
-- Utilizar HTTPS
-- Domínio do congresso
-- Implementar com lit e shoelace
-- Utilizar cores do Congresso
-- Executar no Chrome, Edge e Safari
+## Como usar
+
+
