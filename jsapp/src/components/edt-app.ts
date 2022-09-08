@@ -151,6 +151,14 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private onBotaoNotasVersaoSelecionado(ev: CustomEvent): void {
+    if (ev.detail.botaoNotasVersao === 'nova') {
+      this.modalNovaEmenda.show();
+    } else if (ev.detail.botaoNotasVersao === 'abrir') {
+      this.abrirPdf();
+    }
+  }
+
   private criarNovaEmendaPadrao(proposicao: Proposicao): void {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
@@ -277,7 +285,9 @@ export class EdtApp extends LitElement {
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
           ? ''
-          : html`<edt-notas-versao></edt-notas-versao>`}
+          : html` <edt-notas-versao
+              @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
+            ></edt-notas-versao>`}
         ${this.renderEditorEmenda()}
       </main>
       <edt-rodape></edt-rodape>
