@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { notaVersaoStyles } from './app.css';
@@ -41,51 +42,86 @@ export class EdtNotasVersao extends LitElement {
       <div class="conteudo">
         <div class="conteudo-esquerdo">
           <h1 class="titulo">Nota de versão</h1>
-          <span class="data-versao">Setembro 2022 - v1.0</span>
-          <p>
-            A autoria de normas jurídicas pode se beneficiar de uma solução que
-            codifique as regras de técnica legislativa estabelecidas em normas
-            jurídicas como também as regras convencionadas pela tradição
-            legislativa do Brasil.
-          </p>
-          <p>
-            Uma norma jurídica se expressa por meio de textos e outros elementos
-            visuais, sendo todos eles manifestados em edições de algum periódico
-            oficial. Além de texto hierárquico e articulado, a norma jurídica
-            pode se manifestar por outros meios, tais como fórmulas, figuras,
-            tabelas, texto corrido não articulado e partitura.
-          </p>
-          <p>Principais funcionalidades:</p>
+          <span class="data-versao">Setembro 2022 - versão 1.0</span>
+          <p>O que ainda não é possível fazer no editor:</p>
           <ul>
+            <li>Emenda à anexos (inclusive de matérias orçamentárias);</li>
+            <li>Adicionar agrupadores de artigo; e</li>
             <li>
-              Apresentar o texto articulado em consonância com padrões previstos
-              em normas vigentes (LC 95 e Decreto 9.191/2017, entre outros);
+              Enviar a emenda ao sistema de protocolo (Assinador ou Sedol)
+              diretamente pelo editor.
+            </li>
+          </ul>
+          <h3>Principais funcionalidades</h3>
+          <ul>
+            <li>Criar uma nova emenda a medidas provisórias;</li>
+            <li>Salvar a emenda localmente em PDF</li>
+            <li>Abrir uma emenda em PDF gerada no editor;</li>
+            <li>Editar a justificativa, com recursos básicos de formatação;</li>
+            <li>
+              Informar outros dados necessários a emenda, como data e autoria;
+            </li>
+            <li>Gerar automaticamente o comando de emenda;</li>
+            <li>
+              Impedir operações inválidas sobre a proposição, em acordo com as
+              normas vigentes;
+            </li>
+            <li>Propor novos dispositivos a proposição;</li>
+            <li>Prover menu de ações permitidas sobre um dispositivo;</li>
+            <li>Validar a situação do dispositivo;</li>
+            <li>
+              Oferecer recursos que facilitam a identificação das operações
+              efetuadas sobre a proposição;
             </li>
             <li>
-              Permitir que sejam utilizadas mais de uma instância do editor para
-              a edição de textos articulados;
+              Permitir a criação de dispositivos automaticamente, à medida que o
+              usuário for digitando, inclusive gerando automaticamente os
+              rótulos de dispositivo:
+              <ul>
+                <li>
+                  O uso dos dois pontos comanda o desdobramento dos dispositivos
+                  em dispositivos subordinados;
+                  <ul>
+                    <li>
+                      O uso de ponto indica continuação de sequência de
+                      dispositivos do mesmo tipo quando se tratar de artigos e
+                      parágrafos;
+                    </li>
+                    <li>
+                      O uso de ponto e vírgula indica continuação de sequência
+                      de dispositivos do mesmo tipo quando se tratar de incisos,
+                      alíneas e itens.
+                    </li>
+                  </ul>
+                </li>
+              </ul>
             </li>
             <li>
-              Oferecer recursos de navegação com o teclado, de maneira similar
-              ao que ocorre em processadores de texto;
+              Permitir a mudança dos tipos de dispositivos (inciso em alínea,
+              por exemplo), convertendo automaticamente os tipos dos
+              dispositivos subordinados (Tab e Shift+Tab);
             </li>
             <li>
-              Permitir a criação e edição do texto articulado em consonância com
-              as normas vigentes (LC 95) e a especificação contida no padrão
-              LexML;
+              Permitindo desfazer e refazer operações efetuadas durante a
+              edição;
             </li>
             <li>
-              Oferecer recursos básicos de formatação de dispositivo, quando
-              isso for permitido;
+              Prover teclas de atalho que minimizam a necessidade do mouse
+              durante a edição;
+            </li>
+            <li>Numeração automática de novos dispositivos;</li>
+            <li>
+              Informar numeração de dispositivos existentes na Norma em
+              alteração;
             </li>
             <li>
-              Numerar automaticamente os dispositivos do texto articulado que
-              estejam em consonância com as normas vigentes;
+              Definir estilos consistentes e protegidos contra alteração não
+              intencional;
             </li>
-            <li>
-              Permitir a numeração manual do dispositivo quando se tratar de
-              alteração de norma existente;
-            </li>
+            <li>Assistente para criação de Alteração a Norma existente;</li>
+            <li>Manter referências a normas em alteração;</li>
+            <li>Tratar automaticamente aspas e notas de alteração;</li>
+            <li>Permitir edição do tipo de nota de redação (NR, AC);</li>
           </ul>
         </div>
         <div class="conteudo-direito">
