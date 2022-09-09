@@ -5,6 +5,11 @@
 - É livre sua utilização por qualquer pessoa que queira produzir emendas legislativas;
 - Software de código aberto desenvolvido em parceria pela Câmara dos Deputados e pelo Senado Federal.
 
+|  | Para reportar erros ou fazer sugestões | |
+| :---         |     :---:      |          ---: |
+|  | https://github.com/lexml/editor-emendas/issues/new/choose  |   |
+
+
 ## O que ainda não é possível fazer no editor
 
 - Inicialmente contempla apenas emendas a Medidas Provisórias;
