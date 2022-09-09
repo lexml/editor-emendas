@@ -287,21 +287,15 @@ export const notaVersaoStyles = html`
       margin: 30px 20px 20px 0;
     }
     .video-container {
-      position: relative;
-      padding-bottom: 56.25%;
-      padding-top: 30px;
-      height: 0;
-      overflow: hidden;
       box-shadow: var(--sl-shadow-x-large);
     }
-    .video-container iframe,
-    .video-container object,
-    .video-container embed {
-      position: absolute;
-      top: 0;
-      left: 0;
+    .video-container a {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    .video-container--thumb {
       width: 100%;
-      height: 100%;
+      height: auto;
     }
     .legenda {
       font-size: var(--sl-font-size-small);
@@ -318,6 +312,10 @@ export const notaVersaoStyles = html`
       }
       .video-container {
         margin: 20px 0 0 0;
+      }
+      .video-container a {
+        cursor: pointer;
+        pointer-events: auto;
       }
       .conteudo-direito {
         padding: 0 0 5px 0;

@@ -126,17 +126,20 @@ export class EdtNotasVersao extends LitElement {
         </div>
         <div class="conteudo-direito">
           <div class="video-container">
-            <iframe
-              src="https://www.youtube.com/embed/isJpwhicJX8"
-              frameborder="0"
-              allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
+            <a
+              href="https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
+              target="_blank"
+            >
+              <img
+                class="video-container--thumb"
+                src="./assets/jpg/tela-videos-ajuda.jpg"
+              />
+            </a>
           </div>
           <span class="legenda"
-            >Vídeo com os principais funcionalidades do editor de textos
-            articulados.</span
-          >
+            >Canal com vídeos das principais funcionalidades do editor de
+            emendas.
+          </span>
         </div>
       </div>
     `;
