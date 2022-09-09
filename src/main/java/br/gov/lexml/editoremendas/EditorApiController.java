@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -12,6 +14,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -66,6 +70,24 @@ public class EditorApiController {
     public void abreEmendaBase64(HttpServletRequest request, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
+    }
+    
+    // Proxy para evitar problemas de cross origin
+    @GetMapping(path = "/parlamentares", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Object listaParlamentares(RestTemplate restTemplate) throws Exception {   	
+
+    	String url = "https://legis.senado.gov.br/lexeditweb/resources/shared/parlamentares/";
+    	
+    	HttpHeaders headers = new HttpHeaders();
+    	headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+
+    	HttpEntity<String> reqEntity = new HttpEntity<>(null, headers);
+
+    	HttpEntity<HashMap> respEntity = restTemplate.exchange(url, HttpMethod.GET, reqEntity, HashMap.class);
+    	
+    	Object parlamentares = respEntity.getBody().get("parlamentares");
+    	
+    	return parlamentares;
     }
     
     // Proxy para evitar problemas de cross origin
