@@ -26,6 +26,8 @@ public class EmendaWebConfiguration {
 			protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 					throws IOException, ServletException {
 				response.addHeader("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+				response.addHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
+				response.addHeader("Pragma", "no-cache");
 				super.doFilter(request, response, chain);
 			}
 		};
