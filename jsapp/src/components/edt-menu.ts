@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { menuStyles } from './app.css';
@@ -56,7 +57,15 @@ export class EdtMenu extends LitElement {
               `
             : ''}
           <sl-divider></sl-divider>
-          <sl-menu-item> Ajuda </sl-menu-item>
+          <sl-menu-item disabled>Ajuda</sl-menu-item>
+          <sl-menu-item @click=${(): void => console.log('vídeos')}>
+            <sl-icon slot="prefix" name=""></sl-icon>
+            Vídeos tutoriais
+          </sl-menu-item>
+          <sl-menu-item @click=${(): void => console.log('wiki')}>
+            <sl-icon slot="prefix" name=""></sl-icon>
+            Wiki do projeto
+          </sl-menu-item>
         </sl-menu>
       </sl-dropdown>
 
@@ -91,7 +100,20 @@ export class EdtMenu extends LitElement {
             </sl-dropdown>
           `
         : ''}
-      <sl-button size="small">Ajuda</sl-button>
+
+      <sl-dropdown>
+        <sl-button size="small" slot="trigger" caret>Ajuda</sl-button>
+        <sl-menu>
+          <sl-menu-item @click=${(): void => console.log('vídeos')}
+            >Vídeos tutoriais</sl-menu-item
+          >
+          <sl-menu-item @click=${(): void => console.log('wiki')}
+            >Wiki do projeto</sl-menu-item
+          >
+        </sl-menu>
+      </sl-dropdown>
+
+      <!-- <sl-button  size="small">Ajuda</sl-button> -->
     `;
   }
 }
