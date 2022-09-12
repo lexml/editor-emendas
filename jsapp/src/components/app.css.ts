@@ -126,7 +126,9 @@ export const menuStyles = html`
     edt-menu sl-button {
       display: flex;
     }
-
+    edt-menu sl-button:hover {
+      background-color: var(--sl-color-gray-200);
+    }
     edt-menu sl-icon {
       font-size: 28px;
     }
