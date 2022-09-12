@@ -32,6 +32,11 @@
 			<artifactId>eta-backend-services</artifactId>
 			<version>0.0.5</version>
 		</dependency>
+		<dependency>
+			<groupId>br.gov.lexml</groupId>
+			<artifactId>lexml-jsonix-spring-boot-starter</artifactId>
+			<version>0.1.5</version>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -13,6 +13,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import br.leg.camara.lexmljsonixspringbootstarter.conversor.ConversorLexmlJsonix;
+import br.leg.camara.lexmljsonixspringbootstarter.service.LexmlJsonixService;
+import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -42,10 +45,16 @@ public class EditorApiController {
     private final PdfGenerator pdfGenerator;
     
     private final EmendaJsonGenerator jsonGenerator;
+
+    private final LexmlJsonixService lexmlJsonixService;
     
-    public EditorApiController(PdfGenerator pdfGenerator, EmendaJsonGenerator jsonGenerator) {
+    public EditorApiController(
+            PdfGenerator pdfGenerator,
+            EmendaJsonGenerator jsonGenerator,
+            LexmlJsonixService lexmlJsonixService) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
+        this.lexmlJsonixService = lexmlJsonixService;
     }
 
     @GetMapping
@@ -108,29 +117,21 @@ public class EditorApiController {
     
     // Proxy para evitar problemas de cross origin
     @GetMapping(path = "/proposicoes", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String listaProposicoes(@RequestParam() String sigla, 
-    		@RequestParam() String ano, @RequestParam(required = false) String numero, 
-    		RestTemplate restTemplate) throws Exception {   	
+    public List<Proposicao> listaProposicoes(
+            @RequestParam String sigla,
+            @RequestParam int ano,
+            @RequestParam(required = false) String numero) throws Exception {
 
-    	// https://legis.senado.gov.br/legis/resources/lex/proposicoes/MPV/2022?numero=1096
-    	String url = "https://legis.senado.gov.br/legis/resources/lex/proposicoes/" +
-    			sigla + "/" + ano + (numero != null ? "?numero=" + numero : "");
-    	
-    	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
-    	return entity.getBody();
+        return lexmlJsonixService.getProposicoes(sigla, ano, numero);
     }
     
     // Proxy para chamar serviço temporário heroku em aplicação hospedada no senado
     @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getTextoJson(@RequestParam() String sigla, 
-    		@RequestParam() String ano, @RequestParam() String numero,
-    		RestTemplate restTemplate, HttpServletRequest request) throws Exception {   	
+    		@RequestParam() int ano, @RequestParam() String numero,
+    		RestTemplate restTemplate, HttpServletRequest request) throws Exception {
 
-    	String url = "https://emendas-api.herokuapp.com/proposicao/texto-lexml/json" +
-    			"?sigla=" + sigla + "&numero=" + numero + "&ano=" + ano;
-    	
-    	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
-    	return entity.getBody();
+        return lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
     }
     
 }
