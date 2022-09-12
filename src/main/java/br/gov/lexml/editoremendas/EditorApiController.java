@@ -7,6 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -85,7 +87,21 @@ public class EditorApiController {
 
     	HttpEntity<HashMap> respEntity = restTemplate.exchange(url, HttpMethod.GET, reqEntity, HashMap.class);
     	
-    	Object parlamentares = respEntity.getBody().get("parlamentares");
+    	List<Map<String, Object>> parlamentares = (List<Map<String, Object>>) respEntity.getBody().get("parlamentares");
+    	
+    	parlamentares.forEach(p -> {
+    		String siglaCasa = (String) p.get("siglaCasa");
+    		if (siglaCasa.equals("CD")) {
+    			p.put("id", p.get("codigoDeputado"));
+    		}
+    		else {
+    			p.put("id", p.get("codigoParlamentar"));
+    		}
+    		p.remove("codigoDeputado");
+    		p.remove("codigoParlamentar");
+    		p.put("siglaUF", p.get("siglaUf"));
+    		p.remove("siglaUf");
+    	});
     	
     	return parlamentares;
     }
