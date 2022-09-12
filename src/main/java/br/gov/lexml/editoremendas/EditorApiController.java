@@ -1,19 +1,8 @@
 package br.gov.lexml.editoremendas;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import br.leg.camara.lexmljsonixspringbootstarter.conversor.ConversorLexmlJsonix;
+import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
+import br.gov.lexml.eta.etaservices.printing.json.EmendaPojo;
+import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
 import br.leg.camara.lexmljsonixspringbootstarter.service.LexmlJsonixService;
 import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 import org.slf4j.Logger;
@@ -31,9 +20,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
-import br.gov.lexml.eta.etaservices.printing.json.EmendaPojo;
-import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -120,16 +117,15 @@ public class EditorApiController {
     public List<Proposicao> listaProposicoes(
             @RequestParam String sigla,
             @RequestParam int ano,
-            @RequestParam(required = false) String numero) throws Exception {
+            @RequestParam(required = false) String numero) {
 
         return lexmlJsonixService.getProposicoes(sigla, ano, numero);
     }
     
     // Proxy para chamar serviço temporário heroku em aplicação hospedada no senado
     @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getTextoJson(@RequestParam() String sigla, 
-    		@RequestParam() int ano, @RequestParam() String numero,
-    		RestTemplate restTemplate, HttpServletRequest request) throws Exception {
+    public String getTextoJson(@RequestParam String sigla,
+    		@RequestParam int ano, @RequestParam String numero) {
 
         return lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
     }
