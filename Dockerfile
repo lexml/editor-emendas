@@ -3,7 +3,7 @@ EXPOSE 8080
 ARG uid
 ARG gid
 
-RUN mkdir -p /usr/local/editor-emendas/bin && \
+RUN mkdir -p /usr/local/editor-emendas && \
     groupadd -g $gid -r editoremendas && \
     useradd -u $uid -r -g editoremendas -d /usr/local/editor-emendas editoremendas && \
     chown editoremendas:editoremendas /usr/local/editor-emendas && \
@@ -15,8 +15,8 @@ WORKDIR /usr/local/editor-emendas
 COPY run.sh .
 COPY jsonix-lexml-linux .
 COPY target/editor-emendas.jar .
-COPY bin/jsonix-lexml-linux ./bin
+COPY jsonix-lexml-linux .
 
-RUN chmod 755 ./bin/jsonix-lexml-linux
+RUN chmod 755 jsonix-lexml-linux
 
 CMD ["/usr/local/editor-emendas/run.sh"]

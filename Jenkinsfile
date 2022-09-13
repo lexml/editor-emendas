@@ -32,7 +32,7 @@ pipeline {
         stage('Build API') {
             steps {
                     withMaven(maven: 'maven') {
-                        sh "mvn clean package"
+                        sh "mvn clean package -Dmaven.test.skip=true"
                     }
             }
         }
