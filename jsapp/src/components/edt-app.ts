@@ -81,6 +81,12 @@ export class EdtApp extends LitElement {
     window.open(
       'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
     );
+    const gtag = window.dataLayer.gtag || [];
+    gtag.push(gtag, 'event', 'Abrir videos', {
+      event_category: 'Videos',
+      event_label: 'AbrirVideos',
+    });
+    console.log('gtag', gtag);
   }
 
   private abrirWiki(): void {
@@ -312,5 +318,8 @@ export class EdtApp extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     'edt-app': EdtApp;
+  }
+  interface Window {
+    dataLayer: any;
   }
 }
