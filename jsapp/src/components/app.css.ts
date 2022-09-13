@@ -255,6 +255,11 @@ export const novaEmendaStyles = html`
     sl-dialog {
       --width: 80vw;
     }
+    sl-badge::part(base) {
+      background-color: var(--sl-color-neutral-100);
+      color: var(--sl-color-neutral-500);
+      border-color: var(--sl-color-neutral-300);
+    }
     @media (max-width: 768px) {
       tbody {
         height: 250px;

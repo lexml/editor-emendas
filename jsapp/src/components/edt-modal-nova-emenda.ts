@@ -94,7 +94,8 @@ export class EdtModalNovaEmenda extends LitElement {
                       <span class="ementa">
                         ${p.idSdlegDocumentoItemDigital
                           ? p.ementa
-                          : 'Texto não está disponível'}
+                          : html`<sl-badge pill>Texto indisponível</sl-badge>
+                              ${p.ementa}`}
                       </span>
                     </td>
                   </tr>
