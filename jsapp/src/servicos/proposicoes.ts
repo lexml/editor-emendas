@@ -10,7 +10,7 @@ export const getProposicaoJsonix = async (
     numero,
     ano: ano.toString(),
   }).toString();
-  const resp = await fetch('./api/proposicao/texto-json?' + searchParams);
+  const resp = await fetch('api/proposicao/texto-json-heroku?' + searchParams);
   return await resp.json();
 };
 

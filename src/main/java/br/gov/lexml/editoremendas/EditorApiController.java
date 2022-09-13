@@ -1,10 +1,9 @@
 package br.gov.lexml.editoremendas;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -13,6 +12,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -69,15 +70,8 @@ public class EditorApiController {
         return os.toByteArray();
     }
     
-    @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmendaBase64(@RequestBody final byte[] pdfBase64, HttpServletResponse response) throws Exception {
-    	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-    	byte[] pdfBytes = Base64.getDecoder().decode(pdfBase64);
-        jsonGenerator.extractJsonFromPdf(new ByteArrayInputStream(pdfBytes), response.getWriter());
-    }
-    
-    @PostMapping(path = "/emenda/pdf2jsonBinary", produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmendaBase64(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    @PostMapping(path = {"/emenda/pdf2json", "/emenda/pdf2jsonBinary"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void abreEmenda(HttpServletRequest request, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
     }
@@ -127,7 +121,7 @@ public class EditorApiController {
     @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getTextoJson(@RequestParam String sigla,
     		@RequestParam int ano, @RequestParam String numero) {
-
+    	
         return lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
     }
     
@@ -136,12 +130,31 @@ public class EditorApiController {
     public String getTextoJsonHeroku(@RequestParam() String sigla, 
     		@RequestParam() String ano, @RequestParam() String numero,
     		RestTemplate restTemplate, HttpServletRequest request) throws Exception {
+    	
+    	String resourceName = "/proposicoes/" +
+    			sigla.toLowerCase() + "_" + StringUtils.stripStart(numero, "0") + "_" +
+    			ano + ".json";
+    	InputStream is = EditorApiController.class.getResourceAsStream(resourceName);
+    	
+    	if (is != null) {
+    		return IOUtils.toString(is, "UTF-8");
+    	}
 
     	String url = "https://emendas-api.herokuapp.com/proposicao/texto-lexml/json" +
     			"?sigla=" + sigla + "&numero=" + numero + "&ano=" + ano;
     	
     	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
-    	return entity.getBody();
+    	
+    	String json = entity.getBody();
+    	
+    	if(json.contains("LEXML_URN_ID")) {
+		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
+				.replace("LEXML_EPIGRAFE_NUMERO", numero)
+				.replace("LEXML_EPIGRAFE_DATA", ano + "");
+				
+    	}
+    	
+    	return json;
     }
     
     
