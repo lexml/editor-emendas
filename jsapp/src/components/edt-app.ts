@@ -1,11 +1,20 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+// import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
+import { html, LitElement, TemplateResult } from 'lit';
+import { customElement, property, query, state } from 'lit/decorators.js';
+import { unsafeHTML } from 'lit/directives/unsafe-html.js';
+
+import { Proposicao } from '../model/proposicao';
+import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
-import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query, state } from 'lit/decorators.js';
 import { appStyles } from './app.css';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
-  static styles = appStyles;
+  // static styles = appStyles;
+
+  @property({ type: String }) tituloEmenda = '';
+  @property({ type: String }) labelTipoEmenda = '';
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -16,8 +25,23 @@ export class EdtApp extends LitElement {
   @query('lexml-emenda-comando')
   private lexmlComandoEmenda!: any;
 
+  @query('edt-modal-nova-emenda')
+  private modalNovaEmenda!: any;
+
+  @query('edt-modal-visualizar-pdf')
+  private modalVisualizarPdf!: any;
+
+  @query('edt-modal-onde-couber')
+  private modalOndeCouber!: any;
+
   @state()
   private jsonixProposicao: any = {};
+
+  @state()
+  private modo = 'emenda';
+
+  @state()
+  private proposicao: Proposicao = {};
 
   createRenderRoot(): LitElement {
     return this;
@@ -27,48 +51,259 @@ export class EdtApp extends LitElement {
     return 'value' in this.jsonixProposicao;
   }
 
-  private onChange(): void {
-    this.lexmlComandoEmenda.emenda = this.lexmlEta.getComandoEmenda();
+  private async salvarPdf(): Promise<void> {
+    const emenda = this.lexmlEmenda.getEmenda();
+    if (emenda) {
+      const response = await fetch('api/emenda/json2pdf', {
+        method: 'POST',
+        body: JSON.stringify(emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+      const content = await response.blob();
+      const fileName = `${this.tituloEmenda || 'nova'}.emenda.pdf`;
+      const objectUrl = URL.createObjectURL(content);
+      const a = document.createElement('a');
+
+      a.href = objectUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+    }
   }
 
-  private async loadMPV(): Promise<any> {
-    this.jsonixProposicao = await getProposicaoJsonix('MPV', '1089', 2021);
+  private abrirPdf(): void {
+    (document.querySelector('#fileUpload') as HTMLInputElement).click();
+  }
+
+  private abrirVideos(): void {
+    window.open(
+      'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
+    );
+  }
+
+  private abrirWiki(): void {
+    window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
+  }
+
+  private async selecionaArquivo(event: Event): Promise<void> {
+    const fileInput = event.target as HTMLInputElement;
+
+    if (fileInput && fileInput.files) {
+      const data = new FormData();
+      data.append('file', fileInput.files[0]);
+
+      const response = await fetch('api/emenda/pdf2jsonBinary/', {
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-Type': 'application/pdf;charset=UTF-8',
+        },
+      });
+      const content = await response.json();
+
+      this.lexmlEmenda.resetaEmenda();
+
+      await this.loadTextoProposicao(content.proposicao);
+      this.lexmlEmenda.setEmenda(content);
+
+      (document.querySelector('#fileUpload') as HTMLInputElement).value = '';
+    }
+  }
+
+  private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
+    const { sigla, numero, ano } = proposicao;
+    this.jsonixProposicao = await getProposicaoJsonix(
+      sigla!,
+      numero!,
+      Number(ano)
+    );
+    const urn = getUrn(this.jsonixProposicao);
+    this.proposicao = {
+      urn,
+      sigla, //sigla: getSigla(urn),
+      numero, //numero: getNumero(urn),
+      ano, //ano: getAno(urn),
+      ementa: buildContent(
+        this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial?.ementa
+          .content
+      ),
+    };
+    this.proposicao.nomeProposicao =
+      this.proposicao.sigla +
+      ' ' +
+      this.proposicao.numero +
+      '/' +
+      this.proposicao.ano;
+    if (this.modo === 'emendaArtigoOndeCouber') {
+      this.tituloEmenda =
+        'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
+      this.labelTipoEmenda = 'Emenda onde couber';
+    } else if (this.modo === 'emenda') {
+      this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+      this.labelTipoEmenda = 'Emenda padrão';
+    }
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
-      this.loadMPV();
+      this.modalNovaEmenda.show();
+    } else if (ev.detail.itemMenu === 'visualizar') {
+      this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
+      this.modalVisualizarPdf.show();
+    } else if (ev.detail.itemMenu === 'onde-couber') {
+      this.modalOndeCouber.show();
+    } else if (ev.detail.itemMenu === 'salvar') {
+      this.salvarPdf();
+    } else if (ev.detail.itemMenu === 'abrir') {
+      this.abrirPdf();
+    } else if (ev.detail.itemMenu === 'videos') {
+      this.abrirVideos();
+    } else if (ev.detail.itemMenu === 'wiki') {
+      this.abrirWiki();
     }
   }
 
-  private renderNotasVersao(): TemplateResult {
-    return this.isJsonixProposicaoLoaded()
-      ? html``
-      : html` <edt-notas-versao></edt-notas-versao> `;
+  private onBotaoNotasVersaoSelecionado(ev: CustomEvent): void {
+    if (ev.detail.botaoNotasVersao === 'nova') {
+      this.modalNovaEmenda.show();
+    } else if (ev.detail.botaoNotasVersao === 'abrir') {
+      this.abrirPdf();
+    }
+  }
+
+  private criarNovaEmendaPadrao(proposicao: Proposicao): void {
+    this.modo = 'emenda';
+    this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+    this.labelTipoEmenda = 'Emenda padrão';
+    this.loadTextoProposicao(proposicao);
+  }
+
+  private criarNovaEmendaArtigoOndeCouber(): void {
+    this.modo = 'emendaArtigoOndeCouber';
+    this.tituloEmenda =
+      'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
+    this.labelTipoEmenda = 'Emenda onde couber';
+    this.jsonixProposicao = { ...this.jsonixProposicao };
+  }
+
+  private atualizarTituloEmenda(evt: Event): void {
+    this.tituloEmenda = (evt.target as HTMLInputElement).value;
   }
 
   private renderEditorEmenda(): TemplateResult {
     return html`
+      ${appStyles}
       <div
         class="editor-emendas"
         style=${this.isJsonixProposicaoLoaded() ? '' : 'display: none;'}
       >
+        <div class="detalhe-emenda">
+          <a
+            href="#"
+            onclick="document.querySelector('.dialog-emenda').show();"
+            class="detalhe-emenda--titulo"
+            aria-label="Expandir ementa"
+            title="Expandir ementa"
+          >
+            <span class="detalhe-emenda--nome-proposicao">
+              ${this.proposicao.nomeProposicao} -
+            </span>
+
+            ${this.modo === 'emendaArtigoOndeCouber'
+              ? html`<sl-tag variant="primary" size="small" pill
+                  >${this.labelTipoEmenda}</sl-tag
+                >`
+              : ''}
+
+            <span class="detalhe-emenda--ementa">
+              ${unsafeHTML(this.proposicao.ementa)}
+            </span>
+            <span aria-label="Expandir ementa" title="Expandir ementa">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-arrows-angle-expand"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707z"
+                />
+              </svg>
+            </span>
+          </a>
+          <div>
+            <sl-input
+              id="titulo-emenda"
+              .value=${this.tituloEmenda.toString()}
+              @input=${(ev: Event): void => this.atualizarTituloEmenda(ev)}
+              placeholder="Emenda à ${this.proposicao.nomeProposicao}"
+              size="small"
+              clearable
+            ></sl-input>
+          </div>
+          <sl-dialog
+            label="${this.proposicao.nomeProposicao} - Ementa"
+            class="dialog-emenda"
+          >
+            ${unsafeHTML(this.proposicao.ementa)}
+            <sl-button
+              slot="footer"
+              autofocus
+              onclick="document.querySelector('.dialog-emenda').hide()"
+              variant="primary"
+              >Fechar
+            </sl-button>
+          </sl-dialog>
+        </div>
         <lexml-emenda
-          @onchange=${this.onChange}
-          modo="emenda"
+          modo=${this.modo}
           .projetoNorma=${this.jsonixProposicao}
         ></lexml-emenda>
-        <lexml-emenda-comando></lexml-emenda-comando>
       </div>
+
+      <edt-modal-nova-emenda
+        @nova-emenda-padrao=${(ev: CustomEvent): void =>
+          this.criarNovaEmendaPadrao(ev.detail.proposicao)}
+      >
+      </edt-modal-nova-emenda>
+      <edt-modal-visualizar-pdf
+        tituloEmenda=${this.tituloEmenda}
+      ></edt-modal-visualizar-pdf>
+      <edt-modal-onde-couber
+        @nova-emenda-padrao=${(): any =>
+          this.criarNovaEmendaPadrao({ ...this.proposicao })}
+        @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
+      ></edt-modal-onde-couber>
     `;
   }
 
   render(): TemplateResult {
     return html`
       <edt-cabecalho></edt-cabecalho>
-      <edt-menu @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
-      <hr />
-      <main>${this.renderNotasVersao()} ${this.renderEditorEmenda()}</main>
+      <edt-menu
+        .proposicao=${this.proposicao}
+        @item-selecionado=${this.onItemMenuSelecionado}
+      ></edt-menu>
+      <input
+        type="file"
+        id="fileUpload"
+        accept="application/pdf"
+        @input="${this.selecionaArquivo}"
+        style="display: none"
+      />
+      <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
+        ${this.isJsonixProposicaoLoaded()
+          ? ''
+          : html` <edt-notas-versao
+              @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
+            ></edt-notas-versao>`}
+        ${this.renderEditorEmenda()}
+      </main>
       <edt-rodape></edt-rodape>
     `;
   }

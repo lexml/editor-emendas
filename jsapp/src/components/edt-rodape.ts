@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
-
+import { rodapeStyles } from './app.css';
 @customElement('edt-rodape')
 export class EdtRodape extends LitElement {
   createRenderRoot(): LitElement {
@@ -8,7 +8,14 @@ export class EdtRodape extends LitElement {
   }
 
   render(): TemplateResult {
-    return html` <footer>Congresso Nacional</footer> `;
+    return html`
+      ${rodapeStyles}
+      <footer>
+        <a href="https://www.congressonacional.leg.br/" target="_blank"
+          >Congresso Nacional</a
+        >
+      </footer>
+    `;
   }
 }
 

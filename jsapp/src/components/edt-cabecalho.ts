@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
-
+import { cabecalhoStyles } from './app.css';
 @customElement('edt-cabecalho')
 export class EdtCabecalho extends LitElement {
   createRenderRoot(): LitElement {
@@ -9,9 +9,8 @@ export class EdtCabecalho extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <header>
-        <h2>Editor de Emendas</h2>
-      </header>
+      ${cabecalhoStyles}
+      <h1><a href="/">Editor de Emendas</a></h1>
     `;
   }
 }
