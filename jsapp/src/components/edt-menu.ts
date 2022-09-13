@@ -58,11 +58,11 @@ export class EdtMenu extends LitElement {
             : ''}
           <sl-divider></sl-divider>
           <sl-menu-item disabled>Ajuda</sl-menu-item>
-          <sl-menu-item @click=${(): void => console.log('vídeos')}>
+          <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>
             <sl-icon slot="prefix" name=""></sl-icon>
             Vídeos tutoriais
           </sl-menu-item>
-          <sl-menu-item @click=${(): void => console.log('wiki')}>
+          <sl-menu-item @click=${(): void => this.emitirEvento('wiki')}>
             <sl-icon slot="prefix" name=""></sl-icon>
             Wiki do projeto
           </sl-menu-item>
@@ -104,11 +104,11 @@ export class EdtMenu extends LitElement {
       <sl-dropdown>
         <sl-button size="small" slot="trigger" caret>Ajuda</sl-button>
         <sl-menu>
-          <sl-menu-item @click=${(): void => console.log('vídeos')}
-            >Vídeos tutoriais</sl-menu-item
-          >
-          <sl-menu-item @click=${(): void => console.log('wiki')}
-            >Wiki do projeto</sl-menu-item
+          <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>
+            Vídeos tutoriais
+          </sl-menu-item>
+          <sl-menu-item @click=${(): void => this.emitirEvento('wiki')}>
+            Wiki do projeto</sl-menu-item
           >
         </sl-menu>
       </sl-dropdown>

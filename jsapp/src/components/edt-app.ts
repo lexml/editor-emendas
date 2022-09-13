@@ -77,6 +77,16 @@ export class EdtApp extends LitElement {
     (document.querySelector('#fileUpload') as HTMLInputElement).click();
   }
 
+  private abrirVideos(): void {
+    window.open(
+      'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
+    );
+  }
+
+  private abrirWiki(): void {
+    window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
+  }
+
   private async selecionaArquivo(event: Event): Promise<void> {
     const fileInput = event.target as HTMLInputElement;
 
@@ -148,6 +158,10 @@ export class EdtApp extends LitElement {
       this.salvarPdf();
     } else if (ev.detail.itemMenu === 'abrir') {
       this.abrirPdf();
+    } else if (ev.detail.itemMenu === 'videos') {
+      this.abrirVideos();
+    } else if (ev.detail.itemMenu === 'wiki') {
+      this.abrirWiki();
     }
   }
 
