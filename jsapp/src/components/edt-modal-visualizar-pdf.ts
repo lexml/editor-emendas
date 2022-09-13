@@ -21,7 +21,7 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
-    const resp = await fetch('./api/emenda/json2pdf', {
+    const resp = await fetch('api/emenda/json2pdf', {
       method: 'POST',
       body: JSON.stringify(this.emenda),
       headers: {

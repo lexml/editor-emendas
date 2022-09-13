@@ -24,7 +24,7 @@ export const pesquisarProposicoes = async (
       ? { sigla, numero, ano: ano.toString() }
       : { sigla, ano: ano.toString() }
   ).toString();
-  const resp = await fetch('./api/proposicoes?' + searchParams);
+  const resp = await fetch('api/proposicoes?' + searchParams);
   const proposicoes = await resp.json();
   return proposicoes.map((p: any) => ({
     sigla: p.sigla,
