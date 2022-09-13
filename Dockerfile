@@ -17,6 +17,4 @@ COPY jsonix-lexml-linux .
 COPY target/editor-emendas.jar .
 COPY jsonix-lexml-linux .
 
-RUN chmod 755 jsonix-lexml-linux
-
 CMD ["/usr/local/editor-emendas/run.sh"]
