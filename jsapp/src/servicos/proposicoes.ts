@@ -32,5 +32,6 @@ export const pesquisarProposicoes = async (
     ano: p.ano,
     ementa: p.ementa,
     nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
+    idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
   }));
 };

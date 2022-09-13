@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { pesquisarProposicoes } from './../servicos/proposicoes';
 import { Proposicao } from './../model/proposicao';
 import { LitElement, html, TemplateResult } from 'lit';
@@ -13,6 +14,9 @@ export class EdtModalNovaEmenda extends LitElement {
 
   @state()
   private ano = new Date().getFullYear().toString();
+
+  @state()
+  private idSdlegDocumentoItemDigital = '';
 
   @state()
   private proposicoes: Proposicao[] = [];
@@ -83,10 +87,15 @@ export class EdtModalNovaEmenda extends LitElement {
                     class="proposicao"
                     @click=${(evt: Event): any =>
                       this.selecionarProposicao(p, evt)}
+                    disabled=${p.idSdlegDocumentoItemDigital ? false : true}
                   >
                     <td class="col-1">${p.nomeProposicao}</td>
                     <td class="col-2">
-                      <span class="ementa">${p.ementa}</span>
+                      <span class="ementa">
+                        ${p.idSdlegDocumentoItemDigital
+                          ? p.ementa
+                          : 'Texto não está disponível'}
+                      </span>
                     </td>
                   </tr>
                 `;

@@ -5,4 +5,5 @@ export interface Proposicao {
   ano?: string;
   ementa?: string;
   nomeProposicao?: string;
+  idSdlegDocumentoItemDigital?: string;
 }

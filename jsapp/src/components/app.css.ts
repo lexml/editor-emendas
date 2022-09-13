@@ -208,6 +208,11 @@ export const novaEmendaStyles = html`
     tr {
       cursor: pointer;
     }
+    tr[disabled='true'] {
+      cursor: auto;
+      pointer-events: none;
+      color: var(--sl-color-neutral-400);
+    }
     tr:nth-child(even) {
       background-color: #f2f2f2;
     }
