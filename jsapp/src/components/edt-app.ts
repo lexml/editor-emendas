@@ -183,6 +183,7 @@ export class EdtApp extends LitElement {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
+    this.lexmlEmenda.resetaEmenda();
     this.loadTextoProposicao(proposicao);
   }
 
@@ -191,6 +192,7 @@ export class EdtApp extends LitElement {
     this.tituloEmenda =
       'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda onde couber';
+    this.lexmlEmenda.resetaEmenda();
     this.jsonixProposicao = { ...this.jsonixProposicao };
   }
 
