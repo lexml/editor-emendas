@@ -13,8 +13,12 @@ USER editoremendas:editoremendas
 WORKDIR /usr/local/editor-emendas
 
 COPY run.sh .
-COPY jsonix-lexml-linux .
 COPY target/editor-emendas.jar .
 COPY jsonix-lexml-linux .
+
+USER root:root
+RUN chmod a+x jsonix-lexml-linux
+USER editoremendas:editoremendas
+
 
 CMD ["/usr/local/editor-emendas/run.sh"]
