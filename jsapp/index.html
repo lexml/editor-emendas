@@ -19,6 +19,7 @@
     }
     .hidden {
       visibility: hidden;
+      opacity: 0;
       pointer-events: none;
     }
     .overlay-carregando {
@@ -31,6 +32,7 @@
       justify-content: center;
       align-items: center;
       z-index: 100;
+      transition: visibility 0.5s, opacity 0.5s ease-out;
     }
     .blured {
       -webkit-filter: blur(5px);
