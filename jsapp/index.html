@@ -17,9 +17,32 @@
       font-family: sans-serif;
       /* background-color: #ededed; */
     }
+    .hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .overlay-carregando {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .blured {
+      -webkit-filter: blur(5px);
+      -moz-filter: blur(5px);
+      -ms-filter: blur(5px);
+      -o-filter: blur(5px);
+      filter: blur(5px);
+    }
   </style>
   <title>Editor de Emendas</title>
   <script src="./assets/js/lexml-eta/index.min.js" type="module"></script>
+
 </head>
 
 <body>
@@ -33,6 +56,10 @@
     };
   </script>
   <script type="module" src="./out-tsc/src/index.js"></script>
+  <div class="overlay-carregando hidden">
+    <sl-spinner style="font-size: 50px; --track-width: 10px;"></sl-spinner>
+    <!-- <a href="#" onclick="document.querySelector('edt-app').toggleCarregando()">Carregando...</a> -->
+  </div>
   <edt-app></edt-app>
 
   <!-- Google tag (gtag.js) -->

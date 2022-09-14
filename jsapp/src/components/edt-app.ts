@@ -15,6 +15,7 @@ export class EdtApp extends LitElement {
 
   @property({ type: String }) tituloEmenda = '';
   @property({ type: String }) labelTipoEmenda = '';
+  @property({ type: Boolean }) carregando = false;
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -45,6 +46,19 @@ export class EdtApp extends LitElement {
 
   createRenderRoot(): LitElement {
     return this;
+  }
+
+  public toggleCarregando(): void {
+    if (this.carregando === true) {
+      document.querySelector('.overlay-carregando')!.classList.add('hidden');
+      document.querySelector('edt-app')!.classList.remove('blured');
+      this.carregando = false;
+    } else {
+      document.querySelector('.overlay-carregando')!.classList.remove('hidden');
+      document.querySelector('edt-app')!.classList.add('blured');
+      this.carregando = true;
+    }
+    console.log('Carregando...');
   }
 
   private isJsonixProposicaoLoaded(): boolean {
@@ -119,6 +133,7 @@ export class EdtApp extends LitElement {
   }
 
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
+    this.toggleCarregando();
     const { sigla, numero, ano } = proposicao;
     this.jsonixProposicao = await getProposicaoJsonix(
       sigla!,
@@ -150,6 +165,7 @@ export class EdtApp extends LitElement {
       this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
       this.labelTipoEmenda = 'Emenda padrão';
     }
+    this.toggleCarregando();
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
