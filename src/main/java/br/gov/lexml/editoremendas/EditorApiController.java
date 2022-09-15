@@ -118,18 +118,9 @@ public class EditorApiController {
         return lexmlJsonixService.getProposicoes(sigla, ano, numero);
     }
     
-    @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/proposicao/texto-json", "/proposicao/texto-json-heroku"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String getTextoJson(@RequestParam String sigla,
-    		@RequestParam int ano, @RequestParam String numero) {
-    	
-        return lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
-    }
-    
-    // Proxy para chamar serviço temporário heroku em aplicação hospedada no senado
-    @GetMapping(path = "/proposicao/texto-json-heroku", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getTextoJsonHeroku(@RequestParam() String sigla, 
-    		@RequestParam() String ano, @RequestParam() String numero,
-    		RestTemplate restTemplate, HttpServletRequest request) throws Exception {
+    		@RequestParam int ano, @RequestParam String numero) throws IOException {
     	
     	String resourceName = "/proposicoes/" +
     			sigla.toLowerCase() + "_" + StringUtils.stripStart(numero, "0") + "_" +
@@ -140,12 +131,7 @@ public class EditorApiController {
     		return IOUtils.toString(is, "UTF-8");
     	}
 
-    	String url = "https://emendas-api.herokuapp.com/proposicao/texto-lexml/json" +
-    			"?sigla=" + sigla + "&numero=" + numero + "&ano=" + ano;
-    	
-    	HttpEntity<String> entity = restTemplate.getForEntity(url, String.class);
-    	
-    	String json = entity.getBody();
+    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
     	
     	if(json.contains("LEXML_URN_ID")) {
 		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
