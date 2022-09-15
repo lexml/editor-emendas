@@ -2,7 +2,6 @@
 // import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
-import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 
 import { Proposicao } from '../model/proposicao';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
@@ -107,6 +106,10 @@ export class EdtApp extends LitElement {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
   }
 
+  private getEmentaSemTags(texto: string): string {
+    return texto.replace(/(<([^>]+)>)/gi, '');
+  }
+
   private async selecionaArquivo(event: Event): Promise<void> {
     const fileInput = event.target as HTMLInputElement;
 
@@ -157,14 +160,9 @@ export class EdtApp extends LitElement {
       this.proposicao.numero +
       '/' +
       this.proposicao.ano;
-    if (this.modo === 'emendaArtigoOndeCouber') {
-      this.tituloEmenda =
-        'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
-      this.labelTipoEmenda = 'Emenda onde couber';
-    } else if (this.modo === 'emenda') {
-      this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
-      this.labelTipoEmenda = 'Emenda padrão';
-    }
+    this.tituloEmenda =
+      'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
+
     this.toggleCarregando();
   }
 
@@ -242,7 +240,7 @@ export class EdtApp extends LitElement {
               : ''}
 
             <span class="detalhe-emenda--ementa">
-              ${unsafeHTML(this.proposicao.ementa)}
+              ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
             </span>
             <span aria-label="Expandir ementa" title="Expandir ementa">
               <svg
@@ -274,7 +272,7 @@ export class EdtApp extends LitElement {
             label="${this.proposicao.nomeProposicao} - Ementa"
             class="dialog-emenda"
           >
-            ${unsafeHTML(this.proposicao.ementa)}
+            ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
             <sl-button
               slot="footer"
               autofocus
