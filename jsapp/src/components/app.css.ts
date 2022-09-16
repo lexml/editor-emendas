@@ -124,32 +124,48 @@ export const menuStyles = html`
     }
 
     edt-menu sl-button {
-      display: flex;
     }
     edt-menu sl-button:hover {
       background-color: var(--sl-color-gray-200);
     }
-    edt-menu sl-icon {
-      font-size: 28px;
+
+    edt-menu sl-button sl-icon {
+      font-size: 18px;
+    }
+
+    .botao-emenda sl-icon {
+      font-size: 26px;
+    }
+
+    edt-menu sl-button::part(label) {
+      /* border: 1px solid green; */
     }
 
     edt-menu sl-button::part(base) {
+      --sl-input-height-small: 36px;
       background-color: transparent;
       border-color: transparent;
       color: var(--sl-color-neutral-700);
     }
-    .menu-toggle {
-      display: none;
-      cursor: pointer;
+
+    edt-notas-versao edt-menu sl-icon {
+      font-size: 28px;
     }
-    @media (max-width: 576px) {
-      .menu-toggle {
-        display: flex;
+
+    @media (max-width: 584px) {
+      edt-menu sl-button sl-icon {
+        padding: 0 13px 0 5px;
       }
+
+      edt-menu sl-button[caret] sl-icon {
+        padding: 0 2px 0 5px;
+      }
+
+      edt-menu sl-button[caret]::part(base) {
+        padding: 0 6px 0 1px;
+      }
+
       edt-menu sl-button::part(label) {
-        padding: 0 4px;
-      }
-      edt-menu sl-button {
         display: none;
       }
     }

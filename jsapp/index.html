@@ -23,23 +23,36 @@
       pointer-events: none;
     }
     .overlay-carregando {
+      width: 80px;
+      height: 80px;
       position: absolute;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(255, 255, 255, 0.6);
+      top:-50px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: auto;
+
+      background-color: rgb(255, 255, 255);
       display: flex;
       flex-direction: row;
       justify-content: center;
       align-items: center;
       z-index: 100;
-      transition: visibility 0.5s, opacity 0.5s ease-out;
+
+      transition: visibility 0.3s ease-out, opacity 0.3s ease-out;
+      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      border: 2px solid #ccc;
+    }
+    edt-app {
+      transition: filter 0.3s ease-out;
     }
     .blured {
-      -webkit-filter: blur(5px);
-      -moz-filter: blur(5px);
-      -ms-filter: blur(5px);
-      -o-filter: blur(5px);
-      filter: blur(5px);
+      /* -webkit-filter: blur(4px);
+      -moz-filter: blur(4px);
+      -ms-filter: blur(4px);
+      -o-filter: blur(4px); */
+      filter: opacity(0.5) blur(3px);
     }
   </style>
   <title>Editor de Emendas</title>
@@ -59,7 +72,7 @@
   </script>
   <script type="module" src="./out-tsc/src/index.js"></script>
   <div class="overlay-carregando hidden">
-    <sl-spinner style="font-size: 50px; --track-width: 10px;"></sl-spinner>
+    <sl-spinner style="font-size: 40px; --track-width: 8px;"></sl-spinner>
     <!-- <a href="#" onclick="document.querySelector('edt-app').toggleCarregando()">Carregando...</a> -->
   </div>
   <edt-app></edt-app>

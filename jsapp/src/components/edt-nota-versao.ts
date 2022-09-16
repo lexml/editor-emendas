@@ -27,7 +27,7 @@ export class EdtNotasVersao extends LitElement {
         size="large"
         @click=${(): void => this.emitirEvento('nova')}
       >
-        <sl-icon slot="prefix" name="plus-square"></sl-icon>
+        <sl-icon slot="prefix" name="file-earmark-plus"></sl-icon>
         Nova Emenda
       </sl-button>
       <sl-button
@@ -36,7 +36,7 @@ export class EdtNotasVersao extends LitElement {
         size="large"
         @click=${(): void => this.emitirEvento('abrir')}
       >
-        <sl-icon slot="prefix" name="box-arrow-up-right"></sl-icon>
+        <sl-icon slot="prefix" name="folder2-open"></sl-icon>
         Abrir Emenda
       </sl-button>
       <div class="conteudo">

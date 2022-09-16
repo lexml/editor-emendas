@@ -25,95 +25,76 @@ export class EdtMenu extends LitElement {
     return html`
       ${menuStyles}
 
-      <sl-dropdown>
-        <sl-button class="menu-toggle" slot="trigger" size="small">
-          <sl-icon name="list" label="Menu"></sl-icon>
-        </sl-button>
-        <sl-menu>
-          <sl-menu-item @click=${(): void => this.emitirEvento('nova')}>
-            Nova
-          </sl-menu-item>
-          <sl-menu-item @click=${(): void => this.emitirEvento('abrir')}
-            >Abrir</sl-menu-item
-          >
-          ${Object.keys(this.proposicao).length > 0
-            ? html`
-                <sl-menu-item @click=${(): void => this.emitirEvento('salvar')}>
-                  Salvar
-                </sl-menu-item>
-                <sl-menu-item
-                  @click=${(): void => this.emitirEvento('visualizar')}
-                >
-                  Visualizar
-                </sl-menu-item>
-                <sl-divider></sl-divider>
-                <sl-menu-item disabled> Outros tipos</sl-menu-item>
-                <sl-menu-item
-                  @click=${(): void => this.emitirEvento('onde-couber')}
-                >
-                  <sl-icon slot="prefix" name=""></sl-icon>
-                  Onde Couber
-                </sl-menu-item>
-              `
-            : ''}
-          <sl-divider></sl-divider>
-          <sl-menu-item disabled>Ajuda</sl-menu-item>
-          <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>
-            <sl-icon slot="prefix" name=""></sl-icon>
-            Vídeos tutoriais
-          </sl-menu-item>
-          <sl-menu-item @click=${(): void => this.emitirEvento('wiki')}>
-            <sl-icon slot="prefix" name=""></sl-icon>
-            Wiki do projeto
-          </sl-menu-item>
-        </sl-menu>
-      </sl-dropdown>
-
-      <sl-button size="small" @click=${(): void => this.emitirEvento('nova')}
-        >Nova</sl-button
+      <sl-button
+        title="Nova emenda"
+        size="small"
+        variant="default"
+        @click=${(): void => this.emitirEvento('nova')}
       >
-      <sl-button size="small" @click=${(): void => this.emitirEvento('abrir')}
-        >Abrir</sl-button
+        <sl-icon slot="prefix" size="small" name="file-earmark-plus"></sl-icon>
+        Nova
+      </sl-button>
+      <sl-button
+        title="Abrir emenda"
+        size="small"
+        @click=${(): void => this.emitirEvento('abrir')}
       >
+        <sl-icon slot="prefix" size="small" name="folder2-open"></sl-icon>
+        Abrir
+      </sl-button>
       ${Object.keys(this.proposicao).length > 0
         ? html`
             <sl-button
+              title="Salvar emenda"
               size="small"
               @click=${(): void => this.emitirEvento('salvar')}
-              >Salvar</sl-button
             >
+              <sl-icon slot="prefix" size="small" name="download"></sl-icon>
+              Salvar
+            </sl-button>
             <sl-button
+              title="Visualizar emenda"
               size="small"
               @click=${(): void => this.emitirEvento('visualizar')}
-              >Visualizar</sl-button
             >
+              <sl-icon slot="prefix" size="small" name="eye"></sl-icon>
+              Visualizar
+            </sl-button>
             <sl-dropdown>
-              <sl-button size="small" slot="trigger" caret
-                >Outros tipos</sl-button
+              <sl-button
+                title="Outros tipos de emenda"
+                size="small"
+                slot="trigger"
+                caret
               >
+                <sl-icon slot="prefix" size="small" name="card-text"></sl-icon>
+                Outros tipos
+              </sl-button>
               <sl-menu>
                 <sl-menu-item
                   @click=${(): void => this.emitirEvento('onde-couber')}
-                  >Onde couber</sl-menu-item
                 >
+                  Onde couber
+                </sl-menu-item>
               </sl-menu>
             </sl-dropdown>
           `
         : ''}
 
       <sl-dropdown>
-        <sl-button size="small" slot="trigger" caret>Ajuda</sl-button>
+        <sl-button title="Ajuda" size="small" slot="trigger" caret>
+          <sl-icon slot="prefix" size="small" name="question-lg"></sl-icon>
+          Ajuda
+        </sl-button>
         <sl-menu>
           <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>
             Vídeos tutoriais
           </sl-menu-item>
           <sl-menu-item @click=${(): void => this.emitirEvento('wiki')}>
-            Wiki do projeto</sl-menu-item
-          >
+            Wiki do projeto
+          </sl-menu-item>
         </sl-menu>
       </sl-dropdown>
-
-      <!-- <sl-button  size="small">Ajuda</sl-button> -->
     `;
   }
 }
