@@ -131,8 +131,12 @@ export const menuStyles = html`
 
     edt-menu sl-button sl-icon {
       font-size: 18px;
-      /* border: 1px solid red; */
     }
+
+    .botao-emenda sl-icon {
+      font-size: 26px;
+    }
+
     edt-menu sl-button::part(label) {
       /* border: 1px solid green; */
     }
