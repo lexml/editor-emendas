@@ -70,7 +70,7 @@ public class EditorApiController {
         return os.toByteArray();
     }
     
-    @PostMapping(path = {"/emenda/pdf2json", "/emenda/pdf2jsonBinary"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
     public void abreEmenda(HttpServletRequest request, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
@@ -118,7 +118,7 @@ public class EditorApiController {
         return lexmlJsonixService.getProposicoes(sigla, ano, numero);
     }
     
-    @GetMapping(path = {"/proposicao/texto-json", "/proposicao/texto-json-heroku"}, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getTextoJson(@RequestParam String sigla,
     		@RequestParam int ano, @RequestParam String numero) throws IOException {
     	
