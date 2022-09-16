@@ -31,7 +31,7 @@ public class EmendaWebConfiguration {
 		};
 	    FilterRegistrationBean registration = new FilterRegistrationBean();
 	    registration.setFilter(filter);
-	    registration.addUrlPatterns("", "*.html");
+	    registration.addUrlPatterns("/", "*.html");
 	    registration.setName("Content-Security-Policy-Filter");
 	    registration.setOrder(1);
 	    return registration;
