@@ -49,11 +49,19 @@ export class EdtMenu extends LitElement {
               size="small"
               @click=${(): void => this.emitirEvento('salvar')}
             >
-              <sl-icon slot="prefix" size="small" name="salvar"></sl-icon>
+              <sl-icon slot="prefix" size="small" name="download"></sl-icon>
               Salvar
             </sl-button>
             <sl-button
-              title="Salvar emenda"
+              title="Salvar emenda com outro nome"
+              size="small"
+              @click=${(): void => this.emitirEvento('salvarComo')}
+            >
+              <sl-icon slot="prefix" size="small" name="download"></sl-icon>
+              Salvar Como
+            </sl-button>
+            <sl-button
+              title="Download emenda"
               size="small"
               @click=${(): void => this.emitirEvento('download')}
             >

@@ -152,6 +152,51 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private async salvarPdfComo(): Promise<void> {
+    const pickerOptions = {
+      suggestedName: `${this.tituloEmenda || 'nova'}.emenda`,
+      types: [
+        {
+          description: 'Arquivos de Emenda',
+          accept: {
+            'application/pdf': ['.pdf'],
+          },
+        },
+      ],
+      excludeAcceptAllOption: true,
+      multiple: false,
+    };
+
+    const emenda = this.lexmlEmenda.getEmenda();
+    if (emenda) {
+      const response = await fetch('api/emenda/json2pdf', {
+        method: 'POST',
+        body: JSON.stringify(emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+
+      let writableStream;
+      try {
+        const content = await response.blob();
+
+        this.fileHandle = await (window as any).showSaveFilePicker(
+          pickerOptions
+        );
+        this.tituloEmenda = this.fileHandle.name;
+        writableStream = await this.fileHandle.createWritable();
+        await writableStream.write(content);
+      } catch (err) {
+        console.log(err);
+      } finally {
+        if (writableStream) {
+          await writableStream.close();
+        }
+      }
+    }
+  }
+
   private abrirVideos(): void {
     window.open(
       'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
@@ -170,31 +215,6 @@ export class EdtApp extends LitElement {
 
   private getEmentaSemTags(texto: string): string {
     return texto.replace(/(<([^>]+)>)/gi, '');
-  }
-
-  private async selecionaArquivo(event: Event): Promise<void> {
-    const fileInput = event.target as HTMLInputElement;
-
-    if (fileInput && fileInput.files) {
-      const data = new FormData();
-      data.append('file', fileInput.files[0]);
-
-      const response = await fetch('api/emenda/pdf2json/', {
-        method: 'POST',
-        body: data,
-        headers: {
-          'Content-Type': 'application/pdf;charset=UTF-8',
-        },
-      });
-      const content = await response.json();
-
-      this.lexmlEmenda.resetaEmenda();
-
-      await this.loadTextoProposicao(content.proposicao);
-      this.lexmlEmenda.setEmenda(content);
-
-      (document.querySelector('#fileUpload') as HTMLInputElement).value = '';
-    }
   }
 
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
@@ -242,6 +262,8 @@ export class EdtApp extends LitElement {
       this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
       this.salvarPdf();
+    } else if (ev.detail.itemMenu === 'salvarComo') {
+      this.salvarPdfComo();
     } else if (ev.detail.itemMenu === 'abrir') {
       this.fileHandle = undefined;
       this.openFile();
@@ -380,13 +402,6 @@ export class EdtApp extends LitElement {
         .proposicao=${this.proposicao}
         @item-selecionado=${this.onItemMenuSelecionado}
       ></edt-menu>
-      <input
-        type="file"
-        id="fileUpload"
-        accept="application/pdf"
-        @input="${this.selecionaArquivo}"
-        style="display: none"
-      />
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
           ? ''
