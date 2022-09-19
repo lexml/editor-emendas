@@ -199,7 +199,7 @@ export const novaEmendaStyles = html`
       gap: 10px;
       flex-wrap: wrap;
     }
-    table {
+    /* table {
       border-spacing: 0;
     }
     thead tr {
@@ -242,7 +242,130 @@ export const novaEmendaStyles = html`
 
     tbody tr:hover {
       background-color: #fcffdd;
+    } */
+
+    .table-wrap {
+      max-height: 300px;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+    }
+
+    html {
+      box-sizing: border-box;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: inherit;
+      position: relative;
+    }
+
+    body {
+      padding: 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      font: caption;
+      outline-offset: -1px;
+    }
+
+    th {
+      font-weight: 700;
+      z-index: 1;
+      /* padding: 1rem 0.5rem; */
+    }
+
+    th:after {
+      content: '';
+      display: block;
+      position: absolute;
+      background-color: var(--sl-color-neutral-100);
+      top: -1px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: -1;
+      outline: 1px solid #ccc;
+    }
+
+    .table-wrap {
+      border: 1px solid #ccc;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      margin: -1px;
+      width: calc(100% + 2px);
+    }
+
+    tr:nth-of-type(even) {
+      background-color: whitesmoke;
+    }
+
+    td:nth-of-type(3) {
+      white-space: nowrap;
+    }
+
+    .table-wrap::-webkit-scrollbar {
+      -webkit-appearance: none;
+      border-left: 1px solid #ccc;
+      background-image: linear-gradient(to top, whitesmoke, white);
+    }
+
+    .table-wrap::-webkit-scrollbar:vertical {
+      width: 0.6rem;
+    }
+
+    .table-wrap::-webkit-scrollbar:horizontal {
+      width: 0.6rem;
+    }
+
+    .table-wrap::-webkit-scrollbar-thumb {
+      border-radius: 0.8rem;
+      background-color: rgba(51, 51, 51, 0.5);
+    }
+
+    tr[disabled='true'] {
+      cursor: auto;
+      pointer-events: none;
+      color: var(--sl-color-neutral-400);
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    tr[selected] {
+      background-color: #f7ff9c;
+    }
+
+    tr[selected]:hover {
+      background-color: #f7ff9c;
+    }
+
+    tbody tr:hover {
+      background-color: #fcffdd;
+    }
+
+    @media (max-width: 584px) {
+      .table-wrap {
+        max-height: 200px;
+      }
+    }
+
     .col-1 {
       width: 120px;
       text-align: center;

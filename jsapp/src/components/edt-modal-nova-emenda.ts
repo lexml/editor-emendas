@@ -72,37 +72,39 @@ export class EdtModalNovaEmenda extends LitElement {
     return !this.proposicoes.length
       ? html``
       : html`
-          <table class="lista-proposicao">
-            <thead>
-              <tr>
-                <th class="col-1">Proposição</th>
-                <th class="col-2">Ementa</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${this.proposicoes.map(p => {
-                return html`
-                  <tr
-                    tabindex="0"
-                    class="proposicao"
-                    @click=${(evt: Event): any =>
-                      this.selecionarProposicao(p, evt)}
-                    disabled=${p.idSdlegDocumentoItemDigital ? false : true}
-                  >
-                    <td class="col-1">${p.nomeProposicao}</td>
-                    <td class="col-2">
-                      <span class="ementa">
-                        ${p.idSdlegDocumentoItemDigital
-                          ? p.ementa
-                          : html`<sl-badge pill>Texto indisponível</sl-badge>
-                              ${p.ementa}`}
-                      </span>
-                    </td>
-                  </tr>
-                `;
-              })}
-            </tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="col-1">Proposição</th>
+                  <th class="col-2">Ementa</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${this.proposicoes.map(p => {
+                  return html`
+                    <tr
+                      tabindex="0"
+                      class="proposicao"
+                      @click=${(evt: Event): any =>
+                        this.selecionarProposicao(p, evt)}
+                      disabled=${p.idSdlegDocumentoItemDigital ? false : true}
+                    >
+                      <td class="col-1">${p.nomeProposicao}</td>
+                      <td class="col-2">
+                        <span class="ementa">
+                          ${p.idSdlegDocumentoItemDigital
+                            ? p.ementa
+                            : html`<sl-badge pill>Texto indisponível</sl-badge>
+                                ${p.ementa}`}
+                        </span>
+                      </td>
+                    </tr>
+                  `;
+                })}
+              </tbody>
+            </table>
+          </div>
         `;
   }
 
