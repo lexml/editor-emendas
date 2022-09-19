@@ -49,8 +49,8 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   render(): TemplateResult {
-    const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
-
+    //const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
+    const tituloModal = !'emenda';
     return html`
       ${visualizarPdfStyles}
       <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">

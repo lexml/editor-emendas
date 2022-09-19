@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { LitElement, html, TemplateResult } from 'lit';
+import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { menuStyles } from './app.css';
 @customElement('edt-menu')
@@ -49,8 +49,16 @@ export class EdtMenu extends LitElement {
               size="small"
               @click=${(): void => this.emitirEvento('salvar')}
             >
-              <sl-icon slot="prefix" size="small" name="download"></sl-icon>
+              <sl-icon slot="prefix" size="small" name="salvar"></sl-icon>
               Salvar
+            </sl-button>
+            <sl-button
+              title="Salvar emenda"
+              size="small"
+              @click=${(): void => this.emitirEvento('download')}
+            >
+              <sl-icon slot="prefix" size="small" name="download"></sl-icon>
+              Download
             </sl-button>
             <sl-button
               title="Visualizar emenda"

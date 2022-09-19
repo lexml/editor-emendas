@@ -8,6 +8,8 @@ import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 
+import { fileOpen, fileSave } from 'browser-fs-access';
+
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   // static styles = appStyles;
@@ -43,6 +45,9 @@ export class EdtApp extends LitElement {
   @state()
   private proposicao: Proposicao = {};
 
+  @state()
+  private fileHandle: any;
+
   createRenderRoot(): LitElement {
     return this;
   }
@@ -64,7 +69,7 @@ export class EdtApp extends LitElement {
     return 'value' in this.jsonixProposicao;
   }
 
-  private async salvarPdf(): Promise<void> {
+  private async downloadPdf(): Promise<void> {
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
       const response = await fetch('api/emenda/json2pdf', {
@@ -86,8 +91,65 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private abrirPdf(): void {
-    (document.querySelector('#fileUpload') as HTMLInputElement).click();
+  async openFile() {
+    const fileData = await fileOpen({
+      description: 'Arquivos PDF',
+      mimeTypes: ['application/pdf'],
+      extensions: ['.pdf'],
+      multiple: false,
+    });
+
+    this.fileHandle = fileData.handle;
+
+    const response = await fetch('api/emenda/pdf2json/', {
+      method: 'POST',
+      body: fileData,
+      headers: {
+        'Content-Type': 'application/pdf;charset=UTF-8',
+      },
+    });
+    const content = await response.json();
+
+    this.lexmlEmenda.resetaEmenda();
+
+    await this.loadTextoProposicao(content.proposicao);
+    this.lexmlEmenda.setEmenda(content);
+
+    return fileData;
+  }
+
+  private async salvarPdf(): Promise<void> {
+    const emenda = this.lexmlEmenda.getEmenda();
+    if (emenda) {
+      const response = await fetch('api/emenda/json2pdf', {
+        method: 'POST',
+        body: JSON.stringify(emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+
+      try {
+        const fileName = this.tituloEmenda.replace(/[.].*$/, '');
+        const options = {
+          fileName: `${fileName || 'nova'}.emenda.pdf`,
+          extensions: ['.pdf'],
+          id: 'editor-emendas',
+          excludeAcceptAllOption: true,
+        };
+
+        const content = await response.blob();
+
+        this.fileHandle = await fileSave(
+          content,
+          options,
+          this.fileHandle,
+          true
+        );
+      } catch (err) {
+        console.log(err);
+      }
+    }
   }
 
   private abrirVideos(): void {
@@ -168,16 +230,22 @@ export class EdtApp extends LitElement {
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
+      this.fileHandle = undefined;
       this.modalNovaEmenda.show();
     } else if (ev.detail.itemMenu === 'visualizar') {
       this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
     } else if (ev.detail.itemMenu === 'onde-couber') {
+      this.fileHandle = undefined;
       this.modalOndeCouber.show();
+    } else if (ev.detail.itemMenu === 'download') {
+      this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
       this.salvarPdf();
     } else if (ev.detail.itemMenu === 'abrir') {
-      this.abrirPdf();
+      this.fileHandle = undefined;
+      this.openFile();
+      //this.abrirPdf();
     } else if (ev.detail.itemMenu === 'videos') {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
@@ -189,13 +257,14 @@ export class EdtApp extends LitElement {
     if (ev.detail.botaoNotasVersao === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.botaoNotasVersao === 'abrir') {
-      this.abrirPdf();
+      //this.abrirPdf();
+      this.openFile();
     }
   }
 
   private criarNovaEmendaPadrao(proposicao: Proposicao): void {
     this.modo = 'emenda';
-    this.tituloEmenda = 'Emenda padrão à ' + this.proposicao.nomeProposicao;
+    this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     this.lexmlEmenda.resetaEmenda();
     this.loadTextoProposicao(proposicao);
@@ -203,8 +272,7 @@ export class EdtApp extends LitElement {
 
   private criarNovaEmendaArtigoOndeCouber(): void {
     this.modo = 'emendaArtigoOndeCouber';
-    this.tituloEmenda =
-      'Emenda dispositivos onde couber à ' + this.proposicao.nomeProposicao;
+    this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda onde couber';
     this.lexmlEmenda.resetaEmenda();
     this.jsonixProposicao = { ...this.jsonixProposicao };
@@ -266,6 +334,7 @@ export class EdtApp extends LitElement {
               placeholder="Emenda à ${this.proposicao.nomeProposicao}"
               size="small"
               clearable
+              style="display: none"
             ></sl-input>
           </div>
           <sl-dialog
