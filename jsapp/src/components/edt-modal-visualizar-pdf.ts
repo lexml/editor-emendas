@@ -21,15 +21,20 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
-    const resp = await fetch('api/emenda/json2pdf', {
-      method: 'POST',
-      body: JSON.stringify(this.emenda),
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-      },
-    });
-    const pdf = await resp.blob();
-    this.pdfBase64 = await blobToBase64(pdf);
+    try {
+      const resp = await fetch('api/emenda/json2pdf', {
+        method: 'POST',
+        body: JSON.stringify(this.emenda),
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+      });
+      const pdf = await resp.blob();
+      this.pdfBase64 = await blobToBase64(pdf);
+    } catch (err) {
+      console.log(err);
+      window.alert(`Erro inesperado ao gerar o PDF`);
+    }
   }
 
   protected firstUpdated(): void {
@@ -49,8 +54,7 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   render(): TemplateResult {
-    //const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
-    const tituloModal = !'emenda';
+    const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
     return html`
       ${visualizarPdfStyles}
       <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">

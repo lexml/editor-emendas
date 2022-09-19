@@ -148,6 +148,7 @@ export class EdtApp extends LitElement {
         );
       } catch (err) {
         console.log(err);
+        window.alert(`Erro ao salvar o arquivo: ${err}`);
       }
     }
   }
@@ -189,6 +190,7 @@ export class EdtApp extends LitElement {
         await writableStream.write(content);
       } catch (err) {
         console.log(err);
+        window.alert(`Erro ao salvar o arquivo: ${err}`);
       } finally {
         if (writableStream) {
           await writableStream.close();
@@ -219,33 +221,38 @@ export class EdtApp extends LitElement {
 
   private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
     this.toggleCarregando();
-    const { sigla, numero, ano } = proposicao;
-    this.jsonixProposicao = await getProposicaoJsonix(
-      sigla!,
-      numero!,
-      Number(ano)
-    );
-    const urn = getUrn(this.jsonixProposicao);
-    this.proposicao = {
-      urn,
-      sigla, //sigla: getSigla(urn),
-      numero, //numero: getNumero(urn),
-      ano, //ano: getAno(urn),
-      ementa: buildContent(
-        this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial?.ementa
-          .content
-      ),
-    };
-    this.proposicao.nomeProposicao =
-      this.proposicao.sigla +
-      ' ' +
-      this.proposicao.numero +
-      '/' +
-      this.proposicao.ano;
-    this.tituloEmenda =
-      'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
-
-    this.toggleCarregando();
+    try {
+      const { sigla, numero, ano } = proposicao;
+      this.jsonixProposicao = await getProposicaoJsonix(
+        sigla!,
+        numero!,
+        Number(ano)
+      );
+      const urn = getUrn(this.jsonixProposicao);
+      this.proposicao = {
+        urn,
+        sigla, //sigla: getSigla(urn),
+        numero, //numero: getNumero(urn),
+        ano, //ano: getAno(urn),
+        ementa: buildContent(
+          this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial
+            ?.ementa.content
+        ),
+      };
+      this.proposicao.nomeProposicao =
+        this.proposicao.sigla +
+        ' ' +
+        this.proposicao.numero +
+        '/' +
+        this.proposicao.ano;
+      this.tituloEmenda =
+        'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
+    } catch (err) {
+      console.log(err);
+      window.alert('Não se trata de um PDF gerado pelo Editor de Emendas');
+    } finally {
+      this.toggleCarregando();
+    }
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
