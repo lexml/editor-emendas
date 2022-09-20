@@ -244,8 +244,9 @@ export class EdtApp extends LitElement {
         ' ' +
         (/[\d]+/.test(this.proposicao.numero!)
           ? +this.proposicao.numero!
-          : this.proposicao.numero);
-      '/' + this.proposicao.ano;
+          : this.proposicao.numero) +
+        '/' +
+        this.proposicao.ano;
       this.tituloEmenda =
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
     } catch (err) {
