@@ -13,8 +13,6 @@ import { fileOpen, fileSave } from 'browser-fs-access';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
-  // static styles = appStyles;
-
   private tituloEmenda = '';
   private labelTipoEmenda = '';
   carregando = false;
@@ -39,7 +37,6 @@ export class EdtApp extends LitElement {
   @state()
   private proposicao: Proposicao = {};
 
-  @state()
   private fileHandle: any;
 
   createRenderRoot(): LitElement {
