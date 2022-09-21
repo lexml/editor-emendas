@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
 import { html, LitElement, TemplateResult } from 'lit';
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 
+import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 import { Proposicao } from '../model/proposicao';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
-import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 
 import { fileOpen, fileSave } from 'browser-fs-access';
 
@@ -15,18 +15,12 @@ import { fileOpen, fileSave } from 'browser-fs-access';
 export class EdtApp extends LitElement {
   // static styles = appStyles;
 
-  @property({ type: String }) tituloEmenda = '';
-  @property({ type: String }) labelTipoEmenda = '';
-  @property({ type: Boolean }) carregando = false;
+  private tituloEmenda = '';
+  private labelTipoEmenda = '';
+  carregando = false;
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
-
-  @query('lexml-eta')
-  private lexmlEta!: any;
-
-  @query('lexml-emenda-comando')
-  private lexmlComandoEmenda!: any;
 
   @query('edt-modal-nova-emenda')
   private modalNovaEmenda!: any;
@@ -37,7 +31,6 @@ export class EdtApp extends LitElement {
   @query('edt-modal-onde-couber')
   private modalOndeCouber!: any;
 
-  @state()
   private jsonixProposicao: any = {};
 
   @state()
@@ -97,7 +90,7 @@ export class EdtApp extends LitElement {
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
-  async openFile() {
+  async abrirPdf() {
     const fileData = await fileOpen({
       description: 'Arquivos PDF',
       mimeTypes: ['application/pdf'],
@@ -125,6 +118,8 @@ export class EdtApp extends LitElement {
   }
 
   private async salvarPdf(): Promise<void> {
+    this.toggleCarregando();
+
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
       const response = await fetch('api/emenda/json2pdf', {
@@ -154,11 +149,14 @@ export class EdtApp extends LitElement {
       } catch (err) {
         console.log(err);
         this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
+      } finally {
+        this.toggleCarregando();
       }
     }
   }
 
   private async salvarPdfComo(): Promise<void> {
+    this.toggleCarregando();
     const pickerOptions = {
       suggestedName: `${this.tituloEmenda || 'nova'}.emenda`,
       types: [
@@ -175,16 +173,15 @@ export class EdtApp extends LitElement {
 
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
-      const response = await fetch('api/emenda/json2pdf', {
-        method: 'POST',
-        body: JSON.stringify(emenda),
-        headers: {
-          'Content-Type': 'application/json;charset=UTF-8',
-        },
-      });
-
       let writableStream;
       try {
+        const response = await fetch('api/emenda/json2pdf', {
+          method: 'POST',
+          body: JSON.stringify(emenda),
+          headers: {
+            'Content-Type': 'application/json;charset=UTF-8',
+          },
+        });
         const content = await response.blob();
 
         this.fileHandle = await (window as any).showSaveFilePicker(
@@ -197,6 +194,8 @@ export class EdtApp extends LitElement {
         console.log(err);
         this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
       } finally {
+        this.toggleCarregando();
+
         if (writableStream) {
           await writableStream.close();
         }
@@ -301,8 +300,7 @@ export class EdtApp extends LitElement {
       this.salvarPdfComo();
     } else if (ev.detail.itemMenu === 'abrir') {
       this.fileHandle = undefined;
-      this.openFile();
-      //this.abrirPdf();
+      this.abrirPdf();
     } else if (ev.detail.itemMenu === 'videos') {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
@@ -314,8 +312,7 @@ export class EdtApp extends LitElement {
     if (ev.detail.botaoNotasVersao === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.botaoNotasVersao === 'abrir') {
-      //this.abrirPdf();
-      this.openFile();
+      this.abrirPdf();
     }
   }
 
