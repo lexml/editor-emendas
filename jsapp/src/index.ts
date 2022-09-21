@@ -9,6 +9,6 @@ import './components/edt-nota-versao';
 import './components/edt-modal-nova-emenda';
 import './components/edt-modal-visualizar-pdf';
 import './components/edt-modal-onde-couber';
-import '@shoelace-style/shoelace/dist/components/divider/divider';
+import './components/edt-modal-ajuda';
 
 export { EdtApp } from './components/edt-app';
