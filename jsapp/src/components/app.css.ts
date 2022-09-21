@@ -259,6 +259,9 @@ export const novaEmendaStyles = html`
       position: sticky;
       top: 0;
     }
+    thead tr {
+      border-bottom: 3px solid var(--sl-color-neutral-400);
+    }
 
     html {
       box-sizing: border-box;
