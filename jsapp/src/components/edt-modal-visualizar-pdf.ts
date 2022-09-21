@@ -4,6 +4,7 @@ import { customElement, property, query, state } from 'lit/decorators.js';
 
 import { blobToBase64 } from './../servicos/blobUtil';
 import { visualizarPdfStyles } from './app.css';
+import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 
 @customElement('edt-modal-visualizar-pdf')
 export class EdtModalVisualizarPdf extends LitElement {
@@ -33,7 +34,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       this.pdfBase64 = await blobToBase64(pdf);
     } catch (err) {
       console.log(err);
-      window.alert(`Erro inesperado ao gerar o PDF`);
+      this.emitirAlerta(`Erro inesperado ao gerar o PDF`);
     }
   }
 
@@ -51,6 +52,27 @@ export class EdtModalVisualizarPdf extends LitElement {
 
   private hasChangedEmenda(changedProperties: PropertyValues): boolean {
     return changedProperties.has('emenda') && changedProperties.get('emenda');
+  }
+
+  // Emite notificação de erro como toast
+  private emitirAlerta(
+    message: string,
+    variant = 'primary',
+    icon = 'info-circle',
+    duration = 3000
+  ) {
+    const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
+      variant,
+      closable: true,
+      duration: duration,
+      innerHTML: `
+        <sl-icon name="${icon}" slot="icon"></sl-icon>
+        ${message}
+      `,
+    });
+
+    document.body.append(alert);
+    return alert.toast();
   }
 
   render(): TemplateResult {
