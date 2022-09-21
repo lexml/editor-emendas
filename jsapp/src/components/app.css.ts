@@ -27,7 +27,7 @@ export const appStyles = html`
       overflow-y: hidden;
     }
     .editor-emendas {
-      height: calc(100% - 84px);
+      height: calc(100% - 54px);
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -447,6 +447,7 @@ export const notaVersaoStyles = html`
     .video-container--thumb {
       width: 100%;
       height: auto;
+      border-radius: 0.25rem;
     }
     .legenda {
       font-size: var(--sl-font-size-small);
