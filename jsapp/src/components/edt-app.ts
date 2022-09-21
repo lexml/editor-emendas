@@ -171,6 +171,7 @@ export class EdtApp extends LitElement {
     const emenda = this.lexmlEmenda.getEmenda();
     if (emenda) {
       let writableStream;
+      let fileHandle;
       try {
         const response = await fetch('api/emenda/json2pdf', {
           method: 'POST',
@@ -181,15 +182,21 @@ export class EdtApp extends LitElement {
         });
         const content = await response.blob();
 
-        this.fileHandle = await (window as any).showSaveFilePicker(
-          pickerOptions
-        );
-        this.tituloEmenda = this.fileHandle.name;
-        writableStream = await this.fileHandle.createWritable();
+        fileHandle = await (window as any).showSaveFilePicker(pickerOptions);
+        this.tituloEmenda = await fileHandle.name;
+        writableStream = await fileHandle.createWritable();
         await writableStream.write(content);
+        this.fileHandle = fileHandle;
       } catch (err) {
-        console.log(err);
-        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
+        if (
+          !(err as any)['message'].includes('cancel') &&
+          !(err as any)['message'].includes('abort')
+        ) {
+          console.log(err);
+          this.emitirAlerta(
+            `Erro ao salvar o arquivo: ${(err as any).message}`
+          );
+        }
       } finally {
         this.toggleCarregando();
 
