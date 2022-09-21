@@ -7,6 +7,7 @@ import { Proposicao } from '../model/proposicao';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
+import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 
 import { fileOpen, fileSave } from 'browser-fs-access';
 
@@ -152,7 +153,7 @@ export class EdtApp extends LitElement {
         );
       } catch (err) {
         console.log(err);
-        window.alert(`Erro ao salvar o arquivo: ${err}`);
+        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
       }
     }
   }
@@ -194,7 +195,7 @@ export class EdtApp extends LitElement {
         await writableStream.write(content);
       } catch (err) {
         console.log(err);
-        window.alert(`Erro ao salvar o arquivo: ${err}`);
+        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
       } finally {
         if (writableStream) {
           await writableStream.close();
@@ -217,6 +218,27 @@ export class EdtApp extends LitElement {
 
   private abrirWiki(): void {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
+  }
+
+  // Emite notificação de erro como toast
+  private emitirAlerta(
+    message: string,
+    variant = 'primary',
+    icon = 'info-circle',
+    duration = 3000
+  ) {
+    const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
+      variant,
+      closable: true,
+      duration: duration,
+      innerHTML: `
+        <sl-icon name="${icon}" slot="icon"></sl-icon>
+        ${message}
+      `,
+    });
+
+    document.body.append(alert);
+    return alert.toast();
   }
 
   private getEmentaSemTags(texto: string): string {
@@ -255,7 +277,7 @@ export class EdtApp extends LitElement {
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
     } catch (err) {
       console.log(err);
-      window.alert('Não se trata de um PDF gerado pelo Editor de Emendas');
+      this.emitirAlerta('Não se trata de um PDF gerado pelo Editor de Emendas');
     } finally {
       this.toggleCarregando();
     }

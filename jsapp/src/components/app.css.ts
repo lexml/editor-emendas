@@ -27,13 +27,13 @@ export const appStyles = html`
       overflow-y: hidden;
     }
     .editor-emendas {
-      height: calc(100% - 84px);
+      height: calc(100% - 45px);
       width: 100%;
       display: flex;
       flex-direction: column;
     }
     .detalhe-emenda {
-      padding: 9px 15px 14px 15px;
+      padding: 9px 15px 5px 15px;
       background-color: #dfe9ff;
       border-radius: 5px;
       display: flex;
@@ -447,6 +447,7 @@ export const notaVersaoStyles = html`
     .video-container--thumb {
       width: 100%;
       height: auto;
+      border-radius: 0.25rem;
     }
     .legenda {
       font-size: var(--sl-font-size-small);
