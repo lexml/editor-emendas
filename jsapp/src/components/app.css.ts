@@ -152,7 +152,7 @@ export const menuStyles = html`
       font-size: 28px;
     }
 
-    @media (max-width: 584px) {
+    @media (max-width: 720px) {
       edt-menu sl-button sl-icon {
         padding: 0 13px 0 5px;
       }
