@@ -155,7 +155,7 @@ export class EdtApp extends LitElement {
   private async salvarPdfComo(): Promise<void> {
     this.toggleCarregando();
     const pickerOptions = {
-      suggestedName: `${this.tituloEmenda || 'nova'}.emenda`,
+      suggestedName: this.getFileName(),
       types: [
         {
           description: 'Arquivos de Emenda',
