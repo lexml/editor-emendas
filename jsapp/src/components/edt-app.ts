@@ -92,6 +92,11 @@ export class EdtApp extends LitElement {
     }
   }
 
+  getFileName(): string {
+    const fileName = this.tituloEmenda.replace(/[.].*$/, '');
+    return `${fileName || 'nova'}.emenda.pdf`;
+  }
+
   async openFile() {
     const fileData = await fileOpen({
       description: 'Arquivos PDF',
@@ -131,9 +136,8 @@ export class EdtApp extends LitElement {
       });
 
       try {
-        const fileName = this.tituloEmenda.replace(/[.].*$/, '');
         const options = {
-          fileName: `${fileName || 'nova'}.emenda.pdf`,
+          fileName: this.getFileName(),
           extensions: ['.pdf'],
           id: 'editor-emendas',
           excludeAcceptAllOption: true,
