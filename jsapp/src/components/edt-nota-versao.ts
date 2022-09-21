@@ -32,7 +32,8 @@ export class EdtNotasVersao extends LitElement {
       </sl-button>
       <sl-button
         class="botao-emenda"
-        variant="primary"
+        variant="default"
+        outline
         size="large"
         @click=${(): void => this.emitirEvento('abrir')}
       >
