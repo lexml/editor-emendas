@@ -153,19 +153,36 @@ export const menuStyles = html`
     }
 
     @media (max-width: 720px) {
-      edt-menu sl-button sl-icon {
+      edt-menu sl-button:nth-last-child(-n + 4) sl-icon {
         padding: 0 13px 0 5px;
       }
 
-      edt-menu sl-button[caret] sl-icon {
+      edt-menu sl-button[caret]:nth-last-child(-n + 4) sl-icon {
         padding: 0 2px 0 5px;
       }
 
-      edt-menu sl-button[caret]::part(base) {
+      edt-menu sl-button[caret]:nth-last-child(-n + 4)::part(base) {
         padding: 0 6px 0 1px;
       }
 
-      edt-menu sl-button::part(label) {
+      edt-menu sl-button:nth-last-child(-n + 4)::part(label) {
+        display: none;
+      }
+    }
+
+    @media (max-width: 480px) {
+      edt-menu sl-button:nth-last-child(-n + 7) sl-icon {
+        padding: 0 11px 0 3px;
+      }
+
+      edt-menu sl-button[caret]:nth-last-child(-n + 7) sl-icon {
+        padding: 0 2px 0 3px;
+      }
+
+      edt-menu sl-button[caret]:nth-last-child(-n + 7)::part(base) {
+        padding: 0 3px 0 1px;
+      }
+      edt-menu sl-button:nth-last-child(-n + 7)::part(label) {
         display: none;
       }
     }
