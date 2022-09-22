@@ -111,7 +111,7 @@ export class EdtModalNovaEmenda extends LitElement {
   render(): TemplateResult {
     return html`
       ${novaEmendaStyles}
-      <sl-dialog label="Selecionar texto para emendamento">
+      <sl-dialog label="Selecionar texto">
         <div @keyup=${this.processarKeyup}>
           <div class="form-group">
             <sl-select
@@ -132,7 +132,6 @@ export class EdtModalNovaEmenda extends LitElement {
               type="number"
               inputmode="numeric"
               enterkeyhint="enter"
-              clearable
               @sl-input=${(ev: Event): any =>
                 (this.numero = (ev.target as HTMLInputElement).value)}
             ></sl-input>
@@ -146,18 +145,20 @@ export class EdtModalNovaEmenda extends LitElement {
               type="number"
               inputmode="numeric"
               enterkeyhint="enter"
-              clearable
               @sl-input=${(ev: Event): any =>
                 (this.ano = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-button
               variant="primary"
               size="small"
+              class="button-pesquisar"
               autofocus
               @click=${this.pesquisar}
               ?disabled=${!(this.sigla && this.ano)}
-              >Pesquisar</sl-button
             >
+              <sl-icon slot="prefix" name="search"></sl-icon>
+              Pesquisar
+            </sl-button>
           </div>
           <br />
           <div>${this.renderProposicoes()}</div>
