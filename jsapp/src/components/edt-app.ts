@@ -191,7 +191,8 @@ export class EdtApp extends LitElement {
       } catch (err) {
         if (
           !(err as any)['message'].includes('cancel') &&
-          !(err as any)['message'].includes('abort')
+          !(err as any)['message'].includes('abort') &&
+          !(err as any)['message'].includes('showSaveFilePicker')
         ) {
           console.log(err);
           this.emitirAlerta(
