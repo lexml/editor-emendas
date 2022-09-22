@@ -96,6 +96,7 @@ export class EdtApp extends LitElement {
     });
 
     this.fileHandle = fileData.handle;
+    this.tituloEmenda = fileData.name;
 
     const response = await fetch('api/emenda/pdf2json/', {
       method: 'POST',
