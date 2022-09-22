@@ -216,53 +216,9 @@ export const novaEmendaStyles = html`
       gap: 10px;
       flex-wrap: wrap;
     }
-    /* table {
-      border-spacing: 0;
-    }
-    thead tr {
-      display: flex;
-      flex-direction: row;
-      border-bottom: 2px solid #000;
-    }
-    tbody {
-      height: 280px;
-      overflow: hidden;
-      overflow-y: scroll;
-      display: block;
-      table-layout: fixed;
-    }
-    td {
-      padding: 0.5rem;
-      border-bottom: 1px solid #ddd;
-    }
-    th {
-      padding: 0.5rem;
-    }
-    tr {
-      cursor: pointer;
-    }
-    tr[disabled='true'] {
-      cursor: auto;
-      pointer-events: none;
-      color: var(--sl-color-neutral-400);
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    tr[selected] {
-      background-color: #f7ff9c;
-    }
-
-    tr[selected]:hover {
-      background-color: #f7ff9c;
-    }
-
-    tbody tr:hover {
-      background-color: #fcffdd;
-    } */
 
     .table-wrap {
-      max-height: 300px;
+      max-height: 400px;
       overflow-x: hidden;
       overflow-y: auto;
     }
@@ -307,7 +263,6 @@ export const novaEmendaStyles = html`
     th {
       font-weight: 700;
       z-index: 1;
-      /* padding: 1rem 0.5rem; */
     }
 
     th:after {
@@ -420,11 +375,42 @@ export const novaEmendaStyles = html`
       border-color: var(--sl-color-neutral-300);
     }
     @media (max-width: 768px) {
-      tbody {
-        height: 250px;
-      }
       sl-dialog {
         --width: 100vw;
+      }
+    }
+    @media (max-width: 584px) {
+      .tipo-proposicao,
+      .numero-proposicao,
+      .ano-proposicao {
+        width: 77px;
+      }
+    }
+    @media (max-width: 480px) {
+      .button-pesquisar::part(label) {
+        display: none;
+      }
+      .button-pesquisar sl-icon {
+        padding: 0 9px 0 0;
+        font-size: 16px;
+      }
+      .form-group {
+        gap: 2px;
+      }
+      .numero-proposicao,
+      .ano-proposicao {
+        width: 60px;
+      }
+      .col-1 {
+        width: 80px;
+        font-size: 14px;
+        white-space: break-spaces;
+      }
+      .ementa {
+        font-size: 14px;
+      }
+      sl-dialog::part(title) {
+        padding: 10px 20px;
       }
     }
   </style>
