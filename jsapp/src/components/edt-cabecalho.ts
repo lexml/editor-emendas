@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { cabecalhoStyles } from './app.css';
@@ -10,7 +11,7 @@ export class EdtCabecalho extends LitElement {
   render(): TemplateResult {
     return html`
       ${cabecalhoStyles}
-      <h1><a href="/">Editor de Emendas</a></h1>
+      <h1><a href=".">Editor de Emendas</a></h1>
     `;
   }
 }
