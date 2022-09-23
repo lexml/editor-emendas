@@ -285,7 +285,21 @@ export class EdtApp extends LitElement {
       this.emitirAlerta('Não se trata de um PDF gerado pelo Editor de Emendas');
     } finally {
       this.toggleCarregando();
+      this.resizeObserver();
     }
+  }
+
+  private resizeObserver(): void {
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height - 250;
+        const editor = document.querySelector('#lx-eta-editor');
+        if (editor) {
+          editor.setAttribute('style', `height: ${height}px`);
+        }
+      }
+    });
+    resizeObserver.observe(this);
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {

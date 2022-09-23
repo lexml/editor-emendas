@@ -27,7 +27,7 @@ export const appStyles = html`
       overflow-y: hidden;
     }
     .editor-emendas {
-      height: calc(100% - 45px);
+      height: calc(100% - 40px);
       width: 100%;
       display: flex;
       flex-direction: column;
@@ -83,6 +83,10 @@ export const appStyles = html`
       sl-split-panel {
         --divider-width: 0px !important;
       }
+    }
+
+    #lx-eta-editor .ql-editor {
+      min-height: 30px !important;
     }
   </style>
 `;
