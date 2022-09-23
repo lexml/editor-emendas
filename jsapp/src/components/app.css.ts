@@ -83,6 +83,14 @@ export const appStyles = html`
       background-color: #dfe9ff;
     }
 
+    .sl-toast-stack sl-alert::part(base) {
+      background-color: white !important;
+    }
+
+    .sl-toast-stack sl-alert[variant='success']::part(base) {
+      background-color: var(--sl-color-green-200) !important;
+    }
+
     @media (max-width: 768px) {
       sl-split-panel {
         --divider-width: 0px !important;

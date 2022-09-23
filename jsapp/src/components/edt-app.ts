@@ -147,8 +147,9 @@ export class EdtApp extends LitElement {
         );
       } catch (err) {
         console.log(err);
-        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`);
+        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`, 'primary');
       } finally {
+        this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         this.toggleCarregando();
       }
     }
@@ -197,7 +198,8 @@ export class EdtApp extends LitElement {
         ) {
           console.log(err);
           this.emitirAlerta(
-            `Erro ao salvar o arquivo: ${(err as any).message}`
+            `Erro ao salvar o arquivo: ${(err as any).message}`,
+            'primary'
           );
         }
       } finally {
@@ -229,7 +231,7 @@ export class EdtApp extends LitElement {
   // Emite notificação de erro como toast
   private emitirAlerta(
     message: string,
-    variant = 'primary',
+    variant: string,
     icon = 'info-circle',
     duration = 3000
   ) {
@@ -283,7 +285,10 @@ export class EdtApp extends LitElement {
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
     } catch (err) {
       console.log(err);
-      this.emitirAlerta('Não se trata de um PDF gerado pelo Editor de Emendas');
+      this.emitirAlerta(
+        'Não se trata de um PDF gerado pelo Editor de Emendas',
+        'primary'
+      );
     } finally {
       this.toggleCarregando();
       this.resizeObserver();
