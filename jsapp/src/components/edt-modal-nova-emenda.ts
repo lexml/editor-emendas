@@ -32,6 +32,7 @@ export class EdtModalNovaEmenda extends LitElement {
 
   public show(): void {
     this.slDialog.show();
+    this.pesquisar();
   }
 
   private processarKeyup(evt: KeyboardEvent): void {
