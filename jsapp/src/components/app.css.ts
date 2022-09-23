@@ -56,6 +56,10 @@ export const appStyles = html`
     }
     sl-tag::part(base) {
       box-sizing: border-box;
+      pointer-events: none;
+    }
+    sl-tag::part(base) {
+      box-sizing: border-box;
     }
     .detalhe-emenda--ementa {
       display: block;

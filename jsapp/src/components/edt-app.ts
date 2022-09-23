@@ -48,12 +48,13 @@ export class EdtApp extends LitElement {
       document.querySelector('.overlay-carregando')!.classList.add('hidden');
       document.querySelector('edt-app')!.classList.remove('blured');
       this.carregando = false;
+      console.log('Carregado');
     } else {
       document.querySelector('.overlay-carregando')!.classList.remove('hidden');
       document.querySelector('edt-app')!.classList.add('blured');
       this.carregando = true;
+      console.log('Carregando...');
     }
-    console.log('Carregando...');
   }
 
   private isJsonixProposicaoLoaded(): boolean {
@@ -307,8 +308,10 @@ export class EdtApp extends LitElement {
       this.fileHandle = undefined;
       this.modalNovaEmenda.show();
     } else if (ev.detail.itemMenu === 'visualizar') {
+      this.toggleCarregando();
       this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
+      this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.fileHandle = undefined;
       this.modalOndeCouber.show();
@@ -371,9 +374,14 @@ export class EdtApp extends LitElement {
             aria-label="Expandir ementa"
             title="Expandir ementa"
           >
-            <span class="detalhe-emenda--nome-proposicao">
-              ${this.proposicao.nomeProposicao} -
-            </span>
+            <sl-tag
+              class="detalhe-emenda--nome-proposicao"
+              variant="primary"
+              size="small"
+              pill
+            >
+              ${this.proposicao.nomeProposicao}
+            </sl-tag>
 
             ${this.modo === 'emendaArtigoOndeCouber'
               ? html`<sl-tag variant="primary" size="small" pill
