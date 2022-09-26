@@ -54,6 +54,11 @@
       -o-filter: blur(4px); */
       filter: opacity(0.5) blur(3px);
     }
+    .sl-toast-stack {
+      left: 50%;
+      transform: translate(-50%);
+      z-index: 9999;
+    }
   </style>
   <title>Editor de Emendas</title>
   <script src="./assets/js/lexml-eta/index.min.js" type="module"></script>
@@ -69,6 +74,24 @@
         NODE_ENV: 'production',
       },
     };
+
+    window.addEventListener("orientationchange", function(event) {
+      var orientation = (screen.orientation || {}).type || screen.mozOrientation || screen.msOrientation;
+      if ( ["landscape-primary","landscape-secondary"].indexOf(orientation)!=-1) {
+        if (screen.height < 480) {
+          var toast = document.querySelector("edt-app").emitirAlerta(
+          'Sua tela é pequena para usar o editor na horizontal '
+          + '(' + screen.width + 'x' + screen.height + '). Gire-a para vertical.',
+          'danger', 'arrow-clockwise', 10000
+          );
+        }
+      } else if ( ["portrait-primary","portrait-secondary"].indexOf(orientation)!=-1 && document.querySelector("sl-alert"))  {
+        document.querySelector("sl-alert").shadowRoot.querySelector("sl-icon-button").click()
+      }
+      else if (orientation === undefined) {
+        console.log("A API de orientação não é suportada nesse navegador :(");
+      }
+    });
   </script>
   <script type="module" src="./out-tsc/src/index.js"></script>
   <div class="overlay-carregando hidden">

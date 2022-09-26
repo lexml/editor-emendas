@@ -229,25 +229,26 @@ export class EdtApp extends LitElement {
   }
 
   // Emite notificação de erro como toast
-  private emitirAlerta(
+  public emitirAlerta = function (
     message: string,
     variant: string,
     icon = 'info-circle',
-    duration = 3000
+    duration = 3000,
+    closable = true
   ) {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
-      closable: true,
+      closable,
       duration: duration,
       innerHTML: `
-        <sl-icon name="${icon}" slot="icon"></sl-icon>
+        <sl-icon name="${icon}" style="font-size:28px" slot="icon"></sl-icon>
         ${message}
       `,
     });
 
     document.body.append(alert);
     return alert.toast();
-  }
+  };
 
   private getEmentaSemTags(texto: string): string {
     return texto.replace(/(<([^>]+)>)/gi, '');

@@ -88,7 +88,11 @@ export const appStyles = html`
     }
 
     .sl-toast-stack sl-alert[variant='success']::part(base) {
-      background-color: var(--sl-color-green-200) !important;
+      background-color: var(--sl-color-green-100) !important;
+    }
+
+    .sl-toast-stack sl-alert[variant='danger']::part(base) {
+      background-color: var(--sl-color-red-100) !important;
     }
 
     @media (max-width: 768px) {
