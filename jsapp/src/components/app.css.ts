@@ -18,6 +18,16 @@ export const appStyles = html`
       display: flex;
       flex-direction: column;
     }
+    #titulo {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #titulo span {
+      font-weight: normal;
+      color: var(--sl-color-gray-50);
+    }
     main {
       flex: auto;
       overflow: hidden;

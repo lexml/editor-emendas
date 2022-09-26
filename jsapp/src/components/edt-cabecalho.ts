@@ -11,7 +11,7 @@ export class EdtCabecalho extends LitElement {
   render(): TemplateResult {
     return html`
       ${cabecalhoStyles}
-      <h1><a href=".">Editor de Emendas</a></h1>
+      <h1><a id="titulo" href=".">Editor de Emendas</a></h1>
     `;
   }
 }

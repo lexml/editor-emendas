@@ -48,12 +48,10 @@ export class EdtApp extends LitElement {
       document.querySelector('.overlay-carregando')!.classList.add('hidden');
       document.querySelector('edt-app')!.classList.remove('blured');
       this.carregando = false;
-      console.log('Carregado');
     } else {
       document.querySelector('.overlay-carregando')!.classList.remove('hidden');
       document.querySelector('edt-app')!.classList.add('blured');
       this.carregando = true;
-      console.log('Carregando...');
     }
   }
 
@@ -112,6 +110,7 @@ export class EdtApp extends LitElement {
 
     await this.loadTextoProposicao(content.proposicao);
     this.lexmlEmenda.setEmenda(content);
+    this.atualizarTituloEditor(fileData.name);
 
     return fileData;
   }
@@ -203,6 +202,7 @@ export class EdtApp extends LitElement {
           );
         }
       } finally {
+        this.atualizarTituloEditor();
         this.toggleCarregando();
 
         if (writableStream) {
@@ -291,8 +291,27 @@ export class EdtApp extends LitElement {
         'primary'
       );
     } finally {
-      this.toggleCarregando();
+      this.atualizarTituloEditor();
       this.resizeObserver();
+      this.toggleCarregando();
+    }
+  }
+
+  private atualizarTituloEditor(tituloEmenda = ''): void {
+    if (tituloEmenda) {
+      tituloEmenda = tituloEmenda.replace('.emenda', '').replace('.pdf', '');
+      this.tituloEmenda = tituloEmenda;
+    } else {
+      tituloEmenda = this.tituloEmenda
+        .replace('.emenda', '')
+        .replace('.pdf', '');
+    }
+
+    const titulo = document.querySelector('#titulo');
+
+    if (titulo) {
+      titulo.innerHTML =
+        'Editor de Emendas - <span>' + tituloEmenda + '</span>';
     }
   }
 
@@ -359,10 +378,12 @@ export class EdtApp extends LitElement {
     this.labelTipoEmenda = 'Emenda onde couber';
     this.lexmlEmenda.resetaEmenda();
     this.jsonixProposicao = { ...this.jsonixProposicao };
+    this.atualizarTituloEditor();
   }
 
   private atualizarTituloEmenda(evt: Event): void {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
+    this.atualizarTituloEditor();
   }
 
   private renderEditorEmenda(): TemplateResult {
