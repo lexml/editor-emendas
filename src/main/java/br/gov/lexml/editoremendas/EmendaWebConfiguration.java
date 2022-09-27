@@ -44,7 +44,8 @@ public class EmendaWebConfiguration {
 			protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 					throws IOException, ServletException {
 				System.out.println(request.getRequestURI());
-				response.addHeader("Cache-Control", "no-cache, no-store, max-age=0, must-revalidate");
+				response.addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+				response.addHeader("Expires", "0");
 				response.addHeader("Pragma", "no-cache");
 				super.doFilter(request, response, chain);
 			}
