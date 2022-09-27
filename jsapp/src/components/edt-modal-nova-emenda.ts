@@ -100,7 +100,13 @@ export class EdtModalNovaEmenda extends LitElement {
                         this.duploCliqueProposicao(p, evt)}
                       disabled=${p.idSdlegDocumentoItemDigital ? false : true}
                     >
-                      <td class="col-1">${p.nomeProposicao}</td>
+                      <td class="col-1">
+                        ${p.sigla +
+                        ' ' +
+                        this.removeLeadZero(p.numero) +
+                        '/' +
+                        this.ano}
+                      </td>
                       <td class="col-2">
                         <span class="ementa">
                           ${p.idSdlegDocumentoItemDigital
@@ -116,6 +122,10 @@ export class EdtModalNovaEmenda extends LitElement {
             </table>
           </div>
         `;
+  }
+
+  private removeLeadZero(numero: any): string {
+    return numero.replace(/^0+/, '');
   }
 
   render(): TemplateResult {
@@ -179,7 +189,7 @@ export class EdtModalNovaEmenda extends LitElement {
               ${this.proposicaoSelecionada?.sigla
                 ? this.proposicaoSelecionada?.sigla +
                   ' ' +
-                  this.proposicaoSelecionada?.numero +
+                  this.removeLeadZero(this.proposicaoSelecionada?.numero) +
                   '/' +
                   this.proposicaoSelecionada?.ano
                 : ''}</label
