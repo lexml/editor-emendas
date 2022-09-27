@@ -26,12 +26,16 @@ export const pesquisarProposicoes = async (
   ).toString();
   const resp = await fetch('api/proposicoes?' + searchParams);
   const proposicoes = await resp.json();
-  return proposicoes.map((p: any) => ({
-    sigla: p.sigla,
-    numero: p.numero,
-    ano: p.ano,
-    ementa: p.ementa,
-    nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
-    idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
-  }));
+  return proposicoes
+    .map((p: any) => ({
+      sigla: p.sigla,
+      numero: p.numero,
+      ano: p.ano,
+      ementa: p.ementa,
+      nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
+      idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
+    }))
+    .sort(function (a: any, b: any) {
+      return b.numero - a.numero;
+    });
 };
