@@ -71,6 +71,11 @@ export class EdtModalNovaEmenda extends LitElement {
     (evt.target as HTMLElement).parentElement!.setAttribute('selected', 'true');
   }
 
+  private duploCliqueProposicao(proposicao: Proposicao, evt: Event): void {
+    this.selecionarProposicao(proposicao, evt);
+    this.emitirEvento();
+  }
+
   private renderProposicoes(): TemplateResult {
     return !this.proposicoes.length
       ? html``
@@ -91,6 +96,8 @@ export class EdtModalNovaEmenda extends LitElement {
                       class="proposicao"
                       @click=${(evt: Event): any =>
                         this.selecionarProposicao(p, evt)}
+                      @dblclick=${(evt: Event): any =>
+                        this.duploCliqueProposicao(p, evt)}
                       disabled=${p.idSdlegDocumentoItemDigital ? false : true}
                     >
                       <td class="col-1">${p.nomeProposicao}</td>
