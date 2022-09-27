@@ -49,7 +49,7 @@ export class EdtNotasVersao extends LitElement {
             <li>Emenda à anexos (inclusive de matérias orçamentárias);</li>
             <li>Adicionar agrupadores de artigo; e</li>
             <li>
-              Enviar a emenda ao sistema de protocolo (Assinador ou Sedol)
+              Enviar a emenda ao sistema de protocolo (Autenticador ou Sedol)
               diretamente pelo editor.
             </li>
           </ul>
