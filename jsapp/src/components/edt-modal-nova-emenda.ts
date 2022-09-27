@@ -31,8 +31,8 @@ export class EdtModalNovaEmenda extends LitElement {
   private trProposicoes!: HTMLElement[];
 
   public show(): void {
-    this.slDialog.show();
     this.pesquisar();
+    this.slDialog.show();
   }
 
   private processarKeyup(evt: KeyboardEvent): void {
@@ -45,6 +45,8 @@ export class EdtModalNovaEmenda extends LitElement {
     if (!(this.sigla && this.ano)) {
       return;
     }
+    this.proposicaoSelecionada = undefined;
+    this.proposicoes = [];
     this.proposicoes = await pesquisarProposicoes(
       this.sigla,
       this.numero,
