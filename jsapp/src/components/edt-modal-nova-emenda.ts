@@ -103,9 +103,9 @@ export class EdtModalNovaEmenda extends LitElement {
                       <td class="col-1">
                         ${p.sigla +
                         ' ' +
-                        this.removeLeadZero(p.numero) +
+                        this.removerZerosEsquerda(p.numero) +
                         '/' +
-                        this.ano}
+                        p.ano}
                       </td>
                       <td class="col-2">
                         <span class="ementa">
@@ -124,7 +124,7 @@ export class EdtModalNovaEmenda extends LitElement {
         `;
   }
 
-  private removeLeadZero(numero: any): string {
+  private removerZerosEsquerda(numero: any): string {
     return numero.replace(/^0+/, '');
   }
 
@@ -189,7 +189,9 @@ export class EdtModalNovaEmenda extends LitElement {
               ${this.proposicaoSelecionada?.sigla
                 ? this.proposicaoSelecionada?.sigla +
                   ' ' +
-                  this.removeLeadZero(this.proposicaoSelecionada?.numero) +
+                  this.removerZerosEsquerda(
+                    this.proposicaoSelecionada?.numero
+                  ) +
                   '/' +
                   this.proposicaoSelecionada?.ano
                 : ''}</label
