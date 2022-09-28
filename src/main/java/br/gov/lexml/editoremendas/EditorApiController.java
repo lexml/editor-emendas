@@ -6,8 +6,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -115,7 +118,13 @@ public class EditorApiController {
             @RequestParam int ano,
             @RequestParam(required = false) String numero) {
 
-        return lexmlJsonixService.getProposicoes(sigla, ano, numero);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero);
+    	
+    	Set<Integer> idsDoma = new HashSet<>();
+    	
+    	// Retira duplicações
+    	return l.stream().filter(p -> idsDoma.add(p.getIdDocumentoManifestacao()))
+    			.collect(Collectors.toList());
     }
     
     @GetMapping(path = "/proposicao/texto-json", produces = MediaType.APPLICATION_JSON_VALUE)
