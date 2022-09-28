@@ -71,12 +71,26 @@ export const appStyles = html`
     sl-tag::part(base) {
       box-sizing: border-box;
     }
+
     .detalhe-emenda--ementa {
       display: block;
+      width: 100%;
       white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      overflow: scroll;
+      padding-right: 30px;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+      -webkit-mask-image: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 1) 90%,
+        rgba(0, 0, 0, 0) 100%
+      );
     }
+
+    .detalhe-emenda--ementa::-webkit-scrollbar {
+      display: none;
+    }
+
     sl-split-panel {
       flex: auto;
     }
