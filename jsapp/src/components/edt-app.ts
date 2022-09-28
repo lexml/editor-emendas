@@ -82,7 +82,7 @@ export class EdtApp extends LitElement {
   }
 
   getFileName(): string {
-    const fileName = this.tituloEmenda.replace(/[.].*$/, '');
+    const fileName = this.tituloEmenda.replace(/\..*$/, '');
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
@@ -299,7 +299,9 @@ export class EdtApp extends LitElement {
 
   private atualizarTituloEditor(tituloEmenda = ''): void {
     if (tituloEmenda) {
-      tituloEmenda = tituloEmenda.replace('.emenda', '').replace('.pdf', '');
+      tituloEmenda = tituloEmenda
+        .replace(/\.emenda/g, '')
+        .replace(/\.pdf/g, '');
       this.tituloEmenda = tituloEmenda;
     } else {
       tituloEmenda = this.tituloEmenda
