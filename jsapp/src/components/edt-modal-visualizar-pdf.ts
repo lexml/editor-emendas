@@ -19,6 +19,9 @@ export class EdtModalVisualizarPdf extends LitElement {
 
   public show(): void {
     this.slDialog.show();
+    this.slDialog.addEventListener('sl-request-close', (event: any) => {
+      this.pdfBase64 = '';
+    });
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
