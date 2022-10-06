@@ -107,6 +107,12 @@ export const appStyles = html`
       background-color: #dfe9ff;
     }
 
+    .overflow-hidden {
+      overflow: hidden;
+      overflow-y: scroll;
+      height: calc(100vh - 205px) !important;
+    }
+
     .sl-toast-stack sl-alert::part(base) {
       background-color: white !important;
     }

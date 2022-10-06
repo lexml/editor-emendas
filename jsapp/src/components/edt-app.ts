@@ -322,8 +322,13 @@ export class EdtApp extends LitElement {
       for (const entry of entries) {
         const height = entry.contentRect.height - 250;
         const editor = document.querySelector('#lx-eta-editor');
+        const justificativa = document.querySelector('#editor-justificativa');
+
         if (editor) {
           editor.setAttribute('style', `height: ${height}px`);
+        }
+        if (justificativa) {
+          justificativa.setAttribute('style', `height: ${height}px`);
         }
       }
     });
