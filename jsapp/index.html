@@ -46,6 +46,7 @@
     }
     edt-app {
       transition: filter 0.3s ease-out;
+      visibility: hidden;
     }
     .blured {
       -webkit-filter: opacity(0.5) blur(3px);
@@ -58,11 +59,31 @@
       left: 50%;
       transform: translate(-50%);
       z-index: 9999;
+      --width: 50vw;
     }
+
+    #alert-browser {
+      display: none;
+      width: 60vw;
+      margin: 0 auto;
+    }
+
     .card-basic--browser {
       display: none;
       padding: 20px;
     }
+
+    @media screen and (max-width: 768px) {
+      #alert-browser {
+        width: 70vw;
+      }
+    }
+    @media screen and (max-width: 576px) {
+      #alert-browser {
+        width: 90vw;
+      }
+    }
+
   </style>
   <title>Editor de Emendas</title>
   <script src="./assets/js/lexml-eta/index.min.js" type="module"></script>
@@ -93,12 +114,11 @@
             closable: true,
             duration: 20000,
             innerHTML: `
-              <sl-icon name="arrow-clockwise" style="font-size:28px" slot="icon"></sl-icon>
+              <sl-icon name="exclamation-octagon" style="font-size:28px" slot="icon"></sl-icon>
               ${message}
             `,
           });
 
-          console.log(alert);
           document.body.appendChild(alert);
           alert.toast();
 
@@ -118,15 +138,18 @@
       var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1;
       if (!validUserAgent) {
         document.querySelector("edt-app").style.display = "none";
+        document.querySelector("#alert-browser").style.display = "block";
         document.querySelector("#alert-browser").show();
         document.querySelector(".card-basic--browser").style.display = "block";
+      } else {
+        document.querySelector("edt-app").style.visibility = "visible";
       }
     });
 
   </script>
   <script type="module" src="./out-tsc/src/index.js"></script>
-  <sl-alert id="alert-browser" variant="primary" close closable class="alert-closable">
-    <sl-icon slot="icon" name="info-circle"></sl-icon>
+  <sl-alert id="alert-browser" variant="danger" close closable class="alert-closable">
+    <sl-icon slot="icon" name="exclamation-octagon"></sl-icon>
     Seu navegador não é suportado. Por favor, use o Chrome, Edge ou Safari.
   </sl-alert>
   <sl-card class="card-basic card-basic--browser">
