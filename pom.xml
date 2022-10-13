@@ -30,7 +30,7 @@
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
 			<artifactId>eta-backend-services</artifactId>
-			<version>0.0.6</version>
+			<version>0.0.7</version>
 		</dependency>
 		<dependency>
 			<groupId>br.gov.lexml</groupId>

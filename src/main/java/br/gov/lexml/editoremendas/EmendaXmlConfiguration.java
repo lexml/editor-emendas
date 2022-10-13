@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Configuration;
 
 import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
 import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGeneratorBean;
+import br.gov.lexml.eta.etaservices.parsing.lexml.LexmlParser;
+import br.gov.lexml.eta.etaservices.parsing.lexml.LexmlParserImpl;
 import br.gov.lexml.eta.etaservices.parsing.xml.EmendaXmlUnmarshaller;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGeneratorBean;
@@ -37,4 +39,9 @@ public class EmendaXmlConfiguration {
     EmendaJsonGenerator emendaJsonGenerator() {
     	return new EmendaJsonGeneratorBean();
     }
+    
+    @Bean
+    LexmlParser lexmlParser() {
+        return new LexmlParserImpl();
+    }    
 }

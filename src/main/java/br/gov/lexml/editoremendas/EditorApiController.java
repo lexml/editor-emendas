@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotBlank;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,8 +34,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
+import br.gov.lexml.eta.etaservices.parsing.lexml.LexmlParser;
 import br.gov.lexml.eta.etaservices.printing.json.EmendaPojo;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
+import br.leg.camara.lexmljsonixspringbootstarter.conversor.ConversorLexmlJsonix;
 import br.leg.camara.lexmljsonixspringbootstarter.service.LexmlJsonixService;
 import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 
@@ -51,13 +54,21 @@ public class EditorApiController {
 
     private final LexmlJsonixService lexmlJsonixService;
     
+    private final LexmlParser lexmlParser;
+    
+    private final ConversorLexmlJsonix conversorLexmlJsonix;
+    
     public EditorApiController(
             PdfGenerator pdfGenerator,
             EmendaJsonGenerator jsonGenerator,
-            LexmlJsonixService lexmlJsonixService) {
+            LexmlJsonixService lexmlJsonixService,
+            LexmlParser lexmlParser,
+            ConversorLexmlJsonix conversorLexmlJsonix) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
         this.lexmlJsonixService = lexmlJsonixService;
+        this.lexmlParser = lexmlParser;
+        this.conversorLexmlJsonix = conversorLexmlJsonix;
     }
 
     @GetMapping
@@ -152,5 +163,14 @@ public class EditorApiController {
     	return json;
     }
     
+    @GetMapping("parser")
+    public String parser(@RequestBody @NotBlank String texto) {
+        return lexmlParser.parse(texto);
+    }
+    
+    @GetMapping("parser/jsonix")
+    public String parserAndJsonix(@RequestBody @NotBlank String texto) {
+        return conversorLexmlJsonix.xmlToJson(lexmlParser.parse(texto));
+    }
     
 }
