@@ -163,12 +163,12 @@ public class EditorApiController {
     	return json;
     }
     
-    @GetMapping("parser")
+    @PostMapping("parser")
     public String parser(@RequestBody @NotBlank String texto) {
         return lexmlParser.parse(texto);
     }
     
-    @GetMapping("parser/jsonix")
+    @PostMapping("parser/jsonix")
     public String parserAndJsonix(@RequestBody @NotBlank String texto) {
         return conversorLexmlJsonix.xmlToJson(lexmlParser.parse(texto));
     }
