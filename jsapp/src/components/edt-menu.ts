@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { customElement, state, query } from 'lit/decorators';
+import { customElement, state, query } from 'lit/decorators.js';
 import { html, LitElement, TemplateResult } from 'lit';
 import { menuStyles } from './app.css';
 
