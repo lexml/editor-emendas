@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
-import { html, LitElement, TemplateResult } from 'lit';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { customElement, query, state } from 'lit/decorators.js';
+import { EdtMenu } from './edt-menu';
+import { html, LitElement, TemplateResult } from 'lit';
 
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 import { Proposicao } from '../model/proposicao';
@@ -29,6 +29,12 @@ export class EdtApp extends LitElement {
   @query('edt-modal-onde-couber')
   private modalOndeCouber!: any;
 
+  @query('edt-menu')
+  private edtMenu!: EdtMenu;
+
+  @query('edt-modal-confirmacao-salvar')
+  private modalConfirmacaoSalvar!: any;
+
   private jsonixProposicao: any = {};
 
   @state()
@@ -38,6 +44,11 @@ export class EdtApp extends LitElement {
   private proposicao: Proposicao = {};
 
   private fileHandle: any;
+
+  private emendaComAlteracoesSalvas: any;
+
+  @state()
+  private isDirty = false;
 
   createRenderRoot(): LitElement {
     return this;
@@ -86,7 +97,7 @@ export class EdtApp extends LitElement {
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
-  async abrirPdf() {
+  async abrirPdf(): Promise<any> {
     const fileData = await fileOpen({
       description: 'Arquivos PDF',
       mimeTypes: ['application/pdf'],
@@ -110,7 +121,8 @@ export class EdtApp extends LitElement {
 
     await this.loadTextoProposicao(content.proposicao);
     this.lexmlEmenda.setEmenda(content);
-    this.atualizarTituloEditor(fileData.name);
+    this.updateStateElements(fileData.name);
+    // this.atualizarTituloEditor(fileData.name);
 
     return fileData;
   }
@@ -148,6 +160,9 @@ export class EdtApp extends LitElement {
         console.log(err);
         this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`, 'primary');
       } finally {
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
+        this.isDirty = false;
+        this.updateStateElements();
         this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         this.toggleCarregando();
       }
@@ -202,7 +217,10 @@ export class EdtApp extends LitElement {
           );
         }
       } finally {
-        this.atualizarTituloEditor();
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
+        this.isDirty = false;
+        this.updateStateElements();
+        // this.atualizarTituloEditor();
         this.toggleCarregando();
 
         if (writableStream) {
@@ -235,7 +253,7 @@ export class EdtApp extends LitElement {
     icon = 'info-circle',
     duration = 3000,
     closable = true
-  ) {
+  ): Promise<void> {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
       closable,
@@ -313,7 +331,10 @@ export class EdtApp extends LitElement {
 
     if (titulo) {
       titulo.innerHTML =
-        'Editor de Emendas - <span>' + tituloEmenda + '</span>';
+        'Editor de Emendas - <span>' +
+        tituloEmenda +
+        (this.isDirty ? ' *' : '') +
+        '</span>';
     }
   }
 
@@ -335,18 +356,54 @@ export class EdtApp extends LitElement {
     resizeObserver.observe(this);
   }
 
+  private novaEmendaPadrao(): void {
+    this.fileHandle = undefined;
+    this.modalNovaEmenda.show();
+  }
+
+  private novaEmendaOndeCouber(): void {
+    this.fileHandle = undefined;
+    this.modalOndeCouber.show();
+  }
+
+  private async abrirEmenda(): Promise<void> {
+    this.fileHandle = undefined;
+    await this.abrirPdf();
+    this.emendaComAlteracoesSalvas = undefined;
+    this.isDirty = false;
+  }
+
+  private nextFunctionAfterConfirm?: any;
+  private checkDirtyAndExecuteNextFunction(nextFunction: any): void {
+    if (this.isDirty) {
+      this.modalConfirmacaoSalvar.show();
+      this.nextFunctionAfterConfirm = nextFunction;
+    } else {
+      nextFunction();
+    }
+  }
+
+  private async processarResultadoConfirmacao(evt: CustomEvent): Promise<void> {
+    if (evt.detail === 'salvar') {
+      await this.salvarPdf();
+      this.nextFunctionAfterConfirm();
+    } else if (evt.detail === 'nao-salvar') {
+      this.nextFunctionAfterConfirm();
+    }
+    this.nextFunctionAfterConfirm = undefined;
+    console.log(11111, 'confirm-result', evt.detail);
+  }
+
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
-      this.fileHandle = undefined;
-      this.modalNovaEmenda.show();
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaPadrao());
     } else if (ev.detail.itemMenu === 'visualizar') {
       this.toggleCarregando();
       this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
-      this.fileHandle = undefined;
-      this.modalOndeCouber.show();
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
     } else if (ev.detail.itemMenu === 'download') {
       this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
@@ -354,8 +411,7 @@ export class EdtApp extends LitElement {
     } else if (ev.detail.itemMenu === 'salvarComo') {
       this.salvarPdfComo();
     } else if (ev.detail.itemMenu === 'abrir') {
-      this.fileHandle = undefined;
-      this.abrirPdf();
+      this.checkDirtyAndExecuteNextFunction(() => this.abrirEmenda());
     } else if (ev.detail.itemMenu === 'videos') {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
@@ -371,12 +427,19 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private criarNovaEmendaPadrao(proposicao: Proposicao): void {
+  private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     this.lexmlEmenda.resetaEmenda();
-    this.loadTextoProposicao(proposicao);
+    await this.loadTextoProposicao(proposicao);
+    setTimeout(() => {
+      this.emendaComAlteracoesSalvas = JSON.parse(
+        JSON.stringify(this.lexmlEmenda.getEmenda())
+      );
+      this.isDirty = false;
+      this.updateStateElements();
+    }, 200);
   }
 
   private criarNovaEmendaArtigoOndeCouber(): void {
@@ -386,11 +449,61 @@ export class EdtApp extends LitElement {
     this.lexmlEmenda.resetaEmenda();
     this.jsonixProposicao = { ...this.jsonixProposicao };
     this.atualizarTituloEditor();
+    setTimeout(() => {
+      this.emendaComAlteracoesSalvas = JSON.parse(
+        JSON.stringify(this.lexmlEmenda.getEmenda())
+      );
+      this.isDirty = false;
+      this.updateStateElements();
+    }, 200);
   }
 
   private atualizarTituloEmenda(evt: Event): void {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
     this.atualizarTituloEditor();
+  }
+
+  protected firstUpdated(): void {
+    window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
+  }
+
+  private onChange(): void {
+    if (!this.emendaComAlteracoesSalvas) {
+      this.emendaComAlteracoesSalvas = this.lexmlEmenda.getEmenda();
+      this.isDirty = false;
+    } else {
+      this.isDirty = this.checarAlteracoesNaEmenda();
+    }
+    this.updateStateElements();
+  }
+
+  private updateStateElements(tituloEmenda?: string): void {
+    this.edtMenu.btnSave.disabled = !this.isDirty;
+    this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
+  }
+
+  private checarAlteracoesNaEmenda(): boolean {
+    const emendaComAlteracoesSalvas = {
+      ...this.emendaComAlteracoesSalvas,
+      dataUltimaModificacao: null,
+    };
+    const emenda = {
+      ...this.lexmlEmenda.getEmenda(),
+      dataUltimaModificacao: null,
+    };
+
+    // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
+    const _isDirty =
+      JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
+    // const _isDirty = this.deepEqual(emendaComAlteracoesSalvas, emenda);
+    if (_isDirty) {
+      console.log(11111, 'emenda diferente');
+      console.log(11111, 'original', JSON.stringify(emendaComAlteracoesSalvas));
+      console.log(11111, 'alterada', JSON.stringify(emenda));
+    } else {
+      console.log(11111, 'emenda igual');
+    }
+    return _isDirty;
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -468,24 +581,31 @@ export class EdtApp extends LitElement {
           </sl-dialog>
         </div>
         <lexml-emenda
+          @onchange=${this.onChange}
           modo=${this.modo}
           .projetoNorma=${this.jsonixProposicao}
         ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
-        @nova-emenda-padrao=${(ev: CustomEvent): void =>
+        @nova-emenda-padrao=${(ev: CustomEvent): any =>
           this.criarNovaEmendaPadrao(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
+
       <edt-modal-visualizar-pdf
         tituloEmenda=${this.tituloEmenda}
       ></edt-modal-visualizar-pdf>
+
       <edt-modal-onde-couber
         @nova-emenda-padrao=${(): any =>
           this.criarNovaEmendaPadrao({ ...this.proposicao })}
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
+
+      <edt-modal-confirmacao-salvar
+        @confirm-result=${this.processarResultadoConfirmacao}
+      ></edt-modal-confirmacao-salvar>
     `;
   }
 

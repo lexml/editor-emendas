@@ -9,5 +9,6 @@ import './components/edt-nota-versao';
 import './components/edt-modal-nova-emenda';
 import './components/edt-modal-visualizar-pdf';
 import './components/edt-modal-onde-couber';
+import './components/edt-modal-confirmacao-salvar';
 
 export { EdtApp } from './components/edt-app';
