@@ -38,15 +38,20 @@ pipeline {
         }
         stage('Generate Docker Image') {
             steps {
-                            script {
-                                def imageVersion = env.TAG_NAME ?: 'latest'
-                                docker.withRegistry('https://registry.senado.leg.br', 'docker-registry-deployer') {
-                                    def image = docker.build("leg/editor-emendas:${imageVersion}",
-                                    '--build-arg uid=2000 --build-arg gid=2000 .')
-                                    image.push()
-                                }
-                            }
-                        }
+                script {
+                    if (env.TAG_NAME || env.branch == 'develop') {
+                        def imageVersion = env.TAG_NAME ?: 'latest'
+                    } else {
+                        def adjustedBranch = env.branch.replace('/', '-')
+                        def imageVersion = 'latest-' + adjustedBranch
+                    }
+                    docker.withRegistry('https://registry.senado.leg.br', 'docker-registry-deployer') {
+                        def image = docker.build("leg/editor-emendas:${imageVersion}",
+                        '--build-arg uid=2000 --build-arg gid=2000 .')
+                        image.push()
+                    }
+                }
+            }
         }
 
         stage('Deploy') {
