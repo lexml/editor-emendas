@@ -333,8 +333,10 @@ export class EdtApp extends LitElement {
       titulo.innerHTML =
         'Editor de Emendas - <span>' +
         tituloEmenda +
-        (this.isDirty ? ' *' : '') +
-        '</span>';
+        '</span>' +
+        (this.isDirty
+          ? ' <span class="emenda-status emenda-status--dirty" aria-label="As alterações não foram salvas" title="As alterações não foram salvas"></span>'
+          : '');
     }
   }
 
