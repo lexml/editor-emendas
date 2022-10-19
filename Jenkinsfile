@@ -40,11 +40,12 @@ pipeline {
             steps {
                 script {
                     echo "BRANCH_NAME: ${env.BRANCH_NAME}"
+                    def imageVersion = 'latest'
                     if (env.TAG_NAME || env.BRANCH_NAME == 'develop') {
-                        def imageVersion = env.TAG_NAME ?: 'latest'
+                        imageVersion = env.TAG_NAME ?: 'latest'
                     } else {
                         def adjustedBranch = env.BRANCH_NAME.replace('/', '-')
-                        def imageVersion = 'latest-' + adjustedBranch
+                        imageVersion = 'latest-' + adjustedBranch
                     }
                     docker.withRegistry('https://registry.senado.leg.br', 'docker-registry-deployer') {
                         def image = docker.build("leg/editor-emendas:${imageVersion}",
