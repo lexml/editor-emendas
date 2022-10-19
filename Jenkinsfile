@@ -39,10 +39,11 @@ pipeline {
         stage('Generate Docker Image') {
             steps {
                 script {
-                    if (env.TAG_NAME || env.branch == 'develop') {
+                    echo "BRANCH_NAME: ${env.BRANCH_NAME}"
+                    if (env.TAG_NAME || env.BRANCH_NAME == 'develop') {
                         def imageVersion = env.TAG_NAME ?: 'latest'
                     } else {
-                        def adjustedBranch = env.branch.replace('/', '-')
+                        def adjustedBranch = env.BRANCH_NAME.replace('/', '-')
                         def imageVersion = 'latest-' + adjustedBranch
                     }
                     docker.withRegistry('https://registry.senado.leg.br', 'docker-registry-deployer') {
