@@ -39,18 +39,27 @@ pipeline {
         stage('Generate Docker Image') {
             steps {
                 script {
-                    echo "BRANCH_NAME: ${env.BRANCH_NAME}"
-                    def imageVersion = 'latest'
-                    if (env.TAG_NAME || env.BRANCH_NAME == 'develop') {
-                        imageVersion = env.TAG_NAME ?: 'latest'
+
+                    def imageVersion = ''
+                    def imageTag = ''
+                    if (env.TAG_NAME) {
+                        imageVersion = env.TAG_NAME
                     } else {
                         def adjustedBranch = env.BRANCH_NAME.replace('/', '-')
-                        imageVersion = 'latest-' + adjustedBranch
+                        imageVersion = "${adjustedBranch}-${env.BUILD_NUMBER}"
+                        if (env.BRANCH_NAME == 'develop') {
+                            imageTag = 'latest'
+                        } else {
+                            imageTag = "${adjustedBranch}-latest"
+                        }
                     }
                     docker.withRegistry('https://registry.senado.leg.br', 'docker-registry-deployer') {
                         def image = docker.build("leg/editor-emendas:${imageVersion}",
                         '--build-arg uid=2000 --build-arg gid=2000 .')
                         image.push()
+                        if (imageTag) {
+                            image.push(imageTag)
+                        }
                     }
                 }
             }
