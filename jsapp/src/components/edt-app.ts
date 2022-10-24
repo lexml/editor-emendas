@@ -479,8 +479,10 @@ export class EdtApp extends LitElement {
   }
 
   private updateStateElements(tituloEmenda?: string): void {
-    this.edtMenu.btnSave.disabled = !this.isDirty;
-    this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
+    setTimeout(() => {
+      this.edtMenu.btnSave.disabled = !this.isDirty;
+      this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
+    }, 0);
   }
 
   private checarAlteracoesNaEmenda(): boolean {
