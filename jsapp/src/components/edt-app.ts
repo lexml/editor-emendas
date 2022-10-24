@@ -300,8 +300,10 @@ export class EdtApp extends LitElement {
           : this.proposicao.numero) +
         '/' +
         this.proposicao.ano;
+
       this.tituloEmenda =
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
+      this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(
@@ -498,6 +500,7 @@ export class EdtApp extends LitElement {
     // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
     const _isDirty =
       JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
+
     return _isDirty;
   }
 
@@ -578,7 +581,6 @@ export class EdtApp extends LitElement {
         <lexml-emenda
           @onchange=${this.onChange}
           modo=${this.modo}
-          .projetoNorma=${this.jsonixProposicao}
         ></lexml-emenda>
       </div>
 
