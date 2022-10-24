@@ -393,7 +393,6 @@ export class EdtApp extends LitElement {
       this.nextFunctionAfterConfirm();
     }
     this.nextFunctionAfterConfirm = undefined;
-    console.log(11111, 'confirm-result', evt.detail);
   }
 
   private onItemMenuSelecionado(ev: CustomEvent): void {
@@ -497,14 +496,6 @@ export class EdtApp extends LitElement {
     // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
     const _isDirty =
       JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
-    // const _isDirty = this.deepEqual(emendaComAlteracoesSalvas, emenda);
-    if (_isDirty) {
-      console.log(11111, 'emenda diferente');
-      console.log(11111, 'original', JSON.stringify(emendaComAlteracoesSalvas));
-      console.log(11111, 'alterada', JSON.stringify(emenda));
-    } else {
-      console.log(11111, 'emenda igual');
-    }
     return _isDirty;
   }
 
