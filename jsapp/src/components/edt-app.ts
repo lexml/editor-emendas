@@ -178,44 +178,51 @@ export class EdtApp extends LitElement {
   }
 
   private async salvarPdf(): Promise<void> {
-    this.toggleCarregando();
-
     const emenda = this.lexmlEmenda.getEmenda();
+
     if (emenda) {
-      const response = await fetch('api/emenda/json2pdf', {
+      this.toggleCarregando();
+
+      fetch('api/emenda/json2pdf', {
         method: 'POST',
         body: JSON.stringify(emenda),
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
-      });
+      })
+        .then(response => {
+          if (response.ok) {
+            return response.blob();
+          }
+          return getHttpError(
+            response,
+            'Ocorreu um erro ao salvar o arquivo.'
+          ).then(err => Promise.reject(err));
+        })
+        .then(content => {
+          const options = {
+            fileName: this.getFileName(),
+            extensions: ['.pdf'],
+            id: 'editor-emendas',
+            excludeAcceptAllOption: true,
+          };
 
-      try {
-        const options = {
-          fileName: this.getFileName(),
-          extensions: ['.pdf'],
-          id: 'editor-emendas',
-          excludeAcceptAllOption: true,
-        };
-
-        const content = await response.blob();
-
-        this.fileHandle = await fileSave(
-          content,
-          options,
-          this.fileHandle,
-          true
-        );
-      } catch (err) {
-        console.log(err);
-        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`, 'primary');
-      } finally {
-        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
-        this.isDirty = false;
-        this.updateStateElements();
-        this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
-        this.toggleCarregando();
-      }
+          return fileSave(content, options, this.fileHandle, true);
+        })
+        .then(fileHandle => {
+          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
+          this.isDirty = false;
+          this.updateStateElements();
+          this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
+        })
+        .catch(err => {
+          errorInPromise(`Erro ao salvar o arquivo: ${err}`, err, msg => {
+            this.emitirAlerta(msg, 'danger');
+          });
+        })
+        .finally(() => {
+          this.toggleCarregando();
+        });
     }
   }
 
