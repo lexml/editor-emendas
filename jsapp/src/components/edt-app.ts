@@ -6,8 +6,10 @@ import { customElement, query, state } from 'lit/decorators.js';
 
 import { Proposicao } from '../model/proposicao';
 import {
-  handleErrorInPromise,
-  handleHttpErrorInPromise,
+  errorInPromise,
+  errorToBeIgnored,
+  getHttpError,
+  isUserAbortException,
 } from '../utils/error-utils';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
@@ -110,13 +112,17 @@ export class EdtApp extends LitElement {
       multiple: false,
     })
       .catch(err => {
-        return handleErrorInPromise(
-          'Ocorreu uma falha na abertura do arquivo.',
-          err
-        ).then(Promise.reject);
+        if (isUserAbortException(err)) {
+          return Promise.reject(errorToBeIgnored);
+        }
+        return Promise.reject(
+          errorInPromise('Ocorreu uma falha na abertura do arquivo.', err)
+        );
       })
-      .then(fileData => {
+      .then((fileData: FileWithHandle) => {
         tempFileData = fileData;
+
+        this.toggleCarregando();
 
         return fetch('api/emenda/pdf2json/', {
           method: 'POST',
@@ -127,19 +133,21 @@ export class EdtApp extends LitElement {
         });
       })
       .catch(err => {
-        return handleErrorInPromise(
-          'Falha na conexão com servidor. Por favor, tente mais tarde.',
-          err
-        ).then(Promise.reject);
+        return Promise.reject(
+          errorInPromise(
+            'Falha na conexão com servidor. Por favor, tente mais tarde.',
+            err
+          )
+        );
       })
       .then(response => {
         if (response.ok) {
           return response.json();
         }
-        return handleHttpErrorInPromise(
+        return getHttpError(
           response,
           'Ocorreu um erro inesperado na abertura da emenda.'
-        ).then(Promise.reject);
+        ).then(err => Promise.reject(err));
       })
       .then(content => {
         this.lexmlEmenda.resetaEmenda();
@@ -154,13 +162,18 @@ export class EdtApp extends LitElement {
         this.isDirty = false;
       })
       .catch(err => {
-        handleErrorInPromise(
+        errorInPromise(
           'Ocorreu um erro inesperado na abertura da emenda.',
           err,
           msg => {
             this.emitirAlerta(msg, 'danger');
           }
         );
+      })
+      .finally(() => {
+        if (this.carregando) {
+          this.toggleCarregando();
+        }
       });
   }
 
@@ -242,11 +255,7 @@ export class EdtApp extends LitElement {
         await writableStream.write(content);
         this.fileHandle = fileHandle;
       } catch (err) {
-        if (
-          !(err as any)['message'].includes('cancel') &&
-          !(err as any)['message'].includes('abort') &&
-          !(err as any)['message'].includes('showSaveFilePicker')
-        ) {
+        if (!isUserAbortException(err)) {
           console.log(err);
           this.emitirAlerta(
             `Erro ao salvar o arquivo: ${(err as any).message}`,
