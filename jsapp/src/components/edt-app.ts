@@ -1,15 +1,18 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { customElement, query, state } from 'lit/decorators.js';
-import { EdtMenu } from './edt-menu';
-import { html, LitElement, TemplateResult } from 'lit';
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
+import { fileOpen, fileSave, FileWithHandle } from 'browser-fs-access';
+import { html, LitElement, TemplateResult } from 'lit';
+import { customElement, query, state } from 'lit/decorators.js';
+
 import { Proposicao } from '../model/proposicao';
+import {
+  handleErrorInPromise,
+  handleHttpErrorInPromise,
+} from '../utils/error-utils';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
-
-import { fileOpen, fileSave } from 'browser-fs-access';
+import { EdtMenu } from './edt-menu';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -97,34 +100,68 @@ export class EdtApp extends LitElement {
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
-  async abrirPdf(): Promise<any> {
-    const fileData = await fileOpen({
+  abrirPdf(): void {
+    let tempFileData: FileWithHandle;
+
+    fileOpen({
       description: 'Arquivos PDF',
       mimeTypes: ['application/pdf'],
       extensions: ['.pdf'],
       multiple: false,
-    });
+    })
+      .catch(err => {
+        return handleErrorInPromise(
+          'Ocorreu uma falha na abertura do arquivo.',
+          err
+        ).then(Promise.reject);
+      })
+      .then(fileData => {
+        tempFileData = fileData;
 
-    this.fileHandle = fileData.handle;
-    this.tituloEmenda = fileData.name;
-
-    const response = await fetch('api/emenda/pdf2json/', {
-      method: 'POST',
-      body: fileData,
-      headers: {
-        'Content-Type': 'application/pdf;charset=UTF-8',
-      },
-    });
-    const content = await response.json();
-
-    this.lexmlEmenda.resetaEmenda();
-
-    await this.loadTextoProposicao(content.proposicao);
-    this.lexmlEmenda.setEmenda(content);
-    this.updateStateElements(fileData.name);
-    // this.atualizarTituloEditor(fileData.name);
-
-    return fileData;
+        return fetch('api/emenda/pdf2json/', {
+          method: 'POST',
+          body: fileData,
+          headers: {
+            'Content-Type': 'application/pdf;charset=UTF-8',
+          },
+        });
+      })
+      .catch(err => {
+        return handleErrorInPromise(
+          'Falha na conexão com servidor. Por favor, tente mais tarde.',
+          err
+        ).then(Promise.reject);
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        return handleHttpErrorInPromise(
+          response,
+          'Ocorreu um erro inesperado na abertura da emenda.'
+        ).then(Promise.reject);
+      })
+      .then(content => {
+        this.lexmlEmenda.resetaEmenda();
+        return this.loadTextoProposicao(content.proposicao).then(() => content);
+      })
+      .then(content => {
+        this.updateStateElements(tempFileData.name);
+        this.lexmlEmenda.setEmenda(content);
+        this.fileHandle = tempFileData.handle;
+        this.tituloEmenda = tempFileData.name;
+        this.emendaComAlteracoesSalvas = undefined;
+        this.isDirty = false;
+      })
+      .catch(err => {
+        handleErrorInPromise(
+          'Ocorreu um erro inesperado na abertura da emenda.',
+          err,
+          msg => {
+            this.emitirAlerta(msg, 'danger');
+          }
+        );
+      });
   }
 
   private async salvarPdf(): Promise<void> {
@@ -370,11 +407,8 @@ export class EdtApp extends LitElement {
     this.modalOndeCouber.show();
   }
 
-  private async abrirEmenda(): Promise<void> {
-    this.fileHandle = undefined;
-    await this.abrirPdf();
-    this.emendaComAlteracoesSalvas = undefined;
-    this.isDirty = false;
+  private abrirEmenda(): void {
+    this.abrirPdf();
   }
 
   private nextFunctionAfterConfirm?: any;
@@ -426,7 +460,7 @@ export class EdtApp extends LitElement {
     if (ev.detail.botaoNotasVersao === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.botaoNotasVersao === 'abrir') {
-      this.abrirPdf();
+      this.abrirEmenda();
     }
   }
 
