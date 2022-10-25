@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { customElement, state, query } from 'lit/decorators.js';
 import { html, LitElement, TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
 import { menuStyles } from './app.css';
+
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
   createRenderRoot(): LitElement {
@@ -10,6 +11,9 @@ export class EdtMenu extends LitElement {
 
   @state()
   private proposicao: any = {};
+
+  @query('#btn-save')
+  btnSave: any;
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
@@ -45,6 +49,7 @@ export class EdtMenu extends LitElement {
       ${Object.keys(this.proposicao).length > 0
         ? html`
             <sl-button
+              id="btn-save"
               title="Salvar emenda"
               size="small"
               @click=${(): void => this.emitirEvento('salvar')}

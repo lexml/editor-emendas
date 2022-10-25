@@ -1,15 +1,20 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-// import { getSigla, getNumero, getAno } from './../model/lexml/urnUtil';
+import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
+import { fileOpen, fileSave, FileWithHandle } from 'browser-fs-access';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 
-import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 import { Proposicao } from '../model/proposicao';
+import {
+  errorInPromise,
+  errorToBeIgnored,
+  getHttpError,
+  isUserAbortException,
+} from '../utils/error-utils';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import { getProposicaoJsonix } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
-
-import { fileOpen, fileSave } from 'browser-fs-access';
+import { EdtMenu } from './edt-menu';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -29,6 +34,12 @@ export class EdtApp extends LitElement {
   @query('edt-modal-onde-couber')
   private modalOndeCouber!: any;
 
+  @query('edt-menu')
+  private edtMenu!: EdtMenu;
+
+  @query('edt-modal-confirmacao-salvar')
+  private modalConfirmacaoSalvar!: any;
+
   private jsonixProposicao: any = {};
 
   @state()
@@ -38,6 +49,11 @@ export class EdtApp extends LitElement {
   private proposicao: Proposicao = {};
 
   private fileHandle: any;
+
+  private emendaComAlteracoesSalvas: any;
+
+  @state()
+  private isDirty = false;
 
   createRenderRoot(): LitElement {
     return this;
@@ -86,71 +102,127 @@ export class EdtApp extends LitElement {
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
-  async abrirPdf() {
-    const fileData = await fileOpen({
+  abrirPdf(): void {
+    let tempFileData: FileWithHandle;
+
+    fileOpen({
       description: 'Arquivos PDF',
       mimeTypes: ['application/pdf'],
       extensions: ['.pdf'],
       multiple: false,
-    });
+    })
+      .catch(err => {
+        if (isUserAbortException(err)) {
+          return Promise.reject(errorToBeIgnored);
+        }
+        return Promise.reject(
+          errorInPromise('Ocorreu uma falha na abertura do arquivo.', err)
+        );
+      })
+      .then((fileData: FileWithHandle) => {
+        tempFileData = fileData;
 
-    this.fileHandle = fileData.handle;
-    this.tituloEmenda = fileData.name;
+        this.toggleCarregando();
 
-    const response = await fetch('api/emenda/pdf2json/', {
-      method: 'POST',
-      body: fileData,
-      headers: {
-        'Content-Type': 'application/pdf;charset=UTF-8',
-      },
-    });
-    const content = await response.json();
-
-    this.lexmlEmenda.resetaEmenda();
-
-    await this.loadTextoProposicao(content.proposicao);
-    this.lexmlEmenda.setEmenda(content);
-    this.atualizarTituloEditor(fileData.name);
-
-    return fileData;
+        return fetch('api/emenda/pdf2json/', {
+          method: 'POST',
+          body: fileData,
+          headers: {
+            'Content-Type': 'application/pdf;charset=UTF-8',
+          },
+        });
+      })
+      .catch(err => {
+        return Promise.reject(
+          errorInPromise(
+            'Falha na conexão com servidor. Por favor, tente mais tarde.',
+            err
+          )
+        );
+      })
+      .then(response => {
+        if (response.ok) {
+          return response.json();
+        }
+        return getHttpError(
+          response,
+          'Ocorreu um erro inesperado na abertura da emenda.'
+        ).then(err => Promise.reject(err));
+      })
+      .then(content => {
+        this.lexmlEmenda.resetaEmenda();
+        return this.loadTextoProposicao(content.proposicao).then(() => content);
+      })
+      .then(content => {
+        this.updateStateElements(tempFileData.name);
+        this.lexmlEmenda.setEmenda(content);
+        this.fileHandle = tempFileData.handle;
+        this.tituloEmenda = tempFileData.name;
+        this.emendaComAlteracoesSalvas = undefined;
+        this.isDirty = false;
+      })
+      .catch(err => {
+        errorInPromise(
+          'Ocorreu um erro inesperado na abertura da emenda.',
+          err,
+          msg => {
+            this.emitirAlerta(msg, 'danger');
+          }
+        );
+      })
+      .finally(() => {
+        if (this.carregando) {
+          this.toggleCarregando();
+        }
+      });
   }
 
   private async salvarPdf(): Promise<void> {
-    this.toggleCarregando();
-
     const emenda = this.lexmlEmenda.getEmenda();
+
     if (emenda) {
-      const response = await fetch('api/emenda/json2pdf', {
+      this.toggleCarregando();
+
+      fetch('api/emenda/json2pdf', {
         method: 'POST',
         body: JSON.stringify(emenda),
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
-      });
+      })
+        .then(response => {
+          if (response.ok) {
+            return response.blob();
+          }
+          return getHttpError(
+            response,
+            'Ocorreu um erro ao salvar o arquivo.'
+          ).then(err => Promise.reject(err));
+        })
+        .then(content => {
+          const options = {
+            fileName: this.getFileName(),
+            extensions: ['.pdf'],
+            id: 'editor-emendas',
+            excludeAcceptAllOption: true,
+          };
 
-      try {
-        const options = {
-          fileName: this.getFileName(),
-          extensions: ['.pdf'],
-          id: 'editor-emendas',
-          excludeAcceptAllOption: true,
-        };
-
-        const content = await response.blob();
-
-        this.fileHandle = await fileSave(
-          content,
-          options,
-          this.fileHandle,
-          true
-        );
-      } catch (err) {
-        console.log(err);
-        this.emitirAlerta(`Erro ao salvar o arquivo: ${err}`, 'primary');
-      } finally {
-        this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
-        this.toggleCarregando();
-      }
+          return fileSave(content, options, this.fileHandle, true);
+        })
+        .then(fileHandle => {
+          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
+          this.isDirty = false;
+          this.updateStateElements();
+          this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
+        })
+        .catch(err => {
+          errorInPromise(`Erro ao salvar o arquivo: ${err}`, err, msg => {
+            this.emitirAlerta(msg, 'danger');
+          });
+        })
+        .finally(() => {
+          this.toggleCarregando();
+        });
     }
   }
 
@@ -190,11 +262,7 @@ export class EdtApp extends LitElement {
         await writableStream.write(content);
         this.fileHandle = fileHandle;
       } catch (err) {
-        if (
-          !(err as any)['message'].includes('cancel') &&
-          !(err as any)['message'].includes('abort') &&
-          !(err as any)['message'].includes('showSaveFilePicker')
-        ) {
+        if (!isUserAbortException(err)) {
           console.log(err);
           this.emitirAlerta(
             `Erro ao salvar o arquivo: ${(err as any).message}`,
@@ -202,7 +270,10 @@ export class EdtApp extends LitElement {
           );
         }
       } finally {
-        this.atualizarTituloEditor();
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
+        this.isDirty = false;
+        this.updateStateElements();
+        // this.atualizarTituloEditor();
         this.toggleCarregando();
 
         if (writableStream) {
@@ -235,7 +306,7 @@ export class EdtApp extends LitElement {
     icon = 'info-circle',
     duration = 3000,
     closable = true
-  ) {
+  ): Promise<void> {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
       closable,
@@ -282,8 +353,10 @@ export class EdtApp extends LitElement {
           : this.proposicao.numero) +
         '/' +
         this.proposicao.ano;
+
       this.tituloEmenda =
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
+      this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(
@@ -313,7 +386,12 @@ export class EdtApp extends LitElement {
 
     if (titulo) {
       titulo.innerHTML =
-        'Editor de Emendas - <span>' + tituloEmenda + '</span>';
+        'Editor de Emendas - <span>' +
+        tituloEmenda +
+        '</span>' +
+        (this.isDirty
+          ? ' <span class="emenda-status emenda-status--dirty" aria-label="As alterações não foram salvas" title="As alterações não foram salvas"></span>'
+          : '');
     }
   }
 
@@ -335,18 +413,50 @@ export class EdtApp extends LitElement {
     resizeObserver.observe(this);
   }
 
+  private novaEmendaPadrao(): void {
+    this.fileHandle = undefined;
+    this.modalNovaEmenda.show();
+  }
+
+  private novaEmendaOndeCouber(): void {
+    this.fileHandle = undefined;
+    this.modalOndeCouber.show();
+  }
+
+  private abrirEmenda(): void {
+    this.abrirPdf();
+  }
+
+  private nextFunctionAfterConfirm?: any;
+  private checkDirtyAndExecuteNextFunction(nextFunction: any): void {
+    if (this.isDirty) {
+      this.modalConfirmacaoSalvar.show();
+      this.nextFunctionAfterConfirm = nextFunction;
+    } else {
+      nextFunction();
+    }
+  }
+
+  private async processarResultadoConfirmacao(evt: CustomEvent): Promise<void> {
+    if (evt.detail === 'salvar') {
+      await this.salvarPdf();
+      this.nextFunctionAfterConfirm();
+    } else if (evt.detail === 'nao-salvar') {
+      this.nextFunctionAfterConfirm();
+    }
+    this.nextFunctionAfterConfirm = undefined;
+  }
+
   private onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
-      this.fileHandle = undefined;
-      this.modalNovaEmenda.show();
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaPadrao());
     } else if (ev.detail.itemMenu === 'visualizar') {
       this.toggleCarregando();
       this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
-      this.fileHandle = undefined;
-      this.modalOndeCouber.show();
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
     } else if (ev.detail.itemMenu === 'download') {
       this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
@@ -354,8 +464,7 @@ export class EdtApp extends LitElement {
     } else if (ev.detail.itemMenu === 'salvarComo') {
       this.salvarPdfComo();
     } else if (ev.detail.itemMenu === 'abrir') {
-      this.fileHandle = undefined;
-      this.abrirPdf();
+      this.checkDirtyAndExecuteNextFunction(() => this.abrirEmenda());
     } else if (ev.detail.itemMenu === 'videos') {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
@@ -367,16 +476,23 @@ export class EdtApp extends LitElement {
     if (ev.detail.botaoNotasVersao === 'nova') {
       this.modalNovaEmenda.show();
     } else if (ev.detail.botaoNotasVersao === 'abrir') {
-      this.abrirPdf();
+      this.abrirEmenda();
     }
   }
 
-  private criarNovaEmendaPadrao(proposicao: Proposicao): void {
+  private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     this.lexmlEmenda.resetaEmenda();
-    this.loadTextoProposicao(proposicao);
+    await this.loadTextoProposicao(proposicao);
+    setTimeout(() => {
+      this.emendaComAlteracoesSalvas = JSON.parse(
+        JSON.stringify(this.lexmlEmenda.getEmenda())
+      );
+      this.isDirty = false;
+      this.updateStateElements();
+    }, 200);
   }
 
   private criarNovaEmendaArtigoOndeCouber(): void {
@@ -386,11 +502,56 @@ export class EdtApp extends LitElement {
     this.lexmlEmenda.resetaEmenda();
     this.jsonixProposicao = { ...this.jsonixProposicao };
     this.atualizarTituloEditor();
+    setTimeout(() => {
+      this.emendaComAlteracoesSalvas = JSON.parse(
+        JSON.stringify(this.lexmlEmenda.getEmenda())
+      );
+      this.isDirty = false;
+      this.updateStateElements();
+    }, 200);
   }
 
   private atualizarTituloEmenda(evt: Event): void {
     this.tituloEmenda = (evt.target as HTMLInputElement).value;
     this.atualizarTituloEditor();
+  }
+
+  protected firstUpdated(): void {
+    window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
+  }
+
+  private onChange(): void {
+    if (!this.emendaComAlteracoesSalvas) {
+      this.emendaComAlteracoesSalvas = this.lexmlEmenda.getEmenda();
+      this.isDirty = false;
+    } else {
+      this.isDirty = this.checarAlteracoesNaEmenda();
+    }
+    this.updateStateElements();
+  }
+
+  private updateStateElements(tituloEmenda?: string): void {
+    setTimeout(() => {
+      this.edtMenu.btnSave.disabled = !this.isDirty;
+      this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
+    }, 0);
+  }
+
+  private checarAlteracoesNaEmenda(): boolean {
+    const emendaComAlteracoesSalvas = {
+      ...this.emendaComAlteracoesSalvas,
+      dataUltimaModificacao: null,
+    };
+    const emenda = {
+      ...this.lexmlEmenda.getEmenda(),
+      dataUltimaModificacao: null,
+    };
+
+    // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
+    const _isDirty =
+      JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
+
+    return _isDirty;
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -468,24 +629,30 @@ export class EdtApp extends LitElement {
           </sl-dialog>
         </div>
         <lexml-emenda
+          @onchange=${this.onChange}
           modo=${this.modo}
-          .projetoNorma=${this.jsonixProposicao}
         ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
-        @nova-emenda-padrao=${(ev: CustomEvent): void =>
+        @nova-emenda-padrao=${(ev: CustomEvent): any =>
           this.criarNovaEmendaPadrao(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
+
       <edt-modal-visualizar-pdf
         tituloEmenda=${this.tituloEmenda}
       ></edt-modal-visualizar-pdf>
+
       <edt-modal-onde-couber
         @nova-emenda-padrao=${(): any =>
           this.criarNovaEmendaPadrao({ ...this.proposicao })}
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
+
+      <edt-modal-confirmacao-salvar
+        @confirm-result=${this.processarResultadoConfirmacao}
+      ></edt-modal-confirmacao-salvar>
     `;
   }
 

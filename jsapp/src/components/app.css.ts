@@ -134,6 +134,19 @@ export const appStyles = html`
     #lx-eta-editor .ql-editor {
       min-height: 30px !important;
     }
+
+    .emenda-status {
+      height: 9px;
+      width: 9px;
+      border-radius: 50%;
+      margin: 0 0 2px 4px;
+      display: block;
+    }
+
+    .emenda-status--dirty {
+      display: inline-block;
+      background-color: var(--sl-color-neutral-50);
+    }
   </style>
 `;
 
