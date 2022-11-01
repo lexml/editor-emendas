@@ -666,9 +666,9 @@ export class EdtApp extends LitElement {
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
           ? ''
-          : html` <edt-notas-versao
+          : html` <edt-landing-page
               @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
-            ></edt-notas-versao>`}
+            ></edt-landing-page>`}
         ${this.renderEditorEmenda()}
       </main>
       <edt-rodape></edt-rodape>
