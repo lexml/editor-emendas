@@ -76,7 +76,7 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-file-earmark-plus fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Criar emenda</h2>
                   <p class="mb-3 text-muted fs-5">
-                    Pesquise medidas provisórias recentes e começe a editar
+                    Pesquise medidas provisórias recentes e comece a editar.
                   </p>
                   <button
                     class="btn btn-primary btn-md rounded-pill px-4"
@@ -89,7 +89,7 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-pen fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Abrir emenda</h2>
                   <p class="mb-3 text-muted fs-5">
-                    Abra emendas em PDF do seu celular ou computador
+                    Abra emendas em PDF do seu celular ou computador.
                   </p>
                   <button
                     class="btn btn-secondary btn-md rounded-pill px-4"
@@ -147,7 +147,7 @@ export class EdtLandingPage extends LitElement {
                 <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
                 </div>
-                <h3 class="h4 mb-2">Criar emenda de proposição&nbsp;</h3>
+                <h3 class="h4 mb-2">Criar emenda</h3>
                 <a
                   class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
                   href="https://www.youtube.com/watch?v=mTlR7WCT2e0&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
@@ -242,7 +242,7 @@ export class EdtLandingPage extends LitElement {
                             class="bi-file-earmark-check fs-1 text-primary"
                           ></i>
                         </div>
-                        <h3 class="h4 mb-2">Verificar texto da Emenda</h3>
+                        <h3 class="h4 mb-2">Verificar texto da emenda</h3>
                         <a
                           class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
                           href="#"
@@ -270,7 +270,7 @@ export class EdtLandingPage extends LitElement {
                         <div class="mb-2">
                           <i class="bi-window-fullscreen fs-1 text-primary"></i>
                         </div>
-                        <h3 class="h4 mb-2">Alterar Norma Vigente</h3>
+                        <h3 class="h4 mb-2">Alterar norma vigente</h3>
                         <a
                           class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
                           href="https://www.youtube.com/watch?v=NOyXN08NG_M&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&index=10"
@@ -307,7 +307,7 @@ export class EdtLandingPage extends LitElement {
                   <tbody>
                     <tr>
                       <th scope="row" class="text-start">
-                        Elaborar emendas à Anexos
+                        Elaborar emendas a anexos
                       </th>
                       <td>
                         <span class="badge rounded-pill bg-success"
@@ -327,7 +327,7 @@ export class EdtLandingPage extends LitElement {
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Enviar Emenda ao sistema de Protocolo
+                        Enviar emenda ao sistema de protocolo
                       </th>
                       <td>
                         <span class="badge rounded-pill bg-success"
@@ -358,91 +358,66 @@ export class EdtLandingPage extends LitElement {
                   </tbody>
                   <tbody>
                     <tr>
-                      <th scope="row" class="text-start">Criar Emenda</th>
+                      <th scope="row" class="text-start">Criar emenda</th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Salvar Emenda em pdf
+                        Salvar emenda em PDF
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Editar justificativa da Emenda
+                        Editar justificativa da emenda
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Informar autor e data na Emenda
+                        Informar data e autoria
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Informar outros dados necessários a emenda, como data e
-                        autoria
+                        Gerar o comando de emenda
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Gerar o comando de Emenda
+                        Validar alterações na emenda conforme a N95
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Validar alterações na Emenda conforme Norma Vigente
+                        Adicionar, modificar e suprimir dispositivos
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Criar dispositivos para proposição
+                        Alterar norma vigente
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Transformar dispositivos
+                        Utilizar recursos de formatação de texto
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Criar alteração de Norma Vigente
+                        Desfazer ou refazer operações de edição
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Utilizar recursos de formatação para o dispositivo
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Utilizar operações de desfazer ou refazer na edição
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Utilizar menu de ações para dispositivos
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Utilizar comandos do teclado para dispositivos
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Transformar dispositivos
+                        Utilizar teclas de atalho
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
@@ -454,19 +429,13 @@ export class EdtLandingPage extends LitElement {
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Tratar aspas e normas de alteração
+                        Tratar aspas e notas de alteração (NR, AC)
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Editar tipo de nota de redação (NR, AR)
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Manter referências a normas em alteração
+                        Manter referências às normas alteradas
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
@@ -484,8 +453,8 @@ export class EdtLandingPage extends LitElement {
             <div class="col-lg-7 align-middle px-5 text-center text-lg-start">
               <h2>Fique por dentro do editor de emendas</h2>
               <p class="text-white-75 mb-4 fs-4">
-                Assista vídeos curtos e aprenda as funcionalidades do editor de
-                emendas com demonstrações rápidas.
+                Assista a vídeos curtos e aprenda as funcionalidades do editor
+                de emendas com demonstrações rápidas.
               </p>
               <a
                 class="btn btn-light btn-xl mb-4"
@@ -518,7 +487,7 @@ export class EdtLandingPage extends LitElement {
                 email:
                 <a href="mailto:editoremenda@camara.leg.br"
                   >editoremenda@camara.leg.br</a
-                >
+                >.
               </p>
             </div>
           </div>
@@ -579,12 +548,12 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <div class="d-none" id="submitSuccessMessage">
                   <div class="text-center mb-3">
-                    <div class="fw-bolder">Form submission successful!</div>
+                    <div class="fw-bolder">Mensagem enviada com sucesso!</div>
                   </div>
                 </div>
                 <div class="d-none" id="submitErrorMessage">
                   <div class="text-center text-danger mb-3">
-                    Error sending message!
+                    Ocorreu um erro no envio da mensagem!
                   </div>
                 </div>
                 <div class="d-grid">
