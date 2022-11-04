@@ -11339,9 +11339,10 @@ hr.divider-light {
   /* box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15); */
   background: url( '../svg/icone-congresso.svg' );
   background-color: white;
-  background-size: cover;
+  background-size: 2194px 64px;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position-x: center;
+  background-position-y: top;
   transition: background-color 0.2s ease;
   z-index: 800;
 }
