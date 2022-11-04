@@ -98,7 +98,7 @@ export class EdtApp extends LitElement {
   }
 
   getFileName(): string {
-    const fileName = this.tituloEmenda.replace(/\..*$/, '');
+    const fileName = this.tituloEmenda;
     return `${fileName || 'nova'}.emenda.pdf`;
   }
 
@@ -157,7 +157,7 @@ export class EdtApp extends LitElement {
         this.updateStateElements(tempFileData.name);
         this.lexmlEmenda.setEmenda(content);
         this.fileHandle = tempFileData.handle;
-        this.tituloEmenda = tempFileData.name;
+        this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
         this.emendaComAlteracoesSalvas = undefined;
         this.isDirty = false;
       })
@@ -210,9 +210,10 @@ export class EdtApp extends LitElement {
           return fileSave(content, options, this.fileHandle, true);
         })
         .then(fileHandle => {
+          this.fileHandle = fileHandle;
           this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
           this.isDirty = false;
-          this.updateStateElements();
+          this.updateStateElements(fileHandle!.name);
           this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         })
         .catch(err => {
@@ -257,7 +258,7 @@ export class EdtApp extends LitElement {
         const content = await response.blob();
 
         fileHandle = await (window as any).showSaveFilePicker(pickerOptions);
-        this.tituloEmenda = await fileHandle.name;
+        this.tituloEmenda = this.removeExtensoesPadrao(await fileHandle.name);
         writableStream = await fileHandle.createWritable();
         await writableStream.write(content);
         this.fileHandle = fileHandle;
@@ -370,16 +371,13 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private removeExtensoesPadrao(nomeArquivo: string): string {
+    return nomeArquivo.replace(/\.emenda/g, '').replace(/\.pdf/g, '');
+  }
+
   private atualizarTituloEditor(tituloEmenda = ''): void {
     if (tituloEmenda) {
-      tituloEmenda = tituloEmenda
-        .replace(/\.emenda/g, '')
-        .replace(/\.pdf/g, '');
-      this.tituloEmenda = tituloEmenda;
-    } else {
-      tituloEmenda = this.tituloEmenda
-        .replace('.emenda', '')
-        .replace('.pdf', '');
+      this.tituloEmenda = this.removeExtensoesPadrao(tituloEmenda);
     }
 
     const titulo = document.querySelector('#titulo');
@@ -387,7 +385,7 @@ export class EdtApp extends LitElement {
     if (titulo) {
       titulo.innerHTML =
         'Editor de Emendas - <span>' +
-        tituloEmenda +
+        this.tituloEmenda +
         '</span>' +
         (this.isDirty
           ? ' <span class="emenda-status emenda-status--dirty" aria-label="As alterações não foram salvas" title="As alterações não foram salvas"></span>'
@@ -606,7 +604,7 @@ export class EdtApp extends LitElement {
           <div>
             <sl-input
               id="titulo-emenda"
-              .value=${this.tituloEmenda.toString()}
+              .value=${this.tituloEmenda}
               @input=${(ev: Event): void => this.atualizarTituloEmenda(ev)}
               placeholder="Emenda à ${this.proposicao.nomeProposicao}"
               size="small"
