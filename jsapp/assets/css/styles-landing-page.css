@@ -11343,7 +11343,7 @@ hr.divider-light {
   background-repeat: no-repeat;
   background-position: center;
   transition: background-color 0.2s ease;
-
+  z-index: 800;
 }
 #mainNav .navbar-brand {
   font-family: "Merriweather Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
