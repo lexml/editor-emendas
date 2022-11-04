@@ -616,7 +616,7 @@ export const landingPageStyles = html`
     rel="stylesheet"
     type="text/css"
   />
-  <link rel="stylesheet" href="../../assets/css/styles-landing-page.css" />
+  <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
   <!-- SimpleLightbox plugin CSS-->
   <link
     href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css"

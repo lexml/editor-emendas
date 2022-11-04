@@ -110,7 +110,7 @@ export class EdtLandingPage extends LitElement {
             <div class="col-lg-6">
               <img
                 class="py-5"
-                src="assets/svg/dispositivos.svg"
+                src="./assets/svg/dispositivos.svg"
                 alt="Ilustração com diferentes tipos de dispositivos eletrônicos"
               />
             </div>
