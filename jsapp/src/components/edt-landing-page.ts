@@ -26,8 +26,15 @@ export class EdtLandingPage extends LitElement {
         id="mainNav"
       >
         <div class="container px-4 px-lg-5">
-          <a class="navbar-brand fs-6" href="#page-top"
+          <a
+            class="navbar-brand navbar-brand--long fs-6 d-none d-md-none d-lg-block"
+            href="#page-top"
             >Editor de Emendas a Medidas Provisórias</a
+          >
+          <a
+            class="navbar-brand navbar-brand--short fs-6 d-md-block d-lg-none"
+            href="#page-top"
+            >Editor de Emendas a MPs</a
           >
           <button
             class="navbar-toggler navbar-toggler-right"
