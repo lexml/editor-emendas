@@ -88,7 +88,7 @@ export default {
           dest: '../src/main/resources/static'
         },
         {
-          src: ['assets/icons', 'assets/jpg'],
+          src: ['assets/icons', 'assets/svg', 'assets/jpg', 'assets/css', 'assets/js-landing-page'],
           dest: '../src/main/resources/static/assets'
         }
       ],

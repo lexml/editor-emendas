@@ -599,3 +599,61 @@ export const ondeCouberStyles = html`
     }
   </style>
 `;
+
+export const landingPageStyles = html`
+  <!-- Bootstrap Icons-->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"
+  />
+  <!-- Google fonts-->
+  <link
+    href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700"
+    rel="stylesheet"
+  />
+  <link
+    href="https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic"
+    rel="stylesheet"
+    type="text/css"
+  />
+  <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
+  <!-- SimpleLightbox plugin CSS-->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    edt-cabecalho,
+    edt-menu,
+    edt-rodape {
+      display: none !important;
+    }
+
+    .accordion-item {
+      background-color: #fff;
+      border: 0;
+    }
+
+    .accordion-button:not(.collapsed) {
+      background-color: #fff;
+      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.125);
+    }
+
+    .accordion-button:not(.collapsed)::after {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+      transform: rotate(-180deg);
+    }
+
+    .accordion-button::after {
+      flex-shrink: 0;
+      width: 1.25rem;
+      height: 1.25rem;
+      margin: auto;
+      content: '';
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-size: 1.25rem;
+      transition: transform 0.2s ease-in-out;
+    }
+  </style>
+`;

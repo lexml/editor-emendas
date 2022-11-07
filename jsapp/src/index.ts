@@ -6,6 +6,7 @@ import './components/edt-cabecalho';
 import './components/edt-rodape';
 import './components/edt-menu';
 import './components/edt-nota-versao';
+import './components/edt-landing-page';
 import './components/edt-modal-nova-emenda';
 import './components/edt-modal-visualizar-pdf';
 import './components/edt-modal-onde-couber';
