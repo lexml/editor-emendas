@@ -67,7 +67,7 @@ export class EdtMenu extends LitElement {
                 size="small"
                 name="box-arrow-up-right"
               ></sl-icon>
-              Salvar Como
+              Salvar como
             </sl-button>
             <sl-button
               title="Visualizar emenda"
