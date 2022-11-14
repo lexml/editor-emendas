@@ -40,6 +40,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-confirmacao-salvar')
   private modalConfirmacaoSalvar!: any;
 
+  @query('edt-modal-ajuda')
+  private modalAjuda!: any;
+
   private jsonixProposicao: any = {};
 
   @state()
@@ -285,15 +288,15 @@ export class EdtApp extends LitElement {
   }
 
   private abrirVideos(): void {
-    window.open(
-      'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
-    );
-    const gtag = window.dataLayer.gtag || [];
-    gtag.push(gtag, 'event', 'Abrir videos', {
-      event_category: 'Videos',
-      event_label: 'AbrirVideos',
-    });
-    console.log('gtag', gtag);
+    // window.open(
+    //   'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
+    // );
+    // const gtag = window.dataLayer.gtag || [];
+    // gtag.push(gtag, 'event', 'Abrir videos', {
+    //   event_category: 'Videos',
+    //   event_label: 'AbrirVideos',
+    // });
+    this.modalAjuda.show();
   }
 
   private abrirWiki(): void {
@@ -651,6 +654,7 @@ export class EdtApp extends LitElement {
       <edt-modal-confirmacao-salvar
         @confirm-result=${this.processarResultadoConfirmacao}
       ></edt-modal-confirmacao-salvar>
+      <edt-modal-ajuda></edt-modal-ajuda>
     `;
   }
 
