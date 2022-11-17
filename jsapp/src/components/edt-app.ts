@@ -654,7 +654,6 @@ export class EdtApp extends LitElement {
       <edt-modal-confirmacao-salvar
         @confirm-result=${this.processarResultadoConfirmacao}
       ></edt-modal-confirmacao-salvar>
-      <edt-modal-ajuda></edt-modal-ajuda>
     `;
   }
 
@@ -667,7 +666,7 @@ export class EdtApp extends LitElement {
       ></edt-menu>
       <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
         ${this.isJsonixProposicaoLoaded()
-          ? ''
+          ? html`<edt-modal-ajuda></edt-modal-ajuda>`
           : html` <edt-landing-page
               @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
             ></edt-landing-page>`}
