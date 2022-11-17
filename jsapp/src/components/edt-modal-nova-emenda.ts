@@ -4,6 +4,9 @@ import { Proposicao } from './../model/proposicao';
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query, queryAll, state } from 'lit/decorators.js';
 import { novaEmendaStyles } from './app.css';
+import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
+import SlSelect from '@shoelace-style/shoelace/dist/components/select/select';
+
 @customElement('edt-modal-nova-emenda')
 export class EdtModalNovaEmenda extends LitElement {
   @state()
@@ -31,6 +34,15 @@ export class EdtModalNovaEmenda extends LitElement {
   private trProposicoes!: HTMLElement[];
 
   public show(): void {
+    this.sigla = 'MPV';
+    this.numero = '';
+    this.ano = new Date().getFullYear().toString();
+    (this.shadowRoot?.querySelector('.tipo-proposicao') as SlSelect).value =
+      'mpv';
+    (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value =
+      '';
+    (this.shadowRoot?.querySelector('.ano-proposicao') as SlInput).value =
+      new Date().getFullYear().toString();
     this.pesquisar();
     this.slDialog.show();
   }
@@ -146,6 +158,7 @@ export class EdtModalNovaEmenda extends LitElement {
             <sl-input
               class="numero-proposicao"
               size="small"
+              value=""
               placeholder="Número"
               max="99999"
               max-length="5"
