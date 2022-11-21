@@ -135,8 +135,8 @@
 
     window.addEventListener("load", function(event) {
       var userAgent = window.navigator.userAgent;
-      // var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1;
-      var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1 || userAgent.indexOf("Firefox") != -1;
+      var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1;
+      // var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1 || userAgent.indexOf("Firefox") != -1;
       if (!validUserAgent) {
         document.querySelector("edt-app").style.display = "none";
         document.querySelector("#alert-browser").style.display = "block";
@@ -151,17 +151,19 @@
   <script type="module" src="./out-tsc/src/index.js"></script>
   <sl-alert id="alert-browser" variant="danger" close closable class="alert-closable">
     <sl-icon slot="icon" name="exclamation-octagon"></sl-icon>
-    Seu navegador não é suportado. Por favor, use o Chrome, Edge, Safari ou Firefox.
+    <!-- Seu navegador não é suportado. Por favor, use o Chrome, Edge, Safari ou Firefox. -->
+    Seu navegador não é suportado. Por favor, use o Chrome, Edge e Safari.
   </sl-alert>
   <sl-card class="card-basic card-basic--browser">
     <h2>Atualizar os navegadores</h2>
-    <p>A editor de emendas só é compatível com a versão mais recente dos navegadores Chrome, Edge, Safari e Firefox. Garanta a melhor experiência possível utilizando um dos navegadores suportados.</p>
+    <!-- <p>A editor de emendas só é compatível com a versão mais recente dos navegadores Chrome, Edge, Safari e Firefox. Garanta a melhor experiência possível utilizando um dos navegadores suportados.</p> -->
+    <p>A editor de emendas só é compatível com a versão mais recente dos navegadores Chrome, Edge e Safari. Garanta a melhor experiência possível utilizando um dos navegadores suportados.</p>
     <p>Para atualizar seu navegador:</p>
     <ul>
       <li>No <a href="https://support.google.com/chrome/answer/95414" class=" css-0" title="Google Chrome">Google Chrome</a> </li>
       <li>No <a href="http://support.apple.com/en-us/HT6104" class=" css-0" title="Safari">Safari</a></li>
       <li>No <a href="https://support.microsoft.com/pt-br/topic/configura%C3%A7%C3%B5es-de-atualiza%C3%A7%C3%A3o-do-microsoft-edge-af8aaca2-1b69-4870-94fe-18822dbb7ef1" class=" css-0" title="Microsoft Edge">Microsoft Edge</a> &nbsp;</li>
-      <li>No <a href="https://www.mozilla.org/pt-BR/firefox/download/" class=" css-0" title="Firefox">Firefox</a> &nbsp;</li>
+      <!-- <li>No <a href="https://www.mozilla.org/pt-BR/firefox/download/" class=" css-0" title="Firefox">Firefox</a> &nbsp;</li> -->
       </ul>
   </sl-card>
   <div class="overlay-carregando hidden">
