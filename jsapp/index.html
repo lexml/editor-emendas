@@ -15,7 +15,6 @@
       margin: 0;
       padding: 0;
       font-family: sans-serif;
-      /* background-color: #ededed; */
     }
     .hidden {
       visibility: hidden;
@@ -135,7 +134,6 @@
 
     window.addEventListener("load", function(event) {
       var userAgent = window.navigator.userAgent;
-      // var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1;
       var validUserAgent = userAgent.indexOf("Chrome") != -1 || userAgent.indexOf("Edge") != -1 || userAgent.indexOf("Safari") != -1 || userAgent.indexOf("Firefox") != -1;
       if (!validUserAgent) {
         document.querySelector("edt-app").style.display = "none";
@@ -146,7 +144,6 @@
         document.querySelector("edt-app").style.visibility = "visible";
       }
     });
-
   </script>
   <script type="module" src="./out-tsc/src/index.js"></script>
   <sl-alert id="alert-browser" variant="danger" close closable class="alert-closable">
@@ -166,10 +163,8 @@
   </sl-card>
   <div class="overlay-carregando hidden">
     <sl-spinner style="font-size: 40px; --track-width: 8px;"></sl-spinner>
-    <!-- <a href="#" onclick="document.querySelector('edt-app').toggleCarregando()">Carregando...</a> -->
   </div>
   <edt-app></edt-app>
-
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-D73DFWRF3G"></script>
   <script>
@@ -178,12 +173,10 @@
     gtag('js', new Date());
     gtag('config', 'G-D73DFWRF3G');
   </script>
-
   <!-- Bootstrap core JS-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- SimpleLightbox plugin JS-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.js"></script>
-
   <script src="./assets/js-landing-page/forms-landing-page.js"></script>
   <script src="./assets/js-landing-page/scripts-landing-page.js"></script>
 </body>
