@@ -18,6 +18,11 @@ export class EdtLandingPage extends LitElement {
     );
   }
 
+  submitMensagem(evento: Event): void {
+    evento.preventDefault();
+    console.log('mensagem enviada');
+  }
+
   render(): TemplateResult {
     return html`
       ${landingPageStyles}
@@ -498,9 +503,13 @@ export class EdtLandingPage extends LitElement {
               </p>
             </div>
           </div>
-          <div class="row gx-4 gx-lg-5 justify-content-center mb-5 d-none">
+          <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
             <div class="col-lg-6">
-              <form id="contactForm" data-sb-form-api-token="API_TOKEN">
+              <form
+                id="contactForm"
+                @submit="${this.submitMensagem}"
+                data-sb-form-api-token="API_TOKEN"
+              >
                 <div class="form-floating mb-3">
                   <input
                     class="form-control"
