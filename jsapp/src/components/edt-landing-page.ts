@@ -1,9 +1,150 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
+import * as EmailValidator from 'email-validator';
+
+interface TouchedFields {
+  name: boolean;
+  email: boolean;
+  message: boolean;
+}
+
+enum NameError {
+  NameEmpty,
+}
+
+enum EmailError {
+  EmailEmpty,
+  EmailInvalid,
+}
+
+enum MessageError {
+  MessageEmpty,
+}
+
+interface ContactFormErrors {
+  name?: NameError;
+  email?: EmailError;
+  message?: MessageError;
+}
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
+  @state() name = '';
+  @state() email = '';
+  @state() message = '';
+  @state() touched: TouchedFields = {
+    name: false,
+    email: false,
+    message: false,
+  };
+  @state() errors: ContactFormErrors = {
+    name: undefined,
+    email: undefined,
+    message: undefined,
+  };
+  @state() submitEnabled = false;
+
+  handleNameInput(event: Event): void {
+    this.touched.name = true;
+    const e = event.target as any;
+    this.name = e.value;
+    this.validateName();
+  }
+
+  validateName(): void {
+    if (this.name === '') {
+      this.errors.name = NameError.NameEmpty;
+    } else {
+      this.errors.name = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  enableSubmit(): void {
+    this.submitEnabled =
+      this.nameValid() && this.emailValid() && this.messageValid();
+  }
+
+  nameValid(): boolean {
+    return this.touched.name && this.errors.name === undefined;
+  }
+
+  showNameRequired(): boolean {
+    return this.touched.name && this.errors.name === NameError.NameEmpty;
+  }
+
+  emailValid(): boolean {
+    return this.touched.email && this.errors.email === undefined;
+  }
+
+  showEmailRequired(): boolean {
+    return this.touched.email && this.errors.email === EmailError.EmailEmpty;
+  }
+
+  showEmailInvalid(): boolean {
+    return this.touched.email && this.errors.email === EmailError.EmailInvalid;
+  }
+
+  messageValid(): boolean {
+    return this.touched.message && this.errors.message === undefined;
+  }
+
+  showMessageRequired(): boolean {
+    return (
+      this.touched.message && this.errors.message === MessageError.MessageEmpty
+    );
+  }
+
+  handleNameBlur(event: Event): void {
+    this.touched.name = true;
+    this.validateName();
+  }
+
+  handleEmailInput(event: Event): void {
+    this.touched.email = true;
+    const e = event.target as any;
+    this.email = e.value;
+    this.validateEmail();
+  }
+
+  validateEmail(): void {
+    if (this.email === '') {
+      this.errors.email = EmailError.EmailEmpty;
+    } else if (!EmailValidator.validate(this.email)) {
+      this.errors.email = EmailError.EmailInvalid;
+    } else {
+      this.errors.email = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  handleEmailBlur(event: Event): void {
+    this.touched.email = true;
+    this.validateEmail();
+  }
+
+  handleMessageInput(event: Event): void {
+    this.touched.message = true;
+    const e = event.target as any;
+    this.message = e.value;
+    this.validateMessage();
+  }
+
+  validateMessage(): void {
+    if (this.message === '') {
+      this.errors.message = MessageError.MessageEmpty;
+    } else {
+      this.errors.message = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  handleMessageBlur(event: Event): void {
+    this.touched.message = true;
+    this.validateMessage();
+  }
+
   createRenderRoot(): LitElement {
     return this;
   }
@@ -18,9 +159,27 @@ export class EdtLandingPage extends LitElement {
     );
   }
 
-  submitMensagem(evento: Event): void {
+  async submitMensagem(evento: SubmitEvent): Promise<any> {
     evento.preventDefault();
-    console.log('mensagem enviada');
+
+    const e = evento.target as any;
+
+    const msg = {
+      nome: e[0].value,
+      email: e[1].value,
+      mensagem: e[2].value,
+    };
+
+    const result = await fetch('/api/contato', {
+      method: 'POST',
+      body: JSON.stringify(msg),
+    });
+
+    e[0].value = '';
+    e[1].value = '';
+    e[2].value = '';
+
+    return result;
   }
 
   render(): TemplateResult {
@@ -505,11 +664,7 @@ export class EdtLandingPage extends LitElement {
           </div>
           <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
             <div class="col-lg-6">
-              <form
-                id="contactForm"
-                @submit="${this.submitMensagem}"
-                data-sb-form-api-token="API_TOKEN"
-              >
+              <form id="contactForm" @submit=${this.submitMensagem}>
                 <div class="form-floating mb-3">
                   <input
                     class="form-control"
@@ -517,13 +672,16 @@ export class EdtLandingPage extends LitElement {
                     type="text"
                     placeholder="Enter your name..."
                     data-sb-validations="required"
+                    @input=${this.handleNameInput}
+                    @blur=${this.handleNameBlur}
+                    .value=${this.name}
                   />
                   <label for="name">Nome completo</label>
                   <div
                     class="invalid-feedback"
                     data-sb-feedback="name:required"
                   >
-                    O nome é requerido.
+                    ${this.showNameRequired() ? 'O nome é requerido.' : ''}
                   </div>
                 </div>
                 <div class="form-floating mb-3">
@@ -533,16 +691,19 @@ export class EdtLandingPage extends LitElement {
                     type="email"
                     placeholder="name@example.com"
                     data-sb-validations="required,email"
+                    @input=${this.handleEmailInput}
+                    @blur=${this.handleEmailBlur}
+                    .value=${this.email}
                   />
                   <label for="email">Endereço de email</label>
                   <div
                     class="invalid-feedback"
                     data-sb-feedback="email:required"
                   >
-                    Um e-mail é requerido.
+                    ${this.showEmailRequired() ? 'Um e-mail é requerido.' : ''}
                   </div>
                   <div class="invalid-feedback" data-sb-feedback="email:email">
-                    Email não é válido.
+                    ${this.showEmailInvalid() ? 'Email não é válido.' : ''}
                   </div>
                 </div>
                 <div class="form-floating mb-3">
@@ -553,13 +714,19 @@ export class EdtLandingPage extends LitElement {
                     placeholder="Enter your message here..."
                     style="height: 10rem"
                     data-sb-validations="required"
-                  ></textarea>
+                    @input=${this.handleMessageInput}
+                    @blur=${this.handleMessageBlur}
+                  >
+${this.message}</textarea
+                  >
                   <label for="message">Mensagem</label>
                   <div
                     class="invalid-feedback"
                     data-sb-feedback="message:required"
                   >
-                    Uma mensagem é requerida.
+                    ${this.showMessageRequired()
+                      ? 'Uma mensagem é requerida.'
+                      : ''}
                   </div>
                 </div>
                 <div class="d-none" id="submitSuccessMessage">
@@ -574,9 +741,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <div class="d-grid">
                   <button
-                    class="btn btn-primary btn-xl disabled"
+                    class="btn btn-primary btn-xl"
                     id="submitButton"
                     type="submit"
+                    .disabled=${!this.submitEnabled}
                   >
                     Reportar erro
                   </button>
