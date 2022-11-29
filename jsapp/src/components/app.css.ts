@@ -106,10 +106,12 @@ export const appStyles = html`
     sl-split-panel::part(divider) {
       background-color: #dfe9ff;
     }
+    sl-radio-group::part(base) {
+      margin-bottom: 80px;
+    }
 
     .overflow-hidden {
       overflow: hidden;
-      overflow-y: scroll;
       height: calc(100vh - 205px) !important;
     }
 
