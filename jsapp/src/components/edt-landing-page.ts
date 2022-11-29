@@ -1,9 +1,230 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement } from 'lit/decorators.js';
+import { customElement, state } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
+
+interface TouchedFields {
+  name: boolean;
+  email: boolean;
+  message: boolean;
+}
+
+enum NameError {
+  NameEmpty,
+}
+
+enum EmailError {
+  EmailEmpty,
+  EmailInvalid,
+}
+
+enum MessageError {
+  MessageEmpty,
+}
+
+enum SubmitState {
+  NotSubmitted,
+  Submitted,
+  Failed,
+}
+
+interface ContactFormErrors {
+  name?: NameError;
+  email?: EmailError;
+  message?: MessageError;
+}
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
+  @state() name = '';
+  @state() email = '';
+  @state() message = '';
+  @state() touched: TouchedFields = {
+    name: false,
+    email: false,
+    message: false,
+  };
+  @state() errors: ContactFormErrors = {
+    name: NameError.NameEmpty,
+    email: EmailError.EmailEmpty,
+    message: MessageError.MessageEmpty,
+  };
+  @state() submitEnabled = false;
+
+  @state() submitState: SubmitState = SubmitState.NotSubmitted;
+
+  handleNameInput(event: Event): void {
+    this.touched.name = true;
+    const e = event.target as any;
+    this.name = e.value;
+    this.validateName();
+  }
+
+  validateName(): void {
+    if (this.name === '') {
+      this.errors.name = NameError.NameEmpty;
+    } else {
+      this.errors.name = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  enableSubmit(): void {
+    this.submitEnabled =
+      this.nameValid() && this.emailValid() && this.messageValid();
+  }
+
+  nameValid(): boolean {
+    return !this.touched.name || this.errors.name === undefined;
+  }
+
+  showNameRequired(): boolean {
+    return this.touched.name && this.errors.name === NameError.NameEmpty;
+  }
+
+  emailValid(): boolean {
+    return !this.touched.email || this.errors.email === undefined;
+  }
+
+  showEmailRequired(): boolean {
+    return this.touched.email && this.errors.email === EmailError.EmailEmpty;
+  }
+
+  showEmailInvalid(): boolean {
+    return this.touched.email && this.errors.email === EmailError.EmailInvalid;
+  }
+
+  messageValid(): boolean {
+    return !this.touched.message || this.errors.message === undefined;
+  }
+
+  showMessageRequired(): boolean {
+    return (
+      this.touched.message && this.errors.message === MessageError.MessageEmpty
+    );
+  }
+
+  handleNameBlur(): void {
+    this.touched.name = true;
+    this.validateName();
+  }
+
+  handleEmailInput(event: Event): void {
+    this.touched.email = true;
+    const e = event.target as any;
+    this.email = e.value;
+    this.validateEmail();
+  }
+
+  validateEmail(): void {
+    if (this.email === '') {
+      this.errors.email = EmailError.EmailEmpty;
+    } else if (!this.validateEmailFormat(this.email)) {
+      this.errors.email = EmailError.EmailInvalid;
+    } else {
+      this.errors.email = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  tester =
+    /^[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+
+  validateEmailFormat(email: string): boolean {
+    if (!email) return false;
+
+    const emailParts = email.split('@');
+
+    if (emailParts.length !== 2) return false;
+
+    const account = emailParts[0];
+    const address = emailParts[1];
+
+    if (account.length > 64) {
+      return false;
+    }
+
+    if (address.length > 255) {
+      return false;
+    }
+
+    const domainParts = address.split('.');
+
+    const validDomains = domainParts.some(function (part) {
+      return part.length > 63;
+    });
+
+    if (validDomains) {
+      return false;
+    }
+
+    return this.tester.test(email);
+  }
+
+  handleEmailBlur(): void {
+    this.touched.email = true;
+    this.validateEmail();
+  }
+
+  handleMessageInput(event: Event): void {
+    this.touched.message = true;
+    const e = event.target as any;
+    this.message = e.value;
+    this.validateMessage();
+  }
+
+  validateMessage(): void {
+    if (this.message === '') {
+      this.errors.message = MessageError.MessageEmpty;
+    } else {
+      this.errors.message = undefined;
+    }
+    this.enableSubmit();
+  }
+
+  handleMessageBlur(): void {
+    this.touched.message = true;
+    this.validateMessage();
+  }
+
+  classForName(): string {
+    if (!this.touched.name) {
+      return 'form-control';
+    }
+    return this.errors.name === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
+  }
+
+  classForEmail(): string {
+    if (!this.touched.email) {
+      return 'form-control';
+    }
+    return this.errors.email === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
+  }
+
+  classForMessage(): string {
+    if (!this.touched.message) {
+      return 'form-control';
+    }
+    return this.errors.message === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
+  }
+
+  classForSubmitButton(): string {
+    return this.submitState !== SubmitState.Submitted ? 'd-grid' : 'd-none';
+  }
+
+  classForSubmittedMessage(): string {
+    return this.submitState === SubmitState.Submitted ? 'd-block' : 'd-none';
+  }
+
+  classForFailedMessage(): string {
+    return this.submitState === SubmitState.Failed ? 'd-block' : 'd-none';
+  }
+
   createRenderRoot(): LitElement {
     return this;
   }
@@ -16,6 +237,36 @@ export class EdtLandingPage extends LitElement {
         bubbles: true,
       })
     );
+  }
+
+  async submitMensagem(evento: SubmitEvent): Promise<any> {
+    evento.preventDefault();
+
+    const e = evento.target as any;
+
+    const msg = {
+      nome: e[0].value,
+      email: e[1].value,
+      mensagem: e[2].value,
+    };
+
+    try {
+      const result = await fetch('/api/contato', {
+        method: 'POST',
+        body: JSON.stringify(msg),
+      });
+
+      e[0].value = '';
+      e[1].value = '';
+      e[2].value = '';
+
+      this.submitState = SubmitState.Submitted;
+
+      return result;
+    } catch (error) {
+      this.submitState = SubmitState.Failed;
+      return Promise.reject(error);
+    }
   }
 
   render(): TemplateResult {
@@ -498,76 +749,102 @@ export class EdtLandingPage extends LitElement {
               </p>
             </div>
           </div>
-          <div class="row gx-4 gx-lg-5 justify-content-center mb-5 d-none">
+          <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
             <div class="col-lg-6">
-              <form id="contactForm" data-sb-form-api-token="API_TOKEN">
+              <form id="contactForm" @submit=${this.submitMensagem}>
                 <div class="form-floating mb-3">
                   <input
-                    class="form-control"
+                    class=${this.classForName()}
                     id="name"
                     type="text"
                     placeholder="Enter your name..."
                     data-sb-validations="required"
+                    @input=${this.handleNameInput}
+                    @blur=${this.handleNameBlur}
+                    .value=${this.name}
                   />
                   <label for="name">Nome completo</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="name:required"
                   >
-                    O nome é requerido.
+                    ${this.showNameRequired() ? 'O nome é requerido.' : ''}
                   </div>
                 </div>
                 <div class="form-floating mb-3">
                   <input
-                    class="form-control"
+                    class=${this.classForEmail()}
                     id="email"
                     type="email"
                     placeholder="name@example.com"
                     data-sb-validations="required,email"
+                    @input=${this.handleEmailInput}
+                    @blur=${this.handleEmailBlur}
+                    .value=${this.email}
                   />
                   <label for="email">Endereço de email</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="email:required"
                   >
-                    Um e-mail é requerido.
+                    ${this.showEmailRequired() ? 'Um e-mail é requerido.' : ''}
                   </div>
-                  <div class="invalid-feedback" data-sb-feedback="email:email">
-                    Email não é válido.
+                  <div
+                    class="invalid-feedback"
+                    style="display: block"
+                    data-sb-feedback="email:email"
+                  >
+                    ${this.showEmailInvalid() ? 'Email não é válido.' : ''}
                   </div>
                 </div>
                 <div class="form-floating mb-3">
                   <textarea
-                    class="form-control"
+                    class=${this.classForMessage()}
                     id="message"
                     type="text"
                     placeholder="Enter your message here..."
                     style="height: 10rem"
                     data-sb-validations="required"
-                  ></textarea>
+                    @input=${this.handleMessageInput}
+                    @blur=${this.handleMessageBlur}
+                  >
+${this.message}</textarea
+                  >
                   <label for="message">Mensagem</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="message:required"
                   >
-                    Uma mensagem é requerida.
+                    ${this.showMessageRequired()
+                      ? 'Uma mensagem é requerida.'
+                      : ''}
                   </div>
                 </div>
-                <div class="d-none" id="submitSuccessMessage">
+                <div
+                  class=${this.classForSubmittedMessage()}
+                  id="submitSuccessMessage"
+                >
                   <div class="text-center mb-3">
                     <div class="fw-bolder">Mensagem enviada com sucesso!</div>
                   </div>
                 </div>
-                <div class="d-none" id="submitErrorMessage">
+                <div
+                  class=${this.classForFailedMessage()}
+                  id="submitErrorMessage"
+                >
                   <div class="text-center text-danger mb-3">
                     Ocorreu um erro no envio da mensagem!
                   </div>
                 </div>
-                <div class="d-grid">
+                <div class=${this.classForSubmitButton()}>
                   <button
-                    class="btn btn-primary btn-xl disabled"
+                    class="btn btn-primary btn-xl"
                     id="submitButton"
                     type="submit"
+                    .disabled=${!this.submitEnabled}
                   >
                     Reportar erro
                   </button>

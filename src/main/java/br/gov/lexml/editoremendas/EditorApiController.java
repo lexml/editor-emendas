@@ -4,8 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +18,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
 import br.gov.lexml.eta.etaservices.parsing.lexml.LexmlParser;
@@ -57,18 +52,24 @@ public class EditorApiController {
     private final LexmlParser lexmlParser;
     
     private final ConversorLexmlJsonix conversorLexmlJsonix;
-    
+    private final LandingPageMailService landingPageMailService;
+    private final ListaParlamentaresService listaParlamentaresService;
+
     public EditorApiController(
             PdfGenerator pdfGenerator,
             EmendaJsonGenerator jsonGenerator,
             LexmlJsonixService lexmlJsonixService,
             LexmlParser lexmlParser,
-            ConversorLexmlJsonix conversorLexmlJsonix) {
+            ConversorLexmlJsonix conversorLexmlJsonix,
+            LandingPageMailService landingPageMailService,
+            ListaParlamentaresService listaParlamentaresService) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
         this.lexmlJsonixService = lexmlJsonixService;
         this.lexmlParser = lexmlParser;
         this.conversorLexmlJsonix = conversorLexmlJsonix;
+        this.landingPageMailService = landingPageMailService;
+        this.listaParlamentaresService = listaParlamentaresService;
     }
 
     @GetMapping
@@ -92,34 +93,8 @@ public class EditorApiController {
     
     // Proxy para evitar problemas de cross origin
     @GetMapping(path = "/parlamentares", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Object listaParlamentares(RestTemplate restTemplate) throws Exception {   	
-
-    	String url = "https://legis.senado.gov.br/lexeditweb/resources/shared/parlamentares/";
-    	
-    	HttpHeaders headers = new HttpHeaders();
-    	headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-
-    	HttpEntity<String> reqEntity = new HttpEntity<>(null, headers);
-
-    	HttpEntity<HashMap> respEntity = restTemplate.exchange(url, HttpMethod.GET, reqEntity, HashMap.class);
-    	
-    	List<Map<String, Object>> parlamentares = (List<Map<String, Object>>) respEntity.getBody().get("parlamentares");
-    	
-    	parlamentares.forEach(p -> {
-    		String siglaCasa = (String) p.get("siglaCasa");
-    		if (siglaCasa.equals("CD")) {
-    			p.put("id", p.get("codigoDeputado"));
-    		}
-    		else {
-    			p.put("id", p.get("codigoParlamentar"));
-    		}
-    		p.remove("codigoDeputado");
-    		p.remove("codigoParlamentar");
-    		p.put("siglaUF", p.get("siglaUf"));
-    		p.remove("siglaUf");
-    	});
-    	
-    	return parlamentares;
+    public List<Map<String, Object>> listaParlamentares() {
+        return listaParlamentaresService.parlamentares();
     }
     
     // Proxy para evitar problemas de cross origin
@@ -148,7 +123,7 @@ public class EditorApiController {
     	InputStream is = EditorApiController.class.getResourceAsStream(resourceName);
     	
     	if (is != null) {
-    		return IOUtils.toString(is, "UTF-8");
+    		return IOUtils.toString(is, StandardCharsets.UTF_8);
     	}
 
     	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
@@ -172,5 +147,12 @@ public class EditorApiController {
     public String parserAndJsonix(@RequestBody @NotBlank String texto) {
         return conversorLexmlJsonix.xmlToJson(lexmlParser.parse(texto));
     }
+
+    @PostMapping("contato")
+    public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
+        landingPageMailService.sendEmail(mensagem);
+        return ResponseEntity.noContent().build();
+    }
+
     
 }
