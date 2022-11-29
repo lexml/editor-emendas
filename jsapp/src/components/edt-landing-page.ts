@@ -2,7 +2,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
-import * as EmailValidator from 'email-validator';
 
 interface TouchedFields {
   name: boolean;
@@ -39,9 +38,9 @@ export class EdtLandingPage extends LitElement {
     message: false,
   };
   @state() errors: ContactFormErrors = {
-    name: undefined,
-    email: undefined,
-    message: undefined,
+    name: NameError.NameEmpty,
+    email: EmailError.EmailEmpty,
+    message: MessageError.MessageEmpty,
   };
   @state() submitEnabled = false;
 
@@ -67,7 +66,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   nameValid(): boolean {
-    return this.touched.name && this.errors.name === undefined;
+    return !this.touched.name || this.errors.name === undefined;
   }
 
   showNameRequired(): boolean {
@@ -75,7 +74,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   emailValid(): boolean {
-    return this.touched.email && this.errors.email === undefined;
+    return !this.touched.email || this.errors.email === undefined;
   }
 
   showEmailRequired(): boolean {
@@ -87,7 +86,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   messageValid(): boolean {
-    return this.touched.message && this.errors.message === undefined;
+    return !this.touched.message || this.errors.message === undefined;
   }
 
   showMessageRequired(): boolean {
@@ -111,12 +110,48 @@ export class EdtLandingPage extends LitElement {
   validateEmail(): void {
     if (this.email === '') {
       this.errors.email = EmailError.EmailEmpty;
-    } else if (!EmailValidator.validate(this.email)) {
+    } else if (!this.validateEmailFormat(this.email)) {
       this.errors.email = EmailError.EmailInvalid;
     } else {
       this.errors.email = undefined;
     }
     this.enableSubmit();
+  }
+
+  tester =
+    /^[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+
+  validateEmailFormat(email: string): boolean {
+    if (!email) return false;
+
+    const emailParts = email.split('@');
+
+    if (emailParts.length !== 2) return false;
+
+    const account = emailParts[0];
+    const address = emailParts[1];
+
+    if (account.length > 64) {
+      return false;
+    }
+
+    if (address.length > 255) {
+      return false;
+    }
+
+    const domainParts = address.split('.');
+
+    const validDomains = domainParts.some(function (part) {
+      return part.length > 63;
+    });
+
+    if (validDomains) {
+      return false;
+    }
+
+    if (!this.tester.test(email)) return false;
+
+    return true;
   }
 
   handleEmailBlur(event: Event): void {
@@ -143,6 +178,33 @@ export class EdtLandingPage extends LitElement {
   handleMessageBlur(event: Event): void {
     this.touched.message = true;
     this.validateMessage();
+  }
+
+  classForName(): string {
+    if (!this.touched.name) {
+      return 'form-control';
+    }
+    return this.errors.name === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
+  }
+
+  classForEmail(): string {
+    if (!this.touched.email) {
+      return 'form-control';
+    }
+    return this.errors.email === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
+  }
+
+  classForMessage(): string {
+    if (!this.touched.message) {
+      return 'form-control';
+    }
+    return this.errors.message === undefined
+      ? 'form-control'
+      : 'form-control is-invalid';
   }
 
   createRenderRoot(): LitElement {
@@ -667,7 +729,7 @@ export class EdtLandingPage extends LitElement {
               <form id="contactForm" @submit=${this.submitMensagem}>
                 <div class="form-floating mb-3">
                   <input
-                    class="form-control"
+                    class=${this.classForName()}
                     id="name"
                     type="text"
                     placeholder="Enter your name..."
@@ -679,6 +741,7 @@ export class EdtLandingPage extends LitElement {
                   <label for="name">Nome completo</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="name:required"
                   >
                     ${this.showNameRequired() ? 'O nome é requerido.' : ''}
@@ -686,7 +749,7 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <div class="form-floating mb-3">
                   <input
-                    class="form-control"
+                    class=${this.classForEmail()}
                     id="email"
                     type="email"
                     placeholder="name@example.com"
@@ -698,17 +761,22 @@ export class EdtLandingPage extends LitElement {
                   <label for="email">Endereço de email</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="email:required"
                   >
                     ${this.showEmailRequired() ? 'Um e-mail é requerido.' : ''}
                   </div>
-                  <div class="invalid-feedback" data-sb-feedback="email:email">
+                  <div
+                    class="invalid-feedback"
+                    style="display: block"
+                    data-sb-feedback="email:email"
+                  >
                     ${this.showEmailInvalid() ? 'Email não é válido.' : ''}
                   </div>
                 </div>
                 <div class="form-floating mb-3">
                   <textarea
-                    class="form-control"
+                    class=${this.classForMessage()}
                     id="message"
                     type="text"
                     placeholder="Enter your message here..."
@@ -722,6 +790,7 @@ ${this.message}</textarea
                   <label for="message">Mensagem</label>
                   <div
                     class="invalid-feedback"
+                    style="display: block"
                     data-sb-feedback="message:required"
                   >
                     ${this.showMessageRequired()
