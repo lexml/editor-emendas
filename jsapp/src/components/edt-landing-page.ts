@@ -22,6 +22,12 @@ enum MessageError {
   MessageEmpty,
 }
 
+enum SubmitState {
+  NotSubmitted,
+  Submitted,
+  Failed,
+}
+
 interface ContactFormErrors {
   name?: NameError;
   email?: EmailError;
@@ -43,6 +49,8 @@ export class EdtLandingPage extends LitElement {
     message: MessageError.MessageEmpty,
   };
   @state() submitEnabled = false;
+
+  @state() submitState: SubmitState = SubmitState.NotSubmitted;
 
   handleNameInput(event: Event): void {
     this.touched.name = true;
@@ -95,7 +103,7 @@ export class EdtLandingPage extends LitElement {
     );
   }
 
-  handleNameBlur(event: Event): void {
+  handleNameBlur(): void {
     this.touched.name = true;
     this.validateName();
   }
@@ -149,12 +157,10 @@ export class EdtLandingPage extends LitElement {
       return false;
     }
 
-    if (!this.tester.test(email)) return false;
-
-    return true;
+    return this.tester.test(email);
   }
 
-  handleEmailBlur(event: Event): void {
+  handleEmailBlur(): void {
     this.touched.email = true;
     this.validateEmail();
   }
@@ -175,7 +181,7 @@ export class EdtLandingPage extends LitElement {
     this.enableSubmit();
   }
 
-  handleMessageBlur(event: Event): void {
+  handleMessageBlur(): void {
     this.touched.message = true;
     this.validateMessage();
   }
@@ -207,6 +213,18 @@ export class EdtLandingPage extends LitElement {
       : 'form-control is-invalid';
   }
 
+  classForSubmitButton(): string {
+    return this.submitState !== SubmitState.Submitted ? 'd-grid' : 'd-none';
+  }
+
+  classForSubmittedMessage(): string {
+    return this.submitState === SubmitState.Submitted ? 'd-block' : 'd-none';
+  }
+
+  classForFailedMessage(): string {
+    return this.submitState === SubmitState.Failed ? 'd-block' : 'd-none';
+  }
+
   createRenderRoot(): LitElement {
     return this;
   }
@@ -232,16 +250,23 @@ export class EdtLandingPage extends LitElement {
       mensagem: e[2].value,
     };
 
-    const result = await fetch('/api/contato', {
-      method: 'POST',
-      body: JSON.stringify(msg),
-    });
+    try {
+      const result = await fetch('/api/contato', {
+        method: 'POST',
+        body: JSON.stringify(msg),
+      });
 
-    e[0].value = '';
-    e[1].value = '';
-    e[2].value = '';
+      e[0].value = '';
+      e[1].value = '';
+      e[2].value = '';
 
-    return result;
+      this.submitState = SubmitState.Submitted;
+
+      return result;
+    } catch (error) {
+      this.submitState = SubmitState.Failed;
+      return Promise.reject(error);
+    }
   }
 
   render(): TemplateResult {
@@ -798,17 +823,23 @@ ${this.message}</textarea
                       : ''}
                   </div>
                 </div>
-                <div class="d-none" id="submitSuccessMessage">
+                <div
+                  class=${this.classForSubmittedMessage()}
+                  id="submitSuccessMessage"
+                >
                   <div class="text-center mb-3">
                     <div class="fw-bolder">Mensagem enviada com sucesso!</div>
                   </div>
                 </div>
-                <div class="d-none" id="submitErrorMessage">
+                <div
+                  class=${this.classForFailedMessage()}
+                  id="submitErrorMessage"
+                >
                   <div class="text-center text-danger mb-3">
                     Ocorreu um erro no envio da mensagem!
                   </div>
                 </div>
-                <div class="d-grid">
+                <div class=${this.classForSubmitButton()}>
                   <button
                     class="btn btn-primary btn-xl"
                     id="submitButton"
