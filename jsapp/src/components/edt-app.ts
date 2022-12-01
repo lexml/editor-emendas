@@ -277,7 +277,6 @@ export class EdtApp extends LitElement {
         this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
         this.isDirty = false;
         this.updateStateElements();
-        // this.atualizarTituloEditor();
         this.toggleCarregando();
 
         if (writableStream) {
@@ -288,19 +287,24 @@ export class EdtApp extends LitElement {
   }
 
   private abrirVideos(): void {
-    // window.open(
-    //   'https://www.youtube.com/playlist?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2'
-    // );
-    // const gtag = window.dataLayer.gtag || [];
-    // gtag.push(gtag, 'event', 'Abrir videos', {
-    //   event_category: 'Videos',
-    //   event_label: 'AbrirVideos',
-    // });
     this.modalAjuda.show();
   }
 
   private abrirWiki(): void {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
+  }
+
+  private abrirQuadroDeEmendas(): void {
+    window.open(
+      'https://emendas.camara.leg.br/#/quadroEmendas?sigla=' +
+        this.proposicao.sigla +
+        '&numero=' +
+        this.proposicao.numero +
+        '&ano=' +
+        this.proposicao.ano +
+        '&ementa=' +
+        this.proposicao.ementa
+    );
   }
 
   // Emite notificação de erro como toast
@@ -470,6 +474,8 @@ export class EdtApp extends LitElement {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
       this.abrirWiki();
+    } else if (ev.detail.itemMenu === 'quadroEmendas') {
+      this.abrirQuadroDeEmendas();
     }
   }
 
@@ -620,6 +626,17 @@ export class EdtApp extends LitElement {
             class="dialog-emenda"
           >
             ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
+            <br />
+            <br />
+            <sl-button
+              href="#"
+              variant="primary"
+              outline
+              @click=${(): void => this.abrirQuadroDeEmendas()}
+            >
+              <sl-icon slot="prefix" size="small" name="table"></sl-icon>
+              Acessar quadro de emendas
+            </sl-button>
             <sl-button
               slot="footer"
               autofocus

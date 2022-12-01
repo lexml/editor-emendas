@@ -217,7 +217,7 @@ export const menuStyles = html`
       font-size: 28px;
     }
 
-    @media (max-width: 720px) {
+    @media (max-width: 870px) {
       edt-menu sl-button:nth-last-child(-n + 4) sl-icon {
         padding: 0 13px 0 5px;
       }
@@ -235,7 +235,7 @@ export const menuStyles = html`
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 560px) {
       edt-menu sl-button:nth-last-child(-n + 7) sl-icon {
         padding: 0 11px 0 3px;
       }

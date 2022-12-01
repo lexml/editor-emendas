@@ -95,6 +95,14 @@ export class EdtMenu extends LitElement {
                 </sl-menu-item>
               </sl-menu>
             </sl-dropdown>
+            <sl-button
+              title="Quadro de emendas"
+              size="small"
+              @click=${(): void => this.emitirEvento('quadroEmendas')}
+            >
+              <sl-icon slot="prefix" size="small" name="table"></sl-icon>
+              Quadro de emendas
+            </sl-button>
           `
         : ''}
 
