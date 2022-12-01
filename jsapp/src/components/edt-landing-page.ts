@@ -824,8 +824,7 @@ export class EdtLandingPage extends LitElement {
                     @input=${this.handleMessageInput}
                     @blur=${this.handleMessageBlur}
                   >
-                  ${this.message}
-                  </textarea
+${this.message}</textarea
                   >
                   <label for="message">Mensagem</label>
                   <div
