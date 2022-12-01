@@ -697,6 +697,16 @@ export class EdtLandingPage extends LitElement {
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
+                    <tr>
+                      <th scope="row" class="text-start">
+                        Integração com o quadro de emendas da MPV (<a
+                          href="https://emendas.camara.leg.br"
+                          target="_blank"
+                          >emendas.camara.leg.br</a
+                        >)
+                      </th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -751,7 +761,11 @@ export class EdtLandingPage extends LitElement {
           </div>
           <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
             <div class="col-lg-6">
-              <form id="contactForm" @submit=${this.submitMensagem}>
+              <form
+                id="contactForm"
+                @submit=${this.submitMensagem}
+                data-sb-form-api-token="API_TOKEN"
+              >
                 <div class="form-floating mb-3">
                   <input
                     class=${this.classForName()}
@@ -810,7 +824,8 @@ export class EdtLandingPage extends LitElement {
                     @input=${this.handleMessageInput}
                     @blur=${this.handleMessageBlur}
                   >
-${this.message}</textarea
+                  ${this.message}
+                  </textarea
                   >
                   <label for="message">Mensagem</label>
                   <div
