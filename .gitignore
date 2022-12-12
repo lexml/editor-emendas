@@ -28,4 +28,7 @@ target/
 .project
 .settings
 
+.vscode/
+.scannerwork/
+
 src/main/resources/static/
