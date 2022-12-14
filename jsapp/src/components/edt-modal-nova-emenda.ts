@@ -18,6 +18,9 @@ export class EdtModalNovaEmenda extends LitElement {
   private ano = new Date().getFullYear().toString();
 
   @state()
+  private apenasEmTramitacao = true;
+
+  @state()
   private idSdlegDocumentoItemDigital = '';
 
   @state()
@@ -33,17 +36,28 @@ export class EdtModalNovaEmenda extends LitElement {
   private trProposicoes!: HTMLElement[];
 
   public show(): void {
-    // this.sigla = 'MPV';
     this.numero = '';
-    // this.ano = new Date().getFullYear().toString();
-    // (this.shadowRoot?.querySelector('.tipo-proposicao') as SlSelect).value =
-    //   'mpv';
     (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value =
       '';
-    // (this.shadowRoot?.querySelector('.ano-proposicao') as SlInput).value =
-    //   new Date().getFullYear().toString();
     this.pesquisar();
     this.slDialog.show();
+  }
+
+  private toggleApenasEmTramitacao(): void {
+    this.apenasEmTramitacao = !this.apenasEmTramitacao;
+    const numeroInput = this.shadowRoot?.querySelector('.numero-proposicao');
+    const anoInput = this.shadowRoot?.querySelector('.ano-proposicao');
+    const pesquisarButton = this.shadowRoot?.querySelector('#pesquisarButton');
+    const checkbox = this.shadowRoot?.querySelector('#chk-mostrar-todas');
+    if (!this.apenasEmTramitacao) {
+      numeroInput?.classList.remove('hidden');
+      anoInput?.classList.remove('hidden');
+      pesquisarButton?.classList.remove('hidden');
+    } else {
+      numeroInput?.classList.add('hidden');
+      anoInput?.classList.add('hidden');
+      pesquisarButton?.classList.add('hidden');
+    }
   }
 
   private processarKeyup(evt: KeyboardEvent): void {
@@ -89,7 +103,7 @@ export class EdtModalNovaEmenda extends LitElement {
 
   private renderProposicoes(): TemplateResult {
     return !this.proposicoes.length
-      ? html``
+      ? html`<div type="info">Nenhuma proposição encontrada.</div>`
       : html`
           <div class="table-wrap">
             <table>
@@ -155,7 +169,7 @@ export class EdtModalNovaEmenda extends LitElement {
               <sl-menu-item value="mpv">MPV</sl-menu-item>
             </sl-select>
             <sl-input
-              class="numero-proposicao"
+              class="numero-proposicao hidden"
               size="small"
               value=""
               placeholder="Número"
@@ -168,7 +182,7 @@ export class EdtModalNovaEmenda extends LitElement {
                 (this.numero = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-input
-              class="ano-proposicao"
+              class="ano-proposicao hidden"
               size="small"
               placeholder="Ano"
               value=${new Date().getFullYear().toString()}
@@ -181,9 +195,10 @@ export class EdtModalNovaEmenda extends LitElement {
                 (this.ano = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-button
+              id="pesquisarButton"
               variant="primary"
               size="small"
-              class="button-pesquisar"
+              class="button-pesquisar hidden"
               autofocus
               @click=${this.pesquisar}
               ?disabled=${!(this.sigla && this.ano)}
@@ -191,6 +206,15 @@ export class EdtModalNovaEmenda extends LitElement {
               <sl-icon slot="prefix" name="search"></sl-icon>
               Pesquisar
             </sl-button>
+            <label>
+              <input
+                type="checkbox"
+                id="chk-mostrar-todas"
+                @change=${this.toggleApenasEmTramitacao}
+                ?checked=${this.apenasEmTramitacao}
+              />
+              apenas em tramitação
+            </label>
           </div>
           <br />
           <div>${this.renderProposicoes()}</div>

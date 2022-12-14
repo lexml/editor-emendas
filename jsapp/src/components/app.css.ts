@@ -275,11 +275,18 @@ export const novaEmendaStyles = html`
     :host {
       font-size: var(--sl-font-size-small);
     }
+
+    .hidden {
+      display: none;
+      border: 1px solid red;
+    }
+
     .form-group {
       display: flex;
       flex-direction: row;
       gap: 10px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .table-wrap {
@@ -423,6 +430,7 @@ export const novaEmendaStyles = html`
     .numero-proposicao,
     .ano-proposicao {
       width: 120px;
+      transition: all 0.5s ease-out;
     }
     #ementa {
       width: 100%;
