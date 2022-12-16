@@ -1,0 +1,306 @@
+/* estilos do topo e rodapé do Congresso Nacional*/
+.cn-topo {
+	padding: 10px;
+	background-color: #3b5998;
+	color: white;
+}
+
+.cn-vertical-align {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.cn-topo a {
+    color: white;
+}
+
+.cn-topo-logo {
+	height: 45px;
+}
+
+.cn-rodape {
+	margin-top:30px;
+	background-color:#3b5998;
+	text-shadow:none;
+	font-family: 'Ek Mukta', sans-serif;
+}
+
+.cn-rodape-logo {
+	margin-top:26px;
+	padding:5px 0px 0px 188px;
+}
+
+.cn-rodape-txt {
+	text-shadow: none;
+	font-family: 'Ek Mukta', sans-serif;
+	font-weight:normal;
+	font-size:1em;
+	color:#eaeaea;
+	line-height:2em;
+	padding:19px 0px 16px 0px;
+}
+
+
+/* estilos da busca */
+.sf-busca-topo-form {
+	border-bottom: dotted 1px lightgray;
+	margin: 20px 0 20px 0;
+}
+
+.sf-busca-margin-top {
+	margin-top: 20px;
+}
+
+.sf-busca-modal-lg {
+	width: auto;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+.sf-busca-list-inline {
+	display: inline-block;
+}
+
+.sf-busca-form-main {
+	margin-bottom: 52px;
+	margin-top: 58px;
+}
+
+.sf-busca-form .sf-busca-group-addon-checkbox {
+	background-color: white;
+	border-left: 0px;
+}
+
+.sf-busca-form .sf-busca-group-addon-checkbox input[type="checkbox"] {
+	margin-top: 3px;
+}
+
+.sf-busca-form .sf-busca-group-addon-checkbox label {
+	line-height: 21px;
+}
+
+.sf-busca-topo-form {
+	padding-top: 10px;
+}
+
+.sf-busca-barra-links {
+
+}
+
+.sf-busca-barra-links li:not (:first-child ):before {
+	content: '|';
+	margin-right: 10px;
+}
+
+.sf-busca-resultados {
+	margin-top: 20px;
+}
+
+.sf-busca-resultados-item {
+	margin-top: 20px;
+	margin-bottom: 20px;
+	padding-bottom: 10px;
+	border-bottom: 1px dotted lightgray;
+}
+
+.sf-busca-resultados-item h3 {
+	margin-top: 10px;
+	font-size: 18px;
+}
+
+.sf-busca-resultados-item-ementa {
+	line-height: 20px;
+}
+
+.sf-busca-resultados-item-apelido {
+	font-weight: bold;
+	font-size: 0.85em
+}
+
+.sf-busca-resultados-item-snippet {
+	padding: 0 0 0 10px;
+	border-left: 5px solid #eee;
+}
+
+.sf-busca-resultados .alert .glyphicon {
+	font-size: 2.0em;
+}
+
+.sf-busca-resultados .alert span {
+	vertical-align: middle;
+}
+
+.sf-busca-dropdown-menu-right {
+	left: auto;
+	right: 0;
+}
+
+.sf-busca-resultados-onebox-materia {
+	border: thin solid lightblue;
+	padding: 10px;
+	background-color: aliceblue;
+}
+
+.sf-busca-resultados-onebox-materia .sf-busca-label-situacao {
+	background-color: #f89406;
+	font-weight: normal;
+}
+
+.sf-busca-resultados-onebox-materia h3 {
+	margin-top: 10px;
+	font-size: 22px;
+}
+
+.sf-busca-colecoes-item {
+	width: 100%;
+}
+
+.sf-busca-painel-filtros {
+	border-right: thin dotted lightgray;
+}
+
+.sf-busca-painel-filtros .panel .panel-body {
+	padding: 5px;
+}
+
+/* sf-busca-filtro-lista-facetas - tints of aliceblue */
+ul.sf-busca-filtro-lista-facetas li {
+	border-bottom: thin dotted #d8dfe5;
+	padding: 4px 3px;
+}
+
+ul.sf-busca-filtro-lista-facetas li:nth-child(odd) {
+	background-color: #f7fbff;
+}
+
+ul.sf-busca-filtro-lista-facetas .sf-busca-filtro-quantidade {
+	line-height: 20px;
+}
+
+.sf-busca-filtro-painel-ativos {
+	margin-bottom: 10px;
+	padding-bottom: 10px;
+	border-bottom: thin dotted lightgray;
+}
+
+.sf-busca-filtro-painel-ativos ul {
+	font-size: 10px;
+}
+
+.sf-busca-filtro-painel-ativos ul li {
+	margin-bottom: 1px;
+}
+
+.sf-busca-filtro-painel-ativos .btn {
+	font-size: 11px;
+	padding: 3px 6px;
+	white-space: normal;
+}
+
+.sf-busca-painel-filtros .input-daterange input[type="text"] {
+	padding: 2px 2px;
+	font-size: 0.8em;
+}
+
+.sf-busca-valor-filtro-portal {
+	font-size: 1.2em;
+}
+
+@media ( max-width : 767px) {
+	.sf-busca-painel-filtros {
+		border-right: none;
+	}
+}
+
+a.accordion-toggle {
+	display: block;
+}
+
+.accordion-toggle.accordion-caret:after, .painel-toggle.painel-caret:after {
+	font-family: 'Glyphicons Halflings';
+	content: "\e114";
+	float: right;
+	color: grey;
+}
+
+.accordion-toggle.accordion-caret.collapsed:after, .painel-toggle.painel-caret.collapsed:after {
+	/* symbol for "collapsed" panels */
+	content: "\e080";
+}
+
+.painel-toggle {
+	cursor: pointer;
+}
+
+.sf-pointer {
+	cursor: pointer;
+}
+
+/* fix para bordas bootstrap e typeahead */
+.btn, .alert, div, input, div.panel, .input-group .twitter-typeahead:first-child .tt-input,
+	.input-group .twitter-typeahead:first-child .tt-hint, .tt-dropdown-menu, .tt-menu, .pagination>li:first-child>a,
+	.pagination>li:first-child>span, .pagination>li:last-child>a, .pagination>li:last-child>span,
+	.label, .navbar {
+	border-radius: 0;
+	border-bottom-left-radius: 0;
+	border-top-left-radius: 0;
+	border-bottom-right-radius: 0;
+	border-top-right-radius: 0;
+}
+
+/* filtros especiais */
+.sf-busca-filtro-avancado-content {
+	padding: 20px 20px;
+}
+
+.sf-busca-filtro-avancado .dropdown-menu {
+	width: 85vw;
+}
+
+/* fix para navbar / barra de filtros */
+.navbar-default {
+	background-color: white;
+	border-width: 0px;
+}
+
+.navbar-default .navbar-nav .sf-busca-navbar-btn {
+	color: #333;
+	font-size: 16px;
+	border: 1px solid lightgray;
+	margin-left: 10px;
+}
+
+.navbar-default .navbar-brand {
+	color: #333;
+	font-size: 16px;
+}
+
+/* fix para estilo da borda do dropdown menu */
+.dropdown-menu {
+	border-color: #ccc;
+	border-width: 1px;
+}
+
+.sf-busca-dicas-box-exemplo {
+	padding: 20px;
+	border: thick solid aliceblue;
+}
+
+.sf-busca-link-voltar {
+	margin: 10px;
+}
+
+/* fix para tamanho dos h2 e h3 (configura tamanho do h1 no essencial.css) */
+h2 {
+	font-size: 24px
+}
+
+h3 {
+	font-size: 20px
+}
+
+.sf-glyphicon-medium {
+	font-size: 2em;
+	margin: 0 5px;
+}

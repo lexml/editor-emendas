@@ -1,13 +1,53 @@
 <!doctype html>
-<html lang="pt-br">
-
+<html lang="pt-br" xmlns:th="https://www.thymeleaf.org"
+	xmlns:layout="https://www.ultraq.net.nz/thymeleaf/layout" class="">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="author" content="Congresso Nacional" />
 
-  <title>Editor de Emendas a Medidas Provisórias - Congresso Nacional</title>
-  <meta name="description" content="Elabore emendas de forma fácil e precisa do seu computador, tablet e celular.">
-  <meta name="author" content="Congresso Nacional">
+  <!--/* icons conforme home da visitação do senado */-->
+  <link rel="shortcut icon" type="image/x-icon"
+    href="./assets/img/favicon/favicon.ico"
+    th:href="@{/img/favicon/favicon.ico}" />
+  <link rel="apple-touch-icon" sizes="180x180"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/apple-touch-icon.png"
+    th:href="@{/img/favicon/apple-touch-icon.png}" />
+  <link rel="icon" type="image/png" sizes="32x32"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-32x32.png"
+    th:href="@{/img/favicon/favicon-32x32.png}" />
+  <link rel="icon" type="image/png" sizes="16x16"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-16x16.png"
+    th:href="@{/img/favicon/favicon-16x16.png}" />
+  <link rel="mask-icon" color="#306060"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/safari-pinned-tab.svg"
+    th:href="@{/img/favicon/safari-pinned-tab.svg}" />
+  <link rel="shortcut icon"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon.ico"
+    th:href="@{/img/favicon/favicon.ico}" />
+
+  <meta name="apple-mobile-web-app-title"
+    content="Busca do Congresso Nacional" />
+  <meta name="application-name" content="Busca do Congresso Nacional" />
+
+  <link rel="stylesheet" type="text/css"
+    href="./assets/css/application.css" th:href="@{/css/application.css}" />
+  <script>
+    window.ga = window.ga || function() {
+      (ga.q = ga.q || []).push(arguments)
+    };
+    ga.l = +new Date;
+    ga('create', 'UA-42171547-1', 'auto');
+    ga('create', 'UA-101435193-2', 'auto', 'global', {
+      'alwaysSendReferrer' : true
+    });
+    ga('send', 'pageview');
+    ga('global.send', 'pageview');
+  </script>
+  <script async="async"
+    src="https://www.google-analytics.com/analytics.js">
+  </script>
 
   <meta property="og:title" content="Editor de Emendas a Medidas Provisórias - Congresso Nacional">
   <meta property="og:type" content="website" />
@@ -177,19 +217,25 @@
   </div>
   <edt-app></edt-app>
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-D73DFWRF3G"></script>
+  <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-D73DFWRF3G"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-D73DFWRF3G');
-  </script>
+  </script> -->
   <!-- Bootstrap core JS-->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- SimpleLightbox plugin JS-->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.js"></script>
   <script src="./assets/js-landing-page/forms-landing-page.js"></script>
   <script src="./assets/js-landing-page/scripts-landing-page.js"></script>
+
+  <script type="text/javascript"
+  src="./assets/lib/jquery/jquery-1.11.1.min.js"
+  th:src="@{/lib/jquery/jquery-1.11.1.min.js}"></script>
+
+  <!-- Script V-Libras -->
+  <script src="./assets/lib/essencial/essencial.js"
+    th:src="@{/lib/essencial/essencial.js}"></script>
 </body>
 
 </html>

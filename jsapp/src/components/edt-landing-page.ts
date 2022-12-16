@@ -272,10 +272,51 @@ export class EdtLandingPage extends LitElement {
   render(): TemplateResult {
     return html`
       ${landingPageStyles}
-      <nav
-        class="navbar navbar-expand-lg navbar-light fixed-top py-3"
-        id="mainNav"
-      >
+
+      <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
+      <div class="cn-topo">
+        <div class="container px-4 px-lg-5">
+          <div class="row cn-vertical-align">
+            <div class="col-4">
+              <a
+                href="https://www.congressonacional.leg.br"
+                title="Ir para o Portal do Congresso Nacional"
+              >
+                <img
+                  class="cn-topo-logo"
+                  src="./assets/img/logo_cn.png"
+                  th:src="@{/img/logo_cn.png}"
+                  alt="Logo Congresso Nacional"
+                />
+              </a>
+            </div>
+            <div class="col-8 text-end">
+              <a
+                href="https://www.congressonacional.leg.br/fale-conosco"
+                class="pull-right d-none d-none d-sm-inline px-3"
+                >Fale conosco</a
+              >
+              <a href="#" id="link_vlibras" class="js-vlibras">
+                <img
+                  src="./assets/img/icon_libras.png"
+                  th:src="@{/img/icon_libras.png}"
+                  class="img_libras"
+                  alt="Libras"
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Vlibras -->
+      <div vw class="enabled">
+        <div vw-access-button class="active" style="display: none;"></div>
+        <div vw-plugin-wrapper>
+          <div class="vw-plugin-top-wrapper"></div>
+        </div>
+      </div>
+
+      <nav class="navbar navbar-expand-lg navbar-light py-3" id="mainNav">
         <div class="container px-4 px-lg-5">
           <a
             class="navbar-brand navbar-brand--long fs-6 d-none d-md-none d-lg-block"
@@ -869,7 +910,7 @@ ${this.message}</textarea
         </div>
       </section>
       <!-- Footer-->
-      <footer class="bg-primary">
+      <!-- <footer class="bg-primary">
         <div class="container text-white pt-3 pb-4">
           <b>Congresso Nacional</b>
           <br />Praça dos Três Poderes - Brasília, DF - CEP 70165-900 <br />Fale
@@ -912,7 +953,30 @@ ${this.message}</textarea
             </div>
           </div>
         </div>
-      </footer>
+      </footer> -->
+      <div class="cn-rodape">
+        <div class="container">
+          <div class="row cn-vertical-align">
+            <div
+              class="col-md-6 cn-rodape-logo text-center text-md-end pt-4 pt-md-0"
+            >
+              <a href="https://www.congressonacional.leg.br"
+                ><img
+                  src="./assets/img/logo_cn.png"
+                  th:src="@{/img/logo_cn.png}"
+              /></a>
+            </div>
+            <div class="col-md-6 cn-rodape-txt">
+              <i class="icon-globe icon-white"></i> Praça dos Três Poderes -
+              Brasília, DF - CEP 70160-900 <br />
+              <i class="icon-headphones icon-white"></i> Fale com o Senado: 0800
+              612 211 <br />
+              <i class="icon-headphones icon-white"></i> Disque Câmara: 0800 619
+              619
+            </div>
+          </div>
+        </div>
+      </div>
     `;
   }
 }
