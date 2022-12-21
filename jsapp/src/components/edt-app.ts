@@ -210,9 +210,9 @@ export class EdtApp extends LitElement {
             excludeAcceptAllOption: true,
           };
 
-          if(salvarComo) {
+          if (salvarComo) {
             return fileSave(content, options, null, true);
-          }else {
+          } else {
             return fileSave(content, options, this.fileHandle, true);
           }
         })
@@ -247,16 +247,16 @@ export class EdtApp extends LitElement {
   }
 
   private abrirQuadroDeEmendas(): void {
-    window.open(
-      'https://emendas.camara.leg.br/#/quadroEmendas?sigla=' +
-        this.proposicao.sigla +
-        '&numero=' +
-        this.proposicao.numero +
-        '&ano=' +
-        this.proposicao.ano +
-        '&ementa=' +
-        this.proposicao.ementa
-    );
+    if (this.proposicao) {
+      window.open(
+        'https://emendas.camara.leg.br/#/quadroEmendas?sigla=' +
+          this.proposicao.sigla +
+          '&numero=' +
+          this.proposicao.numero +
+          '&ano=' +
+          this.proposicao.ano
+      );
+    }
   }
 
   // Emite notificação de erro como toast
