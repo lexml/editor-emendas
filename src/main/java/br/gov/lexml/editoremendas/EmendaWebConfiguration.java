@@ -2,6 +2,7 @@ package br.gov.lexml.editoremendas;
 
 import java.io.IOException;
 
+import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpFilter;
@@ -13,6 +14,7 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.filter.CharacterEncodingFilter;
 
 @Configuration
 public class EmendaWebConfiguration {
@@ -46,6 +48,7 @@ public class EmendaWebConfiguration {
 				response.addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
 				response.addHeader("Expires", "0");
 				response.addHeader("Pragma", "no-cache");
+				response.setCharacterEncoding("UTF-8");
 				super.doFilter(request, response, chain);
 			}
 		};
