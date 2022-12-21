@@ -180,7 +180,7 @@ export class EdtApp extends LitElement {
       });
   }
 
-  private async salvarPdf(): Promise<void> {
+  private async salvarPdf(salvarComo = false): Promise<void> {
     const emenda = this.lexmlEmenda.getEmenda();
 
     if (emenda) {
@@ -210,7 +210,11 @@ export class EdtApp extends LitElement {
             excludeAcceptAllOption: true,
           };
 
-          return fileSave(content, options, this.fileHandle, true);
+          if(salvarComo) {
+            return fileSave(content, options, null, true);
+          }else {
+            return fileSave(content, options, this.fileHandle, true);
+          }
         })
         .then(fileHandle => {
           this.fileHandle = fileHandle;
@@ -231,59 +235,7 @@ export class EdtApp extends LitElement {
   }
 
   private async salvarPdfComo(): Promise<void> {
-    this.toggleCarregando();
-    const pickerOptions = {
-      suggestedName: this.getFileName(),
-      types: [
-        {
-          description: 'Arquivos de Emenda',
-          accept: {
-            'application/pdf': ['.pdf'],
-          },
-        },
-      ],
-      excludeAcceptAllOption: true,
-      multiple: false,
-    };
-
-    const emenda = this.lexmlEmenda.getEmenda();
-    if (emenda) {
-      let writableStream;
-      let fileHandle;
-      try {
-        const response = await fetch('api/emenda/json2pdf', {
-          method: 'POST',
-          body: JSON.stringify(emenda),
-          headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-          },
-        });
-        const content = await response.blob();
-
-        fileHandle = await (window as any).showSaveFilePicker(pickerOptions);
-        this.tituloEmenda = this.removeExtensoesPadrao(await fileHandle.name);
-        writableStream = await fileHandle.createWritable();
-        await writableStream.write(content);
-        this.fileHandle = fileHandle;
-      } catch (err) {
-        if (!isUserAbortException(err)) {
-          console.log(err);
-          this.emitirAlerta(
-            `Erro ao salvar o arquivo: ${(err as any).message}`,
-            'primary'
-          );
-        }
-      } finally {
-        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
-        this.isDirty = false;
-        this.updateStateElements();
-        this.toggleCarregando();
-
-        if (writableStream) {
-          await writableStream.close();
-        }
-      }
-    }
+    this.salvarPdf(true);
   }
 
   private abrirVideos(): void {
