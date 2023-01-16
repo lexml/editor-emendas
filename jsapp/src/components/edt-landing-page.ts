@@ -449,7 +449,7 @@ export class EdtLandingPage extends LitElement {
                 <h3 class="h4 mb-2">Criar emenda</h3>
                 <a
                   class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://www.youtube.com/watch?v=mTlR7WCT2e0&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
+                  href="https://www.youtube.com/watch?v=Y_N2Azkg_cw&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
                   target="_blank"
                   >Assista ao tutorial</a
                 >
@@ -463,7 +463,7 @@ export class EdtLandingPage extends LitElement {
                 <h3 class="h4 mb-2">Salvar emenda</h3>
                 <a
                   class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/mTlR7WCT2e0?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=133"
+                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=133"
                   target="_blank"
                   >Assista ao tutorial</a
                 >
@@ -489,7 +489,7 @@ export class EdtLandingPage extends LitElement {
                 <h3 class="h4 mb-2">Justificar a emenda</h3>
                 <a
                   class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/mTlR7WCT2e0?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=40"
+                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=40"
                   target="_blank"
                   >Assista ao tutorial</a
                 >
@@ -503,7 +503,7 @@ export class EdtLandingPage extends LitElement {
                 <h3 class="h4 mb-2">Informar data e autoria</h3>
                 <a
                   class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/mTlR7WCT2e0?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=44"
+                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=44"
                   target="_blank"
                   >Assista ao tutorial</a
                 >
@@ -528,7 +528,7 @@ export class EdtLandingPage extends LitElement {
                         <h3 class="h4 mb-2">Comando de emenda</h3>
                         <a
                           class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                          href="https://youtu.be/mTlR7WCT2e0?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=108"
+                          href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=108"
                           target="_blank"
                           >Assista ao tutorial</a
                         >
@@ -767,7 +767,7 @@ export class EdtLandingPage extends LitElement {
               </p>
               <a
                 class="btn btn-light btn-xl mb-4"
-                href="https://www.youtube.com/watch?v=mTlR7WCT2e0&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
+                href="https://www.youtube.com/watch?v=Y_N2Azkg_cw&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
                 target="_blank"
                 >ACESSAR O CANAL</a
               >
@@ -776,7 +776,7 @@ export class EdtLandingPage extends LitElement {
               <div class="tutorial container text-center my-5 ratio ratio-16x9">
                 <iframe
                   class="shadow-lg"
-                  src="https://www.youtube.com/embed/mTlR7WCT2e0"
+                  src="https://www.youtube.com/embed/Y_N2Azkg_cw"
                   allowfullscreen
                 >
                 </iframe>

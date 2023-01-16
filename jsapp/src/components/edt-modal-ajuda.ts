@@ -47,7 +47,7 @@ export class EdtModalAjuda extends LitElement {
             <div class="video-container">
               <iframe
                 tabindex="-1"
-                src="https://www.youtube.com/embed/mTlR7WCT2e0"
+                src="https://www.youtube.com/embed/Y_N2Azkg_cw"
                 frameborder="0"
                 allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen
@@ -159,7 +159,7 @@ export class EdtModalAjuda extends LitElement {
             <div class="video-container">
               <iframe
                 tabindex="-1"
-                src="https://www.youtube.com/embed/mTlR7WCT2e0"
+                src="https://www.youtube.com/embed/Y_N2Azkg_cw"
                 frameborder="0"
                 allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
                 allowfullscreen
