@@ -2,6 +2,8 @@
 import { customElement, state, query } from 'lit/decorators.js';
 import { html, LitElement, TemplateResult } from 'lit';
 import { menuStyles } from './app.css';
+import { supported } from 'browser-fs-access';
+
 
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
@@ -57,18 +59,22 @@ export class EdtMenu extends LitElement {
               <sl-icon slot="prefix" size="small" name="save"></sl-icon>
               Salvar
             </sl-button>
-            <sl-button
-              title="Salvar emenda com outro nome"
-              size="small"
-              @click=${(): void => this.emitirEvento('salvarComo')}
-            >
-              <sl-icon
-                slot="prefix"
-                size="small"
-                name="box-arrow-up-right"
-              ></sl-icon>
-              Salvar como
-            </sl-button>
+            ${supported
+              ? html`
+                <sl-button
+                  title="Salvar emenda com outro nome"
+                  size="small"
+                  @click=${(): void => this.emitirEvento('salvarComo')}
+                >
+                  <sl-icon
+                    slot="prefix"
+                    size="small"
+                    name="box-arrow-up-right"
+                  ></sl-icon>
+                  Salvar como
+                </sl-button>`
+              : ''
+            }
             <sl-button
               title="Visualizar emenda"
               size="small"
