@@ -224,9 +224,11 @@ export class EdtApp extends LitElement {
           this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         })
         .catch(err => {
-          errorInPromise(`Erro ao salvar o arquivo: ${err}`, err, msg => {
-            this.emitirAlerta(msg, 'danger');
-          });
+          if (!isUserAbortException(err)) {
+            errorInPromise(`Erro ao salvar o arquivo: ${err}`, err, msg => {
+              this.emitirAlerta(msg, 'danger');
+            });
+          }
         })
         .finally(() => {
           this.toggleCarregando();
