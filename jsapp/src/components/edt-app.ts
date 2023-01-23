@@ -629,6 +629,12 @@ export class EdtApp extends LitElement {
   }
 
   render(): TemplateResult {
+    // altera classe do body para 'no-scroll' quando jsonix é carregado
+    if (this.isJsonixProposicaoLoaded()) {
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
     return html`
       <edt-cabecalho></edt-cabecalho>
       <edt-menu
