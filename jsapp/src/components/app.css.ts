@@ -290,7 +290,7 @@ export const novaEmendaStyles = html`
     }
 
     .table-wrap {
-      max-height: 400px;
+      height: 50vh;
       overflow-x: hidden;
       overflow-y: auto;
     }

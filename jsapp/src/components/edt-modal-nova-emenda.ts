@@ -105,47 +105,45 @@ export class EdtModalNovaEmenda extends LitElement {
     return !this.proposicoes.length
       ? html`<div type="info">Nenhuma proposição encontrada.</div>`
       : html`
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th class="col-1">Proposição</th>
-                  <th class="col-2">Ementa</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this.proposicoes.map(p => {
-                  return html`
-                    <tr
-                      tabindex="0"
-                      class="proposicao"
-                      @click=${(evt: Event): any =>
-                        this.selecionarProposicao(p, evt)}
-                      @dblclick=${(evt: Event): any =>
-                        this.duploCliqueProposicao(p, evt)}
-                      disabled=${p.idSdlegDocumentoItemDigital ? false : true}
-                    >
-                      <td class="col-1">
-                        ${p.sigla +
-                        ' ' +
-                        this.removerZerosEsquerda(p.numero) +
-                        '/' +
-                        p.ano}
-                      </td>
-                      <td class="col-2">
-                        <span class="ementa">
-                          ${p.idSdlegDocumentoItemDigital
-                            ? p.ementa
-                            : html`<sl-badge pill>Texto indisponível</sl-badge>
-                                ${p.ementa}`}
-                        </span>
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          </div>
+          <table>
+            <thead>
+              <tr>
+                <th class="col-1">Proposição</th>
+                <th class="col-2">Ementa</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${this.proposicoes.map(p => {
+                return html`
+                  <tr
+                    tabindex="0"
+                    class="proposicao"
+                    @click=${(evt: Event): any =>
+                      this.selecionarProposicao(p, evt)}
+                    @dblclick=${(evt: Event): any =>
+                      this.duploCliqueProposicao(p, evt)}
+                    disabled=${p.idSdlegDocumentoItemDigital ? false : true}
+                  >
+                    <td class="col-1">
+                      ${p.sigla +
+                      ' ' +
+                      this.removerZerosEsquerda(p.numero) +
+                      '/' +
+                      p.ano}
+                    </td>
+                    <td class="col-2">
+                      <span class="ementa">
+                        ${p.idSdlegDocumentoItemDigital
+                          ? p.ementa
+                          : html`<sl-badge pill>Texto indisponível</sl-badge>
+                              ${p.ementa}`}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
         `;
   }
 
@@ -217,7 +215,7 @@ export class EdtModalNovaEmenda extends LitElement {
             </label>
           </div>
           <br />
-          <div>${this.renderProposicoes()}</div>
+          <div class="table-wrap">${this.renderProposicoes()}</div>
           <br />
           <div class="ementa">
             <label for="ementa"
