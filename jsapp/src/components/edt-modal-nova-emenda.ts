@@ -103,7 +103,13 @@ export class EdtModalNovaEmenda extends LitElement {
 
   private renderProposicoes(): TemplateResult {
     return !this.proposicoes.length
-      ? html`<div type="info">Nenhuma proposição encontrada.</div>`
+      ? html` <div class="modal-nova-emenda--info">
+          <sl-animation name="heartBeat" duration="1000" iterations="1" play>
+            <sl-badge pill variant="primary"
+              >Nenhuma proposição encontrada</sl-badge
+            >
+          </sl-animation>
+        </div>`
       : html`
           <table>
             <thead>
@@ -231,7 +237,7 @@ export class EdtModalNovaEmenda extends LitElement {
                 : ''}</label
             >
             <textarea id="ementa" cols="40" rows="3" disabled>
-${this.proposicaoSelecionada?.ementa ?? ''}</textarea
+              ${this.proposicaoSelecionada?.ementa ?? ''}</textarea
             >
           </div>
         </div>

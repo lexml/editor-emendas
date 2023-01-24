@@ -293,11 +293,15 @@ export const novaEmendaStyles = html`
       height: 50vh;
       overflow-x: hidden;
       overflow-y: auto;
+      border: 1px solid #ccc;
+      -webkit-overflow-scrolling: touch;
     }
 
     table {
       border-collapse: collapse;
       width: 100%;
+      margin: -1px;
+      width: calc(100% + 2px);
     }
 
     thead th {
@@ -350,16 +354,6 @@ export const novaEmendaStyles = html`
       outline: 1px solid #ccc;
     }
 
-    .table-wrap {
-      border: 1px solid #ccc;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      margin: -1px;
-      width: calc(100% + 2px);
-    }
-
     tr:nth-of-type(even) {
       background-color: whitesmoke;
     }
@@ -405,6 +399,13 @@ export const novaEmendaStyles = html`
 
     tbody tr:hover {
       background-color: #fcffdd;
+    }
+
+    .modal-nova-emenda--info {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     @media (max-width: 584px) {

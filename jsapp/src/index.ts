@@ -1,6 +1,8 @@
 // TODO : Avaliar: não permite fazer import dos componentes já usados no lexml-eta (já foram registrados!)
 // import '@shoelace-style/shoelace/dist/components/dialog/dialog';
 // import '@shoelace-style/shoelace/dist/components/button/button';
+
+import '@shoelace-style/shoelace/dist/components/animation/animation';
 import './components/edt-cabecalho';
 import './components/edt-rodape';
 import './components/edt-menu';
