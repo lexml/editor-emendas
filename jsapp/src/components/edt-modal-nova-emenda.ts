@@ -106,7 +106,7 @@ export class EdtModalNovaEmenda extends LitElement {
       ? html` <div class="modal-nova-emenda--info">
           <sl-animation name="heartBeat" duration="1000" iterations="1" play>
             <sl-badge pill variant="primary"
-              >Nenhuma proposição encontrada</sl-badge
+              >Nenhuma proposição para exibir</sl-badge
             >
           </sl-animation>
         </div>`
