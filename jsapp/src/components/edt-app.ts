@@ -45,6 +45,8 @@ export class EdtApp extends LitElement {
 
   private jsonixProposicao: any = {};
 
+  private showEditor = false;
+
   @state()
   private modo = 'emenda';
 
@@ -72,10 +74,6 @@ export class EdtApp extends LitElement {
       document.querySelector('edt-app')!.classList.add('blured');
       this.carregando = true;
     }
-  }
-
-  private isJsonixProposicaoLoaded(): boolean {
-    return 'value' in this.jsonixProposicao;
   }
 
   private async downloadPdf(): Promise<void> {
@@ -152,13 +150,17 @@ export class EdtApp extends LitElement {
           'Ocorreu um erro inesperado na abertura da emenda.'
         ).then(err => Promise.reject(err));
       })
-      .then(content => {
-        this.lexmlEmenda.resetaEmenda();
-        return this.loadTextoProposicao(content.proposicao).then(() => content);
+      .then(emenda => {
+        this.modo = emenda.modoEdicao;
+        return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
       })
-      .then(content => {
+      .then(emenda => {
+        this.lexmlEmenda.inicializarEdicao(
+          this.modo,
+          this.jsonixProposicao,
+          emenda
+        );
         this.updateStateElements(tempFileData.name);
-        this.lexmlEmenda.setEmenda(content);
         this.fileHandle = tempFileData.handle;
         this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
         this.emendaComAlteracoesSalvas = undefined;
@@ -319,6 +321,7 @@ export class EdtApp extends LitElement {
       this.tituloEmenda =
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
       this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
+      this.showEditor = true;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(
@@ -445,8 +448,8 @@ export class EdtApp extends LitElement {
     this.modo = 'emenda';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
-    this.lexmlEmenda.resetaEmenda();
     await this.loadTextoProposicao(proposicao);
+    this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(
         JSON.stringify(this.lexmlEmenda.getEmenda())
@@ -460,8 +463,7 @@ export class EdtApp extends LitElement {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda onde couber';
-    this.lexmlEmenda.resetaEmenda();
-    this.jsonixProposicao = { ...this.jsonixProposicao };
+    this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
     this.atualizarTituloEditor();
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(
@@ -520,7 +522,7 @@ export class EdtApp extends LitElement {
       ${appStyles}
       <div
         class="editor-emendas"
-        style=${this.isJsonixProposicaoLoaded() ? '' : 'display: none;'}
+        style=${this.showEditor ? '' : 'display: none;'}
       >
         <div class="detalhe-emenda">
           <a
@@ -600,10 +602,7 @@ export class EdtApp extends LitElement {
             </sl-button>
           </sl-dialog>
         </div>
-        <lexml-emenda
-          @onchange=${this.onChange}
-          modo=${this.modo}
-        ></lexml-emenda>
+        <lexml-emenda @onchange=${this.onChange}></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
@@ -630,7 +629,7 @@ export class EdtApp extends LitElement {
 
   render(): TemplateResult {
     // altera classe do body para 'no-scroll' quando jsonix é carregado
-    if (this.isJsonixProposicaoLoaded()) {
+    if (this.showEditor) {
       document.body.classList.add('no-scroll');
     } else {
       document.body.classList.remove('no-scroll');
@@ -641,8 +640,8 @@ export class EdtApp extends LitElement {
         .proposicao=${this.proposicao}
         @item-selecionado=${this.onItemMenuSelecionado}
       ></edt-menu>
-      <main class="${this.isJsonixProposicaoLoaded() ? 'no-scroll' : ''}">
-        ${this.isJsonixProposicaoLoaded()
+      <main class="${this.showEditor ? 'no-scroll' : ''}">
+        ${this.showEditor
           ? html`<edt-modal-ajuda></edt-modal-ajuda>`
           : html` <edt-landing-page
               @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
