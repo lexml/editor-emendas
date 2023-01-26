@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, state, query } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
 
 interface TouchedFields {
@@ -51,6 +51,15 @@ export class EdtLandingPage extends LitElement {
   @state() submitEnabled = false;
 
   @state() submitState: SubmitState = SubmitState.NotSubmitted;
+
+  @query('#name')
+  private elName!: any;
+
+  @query('#email')
+  private elEmail!: any;
+
+  @query('#message')
+  private elMessage!: any;
 
   handleNameInput(event: Event): void {
     this.touched.name = true;
@@ -239,26 +248,25 @@ export class EdtLandingPage extends LitElement {
     );
   }
 
-  async submitMensagem(evento: SubmitEvent): Promise<any> {
+  async submitMensagem(evento: any): Promise<any> {
     evento.preventDefault();
 
-    const e = evento.target as any;
-
     const msg = {
-      nome: e[0].value,
-      email: e[1].value,
-      mensagem: e[2].value,
+      nome: this.elName.value,
+      email: this.elEmail.value,
+      mensagem: this.elMessage.value,
     };
 
     try {
       const result = await fetch('/api/contato', {
         method: 'POST',
         body: JSON.stringify(msg),
+        headers: { 'Content-type': 'application/json; charset=UTF-8' },
       });
 
-      e[0].value = '';
-      e[1].value = '';
-      e[2].value = '';
+      this.elName.value = '';
+      this.elEmail.value = '';
+      this.elMessage.value = '';
 
       this.submitState = SubmitState.Submitted;
 
@@ -802,11 +810,7 @@ export class EdtLandingPage extends LitElement {
           </div>
           <div class="row gx-4 gx-lg-5 justify-content-center mb-5">
             <div class="col-lg-6">
-              <form
-                id="contactForm"
-                @submit=${this.submitMensagem}
-                data-sb-form-api-token="API_TOKEN"
-              >
+              <form id="contactForm" data-sb-form-api-token="API_TOKEN">
                 <div class="form-floating mb-3">
                   <input
                     class=${this.classForName()}
@@ -900,6 +904,7 @@ ${this.message}</textarea
                     id="submitButton"
                     type="submit"
                     .disabled=${!this.submitEnabled}
+                    @click=${this.submitMensagem}
                   >
                     Reportar erro
                   </button>
