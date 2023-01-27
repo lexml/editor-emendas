@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { pesquisarProposicoes } from './../servicos/proposicoes';
-import { Proposicao } from './../model/proposicao';
-import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query, queryAll, state } from 'lit/decorators.js';
-import { novaEmendaStyles } from './app.css';
 import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
+import { html, LitElement, TemplateResult } from 'lit';
+import { customElement, query, queryAll, state } from 'lit/decorators.js';
+import { Proposicao } from './../model/proposicao';
+import {
+  pesquisarProposicoes,
+  pesquisarProposicoesEmTramitacao,
+} from './../servicos/proposicoes';
+import { novaEmendaStyles } from './app.css';
 
 @customElement('edt-modal-nova-emenda')
 export class EdtModalNovaEmenda extends LitElement {
@@ -58,6 +61,7 @@ export class EdtModalNovaEmenda extends LitElement {
       anoInput?.classList.add('hidden');
       pesquisarButton?.classList.add('hidden');
     }
+    this.pesquisar();
   }
 
   private processarKeyup(evt: KeyboardEvent): void {
@@ -67,16 +71,23 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   private async pesquisar(): Promise<void> {
-    if (!(this.sigla && this.ano)) {
-      return;
-    }
     this.proposicaoSelecionada = undefined;
     this.proposicoes = [];
-    this.proposicoes = await pesquisarProposicoes(
-      this.sigla,
-      this.numero,
-      Number(this.ano)
-    );
+    if (this.apenasEmTramitacao) {
+      if (!this.sigla) {
+        return;
+      }
+      this.proposicoes = await pesquisarProposicoesEmTramitacao(this.sigla);
+    } else {
+      if (!(this.sigla && this.ano)) {
+        return;
+      }
+      this.proposicoes = await pesquisarProposicoes(
+        this.sigla,
+        this.numero,
+        Number(this.ano)
+      );
+    }
   }
 
   private emitirEvento(): void {

@@ -35,7 +35,27 @@ export const pesquisarProposicoes = async (
       nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
     }))
-    .sort(function (a: any, b: any) {
-      return b.numero - a.numero;
-    });
+    .sort(compareProposicoesDesc);
+};
+
+function compareProposicoesDesc(a: any, b: any): number {
+  const s = b.ano - a.ano;
+  return s ? s : b.numero - a.numero;
+}
+
+export const pesquisarProposicoesEmTramitacao = async (
+  sigla: string
+): Promise<Proposicao[]> => {
+  const resp = await fetch('api/proposicoesEmTramitacao?sigla=' + sigla);
+  const proposicoes = await resp.json();
+  return proposicoes
+    .map((p: any) => ({
+      sigla: p.sigla,
+      numero: p.numero,
+      ano: p.ano,
+      ementa: p.ementa,
+      nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
+      idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
+    }))
+    .sort(compareProposicoesDesc);
 };

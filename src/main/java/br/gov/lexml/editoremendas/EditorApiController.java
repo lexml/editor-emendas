@@ -97,7 +97,6 @@ public class EditorApiController {
         return listaParlamentaresService.parlamentares();
     }
     
-    // Proxy para evitar problemas de cross origin
     @GetMapping(path = "/proposicoes", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoes(
             @RequestParam String sigla,
@@ -105,6 +104,19 @@ public class EditorApiController {
             @RequestParam(required = false) String numero) {
 
     	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero);
+    	
+    	Set<Integer> idsDoma = new HashSet<>();
+    	
+    	// Retira duplicações
+    	return l.stream().filter(p -> idsDoma.add(p.getIdDocumentoManifestacao()))
+    			.collect(Collectors.toList());
+    }
+    
+    @GetMapping(path = "/proposicoesEmTramitacao", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Proposicao> listaProposicoes(
+            @RequestParam String sigla) {
+
+    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
