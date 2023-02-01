@@ -258,7 +258,7 @@ export class EdtLandingPage extends LitElement {
     };
 
     try {
-      const result = await fetch('/api/contato', {
+      const result = await fetch('api/contato', {
         method: 'POST',
         body: JSON.stringify(msg),
         headers: { 'Content-type': 'application/json; charset=UTF-8' },
