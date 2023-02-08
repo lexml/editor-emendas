@@ -360,7 +360,7 @@ export class EdtApp extends LitElement {
   private resizeObserver(): void {
     const resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
-        const height = entry.contentRect.height - 250;
+        const height = entry.contentRect.height - 260;
         const editor = document.querySelector('#lx-eta-editor');
         const justificativa = document.querySelector('#editor-justificativa');
 
