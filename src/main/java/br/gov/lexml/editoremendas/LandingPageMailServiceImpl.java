@@ -16,7 +16,7 @@ public class LandingPageMailServiceImpl implements LandingPageMailService {
     public void sendEmail(MensagemLandingPage message) {
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
-        simpleMailMessage.setFrom("editoremenda@camara.leg.br");
+        simpleMailMessage.setFrom("ls_sesap@senado.leg.br");
         simpleMailMessage.setTo("editoremenda@camara.leg.br");
         simpleMailMessage.setSubject("Contato do site");
         simpleMailMessage.setText("Nome: " + message.getNome() + "\nEmail: " +
