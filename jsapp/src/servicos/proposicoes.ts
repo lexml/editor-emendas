@@ -1,4 +1,5 @@
 import { Proposicao } from '../model/proposicao';
+import { toggleCarregando } from '../components/edt-app';
 
 export const getProposicaoJsonix = async (
   sigla: string,
@@ -19,6 +20,7 @@ export const pesquisarProposicoes = async (
   numero: string,
   ano: number
 ): Promise<Proposicao[]> => {
+  toggleCarregando();
   const searchParams = new URLSearchParams(
     numero
       ? { sigla, numero, ano: ano.toString() }
@@ -26,6 +28,7 @@ export const pesquisarProposicoes = async (
   ).toString();
   const resp = await fetch('api/proposicoes?' + searchParams);
   const proposicoes = await resp.json();
+  toggleCarregando();
   return proposicoes
     .map((p: any) => ({
       sigla: p.sigla,
@@ -46,8 +49,10 @@ function compareProposicoesDesc(a: any, b: any): number {
 export const pesquisarProposicoesEmTramitacao = async (
   sigla: string
 ): Promise<Proposicao[]> => {
+  toggleCarregando();
   const resp = await fetch('api/proposicoesEmTramitacao?sigla=' + sigla);
   const proposicoes = await resp.json();
+  toggleCarregando();
   return proposicoes
     .map((p: any) => ({
       sigla: p.sigla,

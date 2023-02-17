@@ -653,6 +653,10 @@ export class EdtApp extends LitElement {
   }
 }
 
+export function toggleCarregando(): void {
+  const edtApp = document.querySelector('edt-app') as EdtApp;
+  edtApp.toggleCarregando();
+}
 declare global {
   interface HTMLElementTagNameMap {
     'edt-app': EdtApp;
