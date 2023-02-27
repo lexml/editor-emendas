@@ -4,7 +4,6 @@ import { html, LitElement, TemplateResult } from 'lit';
 import { menuStyles } from './app.css';
 import { supported } from 'browser-fs-access';
 
-
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
   createRenderRoot(): LitElement {
@@ -16,6 +15,9 @@ export class EdtMenu extends LitElement {
 
   @query('#btn-save')
   btnSave: any;
+
+  @query('#btn-save-as')
+  btnSaveAs: any;
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
@@ -60,8 +62,8 @@ export class EdtMenu extends LitElement {
               Salvar
             </sl-button>
             ${supported
-              ? html`
-                <sl-button
+              ? html` <sl-button
+                  id="btn-save-as"
                   title="Salvar emenda com outro nome"
                   size="small"
                   @click=${(): void => this.emitirEvento('salvarComo')}
@@ -73,8 +75,7 @@ export class EdtMenu extends LitElement {
                   ></sl-icon>
                   Salvar como
                 </sl-button>`
-              : ''
-            }
+              : ''}
             <sl-button
               title="Visualizar emenda"
               size="small"
