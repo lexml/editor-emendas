@@ -60,6 +60,12 @@ export class EdtApp extends LitElement {
   @state()
   private isDirty = false;
 
+  @state()
+  private wasSaved = false;
+
+  @state()
+  private isOpenFile = false;
+
   createRenderRoot(): LitElement {
     return this;
   }
@@ -165,6 +171,7 @@ export class EdtApp extends LitElement {
         this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
         this.emendaComAlteracoesSalvas = undefined;
         this.isDirty = false;
+        this.isOpenFile = true;
       })
       .catch(err => {
         errorInPromise(
@@ -222,6 +229,7 @@ export class EdtApp extends LitElement {
           this.fileHandle = fileHandle;
           this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
           this.isDirty = false;
+          this.wasSaved = true;
           this.updateStateElements(fileHandle!.name);
           this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         })
@@ -455,6 +463,8 @@ export class EdtApp extends LitElement {
         JSON.stringify(this.lexmlEmenda.getEmenda())
       );
       this.isDirty = false;
+      this.isOpenFile = false;
+      this.wasSaved = false;
       this.updateStateElements();
     }, 200);
   }
@@ -470,6 +480,8 @@ export class EdtApp extends LitElement {
         JSON.stringify(this.lexmlEmenda.getEmenda())
       );
       this.isDirty = false;
+      this.isOpenFile = false;
+      this.wasSaved = false;
       this.updateStateElements();
     }, 200);
   }
@@ -496,7 +508,7 @@ export class EdtApp extends LitElement {
   private updateStateElements(tituloEmenda?: string): void {
     setTimeout(() => {
       this.edtMenu.btnSave.disabled = !this.isDirty;
-      this.edtMenu.btnSaveAs.disabled = !this.isDirty;
+      this.edtMenu.btnSaveAs.disabled = !this.wasSaved && !this.isOpenFile;
       this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
     }, 0);
   }
