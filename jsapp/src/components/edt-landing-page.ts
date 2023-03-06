@@ -432,17 +432,6 @@ export class EdtLandingPage extends LitElement {
             <div class="col-lg-3 col-md-6 text-center">
               <div class="mt-5">
                 <div class="mb-2">
-                  <i class="bi-collection fs-1 text-muted"></i>
-                </div>
-                <h3 class="h4 mb-2 text-muted">
-                  Inclusão de agrupadores de artigo
-                </h3>
-                <span class="badge bg-success">Em breve</span>
-              </div>
-            </div>
-            <div class="col-lg-3 col-md-6 text-center">
-              <div class="mt-5">
-                <div class="mb-2">
                   <i class="bi-send-check fs-1 text-muted"></i>
                 </div>
                 <h3 class="h4 mb-2 text-muted">Enviar ao protocolo</h3>
@@ -452,15 +441,17 @@ export class EdtLandingPage extends LitElement {
             <div class="col-lg-3 col-md-6 text-center">
               <div class="mt-5">
                 <div class="mb-2">
+                  <i class="bi-collection fs-1"></i>
+                </div>
+                <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
+              </div>
+            </div>
+            <div class="col-lg-3 col-md-6 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Criar emenda</h3>
-                <a
-                  class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://www.youtube.com/watch?v=Y_N2Azkg_cw&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
-                  target="_blank"
-                  >Assista ao tutorial</a
-                >
               </div>
             </div>
             <div class="col-lg-3 col-md-6 text-center">
@@ -469,24 +460,12 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-file-pdf fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Salvar emenda</h3>
-                <a
-                  class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=133"
-                  target="_blank"
-                  >Assista ao tutorial</a
-                >
               </div>
             </div>
             <div class="col-lg-3 col-md-6 text-center">
               <div class="mt-5">
                 <div class="mb-2"><i class="bi-pen fs-1 text-primary"></i></div>
                 <h3 class="h4 mb-2">Editar emenda</h3>
-                <a
-                  class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/S7pQXIhSdFo?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
-                  target="_blank"
-                  >Assista ao tutorial</a
-                >
               </div>
             </div>
             <div class="col-lg-3 col-md-6 text-center">
@@ -495,12 +474,6 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-justify fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Justificar a emenda</h3>
-                <a
-                  class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=40"
-                  target="_blank"
-                  >Assista ao tutorial</a
-                >
               </div>
             </div>
             <div class="col-lg-3 col-md-6 text-center">
@@ -509,12 +482,6 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-person fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Informar data e autoria</h3>
-                <a
-                  class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                  href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=44"
-                  target="_blank"
-                  >Assista ao tutorial</a
-                >
               </div>
             </div>
           </div>
@@ -534,12 +501,6 @@ export class EdtLandingPage extends LitElement {
                           <i class="bi-code fs-1 text-primary"></i>
                         </div>
                         <h3 class="h4 mb-2">Comando de emenda</h3>
-                        <a
-                          class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                          href="https://youtu.be/Y_N2Azkg_cw?list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&t=108"
-                          target="_blank"
-                          >Assista ao tutorial</a
-                        >
                       </div>
                     </div>
                     <div class="col-lg-3 col-md-6 text-center">
@@ -550,12 +511,6 @@ export class EdtLandingPage extends LitElement {
                           ></i>
                         </div>
                         <h3 class="h4 mb-2">Verificar texto da emenda</h3>
-                        <a
-                          class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                          href="#"
-                          target="_blank"
-                          >Assista ao tutorial</a
-                        >
                       </div>
                     </div>
                     <div class="col-lg-3 col-md-6 text-center">
@@ -564,12 +519,6 @@ export class EdtLandingPage extends LitElement {
                           <i class="bi-list-nested fs-1 text-primary"></i>
                         </div>
                         <h3 class="h4 mb-2">Transformar dispositivos</h3>
-                        <a
-                          class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                          href="https://www.youtube.com/watch?v=M8KZ_3zr28c&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&index=9"
-                          target="_blank"
-                          >Assista ao tutorial</a
-                        >
                       </div>
                     </div>
                     <div class="col-lg-3 col-md-6 text-center">
@@ -578,12 +527,6 @@ export class EdtLandingPage extends LitElement {
                           <i class="bi-window-fullscreen fs-1 text-primary"></i>
                         </div>
                         <h3 class="h4 mb-2">Alterar norma vigente</h3>
-                        <a
-                          class="btn btn-primary btn-sm py-1 px-3 my-3 rounded-pill"
-                          href="https://www.youtube.com/watch?v=NOyXN08NG_M&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2&index=10"
-                          target="_blank"
-                          >Assista ao tutorial</a
-                        >
                       </div>
                     </div>
                   </div>
@@ -615,16 +558,6 @@ export class EdtLandingPage extends LitElement {
                     <tr>
                       <th scope="row" class="text-start">
                         Elaborar emendas a anexos
-                      </th>
-                      <td>
-                        <span class="badge rounded-pill bg-success"
-                          >Em breve</span
-                        >
-                      </td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Adicionar agrupadores de artigos
                       </th>
                       <td>
                         <span class="badge rounded-pill bg-success"
@@ -701,6 +634,12 @@ export class EdtLandingPage extends LitElement {
                     <tr>
                       <th scope="row" class="text-start">
                         Adicionar, modificar e suprimir dispositivos
+                      </th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">
+                        Adicionar agrupadores de artigos
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
