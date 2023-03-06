@@ -12,7 +12,10 @@ import {
   isUserAbortException,
 } from '../utils/error-utils';
 import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
-import { getProposicaoJsonix } from './../servicos/proposicoes';
+import {
+  getProposicaoJsonix,
+  pesquisarProposicoes,
+} from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 
@@ -65,6 +68,43 @@ export class EdtApp extends LitElement {
 
   @state()
   private isOpenFile = false;
+
+  private executarAcaoParametrizada(): void {
+    const params = new URLSearchParams(document.location.search);
+    const acao = params.get('acao');
+
+    switch (acao) {
+      case 'nova-emenda':
+        this.novaEmenda(params);
+        break;
+    }
+  }
+
+  private limparParametros(params: URLSearchParams): void {
+    const url = location.protocol + '//' + location.host + location.pathname;
+    window.history.replaceState({}, document.title, url);
+  }
+
+  private async novaEmenda(params: URLSearchParams): Promise<void> {
+    const sigla = params.get('sigla');
+    const numero = params.get('numero');
+    const ano = params.get('ano');
+
+    if (sigla && numero && ano) {
+      const proposicoes = await pesquisarProposicoes(
+        sigla,
+        numero,
+        Number(ano)
+      );
+
+      if (proposicoes?.length) {
+        const proposicao = proposicoes[0];
+        this.proposicao = proposicao;
+        this.criarNovaEmendaPadrao(proposicao);
+      }
+    }
+    this.limparParametros(params);
+  }
 
   createRenderRoot(): LitElement {
     return this;
@@ -454,7 +494,7 @@ export class EdtApp extends LitElement {
 
   private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
     this.modo = 'emenda';
-    this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
+    this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
     this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
@@ -493,6 +533,7 @@ export class EdtApp extends LitElement {
 
   protected firstUpdated(): void {
     window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
+    this.executarAcaoParametrizada();
   }
 
   private onChange(): void {
