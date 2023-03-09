@@ -54,6 +54,8 @@ public class EditorApiController {
     private final ConversorLexmlJsonix conversorLexmlJsonix;
     private final LandingPageMailService landingPageMailService;
     private final ListaParlamentaresService listaParlamentaresService;
+    
+    private final InfoAppService infoAppService;
 
     public EditorApiController(
             PdfGenerator pdfGenerator,
@@ -62,7 +64,7 @@ public class EditorApiController {
             LexmlParser lexmlParser,
             ConversorLexmlJsonix conversorLexmlJsonix,
             LandingPageMailService landingPageMailService,
-            ListaParlamentaresService listaParlamentaresService) {
+            ListaParlamentaresService listaParlamentaresService, InfoAppService infoAppService) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
         this.lexmlJsonixService = lexmlJsonixService;
@@ -70,6 +72,7 @@ public class EditorApiController {
         this.conversorLexmlJsonix = conversorLexmlJsonix;
         this.landingPageMailService = landingPageMailService;
         this.listaParlamentaresService = listaParlamentaresService;
+        this.infoAppService = infoAppService;
     }
 
     @GetMapping
@@ -164,6 +167,11 @@ public class EditorApiController {
     public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
         landingPageMailService.sendEmail(mensagem);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("versao")
+    public String versao() {
+    	return this.infoAppService.versao();
     }
 
     
