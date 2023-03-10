@@ -267,6 +267,17 @@ export const rodapeStyles = html`
       color: white;
       text-decoration: none;
     }
+
+    edt-rodape span {
+      float: right;
+      font-size: 0.8em;
+      padding: 2px 14px;
+      border-radius: 50px;
+      background: linear-gradient(145deg, #355089, #3f5fa3);
+      box-shadow: 0 -2px 10px rgb(96 131 204), 0 2px 4px rgb(25 47 91);
+      position: absolute;
+      right: 10px;
+    }
   </style>
 `;
 

@@ -278,6 +278,8 @@ export class EdtLandingPage extends LitElement {
   }
 
   render(): TemplateResult {
+    const versao = '0.3.0';
+
     return html`
       ${landingPageStyles}
 
@@ -419,8 +421,9 @@ export class EdtLandingPage extends LitElement {
       </header>
       <section class="page-section py-0" id="funcionalidades">
         <div class="container px-4 px-lg-5">
-          <h2 class="text-center mt-0">Principais funcionalidades</h2>
-          <hr class="divider" />
+          <h2 class="text-center my-0">Principais funcionalidades</h2>
+          <div class="text-center text-muted">Versão ${versao}</div>
+          <hr class="divider mt-2" />
           <div class="row gx-4 gx-lg-5">
             <div class="col-lg-3 col-md-6 text-center">
               <div class="mt-5">
@@ -854,50 +857,6 @@ ${this.message}</textarea
         </div>
       </section>
       <!-- Footer-->
-      <!-- <footer class="bg-primary">
-        <div class="container text-white pt-3 pb-4">
-          <b>Congresso Nacional</b>
-          <br />Praça dos Três Poderes - Brasília, DF - CEP 70165-900 <br />Fale
-          com o Senado: 0800 0 612 211 / Disque Câmara: 0800 0 619 619
-          <div class="d-flex flex-row">
-            <div class="pr-2">
-              <a
-                class="text-white"
-                href="https://www.congressonacional.leg.br/fale-conosco"
-                >Fale conosco</a
-              >
-              |
-            </div>
-            <div class="px-2">
-              <a href="https://www12.senado.leg.br/hpsenado" target="_blank">
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
-                  alt="Senado"
-                />
-              </a>
-            </div>
-            <div class="px-2">
-              <a href="https://www2.camara.leg.br/" target="_blank">
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
-                  alt="Câmara"
-                />
-              </a>
-            </div>
-            <div class="px-1">
-              <a
-                href="https://portal.tcu.gov.br/inicio/index.htm"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg"
-                  alt="TCU"
-                />
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer> -->
       <div class="cn-rodape">
         <div class="container">
           <div class="row cn-vertical-align">
