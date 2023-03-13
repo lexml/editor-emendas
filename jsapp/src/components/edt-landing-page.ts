@@ -2,6 +2,7 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
+import { getVersao } from '../utils/versao-utils';
 
 interface TouchedFields {
   name: boolean;
@@ -35,6 +36,7 @@ interface ContactFormErrors {
 }
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
+  @state() versao = '';
   @state() name = '';
   @state() email = '';
   @state() message = '';
@@ -277,9 +279,11 @@ export class EdtLandingPage extends LitElement {
     }
   }
 
-  render(): TemplateResult {
-    const versao = '0.3.0';
+  protected firstUpdated(): void {
+    this.versao = getVersao();
+  }
 
+  render(): TemplateResult {
     return html`
       ${landingPageStyles}
 
@@ -422,7 +426,7 @@ export class EdtLandingPage extends LitElement {
       <section class="page-section py-0" id="funcionalidades">
         <div class="container px-4 px-lg-5">
           <h2 class="text-center my-0">Principais funcionalidades</h2>
-          <div class="text-center text-muted">Versão ${versao}</div>
+          <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
           <div class="row gx-4 gx-lg-5">
             <div class="col-lg-3 col-md-6 text-center">

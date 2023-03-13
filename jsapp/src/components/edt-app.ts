@@ -18,6 +18,8 @@ import {
 } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
+import { getVersao } from '../servicos/info-app';
+import { setVersao, verificaVersao } from '../utils/versao-utils';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -80,7 +82,7 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private limparParametros(params: URLSearchParams): void {
+  private limparParametros(): void {
     const url = location.protocol + '//' + location.host + location.pathname;
     window.history.replaceState({}, document.title, url);
   }
@@ -103,7 +105,7 @@ export class EdtApp extends LitElement {
         this.criarNovaEmendaPadrao(proposicao);
       }
     }
-    this.limparParametros(params);
+    this.limparParametros();
   }
 
   createRenderRoot(): LitElement {
@@ -534,6 +536,8 @@ export class EdtApp extends LitElement {
   protected firstUpdated(): void {
     window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
     this.executarAcaoParametrizada();
+    getVersao().then(versao => setVersao(versao));
+    verificaVersao(getVersao);
   }
 
   private onChange(): void {
