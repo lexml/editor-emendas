@@ -54,6 +54,7 @@ public class EditorApiController {
     private final ConversorLexmlJsonix conversorLexmlJsonix;
     private final LandingPageMailService landingPageMailService;
     private final ListaParlamentaresService listaParlamentaresService;
+    private final AutoCompleteNormaService autoCompleteNormaService;
     
     private final InfoAppService infoAppService;
 
@@ -64,7 +65,9 @@ public class EditorApiController {
             LexmlParser lexmlParser,
             ConversorLexmlJsonix conversorLexmlJsonix,
             LandingPageMailService landingPageMailService,
-            ListaParlamentaresService listaParlamentaresService, InfoAppService infoAppService) {
+            ListaParlamentaresService listaParlamentaresService,
+            InfoAppService infoAppService,
+            AutoCompleteNormaService autoCompleteNormaService) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
         this.lexmlJsonixService = lexmlJsonixService;
@@ -73,6 +76,7 @@ public class EditorApiController {
         this.landingPageMailService = landingPageMailService;
         this.listaParlamentaresService = listaParlamentaresService;
         this.infoAppService = infoAppService;
+        this.autoCompleteNormaService = autoCompleteNormaService;
     }
 
     @GetMapping
@@ -167,6 +171,11 @@ public class EditorApiController {
     public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
         landingPageMailService.sendEmail(mensagem);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("autocomplete-norma")
+    public List<Norma> autocompleteNorma(@RequestParam @NotBlank String query) {
+        return this.autoCompleteNormaService.autocomplete(query);
     }
     
     @GetMapping("versao")
