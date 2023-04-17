@@ -594,7 +594,7 @@ export class EdtLandingPage extends LitElement {
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Alteração de normas que não seguem a N95
+                        Alteração de normas que não seguem a LC nº 95/98
                       </th>
                       <td>
                         <span class="badge rounded-pill bg-success"
@@ -634,7 +634,7 @@ export class EdtLandingPage extends LitElement {
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Validar alterações na emenda conforme a N95
+                        Validar alterações na emenda conforme a LC nº 95/98
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
