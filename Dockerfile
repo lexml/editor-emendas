@@ -1,3 +1,4 @@
+FROM lexmlbr/lexml-linker:1.4.7 as linker-base
 FROM eclipse-temurin:17-jdk-focal
 EXPOSE 8080
 ARG uid
@@ -15,6 +16,7 @@ WORKDIR /usr/local/editor-emendas
 COPY run.sh .
 COPY target/editor-emendas.jar .
 COPY jsonix-lexml-linux .
+COPY --from=linker-base /usr/bin/linkertool /usr/local/bin/
 
 USER root:root
 RUN chmod a+x jsonix-lexml-linux
