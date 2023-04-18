@@ -18,14 +18,17 @@ import {
 } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
-import { getVersao } from '../servicos/info-app';
-import { setVersao, verificaVersao } from '../utils/versao-utils';
+import {
+  getVersaoFromLocalStorage,
+  verificaVersao,
+} from '../utils/versao-utils';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   private tituloEmenda = '';
   private labelTipoEmenda = '';
-  carregando = false;
+  private carregando = false;
+  private versao = getVersaoFromLocalStorage();
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -536,8 +539,7 @@ export class EdtApp extends LitElement {
   protected firstUpdated(): void {
     window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
     this.executarAcaoParametrizada();
-    getVersao().then(versao => setVersao(versao));
-    verificaVersao(getVersao);
+    verificaVersao();
   }
 
   private onChange(): void {
@@ -702,11 +704,12 @@ export class EdtApp extends LitElement {
         ${this.showEditor
           ? html`<edt-modal-ajuda></edt-modal-ajuda>`
           : html` <edt-landing-page
+              versao="${this.versao}"
               @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
             ></edt-landing-page>`}
         ${this.renderEditorEmenda()}
       </main>
-      <edt-rodape></edt-rodape>
+      <edt-rodape versao="${this.versao}"></edt-rodape>
     `;
   }
 }

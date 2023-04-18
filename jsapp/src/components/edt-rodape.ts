@@ -1,20 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { EdtApp } from './edt-app';
 import { LitElement, html, TemplateResult, PropertyValueMap } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
+import { customElement, property } from 'lit/decorators.js';
 import { rodapeStyles } from './app.css';
-import { getVersao } from '../utils/versao-utils';
 
 @customElement('edt-rodape')
 export class EdtRodape extends LitElement {
-  @state() versao = '';
+  @property()
+  versao? = '';
 
   createRenderRoot(): LitElement {
     return this;
-  }
-
-  protected firstUpdated(): void {
-    this.versao = getVersao();
   }
 
   render(): TemplateResult {

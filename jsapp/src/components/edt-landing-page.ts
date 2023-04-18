@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, state, query } from 'lit/decorators.js';
+import { customElement, state, query, property } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
-import { getVersao } from '../utils/versao-utils';
 
 interface TouchedFields {
   name: boolean;
@@ -36,7 +35,7 @@ interface ContactFormErrors {
 }
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
-  @state() versao = '';
+  @property() versao = '';
   @state() name = '';
   @state() email = '';
   @state() message = '';
@@ -277,10 +276,6 @@ export class EdtLandingPage extends LitElement {
       this.submitState = SubmitState.Failed;
       return Promise.reject(error);
     }
-  }
-
-  protected firstUpdated(): void {
-    this.versao = getVersao();
   }
 
   render(): TemplateResult {

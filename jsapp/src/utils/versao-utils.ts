@@ -1,34 +1,22 @@
-const INTERVALO = 1000;
-const INTERVALO_VERIFICACAO = 1000 * 60 * 60;
-const CHAVE = 'versao';
-const MAX_TENTATIVAS = 10;
+import { getVersao } from '../servicos/info-app';
 
-export function getVersao(tentativas = 0): string {
+const CHAVE = 'versao';
+
+export function getVersaoFromLocalStorage(): string {
   const versaolocalStorage = localStorage.getItem(CHAVE);
-  if (versaolocalStorage === null && tentativas < MAX_TENTATIVAS) {
-    setTimeout(() => getVersao(++tentativas), INTERVALO);
-  }
-  return versaolocalStorage ? versaolocalStorage : '';
+  return versaolocalStorage ? versaolocalStorage : '???';
 }
 
-export function setVersao(versao: string): void {
+function setVersao(versao: string): void {
   localStorage.setItem(CHAVE, versao);
 }
 
-export function clearVersao(): void {
-  localStorage.removeItem(CHAVE);
-}
-
-export function verificaVersao(funcaoGetVersao: () => Promise<any>): void {
-  const _verificacao = (): void => {
-    funcaoGetVersao().then(versao => {
-      if (versao !== getVersao()) {
-        window.location.reload();
-      }
-    });
-  };
-
-  _verificacao();
-
-  setInterval(() => _verificacao, INTERVALO_VERIFICACAO);
+export function verificaVersao(): void {
+  getVersao().then(versao => {
+    if (versao !== getVersaoFromLocalStorage()) {
+      console.log('Atualizando para versão ' + versao);
+      setVersao(versao);
+      window.location.reload();
+    }
+  });
 }
