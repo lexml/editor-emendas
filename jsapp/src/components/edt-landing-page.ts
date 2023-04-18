@@ -289,7 +289,7 @@ export class EdtLandingPage extends LitElement {
             <div class="col-4">
               <a
                 href="https://www.congressonacional.leg.br"
-                title="Ir para o Portal do Congresso Nacional"
+                title="Ir para o Portal do Congresso Nacional x"
               >
                 <img
                   class="cn-topo-logo"
