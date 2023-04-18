@@ -16,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class AutoCompleteNormaServiceImpl implements AutoCompleteNormaService {
 
-	private final String URL = "https://www6gdsv.senado.gov.br/sigen/api/lexedit/autocomplete?query={query}";
+	private final String URL = "https://legis.senado.leg.br/sigen/api/lexedit/autocomplete?query={query}";
     private final RestTemplate restTemplate;
     
     public AutoCompleteNormaServiceImpl(RestTemplate restTemplate) {
