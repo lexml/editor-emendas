@@ -137,6 +137,14 @@
 </head>
 <body>
   <script type="text/javascript">
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+              registration.unregister();
+          }
+      });
+    }
+
     // HACK(keanulee): The Redux package assumes `process` exists - mock it here before
     // the module is loaded.
     window.process = {
