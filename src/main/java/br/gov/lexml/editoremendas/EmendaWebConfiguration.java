@@ -1,6 +1,10 @@
 package br.gov.lexml.editoremendas;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -58,9 +62,10 @@ public class EmendaWebConfiguration {
 			@Override
 			protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
 					throws IOException, ServletException {
-				response.addHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+				response.addHeader("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate, proxy-revalidate");
 				response.addHeader("Expires", "0");
 				response.addHeader("Pragma", "no-cache");
+				response.addHeader("Last-Modified", getServerTime());
 				response.setCharacterEncoding("UTF-8");
 				super.doFilter(request, response, chain);
 			}
@@ -77,5 +82,12 @@ public class EmendaWebConfiguration {
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		return builder.build();
 	}
+	
+	private String getServerTime() {
+	    SimpleDateFormat dateFormat = new SimpleDateFormat(
+	        "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
+	    dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+	    return dateFormat.format(new Date());
+	}	
 	
 }

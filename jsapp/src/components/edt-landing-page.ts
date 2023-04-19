@@ -282,14 +282,14 @@ export class EdtLandingPage extends LitElement {
     return html`
       ${landingPageStyles}
 
-      <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
+      <a class="sr-only" href="#iniciar">Ir para conteúdo principal (2)</a>
       <div class="cn-topo">
         <div class="container px-4 px-lg-5">
           <div class="row cn-vertical-align">
             <div class="col-4">
               <a
                 href="https://www.congressonacional.leg.br"
-                title="Ir para o Portal do Congresso Nacional x"
+                title="Ir para o Portal do Congresso Nacional (2)"
               >
                 <img
                   class="cn-topo-logo"
