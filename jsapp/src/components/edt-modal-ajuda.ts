@@ -1,31 +1,67 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { customElement, query } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 import { LitElement, html, TemplateResult } from 'lit';
 import { ajudaStyles } from './app.css';
+
+class Video {
+  constructor(public titulo: string, public codigo: string) {}
+}
+
+const videos: Array<Video> = [
+  new Video('Introdução', 'Y_N2Azkg_cw'),
+  new Video('Modificar dispositivo', 'S7pQXIhSdFo'),
+  new Video('Remover dispositivo', 'OBU2uEVOX0s'),
+  new Video('Adicionar dispositivo', 'N8LdGjc3UTs'),
+  new Video('Inciso de Caput', 'vxTI0PO4le4'),
+  new Video('Dispositivo entre outros', 'KdAQ1oki8kI'),
+  new Video('Artigo a partir de um capítulo', 'MnSQuDj000k'),
+  new Video('Dispositivos subordinados', 'LXHlHaMvV-0'),
+  new Video('Dispositivo à norma', 'M8KZ_3zr28c'),
+  new Video('Dispositivo da norma vigente', 'NOyXN08NG_M'),
+];
 
 @customElement('edt-modal-ajuda')
 export class EdtModalAjuda extends LitElement {
   @query('sl-dialog')
   private slDialog!: any;
 
-  public show(): void {
-    this.slDialog.show();
+  @query('.details-group')
+  private detailsGroup!: any;
+
+  @state()
+  private visivel = false;
+
+  @state()
+  private selecionado = 0;
+
+  protected firstUpdated(): void {
     this.slDialog.addEventListener('sl-request-close', () => {
-      this.pauseAllVideos();
+      this.visivel = false;
+    });
+
+    this.slDialog.addEventListener('sl-tab-show', (e: CustomEvent) => {
+      this.selecionado = Number(e.detail.name.replace('video', ''));
+    });
+
+    this.detailsGroup.addEventListener('sl-show', (e: CustomEvent) => {
+      if (e.target) {
+        [...this.detailsGroup.querySelectorAll('sl-details')].forEach(
+          (details, i) => {
+            details.open = e.target === details;
+            if (details.open) {
+              this.selecionado = i;
+            }
+          }
+        );
+      }
     });
   }
 
-  private pauseAllVideos(): void {
-    const allVideos = document
-      .querySelector('edt-modal-ajuda')
-      ?.shadowRoot?.querySelectorAll('iframe');
-    allVideos?.forEach(video => {
-      video.contentWindow?.postMessage(
-        '{"event":"command","func":"pauseVideo","args":""}',
-        '*'
-      );
-    });
+  public show(): void {
+    this.visivel = true;
+    this.slDialog.show();
   }
+
   private emitirEvento(): void {
     this.dispatchEvent(
       new CustomEvent('confirm-result', {
@@ -35,277 +71,78 @@ export class EdtModalAjuda extends LitElement {
     );
   }
 
+  private videoTemplate(video: Video): any {
+    return html`
+      <div class="video-container">
+        <iframe
+          class="youtube-player-iframe"
+          tabindex="-1"
+          src="https://www.youtube.com/embed/${video.codigo}?enablejsapi=1&version=3&playerapiid=ytplayer"
+          frameborder="0"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </div>
+    `;
+  }
+
+  private tabPanelVideoTemplate(video: Video, i: number): any {
+    return html`
+      <sl-tab-panel name="video${i}">
+        ${this.selecionado === i
+          ? html`
+              <div class="video-container">${this.videoTemplate(video)}</div>
+            `
+          : ``}
+      </sl-tab-panel>
+    `;
+  }
+
+  // Desktop e tablet
+  tabGroupTemplate(): any {
+    return html`
+      <sl-tab-group placement="start">
+        ${videos.map(
+          (v, i) =>
+            html`<sl-tab slot="nav" panel="video${i}">${v.titulo}</sl-tab>`
+        )}
+        ${videos.map((v, i) => this.tabPanelVideoTemplate(v, i))}
+      </sl-tab-group>
+    `;
+  }
+
+  private detailsVideoTemplate(video: Video, i: number): any {
+    return html`
+      <sl-details
+        summary="${video.titulo}"
+        name="video${i}"
+        .open=${this.selecionado === i}
+      >
+        ${this.selecionado === i ? this.videoTemplate(video) : ``}
+      </sl-details>
+    `;
+  }
+
   render(): TemplateResult {
     const tituloModal = 'Vídeos tutoriais';
 
     return html`
       ${ajudaStyles}
       <sl-dialog label=${tituloModal} @sl-hide=${this.emitirEvento}>
-        <sl-tab-group placement="start">
-          <sl-tab slot="nav" panel="video01">Introdução</sl-tab>
-          <sl-tab slot="nav" panel="video02">Modificar dispositivo</sl-tab>
-          <sl-tab slot="nav" panel="video03">Remover dispositivo</sl-tab>
-          <sl-tab slot="nav" panel="video04">Adicionar dispositivo</sl-tab>
-          <sl-tab slot="nav" panel="video05">Inciso de Caput</sl-tab>
-          <sl-tab slot="nav" panel="video06">Dispositivo entre outros</sl-tab>
-          <sl-tab slot="nav" panel="video07"
-            >Artigo a partir de um capítulo</sl-tab
-          >
-          <sl-tab slot="nav" panel="video08">Dispositivos subordinados</sl-tab>
-          <sl-tab slot="nav" panel="video09">Dispositivo à norma</sl-tab>
-          <sl-tab slot="nav" panel="video10"
-            >Dispositivo da norma vigente</sl-tab
-          >
-
-          <sl-tab-panel name="video01">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/Y_N2Azkg_cw?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video02">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/S7pQXIhSdFo?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video03">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/OBU2uEVOX0s?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video04">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/N8LdGjc3UTs?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video05">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/vxTI0PO4le4?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video06">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/KdAQ1oki8kI?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video07">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/MnSQuDj000k?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video08">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/LXHlHaMvV-0?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video09">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/M8KZ_3zr28c?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-          <sl-tab-panel name="video10">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/NOyXN08NG_M?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-tab-panel>
-        </sl-tab-group>
-        <div class="details-group-example">
-          <sl-details summary="Introdução" open>
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/Y_N2Azkg_cw?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Modificar dispositivo">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/S7pQXIhSdFo?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Remover dispositivo">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/OBU2uEVOX0s?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Adicionar dispositivo">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/N8LdGjc3UTs?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Inciso de Caput">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/vxTI0PO4le4?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Dispositivo entre outros">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/KdAQ1oki8kI?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Artigo a partir de um capítulo">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/MnSQuDj000k?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Dispositivos subordinados">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/LXHlHaMvV-0?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Dispositivo à norma">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/M8KZ_3zr28c?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
-          <sl-details summary="Dispositivo da norma vigente">
-            <div class="video-container">
-              <iframe
-                class="youtube-player-iframe"
-                tabindex="-1"
-                src="https://www.youtube.com/embed/NOyXN08NG_M?enablejsapi=1&version=3&playerapiid=ytplayer"
-                frameborder="0"
-                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </sl-details>
+        <!-- Desktop e tablet -->
+        ${this.visivel ? this.tabGroupTemplate() : html``}
+        <!-- Celular -->
+        <div class="details-group">
+          ${this.visivel
+            ? videos.map((v, i) => this.detailsVideoTemplate(v, i))
+            : html``}
         </div>
         <sl-button
           slot="footer"
           variant="primary"
           @click=${(): void => {
             this.slDialog.hide();
-            this.pauseAllVideos();
+            this.visivel = false;
           }}
           >Fechar</sl-button
         >
