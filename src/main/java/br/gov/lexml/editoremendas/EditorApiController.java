@@ -180,7 +180,7 @@ public class EditorApiController {
     
     @GetMapping("versao")
     public String versao() {
-    	return this.infoAppService.versao();
+    	return StringUtils.defaultString(infoAppService.versao(), "«desenvolvimento local»");
     }
 
     

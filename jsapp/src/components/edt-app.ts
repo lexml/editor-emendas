@@ -18,17 +18,15 @@ import {
 } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
-import {
-  getVersaoFromLocalStorage,
-  verificaVersao,
-} from '../utils/versao-utils';
+import { getVersao } from '../servicos/info-app';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   private tituloEmenda = '';
   private labelTipoEmenda = '';
-  private carregando = false;
-  private versao = getVersaoFromLocalStorage();
+
+  @state()
+  private versao = '---';
 
   @query('lexml-emenda')
   private lexmlEmenda!: any;
@@ -74,6 +72,15 @@ export class EdtApp extends LitElement {
   @state()
   private isOpenFile = false;
 
+  constructor() {
+    super();
+    getVersao().then(versao => {
+      this.versao = versao;
+    });
+    // TODO - Retirar no futuro
+    localStorage.removeItem('versao');
+  }
+
   private executarAcaoParametrizada(): void {
     const params = new URLSearchParams(document.location.search);
     const acao = params.get('acao');
@@ -115,15 +122,18 @@ export class EdtApp extends LitElement {
     return this;
   }
 
-  public toggleCarregando(): void {
-    if (this.carregando === true) {
-      document.querySelector('.overlay-carregando')!.classList.add('hidden');
-      document.querySelector('edt-app')!.classList.remove('blured');
-      this.carregando = false;
-    } else {
+  public toggleCarregando(mostrarCarregando?: boolean): void {
+    if (mostrarCarregando === undefined) {
+      mostrarCarregando = document
+        .querySelector('.overlay-carregando')!
+        .classList.contains('hidden');
+    }
+    if (mostrarCarregando) {
       document.querySelector('.overlay-carregando')!.classList.remove('hidden');
       document.querySelector('edt-app')!.classList.add('blured');
-      this.carregando = true;
+    } else {
+      document.querySelector('.overlay-carregando')!.classList.add('hidden');
+      document.querySelector('edt-app')!.classList.remove('blured');
     }
   }
 
@@ -228,9 +238,7 @@ export class EdtApp extends LitElement {
         );
       })
       .finally(() => {
-        if (this.carregando) {
-          this.toggleCarregando();
-        }
+        this.toggleCarregando(false);
       });
   }
 
@@ -537,9 +545,9 @@ export class EdtApp extends LitElement {
   }
 
   protected firstUpdated(): void {
+    this.toggleCarregando(false);
     window.onbeforeunload = (): any => (this.isDirty ? '---' : undefined);
     this.executarAcaoParametrizada();
-    verificaVersao();
   }
 
   private onChange(): void {
