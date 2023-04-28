@@ -26,7 +26,7 @@ export const pesquisarProposicoes = async (
       ? { sigla, numero, ano: ano.toString() }
       : { sigla, ano: ano.toString() }
   ).toString();
-  const resp = await fetch('api/proposicoes?' + searchParams);
+  const resp = await fetch('api/proposicoes-novo?' + searchParams);
   const proposicoes = await resp.json();
   toggleCarregando();
   return proposicoes
@@ -50,7 +50,7 @@ export const pesquisarProposicoesEmTramitacao = async (
   sigla: string
 ): Promise<Proposicao[]> => {
   toggleCarregando();
-  const resp = await fetch('api/proposicoesEmTramitacao?sigla=' + sigla);
+  const resp = await fetch('api/proposicoesEmTramitacao-novo?sigla=' + sigla);
   const proposicoes = await resp.json();
   toggleCarregando();
   return proposicoes
