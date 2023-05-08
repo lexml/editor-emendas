@@ -11,6 +11,8 @@ public class EditorEmendasApplication {
 		System.setProperty("java.net.useSystemProxies", "true");
 		if (SystemUtils.IS_OS_WINDOWS) {
 			System.setProperty("lexml-jsonix.cli", "jsonix-lexml-win.exe");
+		}else if(SystemUtils.IS_OS_MAC) {
+			System.setProperty("lexml-jsonix.cli", "./jsonix-lexml-macos");
 		} else {
 			System.setProperty("lexml-jsonix.cli", "./jsonix-lexml-linux");
 		}
