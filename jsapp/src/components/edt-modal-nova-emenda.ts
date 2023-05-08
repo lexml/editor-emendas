@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, query, queryAll, state } from 'lit/decorators.js';
+import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
+import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 import { Proposicao } from './../model/proposicao';
 import {
   pesquisarProposicoes,
   pesquisarProposicoesEmTramitacao,
 } from './../servicos/proposicoes';
 import { novaEmendaStyles } from './app.css';
+import { errorInPromise } from '../utils/error-utils';
+import { toggleCarregando } from './edt-app';
 
 @customElement('edt-modal-nova-emenda')
 export class EdtModalNovaEmenda extends LitElement {
@@ -71,22 +74,29 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   private async pesquisar(): Promise<void> {
-    this.proposicaoSelecionada = undefined;
-    this.proposicoes = [];
-    if (this.apenasEmTramitacao) {
-      if (!this.sigla) {
-        return;
+    try {
+      this.proposicaoSelecionada = undefined;
+      this.proposicoes = [];
+      if (this.apenasEmTramitacao) {
+        if (!this.sigla) {
+          return;
+        }
+        this.proposicoes = await pesquisarProposicoesEmTramitacao(this.sigla);
+      } else {
+        if (!(this.sigla && this.ano)) {
+          return;
+        }
+        this.proposicoes = await pesquisarProposicoes(
+          this.sigla,
+          this.numero,
+          Number(this.ano)
+        );
       }
-      this.proposicoes = await pesquisarProposicoesEmTramitacao(this.sigla);
-    } else {
-      if (!(this.sigla && this.ano)) {
-        return;
-      }
-      this.proposicoes = await pesquisarProposicoes(
-        this.sigla,
-        this.numero,
-        Number(this.ano)
-      );
+    } catch (err) {
+      errorInPromise(`Erro ao pesquisar as proposições : ${err}`, err, msg => {
+        this.emitirAlerta(msg, 'danger');
+        toggleCarregando();
+      });
     }
   }
 
@@ -111,6 +121,27 @@ export class EdtModalNovaEmenda extends LitElement {
     this.selecionarProposicao(proposicao, evt);
     this.emitirEvento();
   }
+
+  public emitirAlerta = function (
+    message: string,
+    variant: string,
+    icon = 'info-circle',
+    duration = 3000,
+    closable = true
+  ): Promise<void> {
+    const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
+      variant,
+      closable,
+      duration: duration,
+      innerHTML: `
+        <sl-icon name="${icon}" style="font-size:28px" slot="icon"></sl-icon>
+        ${message}
+      `,
+    });
+
+    document.body.append(alert);
+    return alert.toast();
+  };
 
   private renderProposicoes(): TemplateResult {
     return !this.proposicoes.length
