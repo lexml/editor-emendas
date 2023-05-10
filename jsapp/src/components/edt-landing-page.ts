@@ -508,11 +508,9 @@ export class EdtLandingPage extends LitElement {
                     <div class="col-lg-3 col-md-6 text-center">
                       <div class="mt-5">
                         <div class="mb-2">
-                          <i
-                            class="bi-file-earmark-check fs-1 text-primary"
-                          ></i>
+                          <i class="bi-eye fs-1 text-primary"></i>
                         </div>
-                        <h3 class="h4 mb-2">Verificar texto da emenda</h3>
+                        <h3 class="h4 mb-2">Visualizar emenda</h3>
                       </div>
                     </div>
                     <div class="col-lg-3 col-md-6 text-center">
