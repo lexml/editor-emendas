@@ -423,15 +423,15 @@ export class EdtLandingPage extends LitElement {
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
-          <div class="row gx-4 gx-lg-5">
-            <div class="col-lg-3 col-md-6 text-center">
+          <div class="row gx-4 gx-lg-5 align-items-end">
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2"><i class="bi-files fs-1 text-muted"></i></div>
                 <h3 class="h4 mb-2 text-muted">Emenda a anexos</h3>
                 <span class="badge bg-success">Em breve</span>
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
                   <i class="bi-send-check fs-1 text-muted"></i>
@@ -440,54 +440,188 @@ export class EdtLandingPage extends LitElement {
                 <span class="badge bg-success">Em breve</span>
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
-              <div class="mt-5">
-                <div class="mb-2">
-                  <i class="bi-collection fs-1"></i>
-                </div>
-                <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
-              </div>
-            </div>
-            <div class="col-lg-3 col-md-6 text-center">
+
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Criar emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
+
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
-                  <i class="bi-file-pdf fs-1 text-primary"></i>
+                  <i class="bi-folder fs-1 text-primary"></i>
                 </div>
-                <h3 class="h4 mb-2">Salvar emenda</h3>
+                <h3 class="h4 mb-2">Abrir emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
+
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
-                <div class="mb-2"><i class="bi-pen fs-1 text-primary"></i></div>
-                <h3 class="h4 mb-2">Editar emenda</h3>
+                <div class="mb-2">
+                  <i class="bi-pen fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Alterações de edição</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-list-nested fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Transformar dispositivos</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-collection fs-1"></i>
+                </div>
+                <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-file-earmark-ruled fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Alterar norma vigente</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
                   <i class="bi-justify fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Justificar a emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
               </div>
             </div>
-            <div class="col-lg-3 col-md-6 text-center">
+
+            <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
                   <i class="bi-person fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Informar data e autoria</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-exclamation-diamond   fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Avisos</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-code fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Comando de emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-eye fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Visualizar texto da emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
+              </div>
+            </div>
+
+            <div class="col-6 col-lg-3 text-center">
+              <div class="mt-5">
+                <div class="mb-2">
+                  <i class="bi-file-pdf fs-1 text-primary"></i>
+                </div>
+                <h3 class="h4 mb-2">Salvar emenda</h3>
+                <a
+                  href="#"
+                  role="button"
+                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  >Ver passo a passo</a
+                >
               </div>
             </div>
           </div>
-          <div class="accordion" id="accordionExample">
+          <!-- <div class="accordion" id="accordionExample">
             <div class="accordion-item">
               <div
                 id="collapseOne"
@@ -497,7 +631,7 @@ export class EdtLandingPage extends LitElement {
               >
                 <div class="accordion-body">
                   <div class="row gx-4 gx-lg-5">
-                    <div class="col-lg-3 col-md-6 text-center">
+                    <div class="col-6 col-lg-3 text-center">
                       <div class="mt-5">
                         <div class="mb-2">
                           <i class="bi-code fs-1 text-primary"></i>
@@ -505,7 +639,7 @@ export class EdtLandingPage extends LitElement {
                         <h3 class="h4 mb-2">Comando de emenda</h3>
                       </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 text-center">
+                    <div class="col-6 col-lg-3 text-center">
                       <div class="mt-5">
                         <div class="mb-2">
                           <i class="bi-eye fs-1 text-primary"></i>
@@ -513,7 +647,7 @@ export class EdtLandingPage extends LitElement {
                         <h3 class="h4 mb-2">Visualizar emenda</h3>
                       </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 text-center">
+                    <div class="col-6 col-lg-3 text-center">
                       <div class="mt-5">
                         <div class="mb-2">
                           <i class="bi-list-nested fs-1 text-primary"></i>
@@ -521,7 +655,7 @@ export class EdtLandingPage extends LitElement {
                         <h3 class="h4 mb-2">Transformar dispositivos</h3>
                       </div>
                     </div>
-                    <div class="col-lg-3 col-md-6 text-center">
+                    <div class="col-6 col-lg-3 text-center">
                       <div class="mt-5">
                         <div class="mb-2">
                           <i class="bi-window-fullscreen fs-1 text-primary"></i>
@@ -543,7 +677,7 @@ export class EdtLandingPage extends LitElement {
                 title="Mostrar mais funcionalidades"
               ></button>
             </div>
-          </div>
+          </div> -->
         </div>
       </section>
       <section class="page-section py-5">
