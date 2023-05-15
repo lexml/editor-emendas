@@ -434,16 +434,6 @@ export class EdtLandingPage extends LitElement {
             <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2">
-                  <i class="bi-send-check fs-1 text-muted"></i>
-                </div>
-                <h3 class="h4 mb-2 text-muted">Enviar ao protocolo</h3>
-                <span class="badge bg-success">Em breve</span>
-              </div>
-            </div>
-
-            <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
-                <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
                 </div>
                 <h3 class="h4 mb-2">Criar emenda</h3>
@@ -621,63 +611,6 @@ export class EdtLandingPage extends LitElement {
               </div>
             </div>
           </div>
-          <!-- <div class="accordion" id="accordionExample">
-            <div class="accordion-item">
-              <div
-                id="collapseOne"
-                class="accordion-collapse collapse"
-                aria-labelledby="headingOne"
-                data-bs-parent="#accordionExample"
-              >
-                <div class="accordion-body">
-                  <div class="row gx-4 gx-lg-5">
-                    <div class="col-6 col-lg-3 text-center">
-                      <div class="mt-5">
-                        <div class="mb-2">
-                          <i class="bi-code fs-1 text-primary"></i>
-                        </div>
-                        <h3 class="h4 mb-2">Comando de emenda</h3>
-                      </div>
-                    </div>
-                    <div class="col-6 col-lg-3 text-center">
-                      <div class="mt-5">
-                        <div class="mb-2">
-                          <i class="bi-eye fs-1 text-primary"></i>
-                        </div>
-                        <h3 class="h4 mb-2">Visualizar emenda</h3>
-                      </div>
-                    </div>
-                    <div class="col-6 col-lg-3 text-center">
-                      <div class="mt-5">
-                        <div class="mb-2">
-                          <i class="bi-list-nested fs-1 text-primary"></i>
-                        </div>
-                        <h3 class="h4 mb-2">Transformar dispositivos</h3>
-                      </div>
-                    </div>
-                    <div class="col-6 col-lg-3 text-center">
-                      <div class="mt-5">
-                        <div class="mb-2">
-                          <i class="bi-window-fullscreen fs-1 text-primary"></i>
-                        </div>
-                        <h3 class="h4 mb-2">Alterar norma vigente</h3>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target="#collapseOne"
-                aria-expanded="true"
-                aria-controls="collapseOne"
-                aria-label="Mostrar mais funcionalidades"
-                title="Mostrar mais funcionalidades"
-              ></button>
-            </div>
-          </div> -->
         </div>
       </section>
       <section class="page-section py-5">
@@ -692,16 +625,6 @@ export class EdtLandingPage extends LitElement {
                     <tr>
                       <th scope="row" class="text-start">
                         Elaborar emendas a anexos
-                      </th>
-                      <td>
-                        <span class="badge rounded-pill bg-success"
-                          >Em breve</span
-                        >
-                      </td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Enviar emenda ao sistema de protocolo
                       </th>
                       <td>
                         <span class="badge rounded-pill bg-success"
@@ -726,6 +649,16 @@ export class EdtLandingPage extends LitElement {
                       <td>
                         <span class="badge rounded-pill bg-success"
                           >Em breve</span
+                        >
+                      </td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">
+                        Enviar emenda ao sistema de protocolo
+                      </th>
+                      <td>
+                        <span class="badge rounded-pill bg-secondary"
+                          >Previsto</span
                         >
                       </td>
                     </tr>
