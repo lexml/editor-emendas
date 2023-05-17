@@ -502,6 +502,8 @@ export class EdtApp extends LitElement {
       this.modalNovaEmenda.show();
     } else if (ev.detail.botaoNotasVersao === 'abrir') {
       this.abrirEmenda();
+    } else if (ev.detail.botaoNotasVersao === 'videos') {
+      this.abrirVideos();
     }
   }
 
@@ -709,13 +711,15 @@ export class EdtApp extends LitElement {
         @item-selecionado=${this.onItemMenuSelecionado}
       ></edt-menu>
       <main class="${this.showEditor ? 'no-scroll' : ''}">
-        ${this.showEditor
-          ? html`<edt-modal-ajuda></edt-modal-ajuda>`
-          : html` <edt-landing-page
+        ${!this.showEditor
+          ? html` <edt-landing-page
               versao="${this.versao}"
               @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
-            ></edt-landing-page>`}
+            >
+            </edt-landing-page>`
+          : ''}
         ${this.renderEditorEmenda()}
+        <edt-modal-ajuda></edt-modal-ajuda>
       </main>
       <edt-rodape versao="${this.versao}"></edt-rodape>
     `;

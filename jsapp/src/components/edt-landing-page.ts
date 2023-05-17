@@ -240,6 +240,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   private emitirEvento(botaoNotasVersao: string): void {
+    console.log('emitirEvento', botaoNotasVersao);
     this.dispatchEvent(
       new CustomEvent('botao-selecionado', {
         detail: { botaoNotasVersao },
@@ -418,7 +419,35 @@ export class EdtLandingPage extends LitElement {
           </div>
         </div>
       </header>
-      <section class="page-section py-0" id="funcionalidades">
+      <!-- Tutorial -->
+      <section class="page-section bg-primary text-white" id="ajuda">
+        <div class="container px-4 px-lg-5 text-center">
+          <div class="row d-flex align-items-center justify-content-center">
+            <div class="col-lg-7 align-middle px-5 text-center text-lg-start">
+              <h2>Fique por dentro do editor de emendas</h2>
+              <p class="text-white-75 mb-4 fs-4">
+                Assista a vídeos curtos e aprenda as funcionalidades do editor
+                de emendas com demonstrações rápidas.
+              </p>
+              <button
+                class="btn btn-light btn-md rounded-pill px-4"
+                @click=${(): void => this.emitirEvento('videos')}
+              >
+                Acessar os vídeos tutorias
+              </button>
+            </div>
+            <div class="col-lg-5 py-5 p0-lg-1">
+              <img
+                role="button"
+                @click=${(): void => this.emitirEvento('videos')}
+                class="btn p-0 shadow-lg img-fluid"
+                src="assets/jpg/imagem-editor-celular.jpg"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="page-section py-0 my-5" id="funcionalidades">
         <div class="container px-4 px-lg-5">
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
@@ -613,7 +642,7 @@ export class EdtLandingPage extends LitElement {
           </div>
         </div>
       </section>
-      <section class="page-section py-5">
+      <section class="page-section py-5 bg-light">
         <div class="container text-center">
           <h2 class="text-center mt-0">Recursos</h2>
           <div class="row">
@@ -769,37 +798,7 @@ export class EdtLandingPage extends LitElement {
           </div>
         </div>
       </section>
-      <!-- Call to action-->
-      <section class="page-section bg-primary text-white" id="ajuda">
-        <div class="container px-4 px-lg-5 text-center">
-          <div class="row d-flex align-items-center justify-content-center">
-            <div class="col-lg-7 align-middle px-5 text-center text-lg-start">
-              <h2>Fique por dentro do editor de emendas</h2>
-              <p class="text-white-75 mb-4 fs-4">
-                Assista a vídeos curtos e aprenda as funcionalidades do editor
-                de emendas com demonstrações rápidas.
-              </p>
-              <a
-                class="btn btn-light btn-xl mb-4"
-                href="https://www.youtube.com/watch?v=Y_N2Azkg_cw&list=PL359nhvnb6z4xKIgmVr2GdFWOssLQ2-b2"
-                target="_blank"
-                >ACESSAR O CANAL</a
-              >
-            </div>
-            <div class="col-lg-5">
-              <div class="tutorial container text-center my-5 ratio ratio-16x9">
-                <iframe
-                  class="shadow-lg"
-                  src="https://www.youtube.com/embed/Y_N2Azkg_cw"
-                  allowfullscreen
-                >
-                </iframe>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section class="page-section" id="contato">
+      <section class="my-5" id="contato">
         <div class="container px-4 px-lg-5">
           <div class="row gx-4 gx-lg-5 justify-content-center">
             <div class="col-lg-8 col-xl-6 text-center">
