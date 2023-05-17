@@ -52,16 +52,11 @@ export class EdtModalNovaEmenda extends LitElement {
   private toggleApenasEmTramitacao(): void {
     this.apenasEmTramitacao = !this.apenasEmTramitacao;
     const numeroInput = this.shadowRoot?.querySelector('.numero-proposicao');
-    const anoInput = this.shadowRoot?.querySelector('.ano-proposicao');
+    (numeroInput as SlInput).value = '';
     const pesquisarButton = this.shadowRoot?.querySelector('#pesquisarButton');
-    const checkbox = this.shadowRoot?.querySelector('#chk-mostrar-todas');
     if (!this.apenasEmTramitacao) {
-      numeroInput?.classList.remove('hidden');
-      anoInput?.classList.remove('hidden');
       pesquisarButton?.classList.remove('hidden');
     } else {
-      numeroInput?.classList.add('hidden');
-      anoInput?.classList.add('hidden');
       pesquisarButton?.classList.add('hidden');
     }
     this.pesquisar();
@@ -215,7 +210,7 @@ export class EdtModalNovaEmenda extends LitElement {
               <sl-menu-item value="mpv">MPV</sl-menu-item>
             </sl-select>
             <sl-input
-              class="numero-proposicao hidden"
+              class="numero-proposicao"
               size="small"
               value=""
               placeholder="Número"
@@ -228,7 +223,7 @@ export class EdtModalNovaEmenda extends LitElement {
                 (this.numero = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-input
-              class="ano-proposicao hidden"
+              class="ano-proposicao"
               size="small"
               placeholder="Ano"
               value=${new Date().getFullYear().toString()}
