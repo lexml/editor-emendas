@@ -355,10 +355,10 @@ export class EdtLandingPage extends LitElement {
                 <a class="nav-link" href="#iniciar">Iniciar</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#funcionalidades">Funcionalidades</a>
+                <a class="nav-link" href="#ajuda">Ajuda</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="#ajuda">Ajuda</a>
+                <a class="nav-link" href="#funcionalidades">Funcionalidades</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#contato">Reportar erro</a>
