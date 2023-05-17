@@ -413,7 +413,7 @@ export class EdtLandingPage extends LitElement {
               <img
                 class="py-5"
                 src="./assets/svg/dispositivos.svg"
-                alt="Ilustração com diferentes tipos de dispositivos eletrônicos"
+                alt="Ilustração com os dispositivos eletrônicos: celular, tablet, notebook e computador com um círculo azul no fundo"
               />
             </div>
           </div>
@@ -437,12 +437,21 @@ export class EdtLandingPage extends LitElement {
               </button>
             </div>
             <div class="col-lg-5 py-5 p0-lg-1">
-              <img
-                role="button"
-                @click=${(): void => this.emitirEvento('videos')}
-                class="btn p-0 shadow-lg img-fluid"
-                src="assets/jpg/imagem-editor-celular.jpg"
-              />
+              <div class="overlay-play-button">
+                <img
+                  alt="Imagem de um celular na mão com o editor de emendas aberto com o texto: Editor de Emendas a Medidas Provisórias e um botão de play no centro da imagem"
+                  class="btn p-0 shadow-lg img-fluid"
+                  src="assets/jpg/imagem-editor-celular.jpg"
+                />
+                <span
+                  class="overlay-play-button__overlay"
+                  @click=${(): void => this.emitirEvento('videos')}
+                  rule="button"
+                  title="Clique para abrir os vídeos tutoriais"
+                >
+                  <i class="bi bi-play-btn-fill overlay-play-button__play"></i>
+                </span>
+              </div>
             </div>
           </div>
         </div>

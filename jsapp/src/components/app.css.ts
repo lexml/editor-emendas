@@ -645,37 +645,49 @@ export const landingPageStyles = html`
     rel="stylesheet"
   />
   <style>
+    :root {
+      --edt-opacity-overlay: 0.3;
+      --edt-color-overlay-button: #FFF;
+    }
     edt-cabecalho,
     edt-menu,
     edt-rodape {
       display: none !important;
     }
 
-    .accordion-item {
-      background-color: #fff;
-      border: 0;
+    .overlay-play-button {
+      /* Used to position the overlay */
+      position: relative;
     }
 
-    .accordion-button:not(.collapsed) {
-      background-color: #fff;
-      box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.125);
+    .overlay-play-button__play {
+        font-size: 5rem;
+        opacity: var(--edt-opacity-overlay);
+        color: var(--edt-color-overlay-button);
+        filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+        -webkit-filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+        transition: all 0.1s ease-in-out;
     }
 
-    .accordion-button:not(.collapsed)::after {
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
-      transform: rotate(-180deg);
+    .overlay-play-button__overlay {
+      left: 0;
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      align-items: center;
+      display: flex;
+      justify-content: center;
+      background-color: rgba(0, 0, 0, var(--edt-opacity-overlay)));
+      transition: all 0.1s ease-in-out;
+      cursor: pointer;
     }
 
-    .accordion-button::after {
-      flex-shrink: 0;
-      width: 1.25rem;
-      height: 1.25rem;
-      margin: auto;
-      content: '';
-      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
-      background-repeat: no-repeat;
-      background-size: 1.25rem;
-      transition: transform 0.2s ease-in-out;
+    .overlay-play-button__overlay:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      --edt-opacity-overlay: 0.9;
+      --edt-color-overlay-button: #F00;
+      box-shadow: 0 0 2rem rgba(255, 255, 255, 0.5);
     }
   </style>
 `;
