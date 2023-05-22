@@ -461,7 +461,7 @@ export class EdtLandingPage extends LitElement {
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
-          <div class="row gx-4 gx-lg-5 align-items-end">
+          <div class="row gx-4 gx-lg-5 align-items-start">
             <div class="col-6 col-lg-3 text-center">
               <div class="mt-5">
                 <div class="mb-2"><i class="bi-files fs-1 text-muted"></i></div>
