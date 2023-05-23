@@ -158,8 +158,8 @@ public class EditorApiController {
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
-    	// Retira duplicações
-    	return l.stream().filter(p -> idsDoma.add(p.getIdDocumentoManifestacao()))
+    	// Retira duplicações e MPs anteriores a 2022
+    	return l.stream().filter(p -> idsDoma.add(p.getIdDocumentoManifestacao()) && p.getAno() >= 2022)
     			.collect(Collectors.toList());
 
     }
