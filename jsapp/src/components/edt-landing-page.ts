@@ -624,7 +624,7 @@ export class EdtLandingPage extends LitElement {
                 <div class="mb-2">
                   <i class="bi-eye fs-1 text-primary"></i>
                 </div>
-                <h3 class="h4 mb-2">Visualizar texto da emenda</h3>
+                <h3 class="h4 mb-2">Visualizar emenda</h3>
                 <a
                   href="#"
                   role="button"
