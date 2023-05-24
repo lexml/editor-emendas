@@ -433,7 +433,7 @@ export class EdtLandingPage extends LitElement {
                 class="btn btn-light btn-md rounded-pill px-4"
                 @click=${(): void => this.emitirEvento('videos')}
               >
-                Acessar os vídeos tutorias
+                Acessar os vídeos tutoriais
               </button>
             </div>
             <div class="col-lg-5 py-5 p0-lg-1">
