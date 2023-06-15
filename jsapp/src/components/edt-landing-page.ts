@@ -476,9 +476,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Criar emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/01-criar-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -491,9 +492,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Abrir emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/02-abrir-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -504,11 +506,12 @@ export class EdtLandingPage extends LitElement {
                 <div class="mb-2">
                   <i class="bi-pen fs-1 text-primary"></i>
                 </div>
-                <h3 class="h4 mb-2">Alterações de edição</h3>
+                <h3 class="h4 mb-2">Alertas de edição</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/03-alertas-de-edicao.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -521,9 +524,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Transformar dispositivos</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/04-transformar-dispositivo.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -536,9 +540,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/05-inclusao-de-agrupadores-de-artigo.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -551,9 +556,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Alterar norma vigente</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/06-alterar-norma-vigente.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -566,9 +572,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Justificar a emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/07-justificar-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -581,9 +588,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Informar data e autoria</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/08-informar-data-e-autoria.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -596,9 +604,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Avisos</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/09-avisos.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -611,9 +620,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Comando de emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/10-comando-de-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -626,9 +636,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Visualizar emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/11-visualizar-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>
@@ -641,9 +652,10 @@ export class EdtLandingPage extends LitElement {
                 </div>
                 <h3 class="h4 mb-2">Salvar emenda</h3>
                 <a
-                  href="#"
+                  href="./assets/pdf/12-salvar-emenda.pdf"
                   role="button"
                   class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
+                  target="_blank"
                   >Ver passo a passo</a
                 >
               </div>

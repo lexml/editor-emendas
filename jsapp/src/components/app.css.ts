@@ -690,7 +690,6 @@ export const landingPageStyles = html`
       box-shadow: 0 0 2rem rgba(255, 255, 255, 0.5);
     }
     #funcionalidades a {
-      display:none;
       align-items: center;
     }
   </style>
