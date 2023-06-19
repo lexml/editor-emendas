@@ -70,7 +70,7 @@ export default {
           dest: '../src/main/resources/static'
         },
         {
-          src: ['assets/icons', 'assets/svg', 'assets/jpg', 'assets/img', 'assets/css', 'assets/js-landing-page'],
+          src: ['assets/icons', 'assets/svg', 'assets/jpg', 'assets/img', 'assets/css', 'assets/pdf', 'assets/js-landing-page'],
           dest: '../src/main/resources/static/assets'
         }
       ],
