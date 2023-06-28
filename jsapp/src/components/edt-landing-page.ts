@@ -461,6 +461,10 @@ export class EdtLandingPage extends LitElement {
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
+          <p class="text-center py-0">
+            Selecione os botões a seguir para acessar as instruções passo a
+            passo, disponíveis em formato PDF.
+          </p>
           <div class="row gx-4 gx-lg-5 align-items-start">
             <div class="col-6 col-lg-3 text-center">
               <div>
