@@ -647,7 +647,7 @@ export const landingPageStyles = html`
   <style>
     :root {
       --edt-opacity-overlay: 0.3;
-      --edt-color-overlay-button: #FFF;
+      --edt-color-overlay-button: #fff;
     }
     edt-cabecalho,
     edt-menu,
@@ -661,12 +661,12 @@ export const landingPageStyles = html`
     }
 
     .overlay-play-button__play {
-        font-size: 5rem;
-        opacity: var(--edt-opacity-overlay);
-        color: var(--edt-color-overlay-button);
-        filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
-        -webkit-filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
-        transition: all 0.1s ease-in-out;
+      font-size: 5rem;
+      opacity: var(--edt-opacity-overlay);
+      color: var(--edt-color-overlay-button);
+      filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+      -webkit-filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+      transition: all 0.1s ease-in-out;
     }
 
     .overlay-play-button__overlay {
@@ -678,7 +678,7 @@ export const landingPageStyles = html`
       align-items: center;
       display: flex;
       justify-content: center;
-      background-color: rgba(0, 0, 0, var(--edt-opacity-overlay)));
+      background-color: rgba(0, 0, 0, var(--edt-opacity-overlay));
       transition: all 0.1s ease-in-out;
       cursor: pointer;
     }
@@ -686,11 +686,21 @@ export const landingPageStyles = html`
     .overlay-play-button__overlay:hover {
       background-color: rgba(255, 255, 255, 0.05);
       --edt-opacity-overlay: 0.9;
-      --edt-color-overlay-button: #F00;
+      --edt-color-overlay-button: #f00;
       box-shadow: 0 0 2rem rgba(255, 255, 255, 0.5);
     }
-    #funcionalidades a {
-      align-items: center;
+    .funcionalidades--link {
+      display: block;
+      color: var(--bs-body-color);
+      text-decoration: none;
+      border-radius: 1rem;
+      padding: 2rem 0.5rem;
+      transition: all 0.3s;
+    }
+    .funcionalidades--link:hover,
+    .funcionalidades--link:focus {
+      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
+      color: #f4623a !important;
     }
   </style>
 `;
