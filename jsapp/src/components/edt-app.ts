@@ -40,6 +40,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-onde-couber')
   private modalOndeCouber!: any;
 
+  @query('edt-modal-texto-livre')
+  private modalTextoLivre!: any;
+
   @query('edt-menu')
   private edtMenu!: EdtMenu;
 
@@ -446,6 +449,11 @@ export class EdtApp extends LitElement {
     this.modalOndeCouber.show();
   }
 
+  private novaEmendaTextoLivre(): void {
+    this.fileHandle = undefined;
+    this.modalTextoLivre.show();
+  }
+
   private abrirEmenda(): void {
     this.abrirPdf();
   }
@@ -480,6 +488,8 @@ export class EdtApp extends LitElement {
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
+    } else if (ev.detail.itemMenu === 'texto-livre') {
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaTextoLivre());
     } else if (ev.detail.itemMenu === 'download') {
       this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
@@ -517,6 +527,20 @@ export class EdtApp extends LitElement {
       this.emendaComAlteracoesSalvas = JSON.parse(
         JSON.stringify(this.lexmlEmenda.getEmenda())
       );
+      this.isDirty = false;
+      this.isOpenFile = false;
+      this.wasSaved = false;
+      this.updateStateElements();
+    }, 200);
+  }
+
+  private async criarNovaEmendaTextoLivre(): Promise<void> {
+    this.modo = 'emendaTextoLivre';
+    //this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
+    //this.labelTipoEmenda = 'Emenda padrão';
+    ///await this.loadTextoProposicao(proposicao);
+    this.lexmlEmenda.inicializarEdicao(this.modo);
+    setTimeout(() => {
       this.isDirty = false;
       this.isOpenFile = false;
       this.wasSaved = false;
@@ -672,7 +696,10 @@ export class EdtApp extends LitElement {
             </sl-button>
           </sl-dialog>
         </div>
-        <lexml-emenda @onchange=${this.onChange}></lexml-emenda>
+        <lexml-emenda
+          modo=${this.modo}
+          @onchange=${this.onChange}
+        ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
@@ -690,6 +717,10 @@ export class EdtApp extends LitElement {
           this.criarNovaEmendaPadrao({ ...this.proposicao })}
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
+
+      <edt-modal-texto-livre
+        @nova-emenda-texto-livre=${this.criarNovaEmendaTextoLivre}
+      ></edt-modal-texto-livre>
 
       <edt-modal-confirmacao-salvar
         @confirm-result=${this.processarResultadoConfirmacao}
