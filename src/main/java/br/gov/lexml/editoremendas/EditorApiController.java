@@ -54,6 +54,7 @@ public class EditorApiController {
     
     private final ConversorLexmlJsonix conversorLexmlJsonix;
     private final LandingPageMailService landingPageMailService;
+    private final MotivoEmendaTextoLivreService motivoEmendaTextoLivreService;
     private final ListaParlamentaresService listaParlamentaresService;
     private final AutoCompleteNormaService autoCompleteNormaService;
     
@@ -66,6 +67,7 @@ public class EditorApiController {
             LexmlParser lexmlParser,
             ConversorLexmlJsonix conversorLexmlJsonix,
             LandingPageMailService landingPageMailService,
+            MotivoEmendaTextoLivreService motivoEmendaTextoLivreService,
             ListaParlamentaresService listaParlamentaresService,
             InfoAppService infoAppService,
             AutoCompleteNormaService autoCompleteNormaService) {
@@ -78,6 +80,7 @@ public class EditorApiController {
         this.listaParlamentaresService = listaParlamentaresService;
         this.infoAppService = infoAppService;
         this.autoCompleteNormaService = autoCompleteNormaService;
+        this.motivoEmendaTextoLivreService = motivoEmendaTextoLivreService;
     }
 
     @GetMapping
@@ -202,6 +205,12 @@ public class EditorApiController {
     @PostMapping("contato")
     public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
         landingPageMailService.sendEmail(mensagem);
+        return ResponseEntity.noContent().build();
+    }
+    
+    @PostMapping("/motivo-emenda-texo-livre")
+    public ResponseEntity<Void> emendaTextoLivre (@RequestBody @NotBlank MotivoEmendaTextoLivre body) {
+        motivoEmendaTextoLivreService.sendEmail(body);
         return ResponseEntity.noContent().build();
     }
     
