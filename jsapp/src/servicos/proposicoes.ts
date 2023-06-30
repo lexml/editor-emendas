@@ -64,3 +64,14 @@ export const pesquisarProposicoesEmTramitacao = async (
     }))
     .sort(compareProposicoesDesc);
 };
+
+export const sendEmailMotivoEmendaTextoLivre = (motivo: string): void => {
+  fetch('api/motivo-emenda-texo-livre', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    body: JSON.stringify({ motivo }),
+  });
+};

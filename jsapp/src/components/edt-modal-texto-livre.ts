@@ -28,7 +28,7 @@ export class EdtModalTextoLivre extends LitElement {
     { id: 9, desc: 'Outro motivo:' },
   ];
 
-  private idMotivo = null;
+  private idMotivo = 0;
   private descMotivo = '';
 
   @query('sl-alert')
@@ -54,9 +54,25 @@ export class EdtModalTextoLivre extends LitElement {
     this.alerta.hide();
   }
 
+  private getMotivo(): string {
+    console.log(this.idMotivo);
+
+    const motivo = this.motivos.find(m => m.id === this.idMotivo);
+    console.log(motivo);
+    if (!motivo) {
+      return '';
+    }
+
+    if (this.idMotivo === 9) {
+      return motivo.desc + ' ' + this.descMotivo;
+    }
+    return motivo.desc;
+  }
+
   private emitirEvento(nomeEvento: string): void {
     this.dispatchEvent(
       new CustomEvent(nomeEvento, {
+        detail: { motivo: this.getMotivo() },
         composed: true,
         bubbles: true,
       })
@@ -68,7 +84,7 @@ export class EdtModalTextoLivre extends LitElement {
     this.hideAlerta();
     if (!this.idMotivo) {
       this.showAlerta('Selecione um motivo');
-    } else if (parseInt(this.idMotivo) === 9 && !this.descMotivo) {
+    } else if (this.idMotivo === 9 && !this.descMotivo) {
       this.showAlerta('Especifique o Motivo');
     } else {
       this.emitirEvento('nova-emenda-texto-livre');
@@ -91,7 +107,7 @@ export class EdtModalTextoLivre extends LitElement {
         <sl-radio-group
           id="radioMotivo"
           label="Selecione um motivo"
-          @click=${(e: any) => (this.idMotivo = e.target.value)}
+          @click=${(e: any) => (this.idMotivo = parseInt(e.target.value))}
         >
           ${this.motivos.map(
             m => html`<sl-radio value=${m.id}>${m.desc}</sl-radio>`
@@ -100,10 +116,11 @@ export class EdtModalTextoLivre extends LitElement {
         <br />
         <sl-input
           id="desc-motivo"
-          .value=${this.descMotivo}
           placeholder="Especifique o motivo"
           size="small"
           clearable
+          @sl-input=${(ev: Event): any =>
+            (this.descMotivo = (ev.target as HTMLInputElement).value)}
         ></sl-input>
         <br />
 

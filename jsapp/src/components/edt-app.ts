@@ -15,6 +15,7 @@ import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import {
   getProposicaoJsonix,
   pesquisarProposicoes,
+  sendEmailMotivoEmendaTextoLivre,
 } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
@@ -534,11 +535,9 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
-  private async criarNovaEmendaTextoLivre(): Promise<void> {
+  private async criarNovaEmendaTextoLivre(motivo: string): Promise<void> {
     this.modo = 'emendaTextoLivre';
-    //this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
-    //this.labelTipoEmenda = 'Emenda padrão';
-    ///await this.loadTextoProposicao(proposicao);
+    sendEmailMotivoEmendaTextoLivre(motivo);
     this.lexmlEmenda.inicializarEdicao(this.modo);
     setTimeout(() => {
       this.isDirty = false;
@@ -719,7 +718,8 @@ export class EdtApp extends LitElement {
       ></edt-modal-onde-couber>
 
       <edt-modal-texto-livre
-        @nova-emenda-texto-livre=${this.criarNovaEmendaTextoLivre}
+        @nova-emenda-texto-livre=${(ev: CustomEvent): any =>
+          this.criarNovaEmendaTextoLivre(ev.detail.motivo)}
       ></edt-modal-texto-livre>
 
       <edt-modal-confirmacao-salvar
