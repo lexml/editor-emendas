@@ -655,6 +655,10 @@ export const landingPageStyles = html`
       display: none !important;
     }
 
+    .link-externo {
+      text-decoration: none;
+    }
+
     .overlay-play-button {
       /* Used to position the overlay */
       position: relative;
@@ -701,6 +705,9 @@ export const landingPageStyles = html`
     .funcionalidades--link:focus {
       box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
       color: #f4623a !important;
+    }
+    .js-vlibras {
+      padding: 0 0 0 10px;
     }
   </style>
 `;

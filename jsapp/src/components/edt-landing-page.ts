@@ -282,7 +282,6 @@ export class EdtLandingPage extends LitElement {
   render(): TemplateResult {
     return html`
       ${landingPageStyles}
-
       <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
       <div class="cn-topo">
         <div class="container px-4 px-lg-5">
@@ -300,18 +299,52 @@ export class EdtLandingPage extends LitElement {
                 />
               </a>
             </div>
-            <div class="col-8 text-end">
+            <div class="col-8 text-end links-header">
               <a
                 href="https://www.congressonacional.leg.br/fale-conosco"
-                class="pull-right d-none d-none d-sm-inline px-3"
+                class="pull-right d-none d-sm-inline px-2"
                 >Fale conosco</a
               >
+              <span class="d-none d-sm-inline">|</span>
+              <a
+                href="https://www12.senado.leg.br/hpsenado"
+                class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
+                  alt="Senado"
+                  title="Senado"
+                /> </a
+              ><a
+                href="https://www.camara.leg.br/"
+                class="pull-right d-none d-sm-inline px-1 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
+                  alt="Câmara"
+                  title="Câmara"
+                /> </a
+              ><a
+                href="https://portal.tcu.gov.br/inicio/index.htm"
+                class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg"
+                  alt="TCU"
+                  title="TCU"
+                />
+              </a>
+              <span class="d-none d-sm-inline">|</span>
               <a href="#" id="link_vlibras" class="js-vlibras">
                 <img
                   src="./assets/img/icon_libras.png"
                   th:src="@{/img/icon_libras.png}"
                   class="img_libras"
                   alt="Libras"
+                  title="Libras"
                 />
               </a>
             </div>
