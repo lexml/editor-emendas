@@ -655,8 +655,13 @@ export const landingPageStyles = html`
       display: none !important;
     }
 
-    .link-externo {
+    .links-header .link-externo {
+      color: #fff;
       text-decoration: none;
+    }
+
+    .links-header .link-externo:nth-child(1):hover {
+      text-decoration: underline;
     }
 
     .overlay-play-button {
