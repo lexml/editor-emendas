@@ -693,6 +693,7 @@ export const landingPageStyles = html`
       --edt-color-overlay-button: #f00;
       box-shadow: 0 0 2rem rgba(255, 255, 255, 0.5);
     }
+
     .funcionalidades--link {
       display: block;
       color: var(--bs-body-color);
@@ -701,11 +702,23 @@ export const landingPageStyles = html`
       padding: 2rem 0.5rem;
       transition: all 0.3s;
     }
-    .funcionalidades--link:hover,
-    .funcionalidades--link:focus {
-      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
-      color: #f4623a !important;
+
+    .funcionalidades--link:visited {
+      color: var(--sl-color-gray-400);
     }
+
+    .funcionalidades--link:hover {
+      color: #f4623a;
+      outline: 1px solid var(--sl-color-gray-300);
+      box-shadow: var(--sl-shadow-x-large);
+    }
+
+    .funcionalidades--link:active {
+      color: #f4623a;
+      outline: 1px solid var(--sl-color-blue-900);
+      box-shadow: none;
+    }
+
     .js-vlibras {
       padding: 0 0 0 10px;
     }

@@ -302,7 +302,7 @@ export class EdtLandingPage extends LitElement {
             <div class="col-8 text-end links-header">
               <a
                 href="https://www.congressonacional.leg.br/fale-conosco"
-                class="pull-right d-none d-sm-inline px-2"
+                class="pull-right d-none d-sm-inline px-2 link-externo"
                 >Fale conosco</a
               >
               <span class="d-none d-sm-inline">|</span>
@@ -315,8 +315,9 @@ export class EdtLandingPage extends LitElement {
                   src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
                   alt="Senado"
                   title="Senado"
-                /> </a
-              ><a
+                />
+              </a>
+              <a
                 href="https://www.camara.leg.br/"
                 class="pull-right d-none d-sm-inline px-1 link-externo"
                 target="_blank"
@@ -325,8 +326,9 @@ export class EdtLandingPage extends LitElement {
                   src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
                   alt="Câmara"
                   title="Câmara"
-                /> </a
-              ><a
+                />
+              </a>
+              <a
                 href="https://portal.tcu.gov.br/inicio/index.htm"
                 class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo"
                 target="_blank"
@@ -498,7 +500,7 @@ export class EdtLandingPage extends LitElement {
             Selecione os botões a seguir para acessar as instruções passo a
             passo, disponíveis em formato PDF.
           </p>
-          <div class="row gx-4 gx-lg-5 align-items-start">
+          <div class="row gy-2 gx-4 gx-lg-5 align-items-start">
             <div class="col-6 col-lg-3 text-center">
               <div>
                 <div class="mb-2"><i class="bi-files fs-1 text-muted"></i></div>
@@ -511,6 +513,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/01-criar-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -525,6 +528,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/02-abrir-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -539,6 +543,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/03-alertas-de-edicao.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -553,6 +558,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/04-transformar-dispositivo.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -567,6 +573,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/05-inclusao-de-agrupadores-de-artigo.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -581,6 +588,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/06-alterar-norma-vigente.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -595,6 +603,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/07-justificar-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -609,6 +618,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/08-informar-data-e-autoria.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -623,6 +633,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/09-avisos.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -637,6 +648,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/10-comando-de-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -651,6 +663,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/11-visualizar-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
@@ -665,6 +678,7 @@ export class EdtLandingPage extends LitElement {
                 href="./assets/pdf/12-salvar-emenda.pdf"
                 role="button"
                 class="funcionalidades--link"
+                onclick="this.blur();"
                 target="_blank"
               >
                 <div class="mb-2">
