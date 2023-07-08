@@ -60,6 +60,8 @@ export class EdtApp extends LitElement {
   @state()
   private modo = 'emenda';
 
+  private motivo = '';
+
   @state()
   private proposicao: Proposicao = {};
 
@@ -519,27 +521,37 @@ export class EdtApp extends LitElement {
   }
 
   private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
-    this.modo = 'emenda';
+    this.criarNovaEmenda(proposicao, 'emenda');
+  }
+
+  private async criarNovaEmendaTextoLivre(
+    proposicao: Proposicao,
+    motivo: string
+  ): Promise<void> {
+    this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
+  }
+
+  private async criarNovaEmenda(
+    proposicao: Proposicao,
+    modo: string,
+    motivo = ''
+  ): Promise<void> {
+    this.modo = modo;
+    this.motivo = motivo;
     this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
-    this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
+
+    this.lexmlEmenda.inicializarEdicao(
+      this.modo,
+      this.jsonixProposicao,
+      null,
+      this.motivo
+    );
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(
         JSON.stringify(this.lexmlEmenda.getEmenda())
       );
-      this.isDirty = false;
-      this.isOpenFile = false;
-      this.wasSaved = false;
-      this.updateStateElements();
-    }, 200);
-  }
-
-  private async criarNovaEmendaTextoLivre(motivo: string): Promise<void> {
-    this.modo = 'emendaTextoLivre';
-    sendEmailMotivoEmendaTextoLivre(motivo);
-    this.lexmlEmenda.inicializarEdicao(this.modo);
-    setTimeout(() => {
       this.isDirty = false;
       this.isOpenFile = false;
       this.wasSaved = false;
@@ -719,7 +731,10 @@ export class EdtApp extends LitElement {
 
       <edt-modal-texto-livre
         @nova-emenda-texto-livre=${(ev: CustomEvent): any =>
-          this.criarNovaEmendaTextoLivre(ev.detail.motivo)}
+          this.criarNovaEmendaTextoLivre(
+            { ...this.proposicao },
+            ev.detail.motivo
+          )}
       ></edt-modal-texto-livre>
 
       <edt-modal-confirmacao-salvar

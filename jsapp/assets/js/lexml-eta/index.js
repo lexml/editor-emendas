@@ -44573,8 +44573,6 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
             }
         };
         this.setContent = (texto) => {
-            var _a;
-            console.log('setContent', texto, this.quill, (_a = this.quill) === null || _a === void 0 ? void 0 : _a.root);
             if (!this.quill || !this.quill.root) {
                 return;
             }
@@ -45168,6 +45166,7 @@ class Emenda {
         this.epigrafe = new Epigrafe();
         this.componentes = [new ComponenteEmendado()];
         this.comandoEmenda = new ComandoEmenda();
+        this.comandoEmendaTextoLivre = new ComandoEmendaTextoLivre();
         this.justificativa = '';
         this.local = '';
         this.data = new Date().toISOString().replace(/T.*/, ''); // formato “YYYY-MM-DD”
@@ -45238,6 +45237,8 @@ class ComandoEmenda {
     constructor() {
         this.comandos = [];
     }
+}
+class ComandoEmendaTextoLivre {
 }
 class ItemComandoEmenda {
     constructor(cabecalho, citacao) {
@@ -50990,6 +50991,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.exibirAjuda = true;
         this.parlamentares = [];
         this.modo = ClassificacaoDocumento.EMENDA;
+        this.motivo = '';
         this.projetoNorma = {};
         this.autoria = new Autoria();
         this.MOBILE_WIDTH = 768;
@@ -51057,6 +51059,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
         }
+        else {
+            emenda.comandoEmendaTextoLivre.motivo = this.motivo;
+            emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
+        }
         emenda.justificativa = this._lexmlJustificativa.texto;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
@@ -51068,19 +51074,22 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
         return emenda;
     }
-    inicializarEdicao(modo, projetoNorma, emenda) {
-        console.log('modo', modo);
+    inicializarEdicao(modo, projetoNorma, emenda, motivo = '') {
         this._lexmlEmendaComando.emenda = [];
         this.modo = modo;
         this.projetoNorma = projetoNorma;
+        this.motivo = motivo;
         if (this.modo !== 'emendaTextoLivre') {
             this._lexmlEta.setProjetoNorma(modo, projetoNorma, !!emenda);
-            if (emenda) {
-                this.setEmenda(emenda);
-            }
-            else {
-                this.resetaEmenda(modo);
-            }
+        }
+        if (emenda) {
+            this.setEmenda(emenda);
+        }
+        else {
+            this.resetaEmenda(modo);
+        }
+        if (this.modo === 'emendaTextoLivre' && !this._lexmlEmendaTextoRico.texto) {
+            this.showAlertaEmendaTextoLivre();
         }
         setTimeout(this.handleResize, 0);
     }
@@ -51091,6 +51100,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
         this._lexmlJustificativa.setContent(emenda.justificativa);
+        this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
         this._lexmlData.data = emenda.data;
     }
     resetaEmenda(modoEdicao = ModoEdicaoEmenda.EMENDA) {
@@ -51209,6 +51219,23 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
             }
         }
+        else if (this.modo === 'emendaTextoLivre') {
+            if (!this._lexmlEmendaTextoRico.texto) {
+                this.showAlertaEmendaTextoLivre();
+            }
+            else {
+                rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
+            }
+        }
+    }
+    showAlertaEmendaTextoLivre() {
+        const alerta = {
+            id: 'alerta-global-emenda-texto-livre',
+            tipo: 'error',
+            mensagem: 'O comando de emenda deve ser preenchido.',
+            podeFechar: false,
+        };
+        rootStore.dispatch(adicionarAlerta$1(alerta));
     }
     render() {
         return $ `
@@ -51342,13 +51369,19 @@ __decorate([
     e$3({ type: String })
 ], LexmlEmendaComponent.prototype, "modo", void 0);
 __decorate([
+    e$3({ type: String })
+], LexmlEmendaComponent.prototype, "motivo", void 0);
+__decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "autoria", void 0);
 __decorate([
     i$1('lexml-eta')
 ], LexmlEmendaComponent.prototype, "_lexmlEta", void 0);
 __decorate([
-    i$1('editor-texto-rico')
+    i$1('#editor-texto-rico-emenda')
+], LexmlEmendaComponent.prototype, "_lexmlEmendaTextoRico", void 0);
+__decorate([
+    i$1('#editor-texto-rico-justificativa')
 ], LexmlEmendaComponent.prototype, "_lexmlJustificativa", void 0);
 __decorate([
     i$1('lexml-autoria')
