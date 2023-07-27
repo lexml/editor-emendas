@@ -240,7 +240,6 @@ export class EdtLandingPage extends LitElement {
   }
 
   private emitirEvento(botaoNotasVersao: string): void {
-    console.log('emitirEvento', botaoNotasVersao);
     this.dispatchEvent(
       new CustomEvent('botao-selecionado', {
         detail: { botaoNotasVersao },

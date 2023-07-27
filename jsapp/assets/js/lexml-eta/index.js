@@ -44631,10 +44631,10 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
     render() {
         return $ `
       <style>
-        #editor-texto-rico {
+        .editor-texto-rico {
           height: 375px;
         }
-        #editor-texto-rico p:not(.ql-align-rigth, .ql-align-center) {
+        .editor-texto-rico p:not(.ql-align-rigth, .ql-align-center) {
           text-indent: 3em;
         }
         .ql-toolbar.ql-snow .ql-formats {
@@ -44674,7 +44674,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
           <button type="button" class="ql-clean" title="Limpar formatação"></button>
         </span>
       </div>
-      <div id="${this.id}-inner"></div>
+      <div id="${this.id}-inner" class="editor-texto-rico"></div>
     `;
     }
     firstUpdated() {
@@ -51100,7 +51100,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
         this._lexmlJustificativa.setContent(emenda.justificativa);
-        this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
+        if (this._lexmlEmendaTextoRico) {
+            this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
+        }
         this._lexmlData.data = emenda.data;
     }
     resetaEmenda(modoEdicao = ModoEdicaoEmenda.EMENDA) {
@@ -51304,7 +51306,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
               <div class="badge-pulse" id="contadorAvisos">${this.totalAlertas > 0 ? $ ` <sl-badge variant="danger" pill pulse>${this.totalAlertas}</sl-badge> ` : ''}</div>
             </sl-tab>
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
-              ${this.modo !== 'emendaTextoLivre'
+              ${this.modo && this.modo !== 'emendaTextoLivre'
             ? $ `<lexml-eta id="lexmlEta" @onchange=${this.onChange}></lexml-eta>`
             : $ `<editor-texto-rico id="editor-texto-rico-emenda" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>`}
             </sl-tab-panel>

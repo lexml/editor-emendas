@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
-import { customElement, query } from 'lit/decorators.js';
+import { customElement, query, queryAll } from 'lit/decorators.js';
 import { ondeCouberStyles } from './app.css';
+
 @customElement('edt-modal-texto-livre')
 export class EdtModalTextoLivre extends LitElement {
   private motivos = [
@@ -31,21 +32,29 @@ export class EdtModalTextoLivre extends LitElement {
   private idMotivo = 0;
   private descMotivo = '';
 
+  @query('#desc-motivo')
+  private inputMotivo!: HTMLInputElement;
+
   @query('sl-alert')
   private alerta!: any;
 
   @query('sl-dialog')
   private slDialog!: any;
 
-  @query('#radioMotivo')
-  private radioMotivo!: any;
+  @queryAll('#radioMotivo sl-radio')
+  private radioMotivo!: HTMLInputElement[];
 
   public show(): void {
+    this.hideAlerta();
+    this.idMotivo = 0;
+    this.descMotivo = '';
+    this.inputMotivo.value = '';
+    this.radioMotivo.forEach((r: HTMLInputElement) => (r.checked = false));
     this.slDialog.show();
   }
 
   private showAlerta(mensagem: string): void {
-    const span = this.alerta.getElementsByTagName('span')[0];
+    const span = this.alerta.getElementsByTagName('strong')[0];
     span.textContent = mensagem;
     this.alerta.show();
   }
@@ -55,10 +64,7 @@ export class EdtModalTextoLivre extends LitElement {
   }
 
   private getMotivo(): string {
-    console.log(this.idMotivo);
-
     const motivo = this.motivos.find(m => m.id === this.idMotivo);
-    console.log(motivo);
     if (!motivo) {
       return '';
     }
@@ -97,13 +103,12 @@ export class EdtModalTextoLivre extends LitElement {
     return html`
       ${ondeCouberStyles}
       <sl-dialog label=${tituloModal}>
-        <span>
+        <p>
           A emenda de texto livre deve ser utilizada apenas quando não for
           possível fazer a emenda no formato padrão do editor ou como emenda de
           dispositivo onde couber.
-        </span>
-        <br />
-        <br />
+        </p>
+        <p>Selecione o motivo da opção pela emenda de texto livre:</p>
         <sl-radio-group
           id="radioMotivo"
           label="Selecione um motivo"
@@ -119,6 +124,7 @@ export class EdtModalTextoLivre extends LitElement {
           placeholder="Especifique o motivo"
           size="small"
           clearable
+          .value=${this.descMotivo}
           @sl-input=${(ev: Event): any =>
             (this.descMotivo = (ev.target as HTMLInputElement).value)}
         ></sl-input>
@@ -126,8 +132,7 @@ export class EdtModalTextoLivre extends LitElement {
 
         <sl-alert variant="warning" closable class="alert-closable">
           <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
-          <strong>Dados inválidos.</strong><br />
-          <span>Revise os dados informados.</span>
+          <strong>Revise os dados informados.</strong>
         </sl-alert>
 
         <sl-button slot="footer" variant="default" @click=${this.continuar}
