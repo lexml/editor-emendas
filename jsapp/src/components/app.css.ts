@@ -155,7 +155,7 @@ export const appStyles = html`
 export const cabecalhoStyles = html`
   <style>
     edt-cabecalho {
-      display: block;
+      display: flex;
       padding: 10px;
       background-color: #3b5998;
     }
@@ -171,6 +171,11 @@ export const cabecalhoStyles = html`
     edt-cabecalho a {
       color: white;
       text-decoration: none;
+    }
+
+    edt-cabecalho .titulo-editor {
+      flex-grow: 1;
+      color: white;
     }
   </style>
 `;
@@ -784,3 +789,5 @@ export const ajudaStyles = html`
     }
   </style>
 `;
+
+export const usuarioStyles = html`<style></style>`;

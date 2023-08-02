@@ -19,11 +19,18 @@ import {
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
+import { Usuario } from '../model/usuario';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   private tituloEmenda = '';
   private labelTipoEmenda = '';
+
+  @state()
+  private usuario: Usuario = {
+    nome: 'Anônimo',
+    sigla: undefined,
+  };
 
   @state()
   private versao = '---';
@@ -48,6 +55,9 @@ export class EdtApp extends LitElement {
 
   @query('edt-modal-ajuda')
   private modalAjuda!: any;
+
+  @query('edt-modal-usuario')
+  private modalUsuario!: any;
 
   private jsonixProposicao: any = {};
 
@@ -587,6 +597,16 @@ export class EdtApp extends LitElement {
     return _isDirty;
   }
 
+  private informarUsuario(): void {
+    this.modalUsuario.usuario = this.usuario;
+    this.modalUsuario.show();
+  }
+
+  private atualizarUsuario(usuario: Usuario): void {
+    this.usuario = usuario;
+    this.lexmlEmenda.setUsuario(usuario);
+  }
+
   private renderEditorEmenda(): TemplateResult {
     return html`
       ${appStyles}
@@ -694,6 +714,11 @@ export class EdtApp extends LitElement {
       <edt-modal-confirmacao-salvar
         @confirm-result=${this.processarResultadoConfirmacao}
       ></edt-modal-confirmacao-salvar>
+
+      <edt-modal-usuario
+        @atualizar-usuario=${(ev: CustomEvent): any =>
+          this.atualizarUsuario(ev.detail.usuario)}
+      ></edt-modal-usuario>
     `;
   }
 
@@ -705,7 +730,10 @@ export class EdtApp extends LitElement {
       document.body.classList.remove('no-scroll');
     }
     return html`
-      <edt-cabecalho></edt-cabecalho>
+      <edt-cabecalho
+        .usuario=${this.usuario}
+        @informar-usuario=${this.informarUsuario}
+      ></edt-cabecalho>
       <edt-menu
         .proposicao=${this.proposicao}
         @item-selecionado=${this.onItemMenuSelecionado}
