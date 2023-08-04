@@ -30,12 +30,14 @@ export class EdtCabecalho extends LitElement {
 
       <div class="usuario-editor">
         <sl-button
-          title="Informar usuário"
+          class="usuario"
+          title="Informar o nome do usuário e sigla"
           size="small"
           @click=${(): void => this.emitirEvento('informar-usuario')}
         >
-          <sl-icon slot="prefix" size="small" name="eye"></sl-icon>
-          ${this.usuario?.nome || 'Usuário'}
+          <sl-icon slot="prefix" size="small" name="person-circle"></sl-icon>
+
+          ${this.usuario?.nome.split(' ')[0] || 'Usuário'}
         </sl-button>
       </div>
     `;

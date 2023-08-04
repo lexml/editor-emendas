@@ -48,7 +48,7 @@ export class EdtModalUsuario extends LitElement {
   }
 
   render(): TemplateResult {
-    const tituloModal = 'Usuário';
+    const tituloModal = 'Informar nome e sigla do usuário';
 
     return html`
       ${usuarioStyles}
@@ -57,13 +57,14 @@ export class EdtModalUsuario extends LitElement {
           <sl-input
             id="nomeUsuario"
             label="Nome"
+            autofocus
             @sl-input=${(ev: Event): any =>
               (this.btnSalvar.disabled = !(ev.target as HTMLInputElement)
                 .value)}
             required
           ></sl-input>
         </div>
-
+        <br />
         <div>
           <sl-input id="siglaUsuario" label="Sigla"></sl-input>
         </div>

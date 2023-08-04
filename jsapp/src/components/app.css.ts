@@ -156,6 +156,7 @@ export const cabecalhoStyles = html`
   <style>
     edt-cabecalho {
       display: flex;
+      flex-direction: row;
       padding: 10px;
       background-color: #3b5998;
     }
@@ -167,6 +168,8 @@ export const cabecalhoStyles = html`
       margin-inline-start: 0;
       margin-inline-end: 0;
       font-weight: bold;
+      max-width: max-content;
+      width: 100%;
     }
     edt-cabecalho a {
       color: white;
@@ -175,7 +178,43 @@ export const cabecalhoStyles = html`
 
     edt-cabecalho .titulo-editor {
       flex-grow: 1;
+      display: flex;
       color: white;
+      overflow: hidden;
+      white-space: nowrap;
+      align-items: center;
+    }
+    #titulo {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    sl-button.usuario {
+      margin-left: 1rem;
+    }
+
+    sl-button.usuario::part(base) {
+      /* Set design tokens for height and border width */
+      --sl-input-height-medium: 48px;
+      --sl-input-border-width: 0px;
+      color: white;
+      font-size: 0.8em;
+      border-radius: 50px;
+      background: linear-gradient(145deg, #355089, #3f5fa3);
+      box-shadow: 0 -2px 10px rgb(96 131 204), 0 2px 4px rgb(25 47 91);
+    }
+
+    sl-button.usuario::part(base):hover {
+      transform: scale(1.05);
+    }
+
+    sl-button.usuario::part(base):active {
+    }
+
+    sl-button.usuario::part(base):focus-visible {
+      box-shadow: 0 0 0 3px var(--sl-color-primary-500);
     }
   </style>
 `;
