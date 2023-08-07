@@ -155,7 +155,8 @@ export const appStyles = html`
 export const cabecalhoStyles = html`
   <style>
     edt-cabecalho {
-      display: block;
+      display: flex;
+      flex-direction: row;
       padding: 10px;
       background-color: #3b5998;
     }
@@ -167,10 +168,53 @@ export const cabecalhoStyles = html`
       margin-inline-start: 0;
       margin-inline-end: 0;
       font-weight: bold;
+      max-width: max-content;
+      width: 100%;
     }
     edt-cabecalho a {
       color: white;
       text-decoration: none;
+    }
+
+    edt-cabecalho .titulo-editor {
+      flex-grow: 1;
+      display: flex;
+      color: white;
+      overflow: hidden;
+      white-space: nowrap;
+      align-items: center;
+    }
+    #titulo {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    sl-button.usuario {
+      margin-left: 1rem;
+    }
+
+    sl-button.usuario::part(base) {
+      /* Set design tokens for height and border width */
+      --sl-input-height-medium: 48px;
+      --sl-input-border-width: 0px;
+      color: white;
+      font-size: 0.8em;
+      border-radius: 50px;
+      background: linear-gradient(145deg, #355089, #3f5fa3);
+      box-shadow: 0 -2px 10px rgb(96 131 204), 0 2px 4px rgb(25 47 91);
+    }
+
+    sl-button.usuario::part(base):hover {
+      transform: scale(1.05);
+    }
+
+    sl-button.usuario::part(base):active {
+    }
+
+    sl-button.usuario::part(base):focus-visible {
+      box-shadow: 0 0 0 3px var(--sl-color-primary-500);
     }
   </style>
 `;
@@ -647,12 +691,21 @@ export const landingPageStyles = html`
   <style>
     :root {
       --edt-opacity-overlay: 0.3;
-      --edt-color-overlay-button: #FFF;
+      --edt-color-overlay-button: #fff;
     }
     edt-cabecalho,
     edt-menu,
     edt-rodape {
       display: none !important;
+    }
+
+    .links-header .link-externo {
+      color: #fff;
+      text-decoration: none;
+    }
+
+    .links-header .link-externo:nth-child(1):hover {
+      text-decoration: underline;
     }
 
     .overlay-play-button {
@@ -661,12 +714,12 @@ export const landingPageStyles = html`
     }
 
     .overlay-play-button__play {
-        font-size: 5rem;
-        opacity: var(--edt-opacity-overlay);
-        color: var(--edt-color-overlay-button);
-        filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
-        -webkit-filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
-        transition: all 0.1s ease-in-out;
+      font-size: 5rem;
+      opacity: var(--edt-opacity-overlay);
+      color: var(--edt-color-overlay-button);
+      filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+      -webkit-filter: drop-shadow(0 0 0.75rem rgba(0, 0, 0, 0.5));
+      transition: all 0.1s ease-in-out;
     }
 
     .overlay-play-button__overlay {
@@ -678,7 +731,7 @@ export const landingPageStyles = html`
       align-items: center;
       display: flex;
       justify-content: center;
-      background-color: rgba(0, 0, 0, var(--edt-opacity-overlay)));
+      background-color: rgba(0, 0, 0, var(--edt-opacity-overlay));
       transition: all 0.1s ease-in-out;
       cursor: pointer;
     }
@@ -686,11 +739,37 @@ export const landingPageStyles = html`
     .overlay-play-button__overlay:hover {
       background-color: rgba(255, 255, 255, 0.05);
       --edt-opacity-overlay: 0.9;
-      --edt-color-overlay-button: #F00;
+      --edt-color-overlay-button: #f00;
       box-shadow: 0 0 2rem rgba(255, 255, 255, 0.5);
     }
-    #funcionalidades a {
-      align-items: center;
+
+    .funcionalidades--link {
+      display: block;
+      color: var(--bs-body-color);
+      text-decoration: none;
+      border-radius: 1rem;
+      padding: 2rem 0.5rem;
+      transition: all 0.3s;
+    }
+
+    .funcionalidades--link:visited {
+      color: var(--sl-color-gray-400);
+    }
+
+    .funcionalidades--link:hover {
+      color: #f4623a;
+      outline: 1px solid var(--sl-color-gray-300);
+      box-shadow: var(--sl-shadow-x-large);
+    }
+
+    .funcionalidades--link:active {
+      color: #f4623a;
+      outline: 1px solid var(--sl-color-blue-900);
+      box-shadow: none;
+    }
+
+    .js-vlibras {
+      padding: 0 0 0 10px;
     }
   </style>
 `;
@@ -749,3 +828,5 @@ export const ajudaStyles = html`
     }
   </style>
 `;
+
+export const usuarioStyles = html`<style></style>`;

@@ -18,6 +18,10 @@ const videos: Array<Video> = [
   new Video('Dispositivos subordinados', 'LXHlHaMvV-0'),
   new Video('Dispositivo à norma', 'M8KZ_3zr28c'),
   new Video('Dispositivo da norma vigente', 'NOyXN08NG_M'),
+  new Video(
+    'Copiar e colar dispositivos existentes - Introdução',
+    'tP8zgonhQtk'
+  ),
 ];
 
 @customElement('edt-modal-ajuda')

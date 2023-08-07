@@ -14,5 +14,6 @@ import './components/edt-modal-onde-couber';
 import './components/edt-modal-texto-livre';
 import './components/edt-modal-confirmacao-salvar';
 import './components/edt-modal-ajuda';
+import './components/edt-modal-usuario';
 
 export { EdtApp } from './components/edt-app';

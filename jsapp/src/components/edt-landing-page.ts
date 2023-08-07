@@ -281,7 +281,6 @@ export class EdtLandingPage extends LitElement {
   render(): TemplateResult {
     return html`
       ${landingPageStyles}
-
       <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
       <div class="cn-topo">
         <div class="container px-4 px-lg-5">
@@ -299,18 +298,54 @@ export class EdtLandingPage extends LitElement {
                 />
               </a>
             </div>
-            <div class="col-8 text-end">
+            <div class="col-8 text-end links-header">
               <a
                 href="https://www.congressonacional.leg.br/fale-conosco"
-                class="pull-right d-none d-none d-sm-inline px-3"
+                class="pull-right d-none d-sm-inline px-2 link-externo"
                 >Fale conosco</a
               >
+              <span class="d-none d-sm-inline">|</span>
+              <a
+                href="https://www12.senado.leg.br/hpsenado"
+                class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
+                  alt="Senado"
+                  title="Senado"
+                />
+              </a>
+              <a
+                href="https://www.camara.leg.br/"
+                class="pull-right d-none d-sm-inline px-1 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
+                  alt="Câmara"
+                  title="Câmara"
+                />
+              </a>
+              <a
+                href="https://portal.tcu.gov.br/inicio/index.htm"
+                class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo"
+                target="_blank"
+              >
+                <img
+                  src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg"
+                  alt="TCU"
+                  title="TCU"
+                />
+              </a>
+              <span class="d-none d-sm-inline">|</span>
               <a href="#" id="link_vlibras" class="js-vlibras">
                 <img
                   src="./assets/img/icon_libras.png"
                   th:src="@{/img/icon_libras.png}"
                   class="img_libras"
                   alt="Libras"
+                  title="Libras"
                 />
               </a>
             </div>
@@ -460,204 +495,196 @@ export class EdtLandingPage extends LitElement {
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
-          <div class="row gx-4 gx-lg-5 align-items-start">
+          <p class="text-center py-0">
+            Selecione os botões a seguir para acessar as instruções passo a
+            passo, disponíveis em formato PDF.
+          </p>
+          <div class="row gy-2 gx-4 gx-lg-5 align-items-start">
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <div>
                 <div class="mb-2"><i class="bi-files fs-1 text-muted"></i></div>
                 <h3 class="h4 mb-2 text-muted">Emenda a anexos</h3>
                 <span class="badge bg-success">Em breve</span>
               </div>
             </div>
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/01-criar-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Criar emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Criar emenda</h3>
-                <a
-                  href="./assets/pdf/01-criar-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/02-abrir-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-folder fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Abrir emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Abrir emenda</h3>
-                <a
-                  href="./assets/pdf/02-abrir-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/03-alertas-de-edicao.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-pen fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Alertas de edição</h3>
                 </div>
-                <h3 class="h4 mb-2">Alertas de edição</h3>
-                <a
-                  href="./assets/pdf/03-alertas-de-edicao.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/04-transformar-dispositivo.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-list-nested fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Transformar dispositivos</h3>
                 </div>
-                <h3 class="h4 mb-2">Transformar dispositivos</h3>
-                <a
-                  href="./assets/pdf/04-transformar-dispositivo.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/05-inclusao-de-agrupadores-de-artigo.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
-                  <i class="bi-collection fs-1"></i>
+                  <i class="bi-collection fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
                 </div>
-                <h3 class="h4 mb-2">Inclusão de agrupadores de artigo</h3>
-                <a
-                  href="./assets/pdf/05-inclusao-de-agrupadores-de-artigo.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/06-alterar-norma-vigente.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-file-earmark-ruled fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Alterar norma vigente</h3>
                 </div>
-                <h3 class="h4 mb-2">Alterar norma vigente</h3>
-                <a
-                  href="./assets/pdf/06-alterar-norma-vigente.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/07-justificar-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-justify fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Justificar a emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Justificar a emenda</h3>
-                <a
-                  href="./assets/pdf/07-justificar-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/08-informar-data-e-autoria.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-person fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Informar data e autoria</h3>
                 </div>
-                <h3 class="h4 mb-2">Informar data e autoria</h3>
-                <a
-                  href="./assets/pdf/08-informar-data-e-autoria.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/09-avisos.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-exclamation-diamond   fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Avisos</h3>
                 </div>
-                <h3 class="h4 mb-2">Avisos</h3>
-                <a
-                  href="./assets/pdf/09-avisos.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/10-comando-de-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-code fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Comando de emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Comando de emenda</h3>
-                <a
-                  href="./assets/pdf/10-comando-de-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/11-visualizar-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-eye fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Visualizar emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Visualizar emenda</h3>
-                <a
-                  href="./assets/pdf/11-visualizar-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <div class="mt-5">
+              <a
+                href="./assets/pdf/12-salvar-emenda.pdf"
+                role="button"
+                class="funcionalidades--link"
+                onclick="this.blur();"
+                target="_blank"
+              >
                 <div class="mb-2">
                   <i class="bi-file-pdf fs-1 text-primary"></i>
+                  <h3 class="h4 mb-2">Salvar emenda</h3>
                 </div>
-                <h3 class="h4 mb-2">Salvar emenda</h3>
-                <a
-                  href="./assets/pdf/12-salvar-emenda.pdf"
-                  role="button"
-                  class="btn btn-primary btn-sm rounded-pill px-4 align-bottom"
-                  target="_blank"
-                  >Ver passo a passo</a
-                >
-              </div>
+              </a>
             </div>
           </div>
         </div>

@@ -25090,6 +25090,16 @@ function animateTo(el, keyframes, options) {
     animation.addEventListener("finish", resolve, { once: true });
   });
 }
+function parseDuration(delay) {
+  delay = delay.toString().toLowerCase();
+  if (delay.indexOf("ms") > -1) {
+    return parseFloat(delay);
+  }
+  if (delay.indexOf("s") > -1) {
+    return parseFloat(delay) * 1e3;
+  }
+  return parseFloat(delay);
+}
 function prefersReducedMotion() {
   const query = window.matchMedia("(prefers-reduced-motion: reduce)");
   return query.matches;
@@ -27013,6 +27023,51 @@ var max = Math.max;
 function within(min$1, value, max$1) {
   return max(min$1, min(value, max$1));
 }
+var arrow = (options) => ({
+  name: "arrow",
+  options,
+  async fn(middlewareArguments) {
+    const {
+      element,
+      padding = 0
+    } = options != null ? options : {};
+    const {
+      x,
+      y,
+      placement,
+      rects,
+      platform: platform2
+    } = middlewareArguments;
+    if (element == null) {
+      return {};
+    }
+    const paddingObject = getSideObjectFromPadding(padding);
+    const coords = {
+      x,
+      y
+    };
+    const axis = getMainAxisFromPlacement(placement);
+    const length = getLengthFromAxis(axis);
+    const arrowDimensions = await platform2.getDimensions(element);
+    const minProp = axis === "y" ? "top" : "left";
+    const maxProp = axis === "y" ? "bottom" : "right";
+    const endDiff = rects.reference[length] + rects.reference[axis] - coords[axis] - rects.floating[length];
+    const startDiff = coords[axis] - rects.reference[axis];
+    const arrowOffsetParent = await (platform2.getOffsetParent == null ? void 0 : platform2.getOffsetParent(element));
+    const clientSize = arrowOffsetParent ? axis === "y" ? arrowOffsetParent.clientHeight || 0 : arrowOffsetParent.clientWidth || 0 : 0;
+    const centerToReference = endDiff / 2 - startDiff / 2;
+    const min3 = paddingObject[minProp];
+    const max3 = clientSize - arrowDimensions[length] - paddingObject[maxProp];
+    const center = clientSize / 2 - arrowDimensions[length] / 2 + centerToReference;
+    const offset2 = within(min3, center, max3);
+    return {
+      data: {
+        [axis]: offset2,
+        centerOffset: center - offset2
+      }
+    };
+  }
+});
 var hash$1 = {
   left: "right",
   right: "left",
@@ -29442,6 +29497,616 @@ SlCheckbox = __decorateClass([
   n$6("sl-checkbox")
 ], SlCheckbox);
 
+// src/components/switch/switch.styles.ts
+var switch_styles_default = r$5`
+  ${component_styles_default}
+
+  :host {
+    --height: var(--sl-toggle-size);
+    --thumb-size: calc(var(--sl-toggle-size) + 4px);
+    --width: calc(var(--height) * 2);
+
+    display: inline-block;
+  }
+
+  .switch {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--sl-input-font-family);
+    font-size: var(--sl-input-font-size-medium);
+    font-weight: var(--sl-input-font-weight);
+    color: var(--sl-input-color);
+    vertical-align: middle;
+    cursor: pointer;
+  }
+
+  .switch__control {
+    flex: 0 0 auto;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--width);
+    height: var(--height);
+    background-color: var(--sl-color-neutral-400);
+    border: solid var(--sl-input-border-width) var(--sl-color-neutral-400);
+    border-radius: var(--height);
+    transition: var(--sl-transition-fast) border-color, var(--sl-transition-fast) background-color;
+  }
+
+  .switch__control .switch__thumb {
+    width: var(--thumb-size);
+    height: var(--thumb-size);
+    background-color: var(--sl-color-neutral-0);
+    border-radius: 50%;
+    border: solid var(--sl-input-border-width) var(--sl-color-neutral-400);
+    transform: translateX(calc((var(--width) - var(--height)) / -2));
+    transition: var(--sl-transition-fast) transform ease, var(--sl-transition-fast) background-color,
+      var(--sl-transition-fast) border-color, var(--sl-transition-fast) box-shadow;
+  }
+
+  .switch__input {
+    position: absolute;
+    opacity: 0;
+    padding: 0;
+    margin: 0;
+    pointer-events: none;
+  }
+
+  /* Hover */
+  .switch:not(.switch--checked):not(.switch--disabled) .switch__control:hover {
+    background-color: var(--sl-color-neutral-400);
+    border-color: var(--sl-color-neutral-400);
+  }
+
+  .switch:not(.switch--checked):not(.switch--disabled) .switch__control:hover .switch__thumb {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-color-neutral-400);
+  }
+
+  /* Focus */
+  .switch:not(.switch--checked):not(.switch--disabled) .switch__input${focusVisibleSelector} ~ .switch__control {
+    background-color: var(--sl-color-neutral-400);
+    border-color: var(--sl-color-neutral-400);
+  }
+
+  .switch:not(.switch--checked):not(.switch--disabled)
+    .switch__input${focusVisibleSelector}
+    ~ .switch__control
+    .switch__thumb {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-color-primary-600);
+    box-shadow: var(--sl-focus-ring);
+  }
+
+  /* Checked */
+  .switch--checked .switch__control {
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+  }
+
+  .switch--checked .switch__control .switch__thumb {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-color-primary-600);
+    transform: translateX(calc((var(--width) - var(--height)) / 2));
+  }
+
+  /* Checked + hover */
+  .switch.switch--checked:not(.switch--disabled) .switch__control:hover {
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+  }
+
+  .switch.switch--checked:not(.switch--disabled) .switch__control:hover .switch__thumb {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-color-primary-600);
+  }
+
+  /* Checked + focus */
+  .switch.switch--checked:not(.switch--disabled) .switch__input${focusVisibleSelector} ~ .switch__control {
+    background-color: var(--sl-color-primary-600);
+    border-color: var(--sl-color-primary-600);
+  }
+
+  .switch.switch--checked:not(.switch--disabled)
+    .switch__input${focusVisibleSelector}
+    ~ .switch__control
+    .switch__thumb {
+    background-color: var(--sl-color-neutral-0);
+    border-color: var(--sl-color-primary-600);
+    box-shadow: var(--sl-focus-ring);
+  }
+
+  /* Disabled */
+  .switch--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .switch__label {
+    line-height: var(--height);
+    margin-left: 0.5em;
+    user-select: none;
+  }
+`;
+
+// src/components/switch/switch.ts
+var SlSwitch = class extends s4 {
+  constructor() {
+    super(...arguments);
+    this.formSubmitController = new FormSubmitController(this, {
+      value: (control) => control.checked ? control.value : void 0
+    });
+    this.hasFocus = false;
+    this.disabled = false;
+    this.required = false;
+    this.checked = false;
+    this.invalid = false;
+  }
+  firstUpdated() {
+    this.invalid = !this.input.checkValidity();
+  }
+  click() {
+    this.input.click();
+  }
+  focus(options) {
+    this.input.focus(options);
+  }
+  blur() {
+    this.input.blur();
+  }
+  reportValidity() {
+    return this.input.reportValidity();
+  }
+  setCustomValidity(message) {
+    this.input.setCustomValidity(message);
+    this.invalid = !this.input.checkValidity();
+  }
+  handleBlur() {
+    this.hasFocus = false;
+    emit(this, "sl-blur");
+  }
+  handleCheckedChange() {
+    this.input.checked = this.checked;
+    this.invalid = !this.input.checkValidity();
+  }
+  handleClick() {
+    this.checked = !this.checked;
+    emit(this, "sl-change");
+  }
+  handleDisabledChange() {
+    this.input.disabled = this.disabled;
+    this.invalid = !this.input.checkValidity();
+  }
+  handleFocus() {
+    this.hasFocus = true;
+    emit(this, "sl-focus");
+  }
+  handleKeyDown(event) {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      this.checked = false;
+      emit(this, "sl-change");
+    }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      this.checked = true;
+      emit(this, "sl-change");
+    }
+  }
+  render() {
+    return $$1`
+      <label
+        part="base"
+        class=${o$7({
+      switch: true,
+      "switch--checked": this.checked,
+      "switch--disabled": this.disabled,
+      "switch--focused": this.hasFocus
+    })}
+      >
+        <input
+          class="switch__input"
+          type="checkbox"
+          name=${l$4(this.name)}
+          value=${l$4(this.value)}
+          .checked=${l$3(this.checked)}
+          .disabled=${this.disabled}
+          .required=${this.required}
+          role="switch"
+          aria-checked=${this.checked ? "true" : "false"}
+          @click=${this.handleClick}
+          @blur=${this.handleBlur}
+          @focus=${this.handleFocus}
+          @keydown=${this.handleKeyDown}
+        />
+
+        <span part="control" class="switch__control">
+          <span part="thumb" class="switch__thumb"></span>
+        </span>
+
+        <span part="label" class="switch__label">
+          <slot></slot>
+        </span>
+      </label>
+    `;
+  }
+};
+SlSwitch.styles = switch_styles_default;
+__decorateClass([
+  i2('input[type="checkbox"]')
+], SlSwitch.prototype, "input", 2);
+__decorateClass([
+  t$4()
+], SlSwitch.prototype, "hasFocus", 2);
+__decorateClass([
+  e$7()
+], SlSwitch.prototype, "name", 2);
+__decorateClass([
+  e$7()
+], SlSwitch.prototype, "value", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlSwitch.prototype, "disabled", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlSwitch.prototype, "required", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlSwitch.prototype, "checked", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlSwitch.prototype, "invalid", 2);
+__decorateClass([
+  watch("checked", { waitUntilFirstUpdate: true })
+], SlSwitch.prototype, "handleCheckedChange", 1);
+__decorateClass([
+  watch("disabled", { waitUntilFirstUpdate: true })
+], SlSwitch.prototype, "handleDisabledChange", 1);
+SlSwitch = __decorateClass([
+  n$6("sl-switch")
+], SlSwitch);
+
+// src/components/tooltip/tooltip.styles.ts
+var tooltip_styles_default = r$5`
+  ${component_styles_default}
+
+  :host {
+    --max-width: 20rem;
+    --hide-delay: 0ms;
+    --show-delay: 150ms;
+
+    display: contents;
+  }
+
+  .tooltip-target {
+    display: contents;
+  }
+
+  .tooltip-positioner {
+    position: absolute;
+    z-index: var(--sl-z-index-tooltip);
+    pointer-events: none;
+  }
+
+  .tooltip-positioner[data-placement^='top'] .tooltip {
+    transform-origin: bottom;
+  }
+
+  .tooltip-positioner[data-placement^='bottom'] .tooltip {
+    transform-origin: top;
+  }
+
+  .tooltip-positioner[data-placement^='left'] .tooltip {
+    transform-origin: right;
+  }
+
+  .tooltip-positioner[data-placement^='right'] .tooltip {
+    transform-origin: left;
+  }
+
+  .tooltip__content {
+    max-width: var(--max-width);
+    border-radius: var(--sl-tooltip-border-radius);
+    background-color: var(--sl-tooltip-background-color);
+    font-family: var(--sl-tooltip-font-family);
+    font-size: var(--sl-tooltip-font-size);
+    font-weight: var(--sl-tooltip-font-weight);
+    line-height: var(--sl-tooltip-line-height);
+    color: var(--sl-tooltip-color);
+    padding: var(--sl-tooltip-padding);
+  }
+
+  .tooltip__arrow {
+    position: absolute;
+    background: var(--sl-tooltip-background-color);
+    width: calc(var(--sl-tooltip-arrow-size) * 2);
+    height: calc(var(--sl-tooltip-arrow-size) * 2);
+    transform: rotate(45deg);
+    z-index: -1;
+  }
+`;
+
+// src/components/tooltip/tooltip.ts
+var SlTooltip = class extends s4 {
+  constructor() {
+    super(...arguments);
+    this.content = "";
+    this.placement = "top";
+    this.disabled = false;
+    this.distance = 10;
+    this.open = false;
+    this.skidding = 0;
+    this.trigger = "hover focus";
+    this.hoist = false;
+  }
+  connectedCallback() {
+    super.connectedCallback();
+    this.handleBlur = this.handleBlur.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+    this.handleFocus = this.handleFocus.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.handleMouseOver = this.handleMouseOver.bind(this);
+    this.handleMouseOut = this.handleMouseOut.bind(this);
+    this.updateComplete.then(() => {
+      this.addEventListener("blur", this.handleBlur, true);
+      this.addEventListener("focus", this.handleFocus, true);
+      this.addEventListener("click", this.handleClick);
+      this.addEventListener("keydown", this.handleKeyDown);
+      this.addEventListener("mouseover", this.handleMouseOver);
+      this.addEventListener("mouseout", this.handleMouseOut);
+      this.target = this.getTarget();
+    });
+  }
+  async firstUpdated() {
+    this.tooltip.hidden = !this.open;
+    if (this.open) {
+      await this.updateComplete;
+      this.updatePositioner();
+    }
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.removeEventListener("blur", this.handleBlur, true);
+    this.removeEventListener("focus", this.handleFocus, true);
+    this.removeEventListener("click", this.handleClick);
+    this.removeEventListener("keydown", this.handleKeyDown);
+    this.removeEventListener("mouseover", this.handleMouseOver);
+    this.removeEventListener("mouseout", this.handleMouseOut);
+    this.stopPositioner();
+  }
+  async show() {
+    if (this.open) {
+      return void 0;
+    }
+    this.open = true;
+    return waitForEvent(this, "sl-after-show");
+  }
+  async hide() {
+    if (!this.open) {
+      return void 0;
+    }
+    this.open = false;
+    return waitForEvent(this, "sl-after-hide");
+  }
+  getTarget() {
+    const target = [...this.children].find((el) => el.tagName.toLowerCase() !== "style" && el.getAttribute("slot") !== "content");
+    if (!target) {
+      throw new Error("Invalid tooltip target: no child element was found.");
+    }
+    return target;
+  }
+  handleBlur() {
+    if (this.hasTrigger("focus")) {
+      this.hide();
+    }
+  }
+  handleClick() {
+    if (this.hasTrigger("click")) {
+      if (this.open) {
+        this.hide();
+      } else {
+        this.show();
+      }
+    }
+  }
+  handleFocus() {
+    if (this.hasTrigger("focus")) {
+      this.show();
+    }
+  }
+  handleKeyDown(event) {
+    if (this.open && event.key === "Escape") {
+      event.stopPropagation();
+      this.hide();
+    }
+  }
+  handleMouseOver() {
+    if (this.hasTrigger("hover")) {
+      const delay = parseDuration(getComputedStyle(this).getPropertyValue("--show-delay"));
+      clearTimeout(this.hoverTimeout);
+      this.hoverTimeout = window.setTimeout(() => void this.show(), delay);
+    }
+  }
+  handleMouseOut() {
+    if (this.hasTrigger("hover")) {
+      const delay = parseDuration(getComputedStyle(this).getPropertyValue("--hide-delay"));
+      clearTimeout(this.hoverTimeout);
+      this.hoverTimeout = window.setTimeout(() => void this.hide(), delay);
+    }
+  }
+  async handleOpenChange() {
+    if (this.disabled) {
+      return;
+    }
+    if (this.open) {
+      emit(this, "sl-show");
+      await stopAnimations(this.tooltip);
+      this.startPositioner();
+      this.tooltip.hidden = false;
+      const { keyframes, options } = getAnimation(this, "tooltip.show");
+      await animateTo(this.tooltip, keyframes, options);
+      emit(this, "sl-after-show");
+    } else {
+      emit(this, "sl-hide");
+      await stopAnimations(this.tooltip);
+      const { keyframes, options } = getAnimation(this, "tooltip.hide");
+      await animateTo(this.tooltip, keyframes, options);
+      this.tooltip.hidden = true;
+      this.stopPositioner();
+      emit(this, "sl-after-hide");
+    }
+  }
+  handleOptionsChange() {
+    this.updatePositioner();
+  }
+  handleDisabledChange() {
+    if (this.disabled && this.open) {
+      this.hide();
+    }
+  }
+  hasTrigger(triggerType) {
+    const triggers = this.trigger.split(" ");
+    return triggers.includes(triggerType);
+  }
+  startPositioner() {
+    this.stopPositioner();
+    this.updatePositioner();
+    this.positionerCleanup = autoUpdate(this.target, this.positioner, this.updatePositioner.bind(this));
+  }
+  updatePositioner() {
+    if (!this.open || !this.target || !this.positioner) {
+      return;
+    }
+    computePosition2(this.target, this.positioner, {
+      placement: this.placement,
+      middleware: [
+        offset({ mainAxis: this.distance, crossAxis: this.skidding }),
+        flip(),
+        shift(),
+        arrow({
+          element: this.arrow,
+          padding: 10
+        })
+      ],
+      strategy: this.hoist ? "fixed" : "absolute"
+    }).then(({ x, y, middlewareData, placement }) => {
+      const arrowX = middlewareData.arrow.x;
+      const arrowY = middlewareData.arrow.y;
+      const staticSide = { top: "bottom", right: "left", bottom: "top", left: "right" }[placement.split("-")[0]];
+      this.positioner.setAttribute("data-placement", placement);
+      Object.assign(this.positioner.style, {
+        position: this.hoist ? "fixed" : "absolute",
+        left: `${x}px`,
+        top: `${y}px`
+      });
+      Object.assign(this.arrow.style, {
+        left: typeof arrowX === "number" ? `${arrowX}px` : "",
+        top: typeof arrowY === "number" ? `${arrowY}px` : "",
+        right: "",
+        bottom: "",
+        [staticSide]: "calc(var(--sl-tooltip-arrow-size) * -1)"
+      });
+    });
+  }
+  stopPositioner() {
+    if (this.positionerCleanup) {
+      this.positionerCleanup();
+      this.positionerCleanup = void 0;
+      this.positioner.removeAttribute("data-placement");
+    }
+  }
+  render() {
+    return $$1`
+      <div class="tooltip-target" aria-describedby="tooltip">
+        <slot></slot>
+      </div>
+
+      <div class="tooltip-positioner">
+        <div
+          part="base"
+          id="tooltip"
+          class=${o$7({
+      tooltip: true,
+      "tooltip--open": this.open
+    })}
+          role="tooltip"
+          aria-hidden=${this.open ? "false" : "true"}
+        >
+          <div class="tooltip__arrow"></div>
+          <div class="tooltip__content" aria-live=${this.open ? "polite" : "off"}>
+            <slot name="content"> ${this.content} </slot>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+};
+SlTooltip.styles = tooltip_styles_default;
+__decorateClass([
+  i2(".tooltip-positioner")
+], SlTooltip.prototype, "positioner", 2);
+__decorateClass([
+  i2(".tooltip")
+], SlTooltip.prototype, "tooltip", 2);
+__decorateClass([
+  i2(".tooltip__arrow")
+], SlTooltip.prototype, "arrow", 2);
+__decorateClass([
+  e$7()
+], SlTooltip.prototype, "content", 2);
+__decorateClass([
+  e$7()
+], SlTooltip.prototype, "placement", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlTooltip.prototype, "disabled", 2);
+__decorateClass([
+  e$7({ type: Number })
+], SlTooltip.prototype, "distance", 2);
+__decorateClass([
+  e$7({ type: Boolean, reflect: true })
+], SlTooltip.prototype, "open", 2);
+__decorateClass([
+  e$7({ type: Number })
+], SlTooltip.prototype, "skidding", 2);
+__decorateClass([
+  e$7()
+], SlTooltip.prototype, "trigger", 2);
+__decorateClass([
+  e$7({ type: Boolean })
+], SlTooltip.prototype, "hoist", 2);
+__decorateClass([
+  watch("open", { waitUntilFirstUpdate: true })
+], SlTooltip.prototype, "handleOpenChange", 1);
+__decorateClass([
+  watch("content"),
+  watch("distance"),
+  watch("hoist"),
+  watch("placement"),
+  watch("skidding")
+], SlTooltip.prototype, "handleOptionsChange", 1);
+__decorateClass([
+  watch("disabled")
+], SlTooltip.prototype, "handleDisabledChange", 1);
+SlTooltip = __decorateClass([
+  n$6("sl-tooltip")
+], SlTooltip);
+setDefaultAnimation("tooltip.show", {
+  keyframes: [
+    { opacity: 0, transform: "scale(0.8)" },
+    { opacity: 1, transform: "scale(1)" }
+  ],
+  options: { duration: 150, easing: "ease" }
+});
+setDefaultAnimation("tooltip.hide", {
+  keyframes: [
+    { opacity: 1, transform: "scale(1)" },
+    { opacity: 0, transform: "scale(0.8)" }
+  ],
+  options: { duration: 150, easing: "ease" }
+});
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -29578,6 +30243,13 @@ const connect = (store) => (baseElement) => class extends baseElement {
      */
     stateChanged(_state) { }
 };
+
+class LexmlEmendaConfig {
+    constructor() {
+        this.urlConsultaParlamentares = 'api/parlamentares';
+        this.urlAutocomplete = 'api/autocomplete-norma';
+    }
+}
 
 /**
  * Adapted from React: https://github.com/facebook/react/blob/master/packages/shared/formatProdErrorMessage.js
@@ -30169,6 +30841,7 @@ function adicionarAlerta$1(alerta) {
             tipo: alerta.tipo,
             mensagem: alerta.mensagem,
             podeFechar: alerta.podeFechar,
+            exibirComandoEmenda: alerta.exibirComandoEmenda,
         },
     };
 }
@@ -30527,29 +31200,17 @@ class AplicarAlteracoesEmenda {
     constructor() {
         this.descricao = 'Atualizar';
     }
-    execute(alteracoesEmenda) {
+    execute(alteracoesEmenda, revisoes = []) {
         return {
             type: APLICAR_ALTERACOES_EMENDA,
             alteracoesEmenda,
+            revisoes,
         };
     }
 }
 const aplicarAlteracoesEmendaAction = new AplicarAlteracoesEmenda();
 
 const ATUALIZAR_ELEMENTO = 'ATUALIZAR_ELEMENTO';
-class AtualizarElemento {
-    constructor() {
-        this.descricao = 'Atualizar dispositivo';
-    }
-    execute(atual) {
-        this.tipo = atual.tipo;
-        return {
-            type: ATUALIZAR_ELEMENTO,
-            atual,
-        };
-    }
-}
-const atualizarElementoAction = new AtualizarElemento();
 
 const ATUALIZAR_REFERENCIA_ELEMENTO = 'ATUALIZAR_REFERENCIA_ELEMENTO';
 class AtualizarReferenciaElemento {
@@ -30710,10 +31371,11 @@ class RemoverElemento {
         this.hotkey = '(Ctrl+D)';
         this.descricao = 'Remover';
     }
-    execute(atual) {
+    execute(atual, elementoLinhaAnterior) {
         return {
             type: REMOVER_ELEMENTO,
             atual,
+            elementoLinhaAnterior,
         };
     }
 }
@@ -31768,6 +32430,514 @@ const hasEmenta = (referencia) => {
 const isEmendaArtigoOndeCouber = (referencia) => {
     return getDispositivoAndFilhosAsLista(getArticulacao(referencia)).some(d => d.situacao.tipoEmenda === ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER);
 };
+const findDispositivoByUuid2 = (dispositivo, uuid2) => {
+    if (!uuid2) {
+        throw new Error('uuid não foi informado');
+    }
+    return getDispositivoByUuid2(dispositivo, uuid2);
+};
+function getDispositivoByUuid2(dispositivo, uuid2) {
+    if (dispositivo.uuid2 === uuid2) {
+        return dispositivo;
+    }
+    else if (dispositivo.filhos !== null) {
+        let result = null;
+        const filhos = dispositivo.hasAlteracao() ? dispositivo.alteracoes.filhos : dispositivo.filhos;
+        for (let i = 0; result === null && i < filhos.length; i++) {
+            result = getDispositivoByUuid2(filhos[i], uuid2);
+        }
+        return result;
+    }
+    return null;
+}
+
+function Diff() {}
+Diff.prototype = {
+  diff: function diff(oldString, newString) {
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    var callback = options.callback;
+
+    if (typeof options === 'function') {
+      callback = options;
+      options = {};
+    }
+
+    this.options = options;
+    var self = this;
+
+    function done(value) {
+      if (callback) {
+        setTimeout(function () {
+          callback(undefined, value);
+        }, 0);
+        return true;
+      } else {
+        return value;
+      }
+    } // Allow subclasses to massage the input prior to running
+
+
+    oldString = this.castInput(oldString);
+    newString = this.castInput(newString);
+    oldString = this.removeEmpty(this.tokenize(oldString));
+    newString = this.removeEmpty(this.tokenize(newString));
+    var newLen = newString.length,
+        oldLen = oldString.length;
+    var editLength = 1;
+    var maxEditLength = newLen + oldLen;
+
+    if (options.maxEditLength) {
+      maxEditLength = Math.min(maxEditLength, options.maxEditLength);
+    }
+
+    var bestPath = [{
+      newPos: -1,
+      components: []
+    }]; // Seed editLength = 0, i.e. the content starts with the same values
+
+    var oldPos = this.extractCommon(bestPath[0], newString, oldString, 0);
+
+    if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+      // Identity per the equality and tokenizer
+      return done([{
+        value: this.join(newString),
+        count: newString.length
+      }]);
+    } // Main worker method. checks all permutations of a given edit length for acceptance.
+
+
+    function execEditLength() {
+      for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
+        var basePath = void 0;
+
+        var addPath = bestPath[diagonalPath - 1],
+            removePath = bestPath[diagonalPath + 1],
+            _oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
+
+        if (addPath) {
+          // No one else is going to attempt to use this value, clear it
+          bestPath[diagonalPath - 1] = undefined;
+        }
+
+        var canAdd = addPath && addPath.newPos + 1 < newLen,
+            canRemove = removePath && 0 <= _oldPos && _oldPos < oldLen;
+
+        if (!canAdd && !canRemove) {
+          // If this path is a terminal then prune
+          bestPath[diagonalPath] = undefined;
+          continue;
+        } // Select the diagonal that we want to branch from. We select the prior
+        // path whose position in the new string is the farthest from the origin
+        // and does not pass the bounds of the diff graph
+
+
+        if (!canAdd || canRemove && addPath.newPos < removePath.newPos) {
+          basePath = clonePath(removePath);
+          self.pushComponent(basePath.components, undefined, true);
+        } else {
+          basePath = addPath; // No need to clone, we've pulled it from the list
+
+          basePath.newPos++;
+          self.pushComponent(basePath.components, true, undefined);
+        }
+
+        _oldPos = self.extractCommon(basePath, newString, oldString, diagonalPath); // If we have hit the end of both strings, then we are done
+
+        if (basePath.newPos + 1 >= newLen && _oldPos + 1 >= oldLen) {
+          return done(buildValues(self, basePath.components, newString, oldString, self.useLongestToken));
+        } else {
+          // Otherwise track this path as a potential candidate and continue.
+          bestPath[diagonalPath] = basePath;
+        }
+      }
+
+      editLength++;
+    } // Performs the length of edit iteration. Is a bit fugly as this has to support the
+    // sync and async mode which is never fun. Loops over execEditLength until a value
+    // is produced, or until the edit length exceeds options.maxEditLength (if given),
+    // in which case it will return undefined.
+
+
+    if (callback) {
+      (function exec() {
+        setTimeout(function () {
+          if (editLength > maxEditLength) {
+            return callback();
+          }
+
+          if (!execEditLength()) {
+            exec();
+          }
+        }, 0);
+      })();
+    } else {
+      while (editLength <= maxEditLength) {
+        var ret = execEditLength();
+
+        if (ret) {
+          return ret;
+        }
+      }
+    }
+  },
+  pushComponent: function pushComponent(components, added, removed) {
+    var last = components[components.length - 1];
+
+    if (last && last.added === added && last.removed === removed) {
+      // We need to clone here as the component clone operation is just
+      // as shallow array clone
+      components[components.length - 1] = {
+        count: last.count + 1,
+        added: added,
+        removed: removed
+      };
+    } else {
+      components.push({
+        count: 1,
+        added: added,
+        removed: removed
+      });
+    }
+  },
+  extractCommon: function extractCommon(basePath, newString, oldString, diagonalPath) {
+    var newLen = newString.length,
+        oldLen = oldString.length,
+        newPos = basePath.newPos,
+        oldPos = newPos - diagonalPath,
+        commonCount = 0;
+
+    while (newPos + 1 < newLen && oldPos + 1 < oldLen && this.equals(newString[newPos + 1], oldString[oldPos + 1])) {
+      newPos++;
+      oldPos++;
+      commonCount++;
+    }
+
+    if (commonCount) {
+      basePath.components.push({
+        count: commonCount
+      });
+    }
+
+    basePath.newPos = newPos;
+    return oldPos;
+  },
+  equals: function equals(left, right) {
+    if (this.options.comparator) {
+      return this.options.comparator(left, right);
+    } else {
+      return left === right || this.options.ignoreCase && left.toLowerCase() === right.toLowerCase();
+    }
+  },
+  removeEmpty: function removeEmpty(array) {
+    var ret = [];
+
+    for (var i = 0; i < array.length; i++) {
+      if (array[i]) {
+        ret.push(array[i]);
+      }
+    }
+
+    return ret;
+  },
+  castInput: function castInput(value) {
+    return value;
+  },
+  tokenize: function tokenize(value) {
+    return value.split('');
+  },
+  join: function join(chars) {
+    return chars.join('');
+  }
+};
+
+function buildValues(diff, components, newString, oldString, useLongestToken) {
+  var componentPos = 0,
+      componentLen = components.length,
+      newPos = 0,
+      oldPos = 0;
+
+  for (; componentPos < componentLen; componentPos++) {
+    var component = components[componentPos];
+
+    if (!component.removed) {
+      if (!component.added && useLongestToken) {
+        var value = newString.slice(newPos, newPos + component.count);
+        value = value.map(function (value, i) {
+          var oldValue = oldString[oldPos + i];
+          return oldValue.length > value.length ? oldValue : value;
+        });
+        component.value = diff.join(value);
+      } else {
+        component.value = diff.join(newString.slice(newPos, newPos + component.count));
+      }
+
+      newPos += component.count; // Common case
+
+      if (!component.added) {
+        oldPos += component.count;
+      }
+    } else {
+      component.value = diff.join(oldString.slice(oldPos, oldPos + component.count));
+      oldPos += component.count; // Reverse add and remove so removes are output first to match common convention
+      // The diffing algorithm is tied to add then remove output and this is the simplest
+      // route to get the desired output with minimal overhead.
+
+      if (componentPos && components[componentPos - 1].added) {
+        var tmp = components[componentPos - 1];
+        components[componentPos - 1] = components[componentPos];
+        components[componentPos] = tmp;
+      }
+    }
+  } // Special case handle for when one terminal is ignored (i.e. whitespace).
+  // For this case we merge the terminal into the prior string and drop the change.
+  // This is only available for string mode.
+
+
+  var lastComponent = components[componentLen - 1];
+
+  if (componentLen > 1 && typeof lastComponent.value === 'string' && (lastComponent.added || lastComponent.removed) && diff.equals('', lastComponent.value)) {
+    components[componentLen - 2].value += lastComponent.value;
+    components.pop();
+  }
+
+  return components;
+}
+
+function clonePath(path) {
+  return {
+    newPos: path.newPos,
+    components: path.components.slice(0)
+  };
+}
+
+var characterDiff = new Diff();
+function diffChars(oldStr, newStr, options) {
+  return characterDiff.diff(oldStr, newStr, options);
+}
+
+function generateOptions(options, defaults) {
+  if (typeof options === 'function') {
+    defaults.callback = options;
+  } else if (options) {
+    for (var name in options) {
+      /* istanbul ignore else */
+      if (options.hasOwnProperty(name)) {
+        defaults[name] = options[name];
+      }
+    }
+  }
+
+  return defaults;
+}
+
+//
+// Ranges and exceptions:
+// Latin-1 Supplement, 0080–00FF
+//  - U+00D7  × Multiplication sign
+//  - U+00F7  ÷ Division sign
+// Latin Extended-A, 0100–017F
+// Latin Extended-B, 0180–024F
+// IPA Extensions, 0250–02AF
+// Spacing Modifier Letters, 02B0–02FF
+//  - U+02C7  ˇ &#711;  Caron
+//  - U+02D8  ˘ &#728;  Breve
+//  - U+02D9  ˙ &#729;  Dot Above
+//  - U+02DA  ˚ &#730;  Ring Above
+//  - U+02DB  ˛ &#731;  Ogonek
+//  - U+02DC  ˜ &#732;  Small Tilde
+//  - U+02DD  ˝ &#733;  Double Acute Accent
+// Latin Extended Additional, 1E00–1EFF
+
+var extendedWordChars = /^[A-Za-z\xC0-\u02C6\u02C8-\u02D7\u02DE-\u02FF\u1E00-\u1EFF]+$/;
+var reWhitespace = /\S/;
+var wordDiff = new Diff();
+
+wordDiff.equals = function (left, right) {
+  if (this.options.ignoreCase) {
+    left = left.toLowerCase();
+    right = right.toLowerCase();
+  }
+
+  return left === right || this.options.ignoreWhitespace && !reWhitespace.test(left) && !reWhitespace.test(right);
+};
+
+wordDiff.tokenize = function (value) {
+  // All whitespace symbols except newline group into one token, each newline - in separate token
+  var tokens = value.split(/([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/); // Join the boundary splits that we do not consider to be boundaries. This is primarily the extended Latin character set.
+
+  for (var i = 0; i < tokens.length - 1; i++) {
+    // If we have an empty string in the next field and we have only word chars before and after, merge
+    if (!tokens[i + 1] && tokens[i + 2] && extendedWordChars.test(tokens[i]) && extendedWordChars.test(tokens[i + 2])) {
+      tokens[i] += tokens[i + 2];
+      tokens.splice(i + 1, 2);
+      i--;
+    }
+  }
+
+  return tokens;
+};
+
+function diffWords(oldStr, newStr, options) {
+  options = generateOptions(options, {
+    ignoreWhitespace: true
+  });
+  return wordDiff.diff(oldStr, newStr, options);
+}
+
+var lineDiff = new Diff();
+
+lineDiff.tokenize = function (value) {
+  var retLines = [],
+      linesAndNewlines = value.split(/(\n|\r\n)/); // Ignore the final empty token that occurs if the string ends with a new line
+
+  if (!linesAndNewlines[linesAndNewlines.length - 1]) {
+    linesAndNewlines.pop();
+  } // Merge the content and line separators into single tokens
+
+
+  for (var i = 0; i < linesAndNewlines.length; i++) {
+    var line = linesAndNewlines[i];
+
+    if (i % 2 && !this.options.newlineIsToken) {
+      retLines[retLines.length - 1] += line;
+    } else {
+      if (this.options.ignoreWhitespace) {
+        line = line.trim();
+      }
+
+      retLines.push(line);
+    }
+  }
+
+  return retLines;
+};
+
+var sentenceDiff = new Diff();
+
+sentenceDiff.tokenize = function (value) {
+  return value.split(/(\S.+?[.!?])(?=\s+|$)/);
+};
+
+var cssDiff = new Diff();
+
+cssDiff.tokenize = function (value) {
+  return value.split(/([{}:;,]|\s+)/);
+};
+
+function _typeof(obj) {
+  "@babel/helpers - typeof";
+
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function (obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function (obj) {
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    };
+  }
+
+  return _typeof(obj);
+}
+
+var objectPrototypeToString = Object.prototype.toString;
+var jsonDiff = new Diff(); // Discriminate between two lines of pretty-printed, serialized JSON where one of them has a
+// dangling comma and the other doesn't. Turns out including the dangling comma yields the nicest output:
+
+jsonDiff.useLongestToken = true;
+jsonDiff.tokenize = lineDiff.tokenize;
+
+jsonDiff.castInput = function (value) {
+  var _this$options = this.options,
+      undefinedReplacement = _this$options.undefinedReplacement,
+      _this$options$stringi = _this$options.stringifyReplacer,
+      stringifyReplacer = _this$options$stringi === void 0 ? function (k, v) {
+    return typeof v === 'undefined' ? undefinedReplacement : v;
+  } : _this$options$stringi;
+  return typeof value === 'string' ? value : JSON.stringify(canonicalize(value, null, null, stringifyReplacer), stringifyReplacer, '  ');
+};
+
+jsonDiff.equals = function (left, right) {
+  return Diff.prototype.equals.call(jsonDiff, left.replace(/,([\r\n])/g, '$1'), right.replace(/,([\r\n])/g, '$1'));
+};
+// object that is already on the "stack" of items being processed. Accepts an optional replacer
+
+function canonicalize(obj, stack, replacementStack, replacer, key) {
+  stack = stack || [];
+  replacementStack = replacementStack || [];
+
+  if (replacer) {
+    obj = replacer(key, obj);
+  }
+
+  var i;
+
+  for (i = 0; i < stack.length; i += 1) {
+    if (stack[i] === obj) {
+      return replacementStack[i];
+    }
+  }
+
+  var canonicalizedObj;
+
+  if ('[object Array]' === objectPrototypeToString.call(obj)) {
+    stack.push(obj);
+    canonicalizedObj = new Array(obj.length);
+    replacementStack.push(canonicalizedObj);
+
+    for (i = 0; i < obj.length; i += 1) {
+      canonicalizedObj[i] = canonicalize(obj[i], stack, replacementStack, replacer, key);
+    }
+
+    stack.pop();
+    replacementStack.pop();
+    return canonicalizedObj;
+  }
+
+  if (obj && obj.toJSON) {
+    obj = obj.toJSON();
+  }
+
+  if (_typeof(obj) === 'object' && obj !== null) {
+    stack.push(obj);
+    canonicalizedObj = {};
+    replacementStack.push(canonicalizedObj);
+
+    var sortedKeys = [],
+        _key;
+
+    for (_key in obj) {
+      /* istanbul ignore else */
+      if (obj.hasOwnProperty(_key)) {
+        sortedKeys.push(_key);
+      }
+    }
+
+    sortedKeys.sort();
+
+    for (i = 0; i < sortedKeys.length; i += 1) {
+      _key = sortedKeys[i];
+      canonicalizedObj[_key] = canonicalize(obj[_key], stack, replacementStack, replacer, _key);
+    }
+
+    stack.pop();
+    replacementStack.pop();
+  } else {
+    canonicalizedObj = obj;
+  }
+
+  return canonicalizedObj;
+}
+
+var arrayDiff = new Diff();
+
+arrayDiff.tokenize = function (value) {
+  return value.slice();
+};
+
+arrayDiff.join = arrayDiff.removeEmpty = function (value) {
+  return value;
+};
 
 function containsTags(text) {
     return /<.+>/g.test(text === null || text === void 0 ? void 0 : text.trim());
@@ -31853,12 +33023,25 @@ const removeTagEConteudo = (texto, tag) => {
 const removeTagStyle = (texto) => removeTagEConteudo(texto, 'style');
 const removeTagScript = (texto) => removeTagEConteudo(texto, 'script');
 const removeTagHead = (texto) => removeTagEConteudo(texto, 'head');
+const getIniciais = (texto = '') => {
+    var _a;
+    return (((_a = texto
+        .match(/\b[A-Z][a-z]*\b/g)) === null || _a === void 0 ? void 0 : _a.map(word => word.charAt(0)).filter((_, i, arr) => i === 0 || i === arr.length - 1).join('')) || '');
+};
+const textoDiffAsHtml = (texto1, texto2, typeDiff) => {
+    const fn = typeDiff === 'diffChars' ? diffChars : diffWords;
+    const buildPartAdded = (str) => `<ins>${str}</ins>`; //`<span class="texto-inserido">${str}</span>`;
+    const buildPartRemoved = (str) => `<del>${str}</del>`; //`<span classs="texto-removido">${str}</span>`;
+    const diff = fn(texto1, texto2);
+    return diff.map(part => (part.added ? buildPartAdded(part.value) : part.removed ? buildPartRemoved(part.value) : part.value)).join('');
+};
 
+// Tipo string para salvar o nome em vez do índice
 var TipoMensagem;
 (function (TipoMensagem) {
-    TipoMensagem[TipoMensagem["INFO"] = 0] = "INFO";
-    TipoMensagem[TipoMensagem["WARNING"] = 1] = "WARNING";
-    TipoMensagem[TipoMensagem["ERROR"] = 2] = "ERROR";
+    TipoMensagem["INFO"] = "INFO";
+    TipoMensagem["WARNING"] = "WARNING";
+    TipoMensagem["ERROR"] = "ERROR";
 })(TipoMensagem || (TipoMensagem = {}));
 var AutoFix;
 (function (AutoFix) {
@@ -33281,11 +34464,16 @@ const getNivel = (dispositivo, atual = 0) => {
 const buildElementoPai = (dispositivo) => {
     var _a;
     const pai = dispositivo.pai ? (isCaput(dispositivo.pai) ? dispositivo.pai.pai : dispositivo.pai) : undefined;
+    const articulacaoAlteracao = pai && isDispositivoAlteracao(dispositivo) ? getArticulacao(dispositivo).pai : undefined;
     return {
         tipo: pai === null || pai === void 0 ? void 0 : pai.tipo,
         uuid: pai === null || pai === void 0 ? void 0 : pai.uuid,
-        uuidAlteracao: pai && isDispositivoAlteracao(dispositivo) ? (_a = getArticulacao(dispositivo).pai) === null || _a === void 0 ? void 0 : _a.uuid : undefined,
-        existeNaNormaAlterada: (pai === null || pai === void 0 ? void 0 : pai.situacao.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_ADICIONADO ? pai.situacao.existeNaNormaAlterada : undefined,
+        uuid2: pai === null || pai === void 0 ? void 0 : pai.uuid2,
+        lexmlId: pai === null || pai === void 0 ? void 0 : pai.id,
+        uuidAlteracao: articulacaoAlteracao === null || articulacaoAlteracao === void 0 ? void 0 : articulacaoAlteracao.uuid,
+        uuid2Alteracao: articulacaoAlteracao === null || articulacaoAlteracao === void 0 ? void 0 : articulacaoAlteracao.uuid2,
+        existeNaNormaAlterada: pai && isAdicionado(pai) ? pai.situacao.existeNaNormaAlterada : undefined,
+        descricaoSituacao: (_a = pai === null || pai === void 0 ? void 0 : pai.situacao) === null || _a === void 0 ? void 0 : _a.descricaoSituacao,
     };
 };
 const createElemento = (dispositivo, acoes = true, procurarElementoAnterior = false) => {
@@ -33320,6 +34508,7 @@ const createElemento = (dispositivo, acoes = true, procurarElementoAnterior = fa
         editavel: isArticulacao(dispositivo) || dispositivo.situacao instanceof DispositivoSuprimido ? false : true,
         sendoEditado: false,
         uuid: dispositivo.uuid,
+        uuid2: dispositivo.uuid2,
         lexmlId: (dispositivo.numero && buildId(dispositivo)) || dispositivo.id,
         numero: dispositivo.numero,
         rotulo: (_a = dispositivo.rotulo) !== null && _a !== void 0 ? _a : '',
@@ -33344,49 +34533,49 @@ const createElemento = (dispositivo, acoes = true, procurarElementoAnterior = fa
         elementoAnteriorNaSequenciaDeLeitura,
     };
 };
-const createElementoValidado = (dispositivo) => {
-    const el = createElemento(dispositivo);
+const createElementoValidado = (dispositivo, procurarElementoAnterior = false) => {
+    const el = createElemento(dispositivo, true, procurarElementoAnterior);
     el.mensagens = validaDispositivo(dispositivo);
     return el;
 };
-const createElementos = (elementos, dispositivo, validados = false) => {
-    const fnCreateElemento = validados ? createElemento : createElementoValidado;
+const createElementos = (elementos, dispositivo, validados = false, procurarElementoAnterior = false) => {
+    const fnCreateElemento = validados ? createElementoValidado : createElemento;
     if (dispositivo.filhos === undefined) {
         return;
     }
     dispositivo.filhos.forEach(d => {
         var _a;
-        const el = fnCreateElemento(d);
+        const el = fnCreateElemento(d, true, procurarElementoAnterior);
         if (isArtigo(d)) {
             el.conteudo.texto = d.caput.texto;
         }
         elementos.push(el);
         if (isArtigo(d) && d.hasAlteracao()) {
             (_a = d.alteracoes) === null || _a === void 0 ? void 0 : _a.filhos.forEach(f => {
-                elementos.push(fnCreateElemento(f));
-                createElementos(elementos, f, validados);
+                elementos.push(fnCreateElemento(f, true, procurarElementoAnterior));
+                createElementos(elementos, f, validados, procurarElementoAnterior);
             });
         }
-        createElementos(elementos, d, validados);
+        createElementos(elementos, d, validados, procurarElementoAnterior);
     });
 };
-const getElementos = (dispositivo, validados = false) => {
+const getElementos = (dispositivo, validados = false, procurarElementoAnterior = false) => {
     var _a;
-    const fnCreateElemento = validados ? createElemento : createElementoValidado;
+    const fnCreateElemento = validados ? createElementoValidado : createElemento;
     const elementos = [];
-    elementos.push(fnCreateElemento(dispositivo, true));
+    elementos.push(fnCreateElemento(dispositivo, true, procurarElementoAnterior));
     if (isArticulacao(dispositivo) && !isDispositivoAlteracao(dispositivo) && hasEmenta(dispositivo) && !isEmendaArtigoOndeCouber(dispositivo)) {
         elementos.push(fnCreateElemento(dispositivo.projetoNorma.ementa, true));
     }
     if (isArtigo(dispositivo) && dispositivo.hasAlteracao()) {
         if (isArtigo(dispositivo) && dispositivo.hasAlteracao()) {
             (_a = dispositivo.alteracoes) === null || _a === void 0 ? void 0 : _a.filhos.forEach(f => {
-                elementos.push(fnCreateElemento(f));
-                createElementos(elementos, f, validados);
+                elementos.push(fnCreateElemento(f, true, procurarElementoAnterior));
+                createElementos(elementos, f, validados, procurarElementoAnterior);
             });
         }
     }
-    createElementos(elementos, dispositivo, validados);
+    createElementos(elementos, dispositivo, validados, procurarElementoAnterior);
     return elementos;
 };
 const getArticulacaoFromElemento = (articulacao, elemento) => {
@@ -33532,6 +34721,12 @@ var StateType;
     StateType["SituacaoElementoModificada"] = "SituacaoElementoModificada";
     StateType["AtualizacaoAlertas"] = "AtualizacaoAlertas";
     StateType["ElementoReferenciado"] = "ElementoReferenciado";
+    StateType["RevisaoAtivada"] = "RevisaoAtivada";
+    StateType["RevisaoDesativada"] = "RevisaoDesativada";
+    StateType["AtualizaUsuario"] = "AtualizaUsuario";
+    StateType["RevisaoAceita"] = "RevisaoAceita";
+    StateType["RevisaoRejeitada"] = "RevisaoRejeitada";
+    StateType["RevisaoAdicionalRejeitada"] = "RevisaoAdicionalRejeitada";
 })(StateType || (StateType = {}));
 
 const load = (articulacao, modo) => {
@@ -33551,6 +34746,8 @@ const load = (articulacao, modo) => {
             ],
             alertas: [],
         },
+        revisoes: [],
+        numEventosPassadosAntesDaRevisao: 0,
     };
 };
 
@@ -33564,6 +34761,16 @@ function generateId(init = 0) {
     };
 }
 const Counter = generateId();
+
+const generateUUID = () => {
+    let uuid = '';
+    for (let i = 0; i < 32; i++) {
+        const randomNumber = (Math.random() * 16) | 0;
+        const value = (i === 12 ? 4 : i === 16 ? (randomNumber & 3) | 8 : randomNumber).toString(16);
+        uuid += (i === 8 || i === 12 || i === 16 || i === 20 ? '-' : '') + value;
+    }
+    return uuid;
+};
 
 function ValidacaoDispositivo(Base) {
     return class extends Base {
@@ -33841,7 +35048,10 @@ function HierarquiaDispositivo(Base) {
                     filho.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
                     filho.numero = calculaNumeracao(filho);
                     filho.createRotulo(filho);
-                    filho.id = buildId(filho);
+                    const novoId = buildId(filho);
+                    if (filho.id !== novoId) {
+                        getDispositivoAndFilhosAsLista(filho).forEach(d => (d.id = buildId(d)));
+                    }
                 }
             });
         }
@@ -34328,6 +35538,36 @@ class RemoverTextoOmissisAction {
 }
 const removerTextoOmissisAction = new RemoverTextoOmissisAction();
 
+const ACEITAR_REVISAO = 'ACEITAR_REVISAO';
+class AceitarRevisao {
+    constructor() {
+        this.descricao = 'Aceitar revisão';
+    }
+    execute(elemento, revisao) {
+        return {
+            type: ACEITAR_REVISAO,
+            elemento,
+            revisao,
+        };
+    }
+}
+const aceitarRevisaoAction = new AceitarRevisao();
+
+const REJEITAR_REVISAO = 'REJEITAR_REVISAO';
+class RejeitarRevisao {
+    constructor() {
+        this.descricao = 'Rejeitar revisão';
+    }
+    execute(elemento, revisao) {
+        return {
+            type: REJEITAR_REVISAO,
+            elemento,
+            revisao,
+        };
+    }
+}
+const rejeitarRevisaoAction = new RejeitarRevisao();
+
 const acoesMenu = [];
 acoesMenu.push(informarNormaAction);
 acoesMenu.push(InformarDadosAssistenteAction);
@@ -34394,6 +35634,8 @@ acoesMenu.push(adicionarAgrupadorArtigoAction);
 acoesMenu.push(adicionarAgrupadorArtigoAntesAction);
 acoesMenu.push(adicionarTextoOmissisAction);
 acoesMenu.push(removerTextoOmissisAction);
+acoesMenu.push(aceitarRevisaoAction);
+acoesMenu.push(rejeitarRevisaoAction);
 const acoesExclusivasEdicao = [];
 acoesExclusivasEdicao.push(adicionarElementoAction);
 acoesExclusivasEdicao.push(adicionarArtigo);
@@ -34449,6 +35691,10 @@ const retornaEstadoAtualComMensagem = (state, mensagem) => {
             events: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events,
             message: mensagem,
         },
+        emRevisao: state.emRevisao,
+        usuario: state.usuario,
+        revisoes: state.revisoes,
+        numEventosPassadosAntesDaRevisao: state.numEventosPassadosAntesDaRevisao,
     };
 };
 
@@ -35471,6 +36717,7 @@ const create = (name, parent) => {
         }
     }
     dispositivo.uuid = Counter.next();
+    dispositivo.uuid2 = generateUUID();
     dispositivo.name = name;
     dispositivo.pai = isInciso(dispositivo) && isArtigo(parent) ? parent.caput : parent;
     dispositivo.isDispositivoAlteracao = isDispositivoAlteracao(dispositivo);
@@ -35480,6 +36727,7 @@ const create = (name, parent) => {
 const createArticulacao = () => {
     const articulacao = new ArticulacaoLexml();
     articulacao.uuid = Counter.next();
+    articulacao.uuid2 = generateUUID();
     return articulacao;
 };
 const createAlteracao = (atual) => {
@@ -35802,6 +37050,375 @@ class ReferenciaDispositivoParser {
     }
 }
 
+const ATIVAR_DESATIVAR_REVISAO = 'ATIVAR_DESATIVAR_REVISAO';
+class AtivarDesativarRevisao {
+    constructor() {
+        this.descricao = 'Ativar/Desativar revisão';
+    }
+    execute() {
+        return {
+            type: ATIVAR_DESATIVAR_REVISAO,
+        };
+    }
+}
+const ativarDesativarRevisaoAction = new AtivarDesativarRevisao();
+
+const getRevisoesElemento = (revisoes = []) => {
+    return revisoes.filter(isRevisaoElemento).map(r => r);
+};
+const findRevisaoById = (revisoes = [], idRevisao) => {
+    return revisoes === null || revisoes === void 0 ? void 0 : revisoes.find(r => r.id === idRevisao);
+};
+const findRevisaoByElementoUuid = (revisoes = [], uuid = 0) => {
+    return getRevisoesElemento(revisoes)
+        .filter(r => r.elementoAposRevisao.uuid === uuid)
+        .slice(-1)[0];
+};
+const findRevisaoByElementoUuid2 = (revisoes = [], uuid2 = '') => {
+    return getRevisoesElemento(revisoes)
+        .filter(r => r.elementoAposRevisao.uuid2 === uuid2)
+        .slice(-1)[0];
+};
+const findRevisoesByElementoUuid = (revisoes = [], uuid = 0) => {
+    return getRevisoesElemento(revisoes).filter(r => r.elementoAposRevisao.uuid === uuid);
+};
+const findRevisoesByElementoUuid2 = (revisoes = [], uuid2 = '') => {
+    return getRevisoesElemento(revisoes).filter(r => r.elementoAposRevisao.uuid2 === uuid2);
+};
+const findRevisoesByElementoLexmlId = (revisoes = [], lexmlId = '') => {
+    return getRevisoesElemento(revisoes).filter(r => r.elementoAposRevisao.lexmlId === lexmlId);
+};
+const existeRevisaoParaElementos = (revisoes = [], elementos) => {
+    const revisoesElemento = getRevisoesElemento(revisoes);
+    return elementos.some(e => revisoesElemento.some(r => r.elementoAposRevisao.uuid === e.uuid));
+};
+const identificarRevisaoElementoPai = (state, revisoes) => {
+    const result = [];
+    revisoes === null || revisoes === void 0 ? void 0 : revisoes.forEach(r => {
+        var _a, _b, _c, _d;
+        if (isRevisaoElemento(r)) {
+            const rAux = r;
+            const uuidPai = rAux.stateType === StateType.ElementoIncluido ? getUuidPaiElementoRevisado(state, rAux) : (_c = (_b = (_a = rAux.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.hierarquia) === null || _b === void 0 ? void 0 : _b.pai) === null || _c === void 0 ? void 0 : _c.uuid;
+            const rPai = uuidPai ? findRevisaoByElementoUuid(rAux.actionType === ADICIONAR_ELEMENTO ? state.revisoes : revisoes, uuidPai) : undefined;
+            if (rPai && isRevisaoMesmaSituacao(rAux, rPai)) {
+                rAux.idRevisaoElementoPai = rPai.id;
+                rAux.idRevisaoElementoPrincipal = (_d = findRevisaoElementoPrincipal(state, revisoes, rPai)) === null || _d === void 0 ? void 0 : _d.id;
+            }
+        }
+        result.push(r);
+    });
+    return result;
+};
+const findRevisaoElementoPrincipal = (state, revisoes, rPai) => {
+    var _a, _b, _c;
+    const uuid = rPai.stateType === StateType.ElementoIncluido ? getUuidPaiElementoRevisado(state, rPai) : (_c = (_b = (_a = rPai.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.hierarquia) === null || _b === void 0 ? void 0 : _b.pai) === null || _c === void 0 ? void 0 : _c.uuid;
+    const rAux = rPai && findRevisaoByElementoUuid(revisoes, uuid);
+    return rAux ? findRevisaoElementoPrincipal(state, revisoes, rAux) : rPai;
+};
+const buildDescricaoRevisao = (revisao) => {
+    return isRevisaoElemento(revisao) ? buildDescricaoRevisaoElemento(revisao) : buildDescricaoRevisaoTexto(revisao);
+};
+const mapperActionTypeToDescricao = {
+    [ADICIONAR_ELEMENTO]: () => 'Dispositivo adicionado',
+    [REMOVER_ELEMENTO]: () => 'Dispositivo removido',
+    [SUPRIMIR_ELEMENTO]: () => 'Dispositivo suprimido',
+    [ATUALIZAR_TEXTO_ELEMENTO]: () => 'Texto do dispositivo foi alterado',
+    [MOVER_ELEMENTO_ABAIXO]: (revisao) => buildDescricaoRevisaoFromMovimentacaoElemento(revisao),
+    [MOVER_ELEMENTO_ACIMA]: () => 'Dispositivo movido',
+    [RESTAURAR_ELEMENTO]: () => 'Dispositivo restaurado',
+    [ADICIONAR_ELEMENTOS_FROM_CLIPBOARD]: (revisao) => buildDescricaoRevisaoFromStateType(revisao),
+    [UNDO]: (revisao) => buildDescricaoRevisaoFromStateType(revisao),
+    [REDO]: (revisao) => buildDescricaoRevisaoFromStateType(revisao),
+};
+const mapperStateTypeToDescricao = {
+    [StateType.ElementoIncluido]: () => 'Dispositivo incluído',
+    [StateType.ElementoRemovido]: () => 'Dispositivo removido',
+    [StateType.ElementoRestaurado]: () => 'Dispositivo restaurado',
+    [StateType.ElementoModificado]: () => 'Texto do dispositivo foi alterado',
+    [StateType.ElementoSuprimido]: () => 'Dispositivo suprimido',
+    // [StateType.ElementoMovido]: (): string => 'Dispositivo movido',
+};
+const buildDescricaoRevisaoElemento = (revisao) => {
+    const fn = mapperActionTypeToDescricao[revisao.actionType];
+    return fn ? mapperActionTypeToDescricao[revisao.actionType](revisao) : buildDescricaoRevisaoFromStateType(revisao);
+};
+const buildDescricaoRevisaoTexto = (revisao) => {
+    var _a;
+    return (_a = revisao.descricao) !== null && _a !== void 0 ? _a : '';
+};
+const buildDescricaoRevisaoFromMovimentacaoElemento = (revisao) => {
+    const { tipo, rotulo } = revisao.elementoAntesRevisao || { tipo: '', numero: 0 };
+    return `Dispositivo movido${tipo ? ` (antes era "${tipo} ${rotulo}")` : ''}`;
+};
+const buildDescricaoRevisaoFromStateType = (revisao, elementoAposRevisao) => {
+    const isUndoRedoDeMovimentacao = revisao.elementoAntesRevisao && elementoAposRevisao && revisao.elementoAntesRevisao.numero !== elementoAposRevisao.numero;
+    return isUndoRedoDeMovimentacao ? buildDescricaoRevisaoFromMovimentacaoElemento(revisao) : mapperStateTypeToDescricao[revisao.stateType]();
+};
+const getUuidPaiElementoRevisado = (state, revisao) => {
+    // return revisao.elementoAposRevisao.hierarquia?.pai?.uuid || 0;
+    return getUuidPai(state, revisao.elementoAposRevisao) || 0;
+};
+const getUuidPai = (state, elemento) => {
+    var _a, _b, _c, _d, _e, _f;
+    const d = getDispositivoFromElemento(state.articulacao, elemento);
+    if (isDispositivoAlteracao(d)) {
+        return isArticulacaoAlteracao(d.pai) || isCaput(d.pai) ? (_b = (_a = d.pai) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.uuid : (_c = d.pai) === null || _c === void 0 ? void 0 : _c.uuid;
+    }
+    else {
+        return isCaput(d.pai) ? (_e = (_d = d.pai) === null || _d === void 0 ? void 0 : _d.pai) === null || _e === void 0 ? void 0 : _e.uuid : (_f = d.pai) === null || _f === void 0 ? void 0 : _f.uuid;
+    }
+};
+const isRevisaoMesmaSituacao = (r, rPai) => {
+    var _a, _b;
+    // return r.stateType !== StateType.ElementoModificado && rPai.elementoAntesRevisao?.descricaoSituacao === r.elementoAntesRevisao?.descricaoSituacao;
+    return (r.stateType !== StateType.ElementoModificado && ((_a = rPai.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.descricaoSituacao) === ((_b = r.elementoAntesRevisao) === null || _b === void 0 ? void 0 : _b.descricaoSituacao) && r.stateType === rPai.stateType);
+};
+const getRevisoesElementoAssociadas = (revisoes = [], revisao) => {
+    return [revisao, ...getRevisoesElemento(revisoes).filter(r => r.idRevisaoElementoPrincipal === revisao.id)];
+};
+const getElementosFromRevisoes = (revisoes = [], state) => {
+    return revisoes.filter(isRevisaoElemento).map(r => {
+        const e = r.elementoAposRevisao;
+        return state ? createElemento(getDispositivoFromElemento(state.articulacao, e)) : e;
+    });
+};
+const getRevisoesFromElementos = (elementos = []) => elementos.map(e => e.revisao);
+const isRevisaoElemento = (revisao) => 'elementoAposRevisao' in revisao;
+const isRevisaoJustificativa = (revisao) => !isRevisaoElemento(revisao);
+const existeFilhoExcluidoDuranteRevisao = (state, dispositivo) => {
+    var _a;
+    if (!((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+        return false;
+    }
+    const uuids = getDispositivoAndFilhosAsLista(dispositivo).map(d => d.uuid);
+    return state.revisoes
+        .filter(r => isRevisaoElemento(r) && isRevisaoDeExclusao(r))
+        .map(r => r)
+        .some(r => { var _a, _b, _c, _d; return uuids.includes((_a = r.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.uuid) || uuids.includes((_d = (_c = (_b = r.elementoAntesRevisao) === null || _b === void 0 ? void 0 : _b.hierarquia) === null || _c === void 0 ? void 0 : _c.pai) === null || _d === void 0 ? void 0 : _d.uuid); });
+};
+const existeFilhoExcluidoOuAlteradoDuranteRevisao = (state, dispositivo) => {
+    var _a;
+    if (!((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+        return false;
+    }
+    const uuids = getDispositivoAndFilhosAsLista(dispositivo).map(d => d.uuid);
+    return state.revisoes
+        .filter(isRevisaoElemento)
+        .map(r => r)
+        .some(r => { var _a, _b, _c, _d; return uuids.includes((_a = r.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.uuid) || uuids.includes((_d = (_c = (_b = r.elementoAntesRevisao) === null || _b === void 0 ? void 0 : _b.hierarquia) === null || _c === void 0 ? void 0 : _c.pai) === null || _d === void 0 ? void 0 : _d.uuid); });
+};
+const isRevisaoPrincipal = (revisao) => isRevisaoElemento(revisao) && !revisao.idRevisaoElementoPrincipal;
+const existeRevisaoCriadaPorExclusao = (revisoes = []) => revisoes.some(r => isRevisaoDeExclusao(r));
+var RevisaoJustificativaEnum;
+(function (RevisaoJustificativaEnum) {
+    RevisaoJustificativaEnum["JustificativaAlterada"] = "Justificativa Alterada";
+})(RevisaoJustificativaEnum || (RevisaoJustificativaEnum = {}));
+const ordernarRevisoes = (revisoes = []) => {
+    const result = revisoes.filter(r => isRevisaoElemento(r) && !isRevisaoDeExclusao(r));
+    result.push(...getRevisoesDeExclusaoOrdenadasPorUuid(revisoes));
+    result.push(...revisoes.filter(isRevisaoJustificativa));
+    return result;
+};
+const getRevisoesDeExclusaoOrdenadasPorUuid = (revisoes = []) => {
+    return revisoes
+        .filter(r => isRevisaoElemento(r) && isRevisaoDeExclusao(r))
+        .sort((r1, r2) => r1.elementoAposRevisao.uuid - r2.elementoAposRevisao.uuid);
+};
+const isRevisaoDeExclusao = (revisao) => revisao.stateType === StateType.ElementoRemovido;
+const removeAtributosDoElemento = (elemento) => {
+    if (!elemento) {
+        return;
+    }
+    delete elemento.acoesPossiveis;
+    delete elemento.tiposAgrupadoresQuePodemSerInseridosAntes;
+    delete elemento.tiposAgrupadoresQuePodemSerInseridosDepois;
+    if (elemento.revisao) {
+        elemento.revisao;
+    }
+    removeAtributosDoElementoAnteriorNaSequenciaDeLeitura(elemento.elementoAnteriorNaSequenciaDeLeitura);
+};
+const atributosPermitidos = ['tipo', 'uuid', 'uuid2', 'lexmlId', 'conteudo', 'descricaoSituacao', 'uuidAlteracao', 'uuid2Alteracao', 'existeNaNormaAlterada'];
+const removeAtributosDoElementoAnteriorNaSequenciaDeLeitura = (elemento) => {
+    if (!elemento) {
+        return;
+    }
+    for (const key in elemento) {
+        if (!atributosPermitidos.includes(key)) {
+            delete elemento[key];
+        }
+    }
+};
+const getQuantidadeRevisoes = (revisoes = []) => {
+    return revisoes.filter(isRevisaoPrincipal).length;
+};
+const getQuantidadeRevisoesJustificativa = (revisoes = []) => {
+    return revisoes.filter(e => e.descricao === RevisaoJustificativaEnum.JustificativaAlterada).length;
+};
+const mostrarDialogDisclaimerRevisao = (rootStore) => {
+    if (localStorage.getItem('naoMostrarNovamenteDisclaimerMarcaAlteracao') !== 'true' && !rootStore.getState().elementoReducer.emRevisao) {
+        const dialog = document.createElement('sl-dialog');
+        dialog.label = 'Marcas de revisão';
+        const botoesHtml = ` <sl-button slot="footer" variant="primary" id="closeButton">Fechar</sl-button>`;
+        dialog.innerHTML = `
+      Todas as alterações realizadas no texto serão registradas e ficarão disponíveis para consulta.
+      Esta é uma versão inicial da funcionalidade de controle de alterações/marcas de revisão.
+      <br><br>
+      <sl-switch id="chk-nao-mostrar-modal-novamente">Não mostrar mais essa mensagem</sl-switch>
+    `.concat(botoesHtml);
+        document.body.appendChild(dialog);
+        dialog.show();
+        dialog.addEventListener('sl-request-close', (event) => {
+            if (event.detail.source === 'overlay') {
+                event.preventDefault();
+            }
+        });
+        const chkNaoMostrarNovamente = dialog.querySelector('#chk-nao-mostrar-modal-novamente');
+        chkNaoMostrarNovamente === null || chkNaoMostrarNovamente === void 0 ? void 0 : chkNaoMostrarNovamente.addEventListener('sl-change', () => {
+            salvaNoNavegadorOpcaoNaoMostrarNovamente();
+        });
+        const closeButton = dialog.querySelector('#closeButton[slot="footer"]');
+        closeButton === null || closeButton === void 0 ? void 0 : closeButton.addEventListener('click', () => {
+            dialog.hide();
+            dialog.remove();
+        });
+    }
+};
+const salvaNoNavegadorOpcaoNaoMostrarNovamente = () => {
+    const checkbox = document.getElementById('chk-nao-mostrar-modal-novamente');
+    if (checkbox) {
+        localStorage.setItem('naoMostrarNovamenteDisclaimerMarcaAlteracao', checkbox.checked ? 'true' : 'false');
+    }
+};
+const ativarDesativarMarcaDeRevisao = (rootStore) => {
+    mostrarDialogDisclaimerRevisao(rootStore);
+    rootStore.dispatch(ativarDesativarRevisaoAction.execute());
+};
+const atualizaQuantidadeRevisao = (revisoes = [], element, justificativa = false) => {
+    const quantidade = justificativa ? getQuantidadeRevisoesJustificativa(revisoes) : getQuantidadeRevisoes(revisoes);
+    if (element) {
+        element.innerHTML = quantidade;
+    }
+};
+const setCheckedElement = (element, checked) => {
+    if (element) {
+        if (checked) {
+            element.setAttribute('checked', '');
+        }
+        else {
+            element.removeAttribute('checked');
+        }
+    }
+};
+const atualizaReferenciaElementoAnteriorSeNecessario = (articulacao, revisoes = [], elemento, tipoProcessamento) => {
+    // Procura o elemento anterior ao excluído/incluído nos elementos anteriores das outras revisões.
+    const rAux = findRevisaoDeExclusaoComElementoAnteriorApontandoPara(revisoes, elemento.elementoAnteriorNaSequenciaDeLeitura);
+    if (rAux) {
+        if (tipoProcessamento === 'exclusao') {
+            // Pega a última revisão do grupo da revisão principal (rAux) e utiliza o "elementoAposRevisao" como elemento anterior do atual elemento removido
+            elemento.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(findUltimaRevisaoDoGrupo(revisoes, rAux).elementoAposRevisao));
+            removeAtributosDoElementoAnteriorNaSequenciaDeLeitura(elemento.elementoAnteriorNaSequenciaDeLeitura);
+        }
+        else {
+            // Pega o último filho do elemento incluído e utiliza como elemento anterior da revisão principal (rAux)
+            const dPrimeiroElementoIncluido = getDispositivoFromElemento(articulacao, elemento);
+            const ultimoFilho = createElemento(getUltimoFilho(dPrimeiroElementoIncluido));
+            removeAtributosDoElementoAnteriorNaSequenciaDeLeitura(ultimoFilho);
+            rAux.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = ultimoFilho;
+            rAux.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = ultimoFilho;
+            const ePrimeiroElementoIncluido = createElemento(dPrimeiroElementoIncluido);
+            if (isAtualizarPosicaoDeElementoExcluido(ePrimeiroElementoIncluido, rAux.elementoAposRevisao)) {
+                rAux.elementoAposRevisao.hierarquia.posicao = ePrimeiroElementoIncluido.hierarquia.posicao + 1;
+                rAux.elementoAntesRevisao.hierarquia.posicao = ePrimeiroElementoIncluido.hierarquia.posicao + 1;
+            }
+        }
+    }
+};
+const findRevisaoDeExclusaoComElementoAnteriorApontandoPara = (revisoes = [], elementoAnteriorNaSequenciaDeLeitura) => {
+    return revisoes
+        .filter(isRevisaoElemento)
+        .map(r => r)
+        .filter(isRevisaoDeExclusao)
+        .find(r => r.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura.uuid === elementoAnteriorNaSequenciaDeLeitura.uuid);
+};
+const findUltimaRevisaoDoGrupo = (revisoes = [], revisao) => {
+    return (revisoes
+        .map(r => r)
+        .filter(r => r.idRevisaoElementoPrincipal === revisao.id)
+        .slice(-1)[0] || revisao);
+};
+const isRevisaoDeMovimentacao = (revisao) => {
+    const r = revisao;
+    return !!(isRevisaoElemento(revisao) &&
+        r.stateType === StateType.ElementoIncluido &&
+        r.elementoAntesRevisao &&
+        r.elementoAposRevisao &&
+        r.elementoAntesRevisao.tipo === r.elementoAposRevisao.tipo);
+};
+const isRevisaoDeTransformacao = (revisao) => {
+    const r = revisao;
+    return !!(isRevisaoElemento(revisao) && r.elementoAntesRevisao && r.elementoAposRevisao && r.elementoAntesRevisao.tipo !== r.elementoAposRevisao.tipo);
+};
+const isRevisaoDeModificacao = (revisao) => {
+    return isRevisaoElemento(revisao) && revisao.stateType === StateType.ElementoModificado;
+};
+const isRevisaoDeRestauracao = (revisao) => {
+    return isRevisaoElemento(revisao) && revisao.stateType === StateType.ElementoRestaurado;
+};
+const isAtualizarPosicaoDeElementoExcluido = (elementoIncluido, elementoExcluido) => {
+    var _a, _b, _c, _d;
+    return ((_b = (_a = elementoIncluido.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.lexmlId) === ((_d = (_c = elementoExcluido.hierarquia) === null || _c === void 0 ? void 0 : _c.pai) === null || _d === void 0 ? void 0 : _d.lexmlId) && elementoIncluido.uuid < elementoExcluido.uuid;
+};
+const findRevisaoDeRestauracaoByUuid = (revisoes = [], uuid) => {
+    return revisoes.map(r => r).find(r => isRevisaoElemento(r) && r.stateType === StateType.ElementoRestaurado && r.elementoAposRevisao.uuid === uuid);
+};
+const associarRevisoesAosElementosDosEventos = (state) => {
+    var _a;
+    (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.filter(se => se.stateType !== StateType.RevisaoRejeitada).filter(se => se.stateType !== StateType.RevisaoAdicionalRejeitada).forEach(se => associarRevisoesAosElementos(state.revisoes, se.elementos));
+};
+const associarRevisoesAosElementos = (revisoes = [], elementos = []) => {
+    elementos.filter(Boolean).forEach(e => {
+        const r = findRevisaoByElementoUuid(revisoes, e.uuid);
+        e.revisao = r ? JSON.parse(JSON.stringify(r)) : undefined;
+    });
+};
+const mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes = (state, tempStates, revisoes, operacao) => {
+    var _a, _b;
+    const eventosParaUnificar = {
+        aceitar: [StateType.ElementoValidado],
+        rejeitar: [
+            StateType.ElementoIncluido,
+            StateType.ElementoRemovido,
+            StateType.ElementoSuprimido,
+            StateType.ElementoRenumerado,
+            StateType.ElementoValidado,
+            StateType.ElementoSelecionado,
+            StateType.ElementoMarcado,
+            StateType.SituacaoElementoModificada,
+        ],
+    };
+    let eventosPast = [];
+    let eventos = [];
+    tempStates.forEach(tempState => {
+        eventosPast.push(...tempState.past[0]);
+        eventos.push(...tempState.ui.events);
+    });
+    const tempState = { ...state };
+    eventosParaUnificar[operacao].forEach(stateType => {
+        eventosPast = unificarEvento(tempState, eventosPast, stateType);
+        eventos = unificarEvento(tempState, eventos, stateType);
+    });
+    const idsRevisoes = revisoes.map(r => r.id);
+    tempState.past = buildPast(tempState, eventosPast);
+    tempState.present = eventos;
+    tempState.future = [];
+    tempState.ui = {
+        events: eventos,
+        alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
+    };
+    tempState.revisoes = (_b = state.revisoes) === null || _b === void 0 ? void 0 : _b.filter((r) => !idsRevisoes.includes(r.id));
+    return tempState;
+};
+
 class DispositivoOriginal {
     constructor() {
         this.descricaoSituacao = DescricaoSituacao.DISPOSITIVO_ORIGINAL;
@@ -35894,11 +37511,11 @@ const getElementosDoDispositivo = (dispositivo, valida = false) => {
             const mensagens = validaDispositivo(d);
             if (mensagens) {
                 d.mensagens = mensagens;
-                lista.push(createElemento(d));
+                lista.push(createElemento(d, true, true));
             }
         }
         else {
-            lista.push(createElemento(d));
+            lista.push(createElemento(d, true, true));
         }
     });
     return lista;
@@ -35972,8 +37589,9 @@ const buildEventoTransformacaooElemento = (atual, novo, elementosRemovidos, elem
     eventos.add(StateType.ElementoValidado, elementosValidados);
     return eventos;
 };
-const removeAndBuildEvents = (articulacao, dispositivo) => {
-    const removidos = getElementos(dispositivo);
+const removeAndBuildEvents = (state, dispositivo) => {
+    const articulacao = state.articulacao;
+    const removidos = getElementos(dispositivo, false, true);
     const dispositivosRenumerados = listaDispositivosRenumerados(dispositivo);
     const dispositivoAnterior = getDispositivoAnterior(dispositivo);
     const ehDispositivoAlteracao = isDispositivoAlteracao(dispositivo);
@@ -36006,7 +37624,7 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
     let pos = atual.pai.indexOf(atual);
     const agrupadoresAnteriorMesmoTipo = atual.pai.filhos.filter((d, i) => i < pos && isAgrupador(d));
     const paiOriginal = atual.pai;
-    const removido = createElemento(atual);
+    const removido = createElemento(atual, false, true);
     const irmaoAnterior = getDispositivoAnteriorMesmoTipo(atual);
     const agrupadorAntes = getAgrupadorAntes(atual);
     const pai = (agrupadoresAnteriorMesmoTipo === null || agrupadoresAnteriorMesmoTipo === void 0 ? void 0 : agrupadoresAnteriorMesmoTipo.length) > 0 ? agrupadoresAnteriorMesmoTipo.reverse()[0] : atual.pai;
@@ -36194,12 +37812,60 @@ const createEventos = () => {
             pai: undefined,
             elementos: [],
         },
+        {
+            stateType: StateType.RevisaoAceita,
+            referencia: undefined,
+            pai: undefined,
+            elementos: [],
+        },
+        {
+            stateType: StateType.RevisaoRejeitada,
+            referencia: undefined,
+            pai: undefined,
+            elementos: [],
+        },
     ];
 };
 const getElementosRemovidosEIncluidos = (eventos) => {
     const map = new Map();
-    eventos.filter(ev => [StateType.ElementoRemovido, StateType.ElementoIncluido].includes(ev.stateType)).forEach(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.forEach(el => map.set(el.lexmlId, el)); });
+    eventos.filter(ev => [StateType.ElementoRemovido, StateType.ElementoIncluido].includes(ev.stateType)).forEach(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.forEach(el => map.set(el.uuid, el)); });
     return Array.from(map.values());
+};
+const unificarEvento = (state, eventos, stateType) => {
+    const result = eventos.filter(ev => ev.stateType !== stateType);
+    if (stateType === StateType.ElementoRemovido) {
+        const elementos = eventos
+            .filter(ev => ev.stateType === StateType.ElementoRemovido)
+            .map(ev => ev.elementos || [])
+            .flat();
+        elementos.length && result.push({ stateType: stateType, elementos });
+    }
+    else {
+        const elementos = [];
+        const mapDispositivos = new Map();
+        eventos
+            .filter(ev => ev.stateType === stateType)
+            .forEach(ev => {
+            var _a;
+            (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.forEach(e => {
+                const r = [StateType.ElementoIncluido, StateType.ElementoMarcado, StateType.SituacaoElementoModificada, StateType.ElementoRenumerado].includes(stateType)
+                    ? findRevisaoByElementoUuid(state.revisoes, e.uuid)
+                    : undefined;
+                if (r && isRevisaoDeExclusao(r)) {
+                    elementos.push(e);
+                }
+                else if (!mapDispositivos.has(e.uuid)) {
+                    const dispositivo = getDispositivoFromElemento(state.articulacao, e);
+                    if (dispositivo) {
+                        mapDispositivos.set(e.uuid, dispositivo);
+                        elementos.push(createElementoValidado(dispositivo, stateType === StateType.ElementoIncluido));
+                    }
+                }
+            });
+        });
+        elementos.length && result.push({ stateType: stateType, elementos });
+    }
+    return result;
 };
 
 class Eventos {
@@ -36733,6 +38399,7 @@ class DispositivoModificado {
 }
 
 const aplicaAlteracoesEmenda = (state, action) => {
+    var _a;
     const retorno = {
         articulacao: state.articulacao,
         modo: state.modo,
@@ -36743,6 +38410,9 @@ const aplicaAlteracoesEmenda = (state, action) => {
             events: [],
             alertas: [],
         },
+        revisoes: [],
+        emRevisao: state.emRevisao,
+        numEventosPassadosAntesDaRevisao: 0,
     };
     const eventos = new Eventos();
     if (action.alteracoesEmenda.dispositivosSuprimidos) {
@@ -36773,6 +38443,10 @@ const aplicaAlteracoesEmenda = (state, action) => {
     if (action.alteracoesEmenda.dispositivosAdicionados) {
         eventos.eventos.push(...processaDispositivosAdicionados(state, action.alteracoesEmenda));
     }
+    if ((_a = action.revisoes) === null || _a === void 0 ? void 0 : _a.length) {
+        eventos.eventos.push(...processaRevisoes$1(retorno, action.revisoes));
+        retorno.emRevisao = true;
+    }
     retorno.ui.events = eventos.build();
     const elementosInseridos = [];
     retorno.ui.events.filter(stateEvent => stateEvent.stateType === StateType.ElementoIncluido).forEach(se => elementosInseridos.push(...se.elementos));
@@ -36780,6 +38454,9 @@ const aplicaAlteracoesEmenda = (state, action) => {
         stateType: StateType.SituacaoElementoModificada,
         elementos: getElementosAlteracaoASeremAtualizados(state.articulacao, elementosInseridos),
     });
+    if (retorno.emRevisao) {
+        retorno.ui.events.push({ stateType: StateType.RevisaoAtivada });
+    }
     return retorno;
 };
 const processaDispositivosAdicionados = (state, alteracoesEmenda) => {
@@ -36961,6 +38638,94 @@ const ajustaAtributosDispositivoAdicionado = (dispositivo, da, modo) => {
     }
 };
 const idSemCpt = (id) => id.replace(/(_cpt)$/, '');
+const processaRevisoes$1 = (state, revisoes) => {
+    const elementosExcluidosEmModoDeRevisao = [];
+    let elementoAnterior;
+    revisoes.forEach(r => {
+        var _a;
+        try {
+            if (isRevisaoElemento(r)) {
+                const rAux = r;
+                processarElementoDaRevisao(state, rAux, elementoAnterior, elementosExcluidosEmModoDeRevisao);
+                if (isRevisaoDeExclusao(rAux)) {
+                    elementoAnterior = rAux.elementoAposRevisao;
+                }
+            }
+            (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.push(r);
+        }
+        catch (error) {
+            // TODO: tratar erro
+        }
+    });
+    state.revisoes = identificarRevisaoElementoPai(state, state.revisoes);
+    return [...buildEventoRevisaoDispositivoRestaurado(state, revisoes), { stateType: StateType.ElementoIncluido, elementos: elementosExcluidosEmModoDeRevisao }];
+};
+const buildEventoRevisaoDispositivoRestaurado = (state, revisoes) => {
+    const result = [];
+    const revisoesRestauracao = revisoes.map(r => r).filter(r => r.actionType === RESTAURAR_ELEMENTO) || [];
+    if (revisoesRestauracao.length) {
+        const elementos = revisoesRestauracao.map(r => buscaDispositivoById(state.articulacao, r.elementoAposRevisao.lexmlId)).map(d => createElemento(d));
+        result.push({ stateType: StateType.ElementoRestaurado, elementos });
+    }
+    return result;
+};
+const processarElementoDaRevisao = (state, revisao, elementoAnterior, elementosExcluidosEmModoDeRevisao) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    if (isRevisaoDeExclusao(revisao)) {
+        let e;
+        if (isRevisaoPrincipal(revisao)) {
+            let d = findDispositivoByUuid2(state.articulacao, revisao.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura.uuid2);
+            d = d || buscaDispositivoById(state.articulacao, idSemCpt(revisao.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura.lexmlId)) || null;
+            e = d ? createElemento(d) : elementoAnterior;
+        }
+        else {
+            e = elementoAnterior;
+        }
+        revisao.elementoAposRevisao.uuid = Counter.next();
+        revisao.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(e));
+        revisao.elementoAntesRevisao.uuid = revisao.elementoAposRevisao.uuid;
+        revisao.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(e));
+        atualizarUuidDoPaiDoElementoRemovido(state, revisao);
+        elementosExcluidosEmModoDeRevisao.push(revisao.elementoAposRevisao);
+        elementoAnterior = revisao.elementoAposRevisao;
+    }
+    else {
+        const e = createElemento(buscaDispositivoById(state.articulacao, revisao.elementoAposRevisao.lexmlId));
+        revisao.elementoAposRevisao.uuid = e.uuid;
+        revisao.elementoAposRevisao.uuid2 = e.uuid2;
+        revisao.elementoAposRevisao.hierarquia.pai.uuid = (_b = (_a = e.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.uuid;
+        revisao.elementoAposRevisao.hierarquia.pai.uuid2 = (_d = (_c = e.hierarquia) === null || _c === void 0 ? void 0 : _c.pai) === null || _d === void 0 ? void 0 : _d.uuid2;
+        if (isRevisaoDeMovimentacao(revisao) || isRevisaoDeTransformacao(revisao)) {
+            revisao.elementoAntesRevisao.uuid = Counter.next();
+            revisao.elementoAntesRevisao.hierarquia.pai.uuid = (_f = (_e = e.hierarquia) === null || _e === void 0 ? void 0 : _e.pai) === null || _f === void 0 ? void 0 : _f.uuid;
+            revisao.elementoAntesRevisao.hierarquia.pai.uuid2 = (_h = (_g = e.hierarquia) === null || _g === void 0 ? void 0 : _g.pai) === null || _h === void 0 ? void 0 : _h.uuid2;
+        }
+        else if (revisao.stateType !== StateType.ElementoIncluido) {
+            revisao.elementoAntesRevisao.uuid = e.uuid;
+            revisao.elementoAntesRevisao.uuid2 = e.uuid2;
+            revisao.elementoAntesRevisao.hierarquia.pai.uuid = (_k = (_j = e.hierarquia) === null || _j === void 0 ? void 0 : _j.pai) === null || _k === void 0 ? void 0 : _k.uuid;
+            revisao.elementoAntesRevisao.hierarquia.pai.uuid2 = (_m = (_l = e.hierarquia) === null || _l === void 0 ? void 0 : _l.pai) === null || _m === void 0 ? void 0 : _m.uuid2;
+        }
+    }
+};
+const atualizarUuidDoPaiDoElementoRemovido = (state, revisao) => {
+    let uuid = 0;
+    let uuid2 = '';
+    if (isRevisaoPrincipal(revisao)) {
+        const pai = buscaDispositivoById(state.articulacao, revisao.elementoAposRevisao.hierarquia.pai.lexmlId);
+        uuid = pai === null || pai === void 0 ? void 0 : pai.uuid;
+        uuid2 = pai === null || pai === void 0 ? void 0 : pai.uuid2;
+    }
+    else {
+        const revisaoPai = findRevisaoById(state.revisoes, revisao.idRevisaoElementoPai);
+        uuid = revisaoPai.elementoAposRevisao.uuid;
+        uuid2 = revisaoPai.elementoAposRevisao.uuid2;
+    }
+    revisao.elementoAposRevisao.hierarquia.pai.uuid = uuid;
+    revisao.elementoAposRevisao.hierarquia.pai.uuid2 = uuid2;
+    revisao.elementoAntesRevisao.hierarquia.pai.uuid = uuid;
+    revisao.elementoAntesRevisao.hierarquia.pai.uuid2 = uuid2;
+};
 
 const atualizaElemento = (state, action) => {
     var _a, _b, _c, _d, _e;
@@ -37373,7 +39138,7 @@ const transformaTipoElemento = (state, action) => {
     }
     const ultimoFilhoDispositivoAnteriorAtual = cabecaAlteracao && dispositivoAnteriorAtual && getUltimoFilho(dispositivoAnteriorAtual);
     action.subType = normalizaNomeAcaoTransformacao(atual, action.subType);
-    const removidos = [...getElementos(atual)];
+    const removidos = [...getElementos(atual, false, true)];
     const atualRenumerados = listaDispositivosRenumerados(atual);
     const novo = converteDispositivo(atual, action);
     const novoRenumerados = listaDispositivosRenumerados(novo);
@@ -37455,6 +39220,12 @@ const moveElementoAbaixo = (state, action) => {
     if (!isAcaoPermitida(atual, MoverElementoAbaixo)) {
         return montaEMostraMensagensErro(atual, state);
     }
+    if (state.emRevisao && existeFilhoExcluidoDuranteRevisao(state, atual) && !action.isRejeitandoRevisao) {
+        return retornaEstadoAtualComMensagem(state, {
+            tipo: TipoMensagem.ERROR,
+            descricao: 'Não é possível mover dispositivo que possua dispositivo subordinado já removido ou alterado em modo de revisão.',
+        });
+    }
     // Dispositivo cuja posição será trocada com o atual
     let proximo = getIrmaoPosteriorIndependenteDeTipo(atual);
     if (!proximo && isArtigo(atual)) {
@@ -37464,7 +39235,7 @@ const moveElementoAbaixo = (state, action) => {
         return state;
     }
     const movendoArtigoParaAgrupador = isAgrupadorNaoArticulacao(proximo);
-    const removidos = [...getElementos(atual)];
+    const removidos = [...getElementos(atual, false, true)];
     const renumerados = listaDispositivosRenumerados(atual);
     const paiAntigo = atual.pai;
     const novoPai = movendoArtigoParaAgrupador ? proximo : proximo.pai;
@@ -37476,6 +39247,9 @@ const moveElementoAbaixo = (state, action) => {
     if (paiAntigo !== novoPai) {
         paiAntigo.renumeraFilhos();
     }
+    getDispositivoAndFilhosAsLista(atual).forEach(d => (d.id = buildId(d)));
+    const dAnterior = atual.pai.filhos[atual.pai.indexOf(atual) - 1];
+    dAnterior && getDispositivoAndFilhosAsLista(dAnterior).forEach(d => (d.id = buildId(d)));
     const referencia = movendoArtigoParaAgrupador ? proximo : getUltimoFilho(proximo);
     const eventos = new Eventos();
     eventos.setReferencia(createElemento(ajustaReferencia(referencia, atual)));
@@ -37513,6 +39287,12 @@ const moveElementoAcima = (state, action) => {
     if (!isAcaoPermitida(atual, MoverElementoAcima)) {
         return montaEMostraMensagensErro(atual, state);
     }
+    if (state.emRevisao && existeFilhoExcluidoDuranteRevisao(state, atual) && !action.isRejeitandoRevisao) {
+        return retornaEstadoAtualComMensagem(state, {
+            tipo: TipoMensagem.ERROR,
+            descricao: 'Não é possível mover dispositivo que possua dispositivo subordinado já removido ou alterado em modo de revisão.',
+        });
+    }
     // Dispositivo cuja posição será trocada com o atual
     const emAlteracao = isDispositivoAlteracao(atual);
     const anterior = isArtigo(atual)
@@ -37521,7 +39301,7 @@ const moveElementoAcima = (state, action) => {
     if (anterior === undefined || isDispositivoRaiz(anterior) || isEmenta(anterior)) {
         return state;
     }
-    const removidos = getElementos(atual);
+    const removidos = getElementos(atual, false, true);
     const renumerados = irmaosMesmoTipo(atual).filter(d => d !== atual && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL);
     resetUuidTodaArvore(atual);
     // Partindo do caso feliz (movendo entre irmãos)
@@ -37560,6 +39340,9 @@ const moveElementoAcima = (state, action) => {
     if (paiAntigo !== novoPai) {
         paiAntigo.renumeraFilhos();
     }
+    getDispositivoAndFilhosAsLista(atual).forEach(d => (d.id = buildId(d)));
+    const dPosterior = atual.pai.filhos[atual.pai.indexOf(atual) + 1];
+    dPosterior && getDispositivoAndFilhosAsLista(dPosterior).forEach(d => (d.id = buildId(d)));
     const referencia = getDispositivoAnteriorNaSequenciaDeLeitura(atual, d => !isCaput(d) && !isArticulacaoAlteracao(d));
     const eventos = new Eventos();
     eventos.add(StateType.ElementoRemovido, removidos);
@@ -37587,6 +39370,78 @@ const moveElementoAcima = (state, action) => {
     };
 };
 
+const removeElemento = (state, action) => {
+    var _a;
+    const dispositivo = getDispositivoFromElemento(state.articulacao, action.atual, true);
+    if (dispositivo === undefined) {
+        state.ui.events = [];
+        return state;
+    }
+    if (isAgrupador(dispositivo) && !isDispositivoAlteracao(dispositivo)) {
+        // Só deixa remover agrupador se articulação permenecer consistente
+        if (isArticulacao(dispositivo.pai)) {
+            const tipos = getTiposAgrupadorArtigoPermitidosNaArticulacao();
+            if (!dispositivo.filhos.every(f => isArtigo(f) || tipos.includes(f.tipo))) {
+                return retornaEstadoAtualComMensagem(state, {
+                    tipo: TipoMensagem.ERROR,
+                    descricao: `Operação não permitida (se houver seções abaixo do "${dispositivo.rotulo}", elas devem ser removidas antes)`,
+                });
+            }
+        }
+        else if (dispositivo.filhos.filter(f => !isArtigo(f)).length) {
+            const dispositivos = getDispositivoAndFilhosAsLista(dispositivo.pai).filter(isAgrupador);
+            const agrupadorAntes = dispositivos[dispositivos.indexOf(dispositivo) - 1] || {};
+            const agrupadorDepois = dispositivos[dispositivos.indexOf(dispositivo) + 1] || {};
+            return retornaEstadoAtualComMensagem(state, {
+                tipo: TipoMensagem.ERROR,
+                descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
+            });
+        }
+    }
+    if (!isAcaoPermitida(dispositivo, RemoverElemento)) {
+        return retornaEstadoAtualComMensagem(state, { tipo: TipoMensagem.ERROR, descricao: 'Não é possível excluir um dispositivo original mas apenas suprimi-lo.' });
+    }
+    if (!isDispositivoAlteracao(dispositivo) &&
+        (isArtigoUnico(dispositivo) || (state.articulacao.filhos.length === 1 && state.articulacao.filhos[0] === dispositivo && !hasFilhos(dispositivo)))) {
+        return retornaEstadoAtualComMensagem(state, { tipo: TipoMensagem.ERROR, descricao: 'Não é possível excluir o único dispositivo disponível.' });
+    }
+    if (state.emRevisao && existeFilhoExcluidoOuAlteradoDuranteRevisao(state, dispositivo) && !action.isRejeitandoRevisao) {
+        return retornaEstadoAtualComMensagem(state, {
+            tipo: TipoMensagem.ERROR,
+            descricao: 'Não é possível remover dispositivo que possua dispositivo subordinado já removido ou alterado em modo de revisão.',
+        });
+    }
+    const revisao = findRevisaoByElementoUuid2(state.revisoes, dispositivo.uuid2);
+    if (state.emRevisao && revisao && isRevisaoPrincipal(revisao) && isRevisaoDeMovimentacao(revisao) && !action.isRejeitandoRevisao) {
+        return retornaEstadoAtualComMensagem(state, {
+            tipo: TipoMensagem.ERROR,
+            descricao: 'Não é possível remover dispositivo movido em modo de revisão.',
+        });
+    }
+    const primeiroFilhoDoAgrupador = isAgrupador(dispositivo) ? dispositivo.filhos[0] || getDispositivoPosterior(dispositivo) || getDispositivoAnterior(dispositivo) : undefined;
+    const elPrimeiroFilhoDoAgrupador = primeiroFilhoDoAgrupador ? createElemento(primeiroFilhoDoAgrupador) : undefined;
+    const isAtualizarElementoEmenta = hasEmenta(dispositivo) && dispositivo === getPrimeiroAgrupadorNaArticulacao(dispositivo);
+    const events = isAgrupador(dispositivo) ? removeAgrupadorAndBuildEvents(state.articulacao, dispositivo) : removeAndBuildEvents(state, dispositivo);
+    if (elPrimeiroFilhoDoAgrupador) {
+        events.push({ stateType: StateType.ElementoMarcado, elementos: [elPrimeiroFilhoDoAgrupador] });
+        events.push({ stateType: StateType.ElementoReferenciado, elementos: [elPrimeiroFilhoDoAgrupador] });
+    }
+    if (isAtualizarElementoEmenta) {
+        events.push({ stateType: StateType.SituacaoElementoModificada, elementos: [createElemento(state.articulacao.projetoNorma.ementa)] });
+    }
+    return {
+        articulacao: state.articulacao,
+        modo: state.modo,
+        past: buildPast(state, events),
+        present: events,
+        future: [],
+        ui: {
+            events,
+            alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
+        },
+    };
+};
+
 const getTipoSituacaoByDescricao = (descricao) => {
     switch (descricao) {
         case DescricaoSituacao.DISPOSITIVO_ADICIONADO:
@@ -37599,7 +39454,9 @@ const getTipoSituacaoByDescricao = (descricao) => {
 };
 const getDispositivoPaiFromElemento = (articulacao, elemento) => {
     if (isElementoDispositivoAlteracao(elemento)) {
-        const artigo = isArticulacaoAlteracao(articulacao) ? articulacao.pai : findDispositivoByUuid(articulacao, elemento.hierarquia.pai.uuidAlteracao);
+        const artigo = isArticulacaoAlteracao(articulacao)
+            ? articulacao.pai
+            : findDispositivoByUuid(articulacao, elemento.hierarquia.pai.uuidAlteracao) || buscaDispositivoById(articulacao, elemento.hierarquia.pai.lexmlId);
         if (artigo) {
             if (!artigo.alteracoes) {
                 artigo.alteracoes = createArticulacao();
@@ -37608,10 +39465,10 @@ const getDispositivoPaiFromElemento = (articulacao, elemento) => {
             if (elemento.hierarquia.pai.tipo === TipoDispositivo.articulacao.tipo) {
                 return artigo.alteracoes;
             }
-            return findDispositivoByUuid(artigo.alteracoes, elemento.hierarquia.pai.uuid);
+            return findDispositivoByUuid(artigo.alteracoes, elemento.hierarquia.pai.uuid) || buscaDispositivoById(artigo.alteracoes, elemento.hierarquia.pai.lexmlId) || null;
         }
     }
-    return findDispositivoByUuid(articulacao, elemento.hierarquia.pai.uuid);
+    return findDispositivoByUuid(articulacao, elemento.hierarquia.pai.uuid) || buscaDispositivoById(articulacao, elemento.hierarquia.pai.lexmlId) || null;
 };
 const isOmissisCaput = (elemento) => {
     return elemento.tipo === TipoDispositivo.omissis.tipo && elemento.tipoOmissis === 'inciso-caput';
@@ -37620,6 +39477,7 @@ const redodDispositivoExcluido = (elemento, pai, modo) => {
     var _a, _b, _c;
     const novo = criaDispositivo(isArtigo(pai) && (elemento.tipo === TipoDispositivo.inciso.name || isOmissisCaput(elemento)) ? pai.caput : pai, elemento.tipo, undefined, elemento.hierarquia.posicao);
     novo.uuid = elemento.uuid;
+    novo.uuid2 = elemento.uuid2;
     novo.id = elemento.lexmlId;
     novo.texto = (_b = (_a = elemento === null || elemento === void 0 ? void 0 : elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '';
     novo.numero = (_c = elemento === null || elemento === void 0 ? void 0 : elemento.hierarquia) === null || _c === void 0 ? void 0 : _c.numero;
@@ -37645,12 +39503,15 @@ const redodDispositivoExcluido = (elemento, pai, modo) => {
 };
 const redoDispositivosExcluidos = (articulacao, elementos, modo) => {
     const primeiroElemento = elementos.shift();
-    const pai = getDispositivoPaiFromElemento(articulacao, primeiroElemento);
+    const pai = getDispositivoPaiFromElemento(articulacao, primeiroElemento) || buscaDispositivoById(articulacao, primeiroElemento.hierarquia.pai.lexmlId);
     const primeiro = redodDispositivoExcluido(primeiroElemento, pai, modo);
+    const idPrimeiroDispositivo = primeiro.id;
     const novos = [primeiro];
     elementos === null || elementos === void 0 ? void 0 : elementos.forEach(filho => {
         var _a, _b;
-        const parent = ((_a = filho.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === ((_b = primeiroElemento === null || primeiroElemento === void 0 ? void 0 : primeiroElemento.hierarquia) === null || _b === void 0 ? void 0 : _b.pai) ? primeiro.pai : getDispositivoPaiFromElemento(articulacao, filho);
+        const parent = ((_a = filho.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === ((_b = primeiroElemento === null || primeiroElemento === void 0 ? void 0 : primeiroElemento.hierarquia) === null || _b === void 0 ? void 0 : _b.pai)
+            ? primeiro.pai
+            : getDispositivoPaiFromElemento(articulacao, filho) || buscaDispositivoById(articulacao, idPrimeiroDispositivo);
         const novo = redodDispositivoExcluido(filho, parent, modo);
         novos.push(novo);
     });
@@ -37659,6 +39520,7 @@ const redoDispositivosExcluidos = (articulacao, elementos, modo) => {
 const incluir = (state, evento, novosEvento) => {
     if (evento !== undefined && evento.elementos !== undefined && evento.elementos[0] !== undefined) {
         const elemento = evento.elementos[0];
+        const procurarElementoAnterior = evento.elementos.some(e => e.elementoAnteriorNaSequenciaDeLeitura);
         const pai = getDispositivoPaiFromElemento(state.articulacao, elemento);
         const novos = redoDispositivosExcluidos(state.articulacao, evento.elementos, state.modo);
         pai === null || pai === void 0 ? void 0 : pai.renumeraFilhos();
@@ -37674,7 +39536,6 @@ const incluir = (state, evento, novosEvento) => {
         if (evento.stateType === StateType.ElementoIncluido) {
             novosEvento.referencia = evento.referencia;
         }
-        const procurarElementoAnterior = evento.elementos.some(e => e.elementoAnteriorNaSequenciaDeLeitura);
         return novos.map(n => createElemento(n, true, procurarElementoAnterior));
     }
     return [];
@@ -37713,7 +39574,7 @@ const restaurarSituacao = (state, evento, eventoRestaurados, Situacao) => {
     }
     return [];
 };
-const processarModificados = (state, evento, isRedo = false) => {
+const processarModificados = (state, evento, operacao, revisoes = []) => {
     if (evento !== undefined && evento.elementos !== undefined && evento.elementos[0] !== undefined) {
         const novosElementos = [];
         let anterior = 0;
@@ -37721,9 +39582,10 @@ const processarModificados = (state, evento, isRedo = false) => {
             var _a, _b, _c, _d, _e, _f, _g;
             const dispositivo = getDispositivoFromElemento(state.articulacao, e, true);
             if (dispositivo) {
-                if ((isRedo && anterior === dispositivo.uuid) || anterior !== dispositivo.uuid) {
+                const permiteAtualizar = anterior !== dispositivo.uuid || (operacao === 'REDO' && anterior === dispositivo.uuid);
+                if (permiteAtualizar) {
                     if (dispositivo.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
-                        if (dispositivo.situacao.dispositivoOriginal.conteudo.texto === ((_a = e.conteudo) === null || _a === void 0 ? void 0 : _a.texto)) {
+                        if (findRevisaoDeRestauracaoByUuid(revisoes, dispositivo.uuid) || dispositivo.situacao.dispositivoOriginal.conteudo.texto === ((_a = e.conteudo) === null || _a === void 0 ? void 0 : _a.texto)) {
                             dispositivo.texto = (_c = (_b = dispositivo.situacao.dispositivoOriginal.conteudo) === null || _b === void 0 ? void 0 : _b.texto) !== null && _c !== void 0 ? _c : '';
                             dispositivo.situacao = new DispositivoOriginal();
                         }
@@ -37802,10 +39664,11 @@ const processaSituacoesAlteradas = (state, eventos) => {
 };
 const isUndoRedoInclusaoExclusaoAgrupador = (eventos) => {
     const tiposAgrupadorArtigo = getTiposAgrupadorArtigoOrdenados();
-    return (eventos.length > 0 &&
-        [StateType.ElementoIncluido, StateType.ElementoRemovido].includes(eventos[0].stateType) &&
-        eventos[0].elementos.length > 0 &&
-        tiposAgrupadorArtigo.includes(eventos[0].elementos[0].tipo));
+    const eventosFiltrados = eventos.filter(ev => ![StateType.RevisaoAceita, StateType.RevisaoRejeitada, StateType.RevisaoAdicionalRejeitada].includes(ev.stateType));
+    return (eventosFiltrados.length > 0 &&
+        [StateType.ElementoIncluido, StateType.ElementoRemovido].includes(eventosFiltrados[0].stateType) &&
+        eventosFiltrados[0].elementos.length > 0 &&
+        tiposAgrupadorArtigo.includes(eventosFiltrados[0].elementos[0].tipo));
 };
 const ajustarAtributosAgrupadorIncluidoPorUndoRedo = (articulacao, eventosFonte, eventosResultantes) => {
     var _a;
@@ -37827,11 +39690,11 @@ const processarRestaurados = (state, evento, acao) => {
     let stateType;
     if (elementoDeReferencia.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
         d.situacao = new DispositivoModificado(createElemento(d));
-        stateType = StateType.ElementoModificado;
+        stateType = StateType.ElementoRestaurado;
     }
     else if (elementoDeReferencia.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
         d.situacao = new DispositivoSuprimido(createElemento(d));
-        stateType = StateType.ElementoSuprimido;
+        stateType = StateType.ElementoRestaurado;
     }
     else {
         d.situacao = new DispositivoOriginal();
@@ -37840,7 +39703,7 @@ const processarRestaurados = (state, evento, acao) => {
     d.numero = (_a = elementoDeReferencia.numero) !== null && _a !== void 0 ? _a : '';
     d.rotulo = (_b = elementoDeReferencia.rotulo) !== null && _b !== void 0 ? _b : '';
     d.texto = (_d = (_c = elementoDeReferencia.conteudo) === null || _c === void 0 ? void 0 : _c.texto) !== null && _d !== void 0 ? _d : '';
-    const elementos = stateType === StateType.ElementoSuprimido ? [createElemento(d)] : [elementoAntesDeRestaurarSituacao, createElemento(d)];
+    const elementos = isSuprimido(d) ? [createElemento(d)] : [elementoAntesDeRestaurarSituacao, createElemento(d)];
     return { stateType, elementos };
 };
 const processarSuprimidos = (state, evento) => {
@@ -37854,68 +39717,55 @@ const processarSuprimidos = (state, evento) => {
     });
     return result;
 };
-
-const removeElemento = (state, action) => {
-    var _a;
-    const dispositivo = getDispositivoFromElemento(state.articulacao, action.atual, true);
-    if (dispositivo === undefined) {
-        state.ui.events = [];
-        return state;
-    }
-    if (isAgrupador(dispositivo) && !isDispositivoAlteracao(dispositivo)) {
-        // Só deixa remover agrupador se articulação permenecer consistente
-        if (isArticulacao(dispositivo.pai)) {
-            const tipos = getTiposAgrupadorArtigoPermitidosNaArticulacao();
-            if (!dispositivo.filhos.every(f => isArtigo(f) || tipos.includes(f.tipo))) {
-                return retornaEstadoAtualComMensagem(state, {
-                    tipo: TipoMensagem.ERROR,
-                    descricao: `Operação não permitida (se houver seções abaixo do "${dispositivo.rotulo}", elas devem ser removidas antes)`,
-                });
+const processarRevisoesAceitasOuRejeitadas = (state, eventos, stateType) => {
+    const atualizaReferenciaElementoAnteriorSeNecessario = (revisoesRetornadasParaState) => {
+        revisoesRetornadasParaState.filter(isRevisaoPrincipal).forEach(r => {
+            const e = r.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura;
+            const revisaoASerAtualizada = findRevisaoDeExclusaoComElementoAnteriorApontandoPara(state.revisoes, e);
+            if (revisaoASerAtualizada && revisaoASerAtualizada.id !== r.id) {
+                const revisaoRetornada = findRevisaoDeExclusaoComElementoAnteriorApontandoPara(revisoesRetornadasParaState, e);
+                const ultimaRevisaoDoGrupo = findUltimaRevisaoDoGrupo(revisoesRetornadasParaState, revisaoRetornada);
+                const elementoAnterior = JSON.parse(JSON.stringify(ultimaRevisaoDoGrupo.elementoAposRevisao));
+                removeAtributosDoElementoAnteriorNaSequenciaDeLeitura(elementoAnterior);
+                revisaoASerAtualizada.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = elementoAnterior;
+                revisaoASerAtualizada.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = elementoAnterior;
             }
-        }
-        else if (dispositivo.filhos.filter(f => !isArtigo(f)).length) {
-            const dispositivos = getDispositivoAndFilhosAsLista(dispositivo.pai).filter(isAgrupador);
-            const agrupadorAntes = dispositivos[dispositivos.indexOf(dispositivo) - 1] || {};
-            const agrupadorDepois = dispositivos[dispositivos.indexOf(dispositivo) + 1] || {};
-            return retornaEstadoAtualComMensagem(state, {
-                tipo: TipoMensagem.ERROR,
-                descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
-            });
-        }
-    }
-    if (!isAcaoPermitida(dispositivo, RemoverElemento)) {
-        return retornaEstadoAtualComMensagem(state, { tipo: TipoMensagem.ERROR, descricao: 'Não é possível excluir um dispositivo original mas apenas suprimi-lo.' });
-    }
-    if (!isDispositivoAlteracao(dispositivo) &&
-        (isArtigoUnico(dispositivo) || (state.articulacao.filhos.length === 1 && state.articulacao.filhos[0] === dispositivo && !hasFilhos(dispositivo)))) {
-        return retornaEstadoAtualComMensagem(state, { tipo: TipoMensagem.ERROR, descricao: 'Não é possível excluir o único dispositivo disponível.' });
-    }
-    const primeiroFilhoDoAgrupador = isAgrupador(dispositivo) ? dispositivo.filhos[0] || getDispositivoPosterior(dispositivo) || getDispositivoAnterior(dispositivo) : undefined;
-    const elPrimeiroFilhoDoAgrupador = primeiroFilhoDoAgrupador ? createElemento(primeiroFilhoDoAgrupador) : undefined;
-    const isAtualizarElementoEmenta = hasEmenta(dispositivo) && dispositivo === getPrimeiroAgrupadorNaArticulacao(dispositivo);
-    const events = isAgrupador(dispositivo) ? removeAgrupadorAndBuildEvents(state.articulacao, dispositivo) : removeAndBuildEvents(state.articulacao, dispositivo);
-    if (elPrimeiroFilhoDoAgrupador) {
-        events.push({ stateType: StateType.ElementoMarcado, elementos: [elPrimeiroFilhoDoAgrupador] });
-        events.push({ stateType: StateType.ElementoReferenciado, elementos: [elPrimeiroFilhoDoAgrupador] });
-    }
-    if (isAtualizarElementoEmenta) {
-        events.push({ stateType: StateType.SituacaoElementoModificada, elementos: [createElemento(state.articulacao.projetoNorma.ementa)] });
-    }
-    return {
-        articulacao: state.articulacao,
-        modo: state.modo,
-        past: buildPast(state, events),
-        present: events,
-        future: [],
-        ui: {
-            events,
-            alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
-        },
+        });
     };
+    const result = [];
+    const eventosFiltrados = eventos.filter((se) => se.stateType === stateType);
+    if (eventosFiltrados.length) {
+        eventosFiltrados.forEach((ev) => {
+            const revisoesRetornadasParaState = ev.elementos.map(e => e.revisao);
+            state.revisoes.push(...revisoesRetornadasParaState);
+            result.push({ stateType: ev.stateType, elementos: ev.elementos });
+            if (existeRevisaoCriadaPorExclusao(revisoesRetornadasParaState)) {
+                const elementos = revisoesRetornadasParaState.map(r => r.elementoAntesRevisao);
+                if (stateType === StateType.RevisaoAdicionalRejeitada) {
+                    elementos.forEach(e => removeElemento({ ...state, emRevisao: false }, { atual: e }));
+                }
+                // Reapresenta, no editor, os dispositivos removidos em modo de revisão
+                if (stateType === StateType.RevisaoAceita) {
+                    result.push({ stateType: StateType.ElementoIncluido, elementos: elementos });
+                    result.push({ stateType: StateType.ElementoMarcado, elementos: [elementos[0]] });
+                }
+                atualizaReferenciaElementoAnteriorSeNecessario(revisoesRetornadasParaState);
+            }
+            else {
+                const elementos = getElementosFromRevisoes(revisoesRetornadasParaState, state).map(e => JSON.parse(JSON.stringify(e)));
+                associarRevisoesAosElementos(state.revisoes, elementos);
+                result.push({ stateType: StateType.SituacaoElementoModificada, elementos: elementos });
+                if (stateType === StateType.RevisaoAceita) {
+                    result.push({ stateType: StateType.ElementoMarcado, elementos: [elementos[0]] });
+                }
+            }
+        });
+    }
+    return result;
 };
 
 const redo = (state) => {
-    var _a, _b;
+    var _a, _b, _c, _d;
     if (state.future === undefined || state.future.length === 0) {
         state.ui.events = [];
         return state;
@@ -37932,6 +39782,10 @@ const redo = (state) => {
             events: [],
             alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
         },
+        emRevisao: state.emRevisao,
+        usuario: state.usuario,
+        revisoes: state.revisoes,
+        numEventosPassadosAntesDaRevisao: state.numEventosPassadosAntesDaRevisao,
     };
     if (isUndoRedoInclusaoExclusaoAgrupador(eventos)) {
         let tempState;
@@ -37951,8 +39805,19 @@ const redo = (state) => {
         else {
             tempState = removeElemento(tempState, { atual: eventos[0].elementos[0] });
         }
-        retorno.present = tempState.ui.events;
-        retorno.ui.events = tempState.ui.events;
+        const eventosRevisao = getEventosDeRevisao(eventos);
+        if (eventosRevisao.length) {
+            const idsRevisoesAssociadas = eventosRevisao
+                .map((se) => se.elementos || [])
+                .flat()
+                .map((e) => findRevisoesByElementoUuid(retorno.revisoes, e.uuid))
+                .flat()
+                .map(r => r.id)
+                .filter(Boolean);
+            retorno.revisoes = (_b = state.revisoes) === null || _b === void 0 ? void 0 : _b.filter((r) => !idsRevisoesAssociadas.includes(r.id));
+        }
+        retorno.ui.events = [...eventosRevisao, ...tempState.ui.events];
+        retorno.present = [...eventosRevisao, ...tempState.ui.events];
         return retorno;
     }
     const events = new Eventos();
@@ -37960,21 +39825,35 @@ const redo = (state) => {
     events.add(StateType.ElementoIncluido, incluir(state, getEvento(eventos, StateType.ElementoIncluido), getEvento(events.eventos, StateType.ElementoIncluido)));
     eventos
         .filter((ev) => ev.stateType === StateType.ElementoModificado)
-        .forEach((ev) => events.eventos.push({ stateType: StateType.ElementoModificado, elementos: processarModificados(state, ev, true) }));
+        .forEach((ev) => events.eventos.push({ stateType: StateType.ElementoModificado, elementos: processarModificados(state, ev, 'REDO') }));
     events.add(StateType.ElementoSuprimido, restaurarSituacao(state, getEvento(eventos, StateType.ElementoSuprimido), getEvento(events.eventos, StateType.ElementoSuprimido), DispositivoSuprimido));
     eventos.filter((ev) => ev.stateType === StateType.ElementoRestaurado).forEach((ev) => events.eventos.push(processarRestaurados(state, ev, 'REDO')));
     events.add(StateType.ElementoRenumerado, processaRenumerados(state, getEvento(eventos, StateType.ElementoRenumerado)));
     events.add(StateType.ElementoValidado, processaValidados(state, eventos));
-    const elementosParaMarcar = (_b = getEvento(eventos, StateType.ElementoMarcado)) === null || _b === void 0 ? void 0 : _b.elementos;
+    const elementosParaMarcar = (_c = getEvento(eventos, StateType.ElementoMarcado)) === null || _c === void 0 ? void 0 : _c.elementos;
     if (elementosParaMarcar) {
         events.add(StateType.ElementoMarcado, elementosParaMarcar);
         events.add(StateType.ElementoSelecionado, [elementosParaMarcar[0]]);
     }
     events.add(StateType.SituacaoElementoModificada, getElementosAlteracaoASeremAtualizados(state.articulacao, getElementosRemovidosEIncluidos(events.eventos)));
     events.eventos.push({ stateType: StateType.SituacaoElementoModificada, elementos: processaSituacoesAlteradas(state, eventos) });
-    retorno.ui.events = events.build();
-    retorno.present = events.build();
+    const eventosRevisao = getEventosDeRevisao(eventos);
+    if (eventosRevisao.length) {
+        const idsRevisoesAssociadas = eventosRevisao
+            .map((se) => se.elementos || [])
+            .flat()
+            .map((e) => findRevisoesByElementoUuid(retorno.revisoes, e.uuid))
+            .flat()
+            .map(r => r.id)
+            .filter(Boolean);
+        retorno.revisoes = (_d = state.revisoes) === null || _d === void 0 ? void 0 : _d.filter((r) => !idsRevisoesAssociadas.includes(r.id));
+    }
+    retorno.ui.events = [...eventosRevisao, ...events.build()];
+    retorno.present = [...eventosRevisao, ...events.build()];
     return retorno;
+};
+const getEventosDeRevisao = (eventos) => {
+    return eventos.filter((se) => [StateType.RevisaoAceita, StateType.RevisaoRejeitada, StateType.RevisaoAdicionalRejeitada].includes(se.stateType));
 };
 
 const removeAlerta = (state, action) => {
@@ -38103,7 +39982,14 @@ const selecionaElemento = (state, action) => {
     var _a;
     const atual = getDispositivoFromElemento(state.articulacao, action.atual, true);
     if (atual === undefined) {
-        state.ui.events = [];
+        const revisao = findRevisaoByElementoUuid(state.revisoes, action.atual.uuid);
+        if (!revisao) {
+            state.ui.events = [];
+        }
+        else {
+            const e = { ...revisao.elementoAntesRevisao, acoesPossiveis: [] };
+            state.ui.events = [{ stateType: StateType.ElementoSelecionado, elementos: [e] }];
+        }
         return state;
     }
     atual.mensagens = validaDispositivo(atual);
@@ -38240,6 +40126,10 @@ const undo = (state) => {
             events: [],
             alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
         },
+        emRevisao: state.emRevisao,
+        usuario: state.usuario,
+        revisoes: state.revisoes,
+        numEventosPassadosAntesDaRevisao: state.numEventosPassadosAntesDaRevisao,
     };
     if (isUndoRedoInclusaoExclusaoAgrupador(eventos)) {
         let tempState;
@@ -38247,20 +40137,26 @@ const undo = (state) => {
         tempState.past = [];
         tempState.present = [];
         tempState.future = [];
-        if (eventos[0].stateType === StateType.ElementoIncluido) {
-            tempState = removeElemento(tempState, { atual: eventos[0].elementos[0] });
+        const eventosFiltrados = eventos.filter((ev) => ![StateType.RevisaoAceita, StateType.RevisaoRejeitada, StateType.RevisaoAdicionalRejeitada].includes(ev.stateType));
+        if (eventosFiltrados[0].stateType === StateType.ElementoIncluido) {
+            tempState = removeElemento(tempState, { atual: eventosFiltrados[0].elementos[0] });
         }
         else {
-            const ref = eventos.find((ev) => ev.stateType === StateType.ElementoReferenciado).elementos[0];
-            const elementoASerIncluido = eventos[0].elementos[0];
+            const ref = eventosFiltrados.find((ev) => ev.stateType === StateType.ElementoReferenciado).elementos[0];
+            const elementoASerIncluido = eventosFiltrados[0].elementos[0];
             tempState = agrupaElemento(tempState, {
                 atual: ref,
                 novo: { tipo: elementoASerIncluido.tipo, uuid: elementoASerIncluido.uuid, posicao: 'antes', manterNoMesmoGrupoDeAspas: elementoASerIncluido.manterNoMesmoGrupoDeAspas },
             });
-            ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, eventos, tempState.ui.events);
+            ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, eventosFiltrados, tempState.ui.events);
         }
-        retorno.present = tempState.ui.events;
-        retorno.ui.events = tempState.ui.events;
+        const eventosRevisao = [
+            ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoAceita),
+            ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoRejeitada),
+            ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoAdicionalRejeitada),
+        ].filter(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.length; });
+        retorno.ui.events = [...eventosRevisao, ...tempState.ui.events];
+        retorno.present = [...eventosRevisao, ...tempState.ui.events];
         return retorno;
     }
     const events = new Eventos();
@@ -38268,9 +40164,13 @@ const undo = (state) => {
     events.add(StateType.ElementoIncluido, incluir(state, getEvento(eventos, StateType.ElementoRemovido), getEvento(events.eventos, StateType.ElementoIncluido)));
     eventos.filter((ev) => ev.stateType === StateType.ElementoSuprimido).forEach((ev) => events.eventos.push(...processarSuprimidos(state, ev)));
     eventos.filter((ev) => ev.stateType === StateType.ElementoRestaurado).forEach((ev) => events.eventos.push(processarRestaurados(state, ev, 'UNDO')));
+    const revisoesDeRejeicaoDeRestauracaoASeremRetornadas = getRevisoesFromElementos(eventos
+        .filter((ev) => ev.stateType === StateType.RevisaoRejeitada)
+        .map((ev) => ev.elementos || [])
+        .flat());
     eventos
         .filter((ev) => ev.stateType === StateType.ElementoModificado)
-        .forEach((ev) => events.eventos.push({ stateType: StateType.ElementoModificado, elementos: processarModificados(state, ev) }));
+        .forEach((ev) => events.eventos.push({ stateType: StateType.ElementoModificado, elementos: processarModificados(state, ev, 'UNDO', revisoesDeRejeicaoDeRestauracaoASeremRetornadas) }));
     events.add(StateType.ElementoRenumerado, processaRenumerados(state, getEvento(eventos, StateType.ElementoRenumerado)));
     events.add(StateType.ElementoValidado, processaValidados(state, eventos));
     const incluidos = events.get(StateType.ElementoIncluido);
@@ -38286,10 +40186,19 @@ const undo = (state) => {
             events.add(StateType.ElementoSelecionado, [elementosParaMarcar[1]].filter(Boolean));
         }
     }
+    events.add(StateType.SituacaoElementoModificada, events.get(StateType.ElementoIncluido).elementos || []);
     events.add(StateType.SituacaoElementoModificada, getElementosAlteracaoASeremAtualizados(state.articulacao, getElementosRemovidosEIncluidos(events.eventos)));
-    events.eventos.push({ stateType: StateType.SituacaoElementoModificada, elementos: processaSituacoesAlteradas(state, eventos) });
-    retorno.ui.events = events.build();
-    retorno.present = events.build();
+    events.add(StateType.SituacaoElementoModificada, processaSituacoesAlteradas(state, eventos));
+    let eventosRevisao = [
+        ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoAceita),
+        ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoRejeitada),
+        ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoAdicionalRejeitada),
+    ].filter(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.length; });
+    eventosRevisao = unificarEvento(retorno, eventosRevisao, StateType.ElementoIncluido);
+    eventosRevisao = unificarEvento(retorno, eventosRevisao, StateType.SituacaoElementoModificada);
+    eventosRevisao = unificarEvento(retorno, eventosRevisao, StateType.ElementoMarcado);
+    retorno.ui.events = [...eventosRevisao, ...events.build()];
+    retorno.present = [...eventosRevisao, ...events.build()];
     return retorno;
 };
 
@@ -38995,6 +40904,7 @@ const ajustaHtmlParaColagem = (htmlInicial) => {
         .replace(/\n+/g, '\n')
         .replace(/ +/g, ' ')
         .replace(/\n\s+/g, '\n')
+        .replace(/\n *<i>(Parágrafo único\. *)<\/i>/gi, '\n$1') // Remove itálico de rótulo de parágrafo único
         .trim();
     return html;
 };
@@ -39063,7 +40973,7 @@ const colarDispositivos = (articulacao, articulacaoColada, atual, referencia, po
     eventoElementoRemovido && eventos.push(eventoElementoRemovido);
     eventos.push(...buildEventosElementoModificado(modificados));
     eventos.push(buildEventoElementosRenumerados(adicionados, referencia, tipoColado));
-    eventos.push(buildEventoElementoSuprimido(referencia));
+    processaEventosSuprimidos(eventos, modificados);
     eventos.push(buildEventoSituacaoElementoModificada(adicionados, isColandoEmAlteracaoDeNorma));
     adicionados[0] && eventos.push(buildEventoElementoMarcado([adicionados[0], atual]));
     return eventos.filter(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.length; });
@@ -39120,15 +41030,25 @@ const buildEventosElementoModificado = (modificados) => {
     });
     return eventos;
 };
-const buildEventoElementoSuprimido = (referencia) => {
+const processaEventosSuprimidos = (eventos, modificados) => {
+    if (modificados.length > 0) {
+        const suprimidos = [];
+        modificados.forEach(d => {
+            getDispositivosToElementoSuprimido(d).forEach(d => {
+                if (suprimidos.filter(s => s.id === d.id).length === 0) {
+                    suprimidos.push(d);
+                }
+            });
+        });
+        eventos.push({ stateType: StateType.ElementoSuprimido, elementos: suprimidos.map(d => createElementoValidado(d)) });
+    }
+};
+const getDispositivosToElementoSuprimido = (referencia) => {
     const suprimidos = getDispositivoAndFilhosAsLista(referencia.pai)
         .filter(isSuprimido)
         .map(d => getDispositivoAndFilhosAsLista(d))
         .flat();
-    return {
-        stateType: StateType.ElementoSuprimido,
-        elementos: suprimidos.map(d => createElementoValidado(d)),
-    };
+    return suprimidos;
 };
 const buildEventoSituacaoElementoModificada = (dispositivos, isColandoEmAlteracaoDeNorma) => {
     const elementosComSituacaoModificada = []; // elementos a serem atualizados na UI
@@ -39352,78 +41272,811 @@ const getDispositivosEmAlteracaoDeNormaASeremAtualizados = (dispositivos) => {
         .filter(d => d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO);
 };
 
+const ativaDesativaRevisao = (state) => {
+    var _a, _b;
+    const isActive = !state.emRevisao;
+    if (!isActive && ((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+        return {
+            ...retornaEstadoAtualComMensagem(state, {
+                tipo: TipoMensagem.INFO,
+                descricao: 'É necessário resolver todas as marcas de revisão' + getMensagemTipoRevisoes(state) + 'para desativar o modo de controle de alterações',
+            }),
+            emRevisao: true,
+        };
+    }
+    return {
+        ...state,
+        emRevisao: isActive,
+        ui: {
+            events: [{ stateType: isActive ? StateType.RevisaoAtivada : StateType.RevisaoDesativada }],
+            alertas: (_b = state.ui) === null || _b === void 0 ? void 0 : _b.alertas,
+        },
+    };
+};
+const getMensagemTipoRevisoes = (state) => {
+    const contemRevisoesDispositivos = state.revisoes.filter(e => e.descricao !== RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
+    const contemRevisoesJustificativa = state.revisoes.filter(e => e.descricao === RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
+    return contemRevisoesDispositivos && contemRevisoesJustificativa
+        ? ' (TEXTO | JUSTIFICATIVA) '
+        : contemRevisoesDispositivos
+            ? ' (TEXTO) '
+            : contemRevisoesJustificativa
+                ? ' (JUSTIFICATIVA) '
+                : ' ';
+};
+
+class Revisao {
+    constructor(usuario, dataHora, descricao) {
+        this.id = generateUUID();
+        this.usuario = usuario;
+        this.dataHora = dataHora;
+        this.descricao = descricao;
+    }
+}
+class RevisaoJustificativa extends Revisao {
+    constructor(usuario, dataHora, descricao) {
+        super(usuario, dataHora, descricao);
+        this.type = 'RevisaoJustificativa';
+    }
+}
+class RevisaoElemento extends Revisao {
+    constructor(actionType, stateType, descricao, usuario, dataHora, elementoAntesRevisao, elementoAposRevisao) {
+        super(usuario, dataHora, descricao);
+        this.type = 'RevisaoElemento';
+        this.actionType = actionType;
+        this.stateType = stateType;
+        this.elementoAntesRevisao = elementoAntesRevisao;
+        this.elementoAposRevisao = elementoAposRevisao;
+        this.descricao = descricao || buildDescricaoRevisao(this);
+        removeAtributosDoElemento(this.elementoAntesRevisao);
+        removeAtributosDoElemento(this.elementoAposRevisao);
+    }
+}
+
+const padTo2Digits = (num) => {
+    return num.toString().padStart(2, '0');
+};
+const formatDDMMYYYY = (date) => {
+    return [padTo2Digits(date.getDate()), padTo2Digits(date.getMonth() + 1), date.getFullYear()].join('/');
+};
+const formatDateTime = (date) => {
+    const data = [date.getFullYear(), padTo2Digits(date.getMonth() + 1), padTo2Digits(date.getDate())].join('-');
+    const hora = [padTo2Digits(date.getHours()), padTo2Digits(date.getMinutes()), padTo2Digits(date.getSeconds())].join(':');
+    return `${data} ${hora}`;
+};
+
+const ATUALIZAR_USUARIO = 'ATUALIZAR_USUARIO';
+class AtualizarUsuario {
+    constructor() {
+        this.descricao = 'Atualizar o usuário da revisão.';
+    }
+    execute(usuario) {
+        return {
+            type: ATUALIZAR_USUARIO,
+            usuario: usuario,
+        };
+    }
+}
+const atualizarUsuarioAction = new AtualizarUsuario();
+
+const atualizaRevisao = (state, actionType) => {
+    var _a, _b, _c, _d, _e;
+    const numElementos = (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.map(se => se.elementos).flat().length;
+    if ([ABRIR_ARTICULACAO, ATUALIZAR_USUARIO, VALIDAR_ARTICULACAO].includes(actionType) || !state.emRevisao || !actionType || !numElementos) {
+        return state;
+    }
+    else if (actionType === APLICAR_ALTERACOES_EMENDA) {
+        associarRevisoesAosElementosDosEventos(state);
+        return state;
+    }
+    if (UNDO === actionType && (((_b = state.past) === null || _b === void 0 ? void 0 : _b.length) || 0) < state.numEventosPassadosAntesDaRevisao) {
+        return state;
+    }
+    if (REDO === actionType && (((_c = state.past) === null || _c === void 0 ? void 0 : _c.length) || 0) <= state.numEventosPassadosAntesDaRevisao) {
+        return state;
+    }
+    if (((_e = (_d = state.ui) === null || _d === void 0 ? void 0 : _d.message) === null || _e === void 0 ? void 0 : _e.tipo) === TipoMensagem.ERROR) {
+        return state;
+    }
+    let revisoes = [];
+    if ((UNDO !== actionType || !isUndoDeRevisaoAceitaOuRejeitada(state)) && !isAcaoDeRevisaoRejeitada(state)) {
+        revisoes.push(...processaEventosDeSupressao(state, actionType));
+        revisoes.push(...processaEventosDeModificacao(state, actionType));
+        revisoes.push(...processaEventosDeRestauracao(state, actionType));
+        // revisoes.push(...processaEventosDeRenumeracao(state, actionType, elementoAntesAcao));
+        if (isAcaoMoverOuTransformar(state)) {
+            revisoes.push(...processaEventosDeMoverOuTransformar(state, actionType));
+        }
+        else {
+            revisoes.push(...processaEventosDeInclusao(state, actionType));
+            revisoes.push(...processaEventosDeRemocao(state, actionType));
+        }
+    }
+    revisoes = identificarRevisaoElementoPai(state, revisoes);
+    if (existeEventoDeInclusaoOuExclusao(state)) {
+        atualizarLexmlIdEmElementosDeRevisoes(state);
+        atualizarPosicaoDeElementosEmRevisoes(state);
+    }
+    state.revisoes.push(...revisoes);
+    associarRevisoesAosElementosDosEventos(state);
+    adicionarOpcoesAoMenu(state);
+    return state;
+};
+const isUndoDeRevisaoAceitaOuRejeitada = (state) => {
+    var _a;
+    return !!((_a = state.future) === null || _a === void 0 ? void 0 : _a.length) && [StateType.RevisaoAceita, StateType.RevisaoRejeitada].includes(state.future[state.future.length - 1][0].stateType);
+};
+const isAcaoDeRevisaoRejeitada = (state) => { var _a; return !!((_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.some(ev => ev.stateType === StateType.RevisaoRejeitada)); };
+const processaEventosDeSupressao = (state, actionType) => {
+    var _a;
+    const eventos = getEventos(state, StateType.ElementoSuprimido);
+    const result = [];
+    const revisoesParaRemover = [];
+    getElementosFromEventos(eventos).forEach(e => {
+        var _a;
+        const revisao = findRevisaoByElementoUuid(state.revisoes, e.uuid);
+        if (revisao && ((_a = revisao.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            revisoesParaRemover.push(revisao);
+        }
+        else {
+            const d = getDispositivoFromElemento(state.articulacao, e);
+            const eAux = (revisao === null || revisao === void 0 ? void 0 : revisao.elementoAntesRevisao) || JSON.parse(JSON.stringify(d.situacao.dispositivoOriginal));
+            result.push(new RevisaoElemento(actionType, StateType.ElementoSuprimido, '', state.usuario, formatDateTime(new Date()), eAux, JSON.parse(JSON.stringify(e))));
+            if (revisao) {
+                revisoesParaRemover.push(revisao);
+            }
+        }
+    });
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const processaEventosDeModificacao = (state, actionType) => {
+    var _a;
+    const eventos = getEventos(state, StateType.ElementoModificado);
+    const result = [];
+    const revisoesParaRemover = [];
+    getElementosFromEventos(eventos).forEach(e => {
+        const revisao = findRevisaoByElementoUuid(state.revisoes, e.uuid);
+        if (revisao) {
+            if ((isRevisaoDeModificacao(revisao) || isRevisaoDeRestauracao(revisao)) && revisaoDeElementoComMesmoUuid2RotuloEConteudo(revisao, e)) {
+                revisoesParaRemover.push(revisao);
+            }
+            revisao.elementoAposRevisao = JSON.parse(JSON.stringify(e));
+        }
+        else {
+            const eAux = getElementoAntesModificacao(state, e);
+            result.push(new RevisaoElemento(actionType, StateType.ElementoModificado, '', state.usuario, formatDateTime(new Date()), eAux, JSON.parse(JSON.stringify(e))));
+        }
+    });
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const processaEventosDeMoverOuTransformar = (state, actionType) => {
+    var _a;
+    const incluidos = getElementosFromEventos(getEventos(state, StateType.ElementoIncluido));
+    const removidos = getElementosFromEventos(getEventos(state, StateType.ElementoRemovido));
+    const result = [];
+    const revisoesParaRemover = [];
+    const montarNovaRevisao = (eAntesRevisao, eAposRevisao) => {
+        const revInclusao = new RevisaoElemento(actionType, StateType.ElementoIncluido, '', state.usuario, formatDateTime(new Date()), eAntesRevisao ? JSON.parse(JSON.stringify(eAntesRevisao)) : undefined, JSON.parse(JSON.stringify(eAposRevisao)));
+        revInclusao.descricao = buildDescricaoRevisaoFromStateType(revInclusao, eAposRevisao);
+        // revExclusao.idRevisaoAssociada = revInclusao.id;
+        // revInclusao.idRevisaoAssociada = revExclusao.id;
+        // result.push(revExclusao);
+        return revInclusao;
+    };
+    if (existeRevisaoParaElementos(state.revisoes, removidos)) {
+        removidos.forEach((e, index) => {
+            var _a;
+            const revisao = findRevisaoByElementoUuid(state.revisoes, e.uuid);
+            // A revisão pode não existir se houver dispositivo removido após a movimentação em modo de revisão
+            // Exemplo: moveu inciso com alíneas, removeu alínea e depois moveu novamente o inciso
+            if (!revisao) {
+                result.push(montarNovaRevisao(e, incluidos[index]));
+            }
+            else if (isRevisaoDeTransformacao(revisao) && revisaoDeElementoComMesmoLexmlIdRotuloEConteudo(revisao, incluidos[index])) {
+                revisoesParaRemover.push(...findRevisoesByElementoLexmlId(state.revisoes, e.lexmlId));
+            }
+            else if (revisaoDeElementoComMesmoUuid2RotuloEConteudo(revisao, incluidos[index]) && revisao.elementoAntesRevisao.uuid !== e.uuid) {
+                revisoesParaRemover.push(...findRevisoesByElementoUuid2(state.revisoes, incluidos[index].uuid2));
+            }
+            else {
+                state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.id !== revisao.id);
+                // result.push(montarNovaRevisao(revisao.elementoAntesRevisao! as Elemento, incluidos[index]));
+                revisao.stateType = StateType.ElementoIncluido;
+                revisao.actionType = actionType;
+                revisao.dataHora = formatDateTime(new Date());
+                revisao.elementoAposRevisao = JSON.parse(JSON.stringify(incluidos[index]));
+                removeAtributosDoElemento(revisao.elementoAposRevisao);
+                revisao.usuario = state.usuario;
+                revisao.descricao = buildDescricaoRevisaoFromStateType(revisao, incluidos[index]);
+                revisao.idRevisaoElementoPai = revisoesParaRemover.find(r => r.id === revisao.idRevisaoElementoPai) ? undefined : revisao.idRevisaoElementoPai;
+                revisao.idRevisaoElementoPrincipal = revisoesParaRemover.find(r => r.id === revisao.idRevisaoElementoPrincipal) ? undefined : revisao.idRevisaoElementoPrincipal;
+                result.push(revisao);
+            }
+        });
+    }
+    else {
+        removidos.forEach((e, index) => result.push(montarNovaRevisao(e, incluidos[index])));
+    }
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const processaEventosDeInclusao = (state, actionType) => {
+    var _a;
+    const eventos = getEventos(state, StateType.ElementoIncluido);
+    const result = [];
+    const revisoesParaRemover = [];
+    const elementosIncluidos = getElementosFromEventos(eventos);
+    const uuidsElementosIncluidos = elementosIncluidos.map(e => e.uuid);
+    getElementosFromEventos(eventos).forEach(e => {
+        var _a, _b;
+        const revisao = findRevisaoByElementoUuid(state.revisoes, e.uuid);
+        if (revisao) {
+            revisoesParaRemover.push(revisao);
+        }
+        else {
+            if (!uuidsElementosIncluidos.includes((_b = (_a = e.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.uuid)) {
+                atualizaReferenciaElementoAnteriorSeNecessario(state.articulacao, state.revisoes, e, 'inclusao');
+            }
+            result.push(new RevisaoElemento(actionType, StateType.ElementoIncluido, '', state.usuario, formatDateTime(new Date()), undefined, JSON.parse(JSON.stringify(e))));
+        }
+    });
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const processaEventosDeRemocao = (state, actionType) => {
+    var _a;
+    const eventos = getEventos(state, StateType.ElementoRemovido);
+    const result = [];
+    const revisoesParaRemover = [];
+    const elementosRemovidos = getElementosFromEventos(eventos);
+    const uuidsElementosRemovidos = elementosRemovidos.map(e => e.uuid);
+    elementosRemovidos.forEach(e => {
+        var _a, _b;
+        const revisao = findRevisaoByElementoUuid(state.revisoes, e.uuid);
+        if (revisao && (isRevisaoPrincipal(revisao) || !isRevisaoDeMovimentacao(revisao))) {
+            revisoesParaRemover.push(revisao);
+        }
+        else {
+            if (!uuidsElementosRemovidos.includes((_b = (_a = e.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.uuid)) {
+                atualizaReferenciaElementoAnteriorSeNecessario(state.articulacao, state.revisoes, e, 'exclusao');
+            }
+            const eAux = JSON.parse(JSON.stringify(e));
+            result.push(new RevisaoElemento(actionType, StateType.ElementoRemovido, '', state.usuario, formatDateTime(new Date()), eAux, { ...eAux, acoesPossiveis: [] }));
+        }
+    });
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const processaEventosDeRestauracao = (state, actionType) => {
+    var _a;
+    const eventos = getEventos(state, StateType.ElementoRestaurado);
+    const result = [];
+    const revisoesParaRemover = [];
+    eventos.forEach(se => {
+        var _a;
+        const elementoAtual = se.elementos[1];
+        const elementoAnterior = se.elementos[0];
+        const eAux = elementoAtual || elementoAnterior;
+        const revisao = findRevisaoByElementoUuid(state.revisoes, elementoAnterior.uuid);
+        if (revisao && ((_a = revisao.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.descricaoSituacao) === eAux.descricaoSituacao && revisaoDeElementoComMesmoUuid2RotuloEConteudo(revisao, eAux)) {
+            revisoesParaRemover.push(revisao);
+        }
+        else {
+            const d = getDispositivoFromElemento(state.articulacao, elementoAnterior);
+            const eAntesRevisao = !elementoAtual ? d.situacao.dispositivoOriginal : elementoAnterior;
+            const eAposRevisao = createElemento(d);
+            result.push(new RevisaoElemento(actionType, StateType.ElementoRestaurado, '', state.usuario, formatDateTime(new Date()), JSON.parse(JSON.stringify(eAntesRevisao)), JSON.parse(JSON.stringify(eAposRevisao))));
+            if (revisao) {
+                revisoesParaRemover.push(revisao);
+            }
+        }
+    });
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
+    return result;
+};
+const getEventos = (state, stateType) => {
+    var _a;
+    return ((_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.filter(se => se.stateType === stateType)) || [];
+};
+const getElementosFromEventos = (eventos) => {
+    return removeDuplicidades(eventos.map(se => se.elementos || []).flat());
+};
+const removeDuplicidades = (elementos) => {
+    const map = new Map();
+    const result = [];
+    elementos.reverse().forEach(e => {
+        if (!map.has(e.uuid)) {
+            map.set(e.uuid, e);
+            result.unshift(e);
+        }
+    });
+    return result;
+};
+const revisaoDeElementoComMesmoLexmlIdRotuloEConteudo = (r, e) => {
+    var _a, _b, _c, _d, _e;
+    return ((_a = r.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.lexmlId) === e.lexmlId && ((_b = r.elementoAntesRevisao) === null || _b === void 0 ? void 0 : _b.rotulo) === e.rotulo && ((_d = (_c = r.elementoAntesRevisao) === null || _c === void 0 ? void 0 : _c.conteudo) === null || _d === void 0 ? void 0 : _d.texto) === ((_e = e.conteudo) === null || _e === void 0 ? void 0 : _e.texto);
+};
+const revisaoDeElementoComMesmoUuid2RotuloEConteudo = (r, e) => {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+    return (((_a = r.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.uuid2) === e.uuid2 &&
+        ((_b = r.elementoAntesRevisao) === null || _b === void 0 ? void 0 : _b.rotulo) === e.rotulo &&
+        ((_d = (_c = r.elementoAntesRevisao) === null || _c === void 0 ? void 0 : _c.conteudo) === null || _d === void 0 ? void 0 : _d.texto) === ((_e = e.conteudo) === null || _e === void 0 ? void 0 : _e.texto) &&
+        ((_h = (_g = (_f = r.elementoAntesRevisao) === null || _f === void 0 ? void 0 : _f.hierarquia) === null || _g === void 0 ? void 0 : _g.pai) === null || _h === void 0 ? void 0 : _h.lexmlId) === ((_k = (_j = e.hierarquia) === null || _j === void 0 ? void 0 : _j.pai) === null || _k === void 0 ? void 0 : _k.lexmlId) // Checa se elementos estão na mesma hierarquia
+    );
+};
+const isAcaoMoverOuTransformar = (state) => {
+    const incluidos = getEventos(state, StateType.ElementoIncluido);
+    const removidos = getEventos(state, StateType.ElementoRemovido);
+    return !!incluidos.length && incluidos.length === removidos.length;
+};
+const getElementoAntesModificacao = (state, elemento) => {
+    const eventos = [...state.past].pop();
+    const modificacoes = eventos.filter(se => { var _a; return se.stateType === StateType.ElementoModificado && ((_a = se.elementos) === null || _a === void 0 ? void 0 : _a.some(e => e.uuid === elemento.uuid)); });
+    const modificacao = modificacoes.pop();
+    return modificacao ? JSON.parse(JSON.stringify(modificacao.elementos[0])) : undefined;
+};
+const adicionarOpcoesAoMenu = (state) => {
+    var _a;
+    (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.forEach(se => {
+        var _a;
+        return (_a = se.elementos) === null || _a === void 0 ? void 0 : _a.filter(Boolean).forEach(e => {
+            if (e.revisao && !e.revisao.idRevisaoElementoPrincipal) {
+                e.acoesPossiveis = se.stateType === StateType.ElementoRemovido ? [] : [...(e.acoesPossiveis || [])];
+                !e.acoesPossiveis.includes(aceitarRevisaoAction) && e.acoesPossiveis.push(aceitarRevisaoAction);
+                !e.acoesPossiveis.includes(rejeitarRevisaoAction) && e.acoesPossiveis.push(rejeitarRevisaoAction);
+            }
+        });
+    });
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const existeEventoDeInclusaoOuExclusao = (state) => {
+    var _a;
+    const eventos = ((_a = state.ui) === null || _a === void 0 ? void 0 : _a.events) || [];
+    return eventos.some(se => se.stateType === StateType.ElementoIncluido || se.stateType === StateType.ElementoRemovido);
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const atualizarLexmlIdEmElementosDeRevisoes = (state) => {
+    let revisoes = getRevisoesElemento(state.revisoes || [])
+        .filter(r => r.elementoAposRevisao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO)
+        .filter(r => !isRevisaoDeExclusao(r));
+    revisoes.forEach(r => {
+        const d = getDispositivoFromElemento(state.articulacao, r.elementoAposRevisao);
+        if (d) {
+            const e = createElemento(d, false, true);
+            r.elementoAposRevisao.lexmlId = d.id;
+            r.elementoAposRevisao.hierarquia.pai.lexmlId = d.pai.id;
+            r.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(e.elementoAnteriorNaSequenciaDeLeitura));
+            if (r.elementoAntesRevisao) {
+                r.elementoAntesRevisao.lexmlId = d.id;
+                r.elementoAntesRevisao.hierarquia.pai.lexmlId = d.pai.id;
+                r.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(e.elementoAnteriorNaSequenciaDeLeitura));
+            }
+        }
+    });
+    revisoes = getRevisoesElemento(state.revisoes || []).filter(r => isRevisaoPrincipal(r) && isRevisaoDeExclusao(r));
+    revisoes.forEach(r => {
+        const d = getDispositivoFromElemento(state.articulacao, r.elementoAposRevisao.hierarquia.pai);
+        r.elementoAposRevisao.hierarquia.pai.lexmlId = d.id;
+    });
+};
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const atualizarPosicaoDeElementosEmRevisoes = (state) => {
+    const revisoes = getRevisoesElemento(state.revisoes || []).filter(r => isRevisaoPrincipal(r) && isRevisaoDeExclusao(r));
+    atualizarPosicaoDeElementosEmRevisoesByEvento(revisoes, getEvento(state.ui.events, StateType.ElementoIncluido));
+    atualizarPosicaoDeElementosEmRevisoesByEvento(revisoes, getEvento(state.ui.events, StateType.ElementoRemovido));
+};
+const atualizarPosicaoDeElementosEmRevisoesByEvento = (revisoes = [], evento) => {
+    if (!evento) {
+        return;
+    }
+    const fator = evento.stateType === StateType.ElementoIncluido ? 1 : -1;
+    const fnCondicaoInclusao = (e, posicaoAtual) => e.hierarquia.posicao <= posicaoAtual;
+    const fnCondicaoExclusao = (e, posicaoAtual) => e.hierarquia.posicao < posicaoAtual;
+    const fnCondicao2 = evento.stateType === StateType.ElementoIncluido ? fnCondicaoInclusao : fnCondicaoExclusao;
+    revisoes.forEach(r => {
+        const lexmlIdPai = r.elementoAposRevisao.hierarquia.pai.lexmlId;
+        const posicaoAtual = r.elementoAposRevisao.hierarquia.posicao;
+        const deslocamento = evento.elementos.filter(e => { var _a, _b; return ((_b = (_a = e.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.lexmlId) === lexmlIdPai && fnCondicao2(e, posicaoAtual); }).length * fator;
+        r.elementoAposRevisao.hierarquia.posicao += deslocamento;
+    });
+};
+
+const atualizaUsuario = (state, action) => {
+    var _a, _b;
+    return {
+        articulacao: state.articulacao,
+        modo: state.modo,
+        past: state.past,
+        present: state.present,
+        future: state.future,
+        ui: {
+            events: [{ stateType: StateType.AtualizaUsuario }],
+            message: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.mensagem,
+            alertas: (_b = state.ui) === null || _b === void 0 ? void 0 : _b.alertas,
+        },
+        usuario: action.usuario,
+    };
+};
+
+const aceitaRevisao = (state, action) => {
+    if (action.revisao || action.elemento) {
+        return aceitarRevisao(state, action);
+    }
+    else {
+        return aceitarRevisaoEmLote(state, state.revisoes);
+    }
+};
+const aceitarRevisaoEmLote = (state, revisoes = []) => {
+    const tempStates = [];
+    revisoes.filter(isRevisaoPrincipal).forEach((revisao) => {
+        const tempState = { ...state, past: [], present: [], future: [], ui: { ...state.ui, events: [] } };
+        tempStates.push(aceitarRevisao(tempState, { revisao }));
+    });
+    return mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'aceitar');
+};
+const aceitarRevisao = (state, action) => {
+    var _a, _b;
+    const revisao = (action.revisao || findRevisaoByElementoUuid(state.revisoes, action.elemento.uuid));
+    const revisoesAssociadas = getRevisoesElementoAssociadas(state.revisoes, revisao);
+    const idsRevisoesAssociadas = revisoesAssociadas.map(r => r.id);
+    const elementos = revisoesAssociadas.map(r => {
+        const e = isRevisaoDeExclusao(r) ? r.elementoAposRevisao : createElementoValidado(getDispositivoFromElemento(state.articulacao, r.elementoAposRevisao));
+        e.revisao = JSON.parse(JSON.stringify(r));
+        return e;
+    });
+    const elementosValidados = elementos
+        .map(e => getDispositivoFromElemento(state.articulacao, e))
+        .filter(Boolean)
+        .map(d => createElementoValidado(d));
+    const events = [{ stateType: StateType.RevisaoAceita, elementos }];
+    if (elementosValidados.length) {
+        events.push({ stateType: StateType.ElementoValidado, elementos: elementosValidados });
+    }
+    const revisoes = state.revisoes.filter((r) => !idsRevisoesAssociadas.includes(r.id));
+    if (isRevisaoDeExclusao(revisao)) {
+        // Se está aceitando uma revisão de exclusão, é preciso atualizar os elementos de outras revisões de exclusão que referenciam o elemento REALMENTE excluído durante a aceitação
+        atualizaReferenciaElementoAnteriorEmRevisoesExclusaoAposAceitacao(revisoes, revisoesAssociadas);
+    }
+    return {
+        ...state,
+        past: buildPast(state, events),
+        present: events,
+        future: [],
+        ui: {
+            events,
+            alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
+        },
+        revisoes: (_b = state.revisoes) === null || _b === void 0 ? void 0 : _b.filter((r) => !idsRevisoesAssociadas.includes(r.id)),
+    };
+};
+const atualizaReferenciaElementoAnteriorEmRevisoesExclusaoAposAceitacao = (revisoes, revisoesAssociadas) => {
+    const revisaoPrincipal = revisoesAssociadas[0];
+    const ultimaRevisao = revisoesAssociadas[revisoesAssociadas.length - 1];
+    const revisao = revisoes.find(r => { var _a, _b; return ((_b = (_a = r.elementoAposRevisao) === null || _a === void 0 ? void 0 : _a.elementoAnteriorNaSequenciaDeLeitura) === null || _b === void 0 ? void 0 : _b.uuid) === ultimaRevisao.elementoAposRevisao.uuid; });
+    if (revisao) {
+        revisao.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = revisaoPrincipal.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura;
+        revisao.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = revisaoPrincipal.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura;
+    }
+};
+
+const rejeitaRevisao = (state, action) => {
+    if (action.revisao || action.elemento) {
+        return rejeitarRevisao(state, action);
+    }
+    else {
+        return rejeitarRevisaoEmLote(state, state.revisoes);
+    }
+};
+const rejeitarRevisaoEmLote = (state, revisoes = []) => {
+    const tempStates = [];
+    revisoes.filter(isRevisaoPrincipal).forEach((revisao) => {
+        const tempState = { ...state, past: [], present: [], future: [], ui: { ...state.ui, events: [] } };
+        tempStates.push(rejeitarRevisao(tempState, { revisao }));
+    });
+    return mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'rejeitar');
+};
+const rejeitarRevisao = (state, action) => {
+    var _a, _b;
+    const revisao = (action.revisao || findRevisaoByElementoUuid(state.revisoes, action.elemento.uuid));
+    const revisoesAssociadas = getRevisoesElementoAssociadas(state.revisoes, revisao);
+    const idsRevisoesAssociadas = revisoesAssociadas.map(r => r.id);
+    const elementos = revisoesAssociadas.map(r => {
+        r.elementoAposRevisao.revisao = JSON.parse(JSON.stringify(r));
+        return r.elementoAposRevisao;
+    });
+    const eventos = [{ stateType: StateType.RevisaoRejeitada, elementos }];
+    if (isRevisaoDeMovimentacao(revisao)) {
+        // Elementos com revisão de movimentação também podem ter revisão de exclusão (desde que não seja o elemento principal)
+        // Nesse caso, a revisão de exclusão deve ser removida do state (não precisa ser rejeitada)
+        const uuid2Elementos = elementos.map(e => e.uuid2);
+        const outrasRevisoes = state.revisoes
+            .filter((r) => !idsRevisoesAssociadas.includes(r.id))
+            .filter((r) => uuid2Elementos.includes(r.elementoAposRevisao.uuid2));
+        idsRevisoesAssociadas.push(...outrasRevisoes.map(r => r.id));
+        // Desfaz as ações feitas após a movimentação do dispositivo e que geraram revisões adicionais
+        processaRevisoes(state, outrasRevisoes.filter(isRevisaoPrincipal));
+        const elementosDeOutrasRevisoes = outrasRevisoes.map(r => {
+            r.elementoAposRevisao.revisao = JSON.parse(JSON.stringify(r));
+            return r.elementoAposRevisao;
+        });
+        eventos.push({ stateType: StateType.RevisaoAdicionalRejeitada, elementos: elementosDeOutrasRevisoes });
+    }
+    const tempState = { ...state, past: [] };
+    eventos.push(...processaRevisoes(tempState, revisoesAssociadas.filter(isRevisaoPrincipal)));
+    const eventosPast = isRevisaoDeModificacao(revisao) ? montarEventosDeModificacaoParaHistorico(eventos, revisao, state) : eventos;
+    return {
+        ...state,
+        past: buildPast(state, eventosPast),
+        present: eventos,
+        future: [],
+        ui: {
+            events: eventos,
+            alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
+        },
+        revisoes: (_b = state.revisoes) === null || _b === void 0 ? void 0 : _b.filter((r) => !idsRevisoesAssociadas.includes(r.id)),
+    };
+};
+const montarEventosDeModificacaoParaHistorico = (eventos, revisao, state) => {
+    // O PASSADO de evento de modificação (StateType.ElementoModificado) deve possuir 2 itens no array elemento:
+    // Item 0: valor a ser retornado para a articulação em caso de UNDO
+    // Item 1: valor a ser retornado para a articulação em caso de REDO
+    const eventosPast = eventos.filter(ev => ev.stateType !== StateType.ElementoModificado);
+    const dispositivo = getDispositivoFromElemento(state.articulacao, revisao.elementoAposRevisao);
+    eventosPast.push({ stateType: StateType.ElementoModificado, elementos: [revisao.elementoAposRevisao, revisao.elementoAntesRevisao] });
+    eventosPast.push({ stateType: StateType.ElementoValidado, elementos: criaListaElementosAfinsValidados(dispositivo, true) });
+    return eventosPast;
+};
+const processaRevisoes = (state, revisoes) => {
+    const eventos = [];
+    revisoes.forEach(r => {
+        r.stateType === StateType.ElementoSuprimido && eventos.push(...rejeitaSupressao(state, r));
+        r.stateType === StateType.ElementoModificado && eventos.push(...rejeitaModificacao(state, r));
+        r.stateType === StateType.ElementoRestaurado && eventos.push(...rejeitaRestauracao(state, r));
+        r.stateType === StateType.ElementoIncluido && eventos.push(...rejeitaInclusao(state, r));
+        r.stateType === StateType.ElementoRemovido && eventos.push(...rejeitaExclusao(state, r));
+    });
+    return unificarEvento(state, eventos, StateType.ElementoRenumerado);
+};
+const rejeitaSupressao = (state, revisao) => {
+    var _a;
+    return ((_a = restauraElemento(state, { atual: revisao.elementoAntesRevisao }).ui) === null || _a === void 0 ? void 0 : _a.events) || [];
+};
+const rejeitaModificacao = (state, revisao) => {
+    var _a;
+    return ((_a = atualizaTextoElemento(state, { atual: revisao.elementoAntesRevisao }).ui) === null || _a === void 0 ? void 0 : _a.events) || [];
+};
+const rejeitaRestauracao = (state, revisao) => {
+    var _a, _b, _c, _d;
+    if (((_a = revisao.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+        return ((_b = suprimeElemento(state, { atual: revisao.elementoAntesRevisao }).ui) === null || _b === void 0 ? void 0 : _b.events) || [];
+    }
+    else if (((_c = revisao.elementoAntesRevisao) === null || _c === void 0 ? void 0 : _c.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
+        return ((_d = atualizaTextoElemento(state, { atual: revisao.elementoAntesRevisao }).ui) === null || _d === void 0 ? void 0 : _d.events) || [];
+    }
+    return [];
+};
+const rejeitaInclusao = (state, revisao) => {
+    var _a;
+    const dispositivoASerRemovido = getDispositivoFromElemento(state.articulacao, revisao.elementoAposRevisao);
+    const dispositivoAnterior = getDispositivoAnteriorNaSequenciaDeLeitura(dispositivoASerRemovido, d => !isCaput(d));
+    const result = ((_a = removeElemento(state, { atual: revisao.elementoAposRevisao, isRejeitandoRevisao: true }).ui) === null || _a === void 0 ? void 0 : _a.events) || [];
+    // Se existe elemento antes da revisão, então reinclui elemento (havia sido excluído por se tratar de uma movimentação)
+    if (revisao.elementoAntesRevisao) {
+        result.push(...rejeitaExclusao(state, revisao));
+    }
+    const ultimaRevisaoDoGrupo = findUltimaRevisaoDoGrupo(state.revisoes, revisao);
+    const rAux2 = findRevisaoDeExclusaoComElementoAnteriorApontandoPara(state.revisoes, ultimaRevisaoDoGrupo.elementoAposRevisao);
+    if (rAux2) {
+        const e = dispositivoAnterior ? createElemento(dispositivoAnterior) : undefined;
+        rAux2.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = e ? JSON.parse(JSON.stringify(e)) : undefined;
+        rAux2.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = e ? JSON.parse(JSON.stringify(e)) : undefined;
+    }
+    return result;
+};
+const rejeitaExclusao = (state, revisao) => {
+    const revisoesAssociadas = getRevisoesElementoAssociadas(state.revisoes, revisao);
+    const evento = { stateType: StateType.ElementoRemovido, elementos: revisoesAssociadas.map(r => r.elementoAntesRevisao) };
+    const eventoAux = { stateType: StateType.ElementoIncluido, elementos: [] };
+    const result = [];
+    const elementoASerIncluido = revisao.elementoAposRevisao;
+    if (elementoASerIncluido.agrupador) {
+        let tempState = { ...state, past: [], present: [], future: [], ui: { events: [] } };
+        tempState = agrupaElemento(tempState, {
+            atual: elementoASerIncluido.elementoAnteriorNaSequenciaDeLeitura,
+            novo: {
+                tipo: elementoASerIncluido.tipo,
+                uuid: elementoASerIncluido.uuid,
+                posicao: 'depois',
+                manterNoMesmoGrupoDeAspas: elementoASerIncluido.manterNoMesmoGrupoDeAspas,
+            },
+        });
+        result.push(...tempState.ui.events);
+    }
+    else {
+        result.push({ stateType: StateType.ElementoIncluido, elementos: incluir(state, evento, eventoAux) });
+    }
+    atualizaReferenciaElementoAnteriorEmRevisoesDeExclusaoAposRejeicao(state, revisao, result[0].elementos[0]);
+    const dispositivosRenumerados = listaDispositivosRenumerados(getDispositivoFromElemento(state.articulacao, result[0].elementos[0])).filter(isAdicionado);
+    result.push({ stateType: StateType.ElementoRenumerado, elementos: dispositivosRenumerados.map(d => createElemento(d)) });
+    result.push({ stateType: StateType.SituacaoElementoModificada, elementos: getElementosAlteracaoASeremAtualizados(state.articulacao, getElementosRemovidosEIncluidos(result)) });
+    result.push({ stateType: StateType.ElementoValidado, elementos: montarListaElementosValidados(state, result) });
+    return result.filter(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.length; });
+};
+const atualizaReferenciaElementoAnteriorEmRevisoesDeExclusaoAposRejeicao = (state, revisao, primeiroElementoReincluido) => {
+    var _a;
+    // Atualizar referência
+    const dUltimoFilho = getUltimoFilho(getDispositivoFromElemento(state.articulacao, primeiroElementoReincluido));
+    const eUltimoFilho = createElemento(dUltimoFilho, false, true);
+    const revisaoASerAtualizada = findRevisaoDeExclusaoComElementoAnteriorApontandoPara((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.id !== revisao.id), eUltimoFilho);
+    if (revisaoASerAtualizada && revisaoASerAtualizada.id !== revisao.id) {
+        // Atualiza referência
+        revisaoASerAtualizada.elementoAposRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(eUltimoFilho));
+        revisaoASerAtualizada.elementoAntesRevisao.elementoAnteriorNaSequenciaDeLeitura = JSON.parse(JSON.stringify(eUltimoFilho));
+        // // Atualiza posição
+        // if (isAtualizarPosicaoDeElementoExcluido(primeiroElementoReincluido, revisaoASerAtualizada.elementoAposRevisao)) {
+        //   revisaoASerAtualizada.elementoAposRevisao.hierarquia!.posicao = primeiroElementoReincluido.hierarquia!.posicao! + 1;
+        //   revisaoASerAtualizada.elementoAntesRevisao!.hierarquia!.posicao = primeiroElementoReincluido.hierarquia!.posicao! + 1;
+        // }
+    }
+};
+const montarListaElementosValidados = (state, result) => {
+    return result
+        .filter(ev => ev.stateType === StateType.ElementoIncluido)
+        .map(ev => ev.elementos || [])
+        .flat()
+        .map(e => getDispositivoFromElemento(state.articulacao, e))
+        .map(d => createElementoValidado(d));
+};
+
 const elementoReducer = (state = {}, action) => {
+    var _a, _b;
+    let tempState;
+    let usuario = state.usuario;
+    let actionType = action.type;
+    let emRevisao = state.emRevisao;
+    const revisoes = state.revisoes || [];
+    let numEventosPassadosAntesDaRevisao = state.numEventosPassadosAntesDaRevisao || 0;
     switch (action.type) {
         case ADICIONAR_AGRUPADOR_ARTIGO:
-            return agrupaElemento(state, action);
+            tempState = agrupaElemento(state, action);
+            break;
         case INFORMAR_EXISTENCIA_NA_NORMA:
-            return informaExistenciaDoElementoNaNorma(state, action);
+            tempState = informaExistenciaDoElementoNaNorma(state, action);
+            break;
         case ATUALIZAR_NOTA_ALTERACAO:
-            return atualizaNotaAlteracao(state, action);
+            tempState = atualizaNotaAlteracao(state, action);
+            break;
         case APLICAR_ALTERACOES_EMENDA:
-            return aplicaAlteracoesEmenda(state, action);
+            tempState = aplicaAlteracoesEmenda(state, action);
+            emRevisao = tempState.emRevisao;
+            break;
         case ASSISTENTE_ALTERACAO:
-            return adicionaAlteracaoComAssistente(state, action);
+            tempState = adicionaAlteracaoComAssistente(state, action);
+            break;
         case ATUALIZAR_ELEMENTO:
-            return atualizaElemento(state, action);
+            tempState = atualizaElemento(state, action);
+            break;
         case ATUALIZAR_REFERENCIA_ELEMENTO:
-            return atualizaReferenciaElemento(state, action);
+            tempState = atualizaReferenciaElemento(state, action);
+            break;
         case ATUALIZAR_TEXTO_ELEMENTO:
-            return atualizaTextoElemento(state, action);
+            tempState = atualizaTextoElemento(state, action);
+            break;
         case AUTO_FIX:
-            return autoFixElemento(state, action);
+            tempState = autoFixElemento(state, action);
+            break;
         case ADICIONAR_ELEMENTO:
-            return adicionaElemento$1(state, action);
+            tempState = adicionaElemento$1(state, action);
+            break;
         case ADICIONAR_ELEMENTOS_FROM_CLIPBOARD:
-            return adicionaElementosNaProposicaoFromClipboard(state, action);
+            tempState = adicionaElementosNaProposicaoFromClipboard(state, action);
+            break;
         case AGRUPAR_ELEMENTO:
-            return agrupaElemento(state, action);
+            tempState = agrupaElemento(state, action);
+            break;
         case TRANSFORMAR_TIPO_ELEMENTO:
-            return transformaTipoElemento(state, action);
+            tempState = transformaTipoElemento(state, action);
+            break;
         case ELEMENTO_SELECIONADO:
-            return selecionaElemento(state, action);
+            tempState = selecionaElemento(state, action);
+            break;
         case INFORMAR_DADOS_ASSISTENTE:
-            return solicitaDadosAssistente(state, action);
+            tempState = solicitaDadosAssistente(state, action);
+            break;
         case INFORMAR_NORMA:
-            return solicitaNorma(state, action);
+            tempState = solicitaNorma(state, action);
+            break;
         case MOVER_ELEMENTO_ABAIXO:
-            return moveElementoAbaixo(state, action);
+            tempState = moveElementoAbaixo(state, action);
+            break;
         case MOVER_ELEMENTO_ACIMA:
-            return moveElementoAcima(state, action);
+            tempState = moveElementoAcima(state, action);
+            break;
         case RENUMERAR_ELEMENTO:
-            return renumeraElemento(state, action);
+            tempState = renumeraElemento(state, action);
+            break;
         case RESTAURAR_ELEMENTO:
-            return restauraElemento(state, action);
+            tempState = restauraElemento(state, action);
+            break;
         case SUPRIMIR_AGRUPADOR:
-            return suprimeAgrupador(state, action);
+            tempState = suprimeAgrupador(state, action);
+            break;
         case SUPRIMIR_ELEMENTO:
-            return suprimeElemento(state, action);
+            tempState = suprimeElemento(state, action);
+            break;
         case ABRIR_ARTICULACAO:
-            return abreArticulacao(state, action);
+            tempState = abreArticulacao(state, action);
+            break;
         case REDO:
-            return redo(state);
+            tempState = redo(state);
+            break;
         case REMOVER_ELEMENTO:
-            return removeElemento(state, action);
+            tempState = removeElemento(state, action);
+            break;
         case REMOVER_ELEMENTO_SEM_TEXTO:
-            return removeElementoSemTexto(state, action);
+            tempState = removeElementoSemTexto(state, action);
+            break;
         case SHIFT_TAB:
         case TAB:
-            return modificaTipoElementoWithTab(state, action);
+            tempState = modificaTipoElementoWithTab(state, action);
+            break;
         case UNDO:
-            return undo(state);
+            tempState = undo(state);
+            break;
         case VALIDAR_ELEMENTO:
-            return validaElemento(state, action);
+            tempState = validaElemento(state, action);
+            break;
         case VALIDAR_ARTICULACAO:
-            return validaArticulacao(state);
+            tempState = validaArticulacao(state);
+            break;
         case ADICIONAR_ALERTA:
-            return adicionarAlerta(state, action);
+            tempState = adicionarAlerta(state, action);
+            break;
         case REMOVER_ALERTA:
-            return removeAlerta(state, action);
+            tempState = removeAlerta(state, action);
+            break;
         case LIMPAR_ALERTAS:
-            return limparAlertas(state);
+            tempState = limparAlertas(state);
+            break;
+        case ATIVAR_DESATIVAR_REVISAO:
+            tempState = ativaDesativaRevisao(state);
+            emRevisao = tempState.emRevisao;
+            numEventosPassadosAntesDaRevisao = ((_a = tempState.past) === null || _a === void 0 ? void 0 : _a.length) || 0;
+            break;
+        case ATUALIZAR_USUARIO:
+            tempState = atualizaUsuario(state, action);
+            usuario = tempState.usuario;
+            break;
+        case ACEITAR_REVISAO:
+            tempState = aceitaRevisao(state, action);
+            break;
+        case REJEITAR_REVISAO:
+            tempState = rejeitaRevisao(state, action);
+            break;
         default:
-            return state;
+            actionType = undefined;
+            tempState = state;
+            break;
     }
+    if (![ABRIR_ARTICULACAO, APLICAR_ALTERACOES_EMENDA, ACEITAR_REVISAO, REJEITAR_REVISAO].includes(actionType) &&
+        !isRedoDeRevisaoAceita(actionType, tempState) &&
+        !isRedoDeRevisaoRejeitada(actionType, tempState)) {
+        tempState.revisoes = revisoes;
+    }
+    tempState.emRevisao = emRevisao;
+    tempState.usuario = usuario;
+    tempState.numEventosPassadosAntesDaRevisao = emRevisao ? numEventosPassadosAntesDaRevisao : ((_b = tempState.past) === null || _b === void 0 ? void 0 : _b.length) || 0;
+    return atualizaRevisao(tempState, actionType);
+};
+const isRedoDeRevisaoAceita = (actionType, state) => {
+    var _a;
+    return actionType === REDO && !!((_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.some(event => event.stateType === StateType.RevisaoAceita));
+};
+const isRedoDeRevisaoRejeitada = (actionType, state) => {
+    var _a;
+    return actionType === REDO && !!((_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.some(event => event.stateType === StateType.RevisaoRejeitada));
 };
 
 const combinedReducer = combineReducers({
@@ -39436,6 +42089,7 @@ let ArticulacaoComponent = class ArticulacaoComponent extends connect(rootStore)
     constructor() {
         super();
         this.elementos = [];
+        this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.tabIndex = -1;
     }
     createRenderRoot() {
@@ -39456,13 +42110,16 @@ let ArticulacaoComponent = class ArticulacaoComponent extends connect(rootStore)
           box-shadow: none;
         }
       </style>
-      <lexml-eta-editor></lexml-eta-editor>
+      <lexml-eta-editor .lexmlEtaConfig=${this.lexmlEtaConfig}></lexml-eta-editor>
     `;
     }
 };
 __decorate([
     e$3({ type: Array })
 ], ArticulacaoComponent.prototype, "elementos", void 0);
+__decorate([
+    e$3({ type: Object })
+], ArticulacaoComponent.prototype, "lexmlEtaConfig", void 0);
 ArticulacaoComponent = __decorate([
     n$1('lexml-eta-articulacao')
 ], ArticulacaoComponent);
@@ -39480,9 +42137,17 @@ const t={ATTRIBUTE:1,CHILD:2,PROPERTY:3,BOOLEAN_ATTRIBUTE:4,EVENT:5,ELEMENT:6},e
  * SPDX-License-Identifier: BSD-3-Clause
  */class e extends i{constructor(i){if(super(i),this.it=w,i.type!==t.CHILD)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(r){if(r===w||null==r)return this.ft=void 0,this.it=r;if(r===b)return r;if("string"!=typeof r)throw Error(this.constructor.directiveName+"() called with a non-string value");if(r===this.it)return this.ft;this.it=r;const s=[r];return s.raw=s,this.ft={_$litType$:this.constructor.resultType,strings:s,values:[]}}}e.directiveName="unsafeHTML",e.resultType=1;const o=e$1(e);
 
-let ComandoEmendaComponent = class ComandoEmendaComponent extends s {
+let ComandoEmendaComponent = class ComandoEmendaComponent extends connect(rootStore)(s) {
+    constructor() {
+        super(...arguments);
+        this.alertas = [];
+    }
     update(changedProperties) {
         super.update(changedProperties);
+    }
+    stateChanged(state) {
+        var _a;
+        this.alertas = ((_a = state.elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.alertas) || [];
     }
     buildTemplateComando(comandos) {
         const res = comandos === null || comandos === void 0 ? void 0 : comandos.reduce((acumulador, comando) => acumulador + `<p> ${comando.cabecalho} </p>`, '');
@@ -39585,9 +42250,17 @@ let ComandoEmendaComponent = class ComandoEmendaComponent extends s {
           background-color: #fff3cd;
           border-color: #ffeeba;
         }
+        .mensagem--danger {
+          color: #721c24;
+          background-color: #f8d7da;
+          border-color: #f5c6cb;
+        }
       </style>
 
       <div class="lexml-emenda-comando">
+        ${(this.alertas || [])
+            .filter(alerta => alerta.exibirComandoEmenda)
+            .map(alerta => $ `<div class="lexml-emenda-complementoComando mensagem mensagem--danger">${alerta.mensagem}</div>`)}
         ${cabecalhoComum ? o(`<p class="lexml-emenda-cabecalhoComando">${cabecalhoComum}</p>`) : ''}
         ${comandos === null || comandos === void 0 ? void 0 : comandos.map(comando => {
             return o('<div class="lexml-emenda-cabecalhoComando">' +
@@ -39606,6 +42279,9 @@ let ComandoEmendaComponent = class ComandoEmendaComponent extends s {
 __decorate([
     e$3({ type: Object })
 ], ComandoEmendaComponent.prototype, "emenda", void 0);
+__decorate([
+    e$3({ type: Array })
+], ComandoEmendaComponent.prototype, "alertas", void 0);
 ComandoEmendaComponent = __decorate([
     n$1('lexml-emenda-comando')
 ], ComandoEmendaComponent);
@@ -40835,11 +43511,11 @@ class EtaBlot extends Block {
 }
 EtaBlot.blotName = 'EtaBlot';
 
-var AlinhamentoMenu;
+var AlinhamentoMenu$4;
 (function (AlinhamentoMenu) {
     AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
     AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
-})(AlinhamentoMenu || (AlinhamentoMenu = {}));
+})(AlinhamentoMenu$4 || (AlinhamentoMenu$4 = {}));
 class EtaBlotMenu extends EtaBlot {
     constructor() {
         super(EtaBlotMenu.create());
@@ -40890,7 +43566,7 @@ class EtaBlotMenuConteudo extends EtaBlot {
     }
     static create(alinhamentoMenu) {
         const node = super.create();
-        const classeAdicional = alinhamentoMenu === AlinhamentoMenu.Esquerda ? '' : ' lx-eta-dropdown-content-right';
+        const classeAdicional = alinhamentoMenu === AlinhamentoMenu$4.Esquerda ? '' : ' lx-eta-dropdown-content-right';
         node.setAttribute('contenteditable', 'false');
         node.setAttribute('class', EtaBlotMenuConteudo.className + classeAdicional);
         return node;
@@ -40949,7 +43625,7 @@ class EtaBlotRotulo extends EtaBlot {
         if (elemento.tipo) {
             node.setAttribute('tipo-dispositivo', elemento.tipo);
         }
-        node.innerHTML = elemento.rotulo;
+        node.innerHTML = EtaBlotRotulo.montarRotulo(elemento);
         if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.dispositivoAlteracao) {
             node.title = elemento.existeNaNormaAlterada ? 'Dispositivo existente na norma alterada' : 'Dispositivo a ser adicionado à norma';
         }
@@ -41018,6 +43694,15 @@ class EtaBlotRotulo extends EtaBlot {
             this.domNode.removeAttribute('pode-informar-numeracao');
         }
         this.domNode.onclick = onclick$2(this.domNode, elemento);
+        this.domNode.innerHTML = EtaBlotRotulo.montarRotulo(elemento);
+    }
+    static montarRotulo(elemento) {
+        const descricaoTipo = TipoDispositivo[elemento.tipo.toLowerCase()].descricao;
+        return elemento.revisao && EtaBlotRotulo.isRevisaoPrincipalDeExclusaoDeDispositivo(elemento) ? descricaoTipo !== null && descricaoTipo !== void 0 ? descricaoTipo : '' : elemento.rotulo;
+    }
+    static isRevisaoPrincipalDeExclusaoDeDispositivo(elemento) {
+        const r = elemento.revisao;
+        return isRevisaoPrincipal(r) && isRevisaoDeExclusao(r);
     }
 }
 EtaBlotRotulo.blotName = 'EtaBlotRotulo';
@@ -41037,6 +43722,36 @@ const onclick$2 = (node, elemento) => {
         return () => false;
     }
 };
+
+class EtaBlotAbreAspas extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotAbreAspas.create(elemento));
+        this.elemento = elemento;
+    }
+    get instanceBlotName() {
+        return EtaBlotAbreAspas.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotAbreAspas.className);
+        node.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
+        return node;
+    }
+    static formats() {
+        return true;
+    }
+    atualizarAtributos(elemento) {
+        this.elemento = elemento;
+        this.domNode.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
+    }
+    static montarHTML(elemento) {
+        return elemento.abreAspas ? '“' : '';
+    }
+}
+EtaBlotAbreAspas.blotName = 'EtaBlotAbreAspas';
+EtaBlotAbreAspas.tagName = 'abre-aspas';
+EtaBlotAbreAspas.className = 'abre-aspas';
 
 class EtaBlotConteudo extends EtaBlot {
     constructor(elemento) {
@@ -41094,12 +43809,6 @@ class EtaBlotConteudo extends EtaBlot {
         else {
             this.domNode.removeAttribute('fecha-aspas');
         }
-        if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            this.domNode.setAttribute('contenteditable', 'false');
-        }
-        else {
-            this.domNode.setAttribute('contenteditable', 'true');
-        }
     }
 }
 EtaBlotConteudo.blotName = 'EtaBlotConteudo';
@@ -41134,6 +43843,7 @@ class EtaBlotExistencia extends EtaBlot {
     static create(elemento) {
         const node = super.create();
         node.setAttribute('contenteditable', 'false');
+        node.setAttribute('id', 'blot-existencia' + elemento.uuid);
         node.classList.add(EtaBlotExistencia.className);
         EtaBlotExistencia._atualizarAtributos(elemento, node);
         return node;
@@ -41270,17 +43980,222 @@ const onclick = (node, elemento) => {
     }
 };
 
-const Container$3 = Quill.import('blots/container');
-class EtaContainerTable extends Container$3 {
+var AlinhamentoMenu$3;
+(function (AlinhamentoMenu) {
+    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
+    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
+})(AlinhamentoMenu$3 || (AlinhamentoMenu$3 = {}));
+class EtaBlotRevisaoRecusar extends EtaBlot {
     constructor(elemento) {
+        super(EtaBlotRevisaoRecusar.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotRevisaoRecusar.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.innerHTML = ' ';
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotRevisaoRecusar.className);
+        node.setAttribute('title', 'Recusar revisão');
+        EtaBlotRevisaoRecusar.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaBlotRevisaoRecusar.atualizarAtributos(elemento, this.domNode);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', 'buttonRevisaoRecusar' + elemento.uuid);
+        node.onclick = () => node.dispatchEvent(new CustomEvent('rejeitar-revisao', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+}
+EtaBlotRevisaoRecusar.blotName = 'EtaBlotRevisaoRecusar';
+EtaBlotRevisaoRecusar.className = 'blot__revisao_recusar';
+EtaBlotRevisaoRecusar.tagName = 'button';
+
+var AlinhamentoMenu$2;
+(function (AlinhamentoMenu) {
+    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
+    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
+})(AlinhamentoMenu$2 || (AlinhamentoMenu$2 = {}));
+class EtaBlotRevisaoAceitar extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotRevisaoAceitar.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotRevisaoAceitar.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.innerHTML = ' ';
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotRevisaoAceitar.className);
+        node.setAttribute('title', 'Aceitar revisão');
+        EtaBlotRevisaoAceitar.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaBlotRevisaoAceitar.atualizarAtributos(elemento, this.domNode);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', 'buttonRevisaoAceitar' + elemento.uuid);
+        node.onclick = () => node.dispatchEvent(new CustomEvent('aceitar-revisao', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+}
+EtaBlotRevisaoAceitar.blotName = 'EtaBlotRevisaoAceitar';
+EtaBlotRevisaoAceitar.className = 'blot__revisao_aceitar';
+EtaBlotRevisaoAceitar.tagName = 'button';
+
+const Container = Quill.import('blots/container');
+class EtaContainer extends Container {
+    constructor(node) {
+        super(node);
+    }
+    get firstBlot() {
+        return this.children.head;
+    }
+    findBlot(blotName) {
+        if (!this.firstBlot) {
+            return undefined;
+        }
+        return this.findBlotByBlotName(this.firstBlot, blotName);
+    }
+    findBlotByBlotName(node, blotName) {
+        if ((node === null || node === void 0 ? void 0 : node.instanceBlotName) === blotName) {
+            return node;
+        }
+        // Verifica se o nó atual é um objeto
+        if (typeof node === 'object' && node) {
+            // Percorre as propriedades do objeto
+            for (const key in node) {
+                if (['children', 'head', 'next'].includes(key)) {
+                    // Chamada recursiva para cada propriedade do objeto
+                    const result = this.findBlotByBlotName(node[key], blotName);
+                    if ((result === null || result === void 0 ? void 0 : result.instanceBlotName) === blotName) {
+                        return result;
+                    }
+                }
+            }
+        }
+        return undefined;
+    }
+    findBlotByClass(node, clazz) {
+        // Verifica se o nó atual é do tipo T
+        if (node instanceof clazz) {
+            return node;
+        }
+        // Verifica se o nó atual é um objeto
+        if (typeof node === 'object' && node) {
+            // Percorre as propriedades do objeto
+            for (const key in node) {
+                if (['children', 'head', 'next'].includes(key)) {
+                    // Chamada recursiva para cada propriedade do objeto
+                    const result = this.findBlotByClass(node[key], clazz);
+                    // Se um nó do tipo T for encontrado, retorna o resultado
+                    if (result instanceof clazz) {
+                        return result;
+                    }
+                }
+            }
+        }
+        // Caso nenhum nó do tipo T seja encontrado, retorna undefined
+        return undefined;
+    }
+}
+
+var AlinhamentoMenu$1;
+(function (AlinhamentoMenu) {
+    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
+    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
+})(AlinhamentoMenu$1 || (AlinhamentoMenu$1 = {}));
+class EtaBlotRevisao extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotRevisao.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotRevisao.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotRevisao.className);
+        EtaBlotRevisao.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaBlotRevisao.atualizarAtributos(elemento, this.domNode);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', 'buttonInfoRevisao' + elemento.uuid);
+        node.setAttribute('title', EtaBlotRevisao.montarMensagem(elemento));
+        node.innerHTML = elemento.revisao.usuario.sigla || getIniciais(elemento.revisao.usuario.nome).charAt(0) || 'R';
+        // node.onclick =
+        //   isRevisaoDeModificacao(elemento.revisao!) || isRevisaoDeRestauracao(elemento.revisao!)
+        //     ? (): boolean => node.dispatchEvent(new CustomEvent('exibir-diferencas', { bubbles: true, cancelable: true, detail: { elemento } }))
+        //     : (): boolean => false;
+    }
+    static montarMensagem(elemento) {
+        const revisao = elemento.revisao;
+        const pipe = ' | ';
+        return 'Ação: ' + revisao.descricao + pipe + 'Usuário: ' + revisao.usuario.nome + pipe + 'Data/Hora: ' + revisao.dataHora;
+    }
+}
+EtaBlotRevisao.blotName = 'EtaBlotRevisao';
+EtaBlotRevisao.className = 'blot__revisao';
+EtaBlotRevisao.tagName = 'button';
+
+class EtaContainerRevisao extends EtaContainer {
+    constructor(elemento) {
+        super(EtaContainerRevisao.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaContainerRevisao.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaContainerRevisao.className);
+        EtaContainerRevisao.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaContainerRevisao.atualizarAtributos(elemento, this.domNode);
+        this.atualizarBlots(elemento);
+    }
+    atualizarBlots(elemento) {
         var _a, _b, _c;
+        (_a = this.blotBotaoAceitarRevisao) === null || _a === void 0 ? void 0 : _a.atualizarElemento(elemento);
+        (_b = this.blotBotaoRejeitarRevisao) === null || _b === void 0 ? void 0 : _b.atualizarElemento(elemento);
+        (_c = this.blotInfoRevisao) === null || _c === void 0 ? void 0 : _c.atualizarElemento(elemento);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', EtaContainerRevisao.className + elemento.uuid);
+    }
+    get blotBotaoAceitarRevisao() {
+        return this.findBlot(EtaBlotRevisaoAceitar.blotName);
+    }
+    get blotBotaoRejeitarRevisao() {
+        return this.findBlot(EtaBlotRevisaoRecusar.blotName);
+    }
+    get blotInfoRevisao() {
+        return this.findBlot(EtaBlotRevisao.blotName);
+    }
+}
+EtaContainerRevisao.blotName = 'EtaContainerRevisao';
+EtaContainerRevisao.tagName = 'DIV';
+EtaContainerRevisao.className = 'container__revisao';
+
+class EtaContainerTable extends EtaContainer {
+    constructor(elemento) {
+        var _a, _b, _c, _d;
         super(EtaContainerTable.create(elemento));
         this.elemento = elemento;
         this._lexmlId = (_a = elemento.lexmlId) !== null && _a !== void 0 ? _a : '';
+        this._uuid2 = (_b = elemento.uuid2) !== null && _b !== void 0 ? _b : '';
         this._editavel = elemento.editavel;
         this._nivel = elemento.nivel;
-        this._numero = (_b = elemento.numero) !== null && _b !== void 0 ? _b : '';
-        this._tipo = (_c = elemento.tipo) !== null && _c !== void 0 ? _c : '';
+        this._numero = (_c = elemento.numero) !== null && _c !== void 0 ? _c : '';
+        this._tipo = (_d = elemento.tipo) !== null && _d !== void 0 ? _d : '';
         this._agrupador = elemento.agrupador;
         this._hierarquia = elemento.hierarquia;
         this._descricaoSituacao = elemento.descricaoSituacao ? elemento.descricaoSituacao : undefined;
@@ -41299,9 +44214,8 @@ class EtaContainerTable extends Container$3 {
         node.setAttribute('contenteditable', 'false'); //elemento?.editavel ? 'true' : 'false');
         node.setAttribute('class', EtaContainerTable.className + ' ' + EtaContainerTable.getClasseCSS(elemento));
         node.setAttribute('id', EtaContainerTable.criarId(elemento.uuid));
-        if (podeAdicionarAtributoDeExistencia(elemento)) {
-            node.setAttribute('existenanormaalterada', elemento.existeNaNormaAlterada ? 'true' : 'false');
-        }
+        EtaContainerTable.atualizarAtributoRevisao(elemento, node);
+        EtaContainerTable.atualizarAtributoExistenciaNormaAlterada(elemento, node);
         if (elemento.tipo === 'Omissis' || conteudo.indexOf(TEXTO_OMISSIS) >= 0) {
             node.classList.add('container_elemento--omissis');
         }
@@ -41319,10 +44233,32 @@ class EtaContainerTable extends Container$3 {
         }
         return blotRef.instanceBlotName === blotName ? blotRef : this.findBlotRef(blotRef.next, blotName);
     }
+    searchBlotRotuloNode(node) {
+        // Verifica se o nó atual é do tipo BlotRotulo
+        if (node instanceof EtaBlotRotulo) {
+            return node;
+        }
+        // Verifica se o nó atual é um objeto
+        if (typeof node === 'object' && node) {
+            // Percorre as propriedades do objeto
+            for (const key in node) {
+                if (['children', 'head', 'next'].includes(key)) {
+                    // Chamada recursiva para cada propriedade do objeto
+                    const result = this.searchBlotRotuloNode(node[key]);
+                    // Se um nó EtaBlotRotulo for encontrado, retorna o resultado
+                    if (result instanceof EtaBlotRotulo) {
+                        return result;
+                    }
+                }
+            }
+        }
+        // Caso nenhum nó EtaBlotRotulo seja encontrado, retorna undefined
+        return undefined;
+    }
     get blotRotulo() {
-        var _a, _b;
-        const node = (_b = (_a = this.children.head) === null || _a === void 0 ? void 0 : _a.children) === null || _b === void 0 ? void 0 : _b.head.children.head;
-        return node instanceof EtaBlotRotulo ? node : node === null || node === void 0 ? void 0 : node.next;
+        // const node = this.children.head?.children?.head.children.head || this.children.head.children.head.next.children.head;
+        // return node instanceof EtaBlotRotulo ? node : node?.next;
+        return this.searchBlotRotuloNode(this.children.head);
     }
     get blotExistencia() {
         return this.findBlot(EtaBlotExistencia.blotName);
@@ -41331,13 +44267,16 @@ class EtaContainerTable extends Container$3 {
         return this.findBlot(EtaBlotConteudo.blotName);
     }
     get blotAbreAspas() {
-        return this.children.head.children.head.children.head;
+        return this.findBlot(EtaBlotAbreAspas.blotName);
     }
     get blotFechaAspas() {
         return this.findBlot(EtaBlotFechaAspas.blotName);
     }
     get blotNotaAlteracao() {
         return this.findBlot(EtaBlotNotaAlteracao.blotName);
+    }
+    get containerRevisao() {
+        return this.findBlotByBlotName(this.children, EtaContainerRevisao.blotName);
     }
     get containerDireito() {
         return this.children.head.children.tail;
@@ -41404,6 +44343,12 @@ class EtaContainerTable extends Container$3 {
     get uuid() {
         return parseInt(this.id.substr(7), 0);
     }
+    set uuid2(uuid2) {
+        this._uuid2 = uuid2;
+    }
+    get uuid2() {
+        return this._uuid2;
+    }
     set lexmlId(lexmlId) {
         this._lexmlId = lexmlId;
     }
@@ -41442,14 +44387,33 @@ class EtaContainerTable extends Container$3 {
         }
         this.blotRotulo.setEstilo(elemento);
     }
-    atualizarAtributos(elemento) {
-        var _a, _b, _c, _d, _e;
-        if (podeAdicionarAtributoDeExistencia(elemento)) {
-            this.domNode.setAttribute('existenanormaalterada', elemento.existeNaNormaAlterada);
+    static atualizarAtributoRevisao(elemento, node) {
+        if (elemento.revisao) {
+            node.setAttribute('em-revisao', 'true');
+            if (elemento.revisao.stateType === 'ElementoRemovido') {
+                node.setAttribute('excluido', 'true');
+            }
+            else {
+                node.removeAttribute('excluido');
+            }
         }
         else {
-            this.domNode.removeAttribute('existenanormaalterada');
+            node.removeAttribute('em-revisao');
+            node.removeAttribute('excluido');
         }
+    }
+    static atualizarAtributoExistenciaNormaAlterada(elemento, node) {
+        if (podeAdicionarAtributoDeExistencia(elemento)) {
+            node.setAttribute('existenanormaalterada', (!!elemento.existeNaNormaAlterada).toString());
+        }
+        else {
+            node.removeAttribute('existenanormaalterada');
+        }
+    }
+    atualizarAtributos(elemento) {
+        var _a, _b, _c, _d, _e;
+        EtaContainerTable.atualizarAtributoRevisao(elemento, this.domNode);
+        EtaContainerTable.atualizarAtributoExistenciaNormaAlterada(elemento, this.domNode);
         (_a = this.blotAbreAspas) === null || _a === void 0 ? void 0 : _a.atualizarAtributos(elemento);
         (_b = this.blotRotulo) === null || _b === void 0 ? void 0 : _b.atualizarAtributos(elemento);
         (_c = this.blotExistencia) === null || _c === void 0 ? void 0 : _c.atualizarAtributos(elemento);
@@ -41458,13 +44422,14 @@ class EtaContainerTable extends Container$3 {
         (_e = this.blotNotaAlteracao) === null || _e === void 0 ? void 0 : _e.atualizarAtributos(elemento);
     }
     atualizarElemento(elemento) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         this.elemento = elemento;
         this._lexmlId = (_a = elemento.lexmlId) !== null && _a !== void 0 ? _a : '';
+        this._uuid2 = (_b = elemento.uuid2) !== null && _b !== void 0 ? _b : '';
         this._editavel = elemento.editavel;
         this._nivel = elemento.nivel;
-        this._numero = (_b = elemento.numero) !== null && _b !== void 0 ? _b : '';
-        this._tipo = (_c = elemento.tipo) !== null && _c !== void 0 ? _c : '';
+        this._numero = (_c = elemento.numero) !== null && _c !== void 0 ? _c : '';
+        this._tipo = (_d = elemento.tipo) !== null && _d !== void 0 ? _d : '';
         this._agrupador = elemento.agrupador;
         this._hierarquia = elemento.hierarquia;
         this._descricaoSituacao = elemento.descricaoSituacao ? elemento.descricaoSituacao : undefined;
@@ -41520,6 +44485,9 @@ class EtaContainerTable extends Container$3 {
         }
         return classe;
     }
+    isLinhaComMarcacaoDeExclusao() {
+        return this.domNode.hasAttribute('excluido');
+    }
 }
 EtaContainerTable.blotName = 'EtaContainerTable';
 EtaContainerTable.tagName = 'DIV';
@@ -41560,6 +44528,7 @@ class EtaKeyboard extends Keyboard {
         });
         this.quill.root.addEventListener('keydown', (ev) => {
             this.altGraphPressionado = ev.altKey && ev.location === 2;
+            const elementoLinhaAtual = this.quill.linhaAtual.elemento;
             if (!(this.quill.cursorDeTextoEstaSobreLink() || (ev.key === 'Backspace' && this.quill.cursorDeTextoEstaSobreLink(-1))) && this.isTeclaQueAlteraTexto(ev)) {
                 this.onChange.notify('keyboard');
             }
@@ -41592,6 +44561,9 @@ class EtaKeyboard extends Keyboard {
                 }
                 cancelarPropagacaoDoEvento(ev);
                 return;
+            }
+            else if (elementoLinhaAtual.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO && this.isNotTeclasDeNavegacao(ev)) {
+                cancelarPropagacaoDoEvento(ev);
             }
             else if (ev.ctrlKey) {
                 if (!ev.altKey && !ev.metaKey) {
@@ -41707,6 +44679,9 @@ class EtaKeyboard extends Keyboard {
             }
         });
         super.listen();
+    }
+    isNotTeclasDeNavegacao(ev) {
+        return (!ev.ctrlKey && ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown' && ev.key !== 'ArrowRight' && ev.key !== 'ArrowLeft' && ev.key !== 'Home' && ev.key !== 'End' && !ev.shiftKey);
     }
     isTeclaComCaracterGrafico(ev) {
         const teclasComCaracterGrafico = '123456=[]/';
@@ -41973,36 +44948,7 @@ const sublinhado = `
 <rect x="3" y="12.9" class="st0" width="9.9" height="0.8"/>
 </svg>
 `;
-
-class EtaBlotAbreAspas extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotAbreAspas.create(elemento));
-        this.elemento = elemento;
-    }
-    get instanceBlotName() {
-        return EtaBlotAbreAspas.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaBlotAbreAspas.className);
-        node.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
-        return node;
-    }
-    static formats() {
-        return true;
-    }
-    atualizarAtributos(elemento) {
-        this.elemento = elemento;
-        this.domNode.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
-    }
-    static montarHTML(elemento) {
-        return elemento.abreAspas ? '“' : '';
-    }
-}
-EtaBlotAbreAspas.blotName = 'EtaBlotAbreAspas';
-EtaBlotAbreAspas.tagName = 'abre-aspas';
-EtaBlotAbreAspas.className = 'abre-aspas';
+const controleDropdown = '<svg viewBox="0 0 18 18"> <polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon> <polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon> </svg>';
 
 const Inline = Quill.import('blots/inline');
 class EtaBlotConteudoOmissis extends Inline {
@@ -42066,6 +45012,39 @@ class EtaBlotMensagens extends EtaBlot {
 }
 EtaBlotMensagens.blotName = 'mensagens';
 EtaBlotMensagens.tagName = 'MENSAGENS';
+
+var AlinhamentoMenu;
+(function (AlinhamentoMenu) {
+    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
+    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
+})(AlinhamentoMenu || (AlinhamentoMenu = {}));
+class EtaBlotOpcoesDiff extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotOpcoesDiff.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotOpcoesDiff.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.innerHTML = ' ';
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotOpcoesDiff.className);
+        node.setAttribute('title', 'Exibir diferenças');
+        EtaBlotOpcoesDiff.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaBlotOpcoesDiff.atualizarAtributos(elemento, this.domNode);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', 'buttonExibirDiferencas' + elemento.uuid);
+        node.onclick = () => node.dispatchEvent(new CustomEvent('exibir-diferencas', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+}
+EtaBlotOpcoesDiff.blotName = 'EtaBlotOpcoesDiff';
+EtaBlotOpcoesDiff.className = 'blot__opcoes_diff';
+EtaBlotOpcoesDiff.tagName = 'button';
 
 class EtaBlotTipoOmissis extends EtaBlot {
     constructor(elemento) {
@@ -42202,8 +45181,40 @@ class EtaClipboard extends connect(rootStore)(Clipboard) {
     }
 }
 
-const Container$2 = Quill.import('blots/container');
-class EtaContainerTdDireito extends Container$2 {
+class EtaContainerOpcoes extends EtaContainer {
+    constructor(elemento) {
+        super(EtaContainerOpcoes.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaContainerOpcoes.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaContainerOpcoes.className);
+        EtaContainerOpcoes.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaContainerOpcoes.atualizarAtributos(elemento, this.domNode);
+        this.atualizarBlots(elemento);
+    }
+    atualizarBlots(elemento) {
+        var _a;
+        (_a = this.blotBotaoExibirDiferencas) === null || _a === void 0 ? void 0 : _a.atualizarElemento(elemento);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', EtaContainerOpcoes.className + elemento.uuid);
+    }
+    get blotBotaoExibirDiferencas() {
+        return this.findBlot(EtaBlotOpcoesDiff.blotName);
+    }
+}
+EtaContainerOpcoes.blotName = 'EtaContainerOpcoes';
+EtaContainerOpcoes.tagName = 'DIV';
+EtaContainerOpcoes.className = 'container__opcoes';
+
+class EtaContainerTdDireito extends EtaContainer {
     constructor(alinhamentoMenu) {
         super(EtaContainerTdDireito.create());
         this.alinhamentoMenu = alinhamentoMenu;
@@ -42222,8 +45233,7 @@ EtaContainerTdDireito.blotName = 'EtaContainerTdDireito';
 EtaContainerTdDireito.tagName = 'DIV';
 EtaContainerTdDireito.className = 'container__menu';
 
-const Container$1 = Quill.import('blots/container');
-class EtaContainerTdEsquerdo extends Container$1 {
+class EtaContainerTdEsquerdo extends EtaContainer {
     constructor(elemento) {
         super(EtaContainerTdEsquerdo.create(elemento));
     }
@@ -42251,8 +45261,7 @@ EtaContainerTdEsquerdo.tagName = 'DIV';
 EtaContainerTdEsquerdo.className = 'container__texto';
 EtaContainerTdEsquerdo.classLevel = 'level';
 
-const Container = Quill.import('blots/container');
-class EtaContainerTr extends Container {
+class EtaContainerTr extends EtaContainer {
     constructor(editavel, alinhamentoMenu) {
         super(EtaContainerTr.create(editavel, alinhamentoMenu));
     }
@@ -42261,7 +45270,7 @@ class EtaContainerTr extends Container {
     }
     static create(editavel, alinhamentoMenu) {
         const node = super.create();
-        const classeAdicional = alinhamentoMenu === AlinhamentoMenu.Esquerda ? ' container__linha--reverse' : '';
+        const classeAdicional = alinhamentoMenu === AlinhamentoMenu$4.Esquerda ? ' container__linha--reverse' : '';
         // node.setAttribute('contenteditable', editavel ? 'true' : 'false');
         node.setAttribute('class', EtaContainerTr.className + classeAdicional);
         return node;
@@ -42340,7 +45349,8 @@ class EtaQuill extends Quill {
         this.onTextChange = () => {
             if (this._linhaAtual) {
                 setTimeout(() => {
-                    this.linhaAtual.blotConteudo && this.acertarAspas();
+                    var _a;
+                    ((_a = this.linhaAtual) === null || _a === void 0 ? void 0 : _a.blotConteudo) && this.acertarAspas();
                 }, 0);
             }
         };
@@ -42429,6 +45439,12 @@ class EtaQuill extends Quill {
         EtaQuill.register(EtaContainerTdEsquerdo, true);
         EtaQuill.register(EtaContainerTdDireito, true);
         EtaQuill.register(EtaContainerTr, true);
+        EtaQuill.register(EtaContainerRevisao, true);
+        EtaQuill.register(EtaBlotRevisao, true);
+        EtaQuill.register(EtaBlotRevisaoAceitar, true);
+        EtaQuill.register(EtaBlotRevisaoRecusar, true);
+        EtaQuill.register(EtaContainerOpcoes, true);
+        EtaQuill.register(EtaBlotOpcoesDiff, true);
         EtaQuill.register(id, true);
         EtaQuill.register(paddingLeft, true);
         EtaQuill.register(border, true);
@@ -42452,6 +45468,17 @@ class EtaQuill extends Quill {
     }
     getUltimaLinha() {
         return this.scroll.children.tail;
+    }
+    getLinhaByUuid2(uuid2, linha = this.getPrimeiraLinha()) {
+        if (linha.uuid2 === uuid2) {
+            return linha;
+        }
+        if (linha.next) {
+            return this.getLinhaByUuid2(uuid2, linha.next);
+        }
+        else {
+            return undefined;
+        }
     }
     getLinha(uuid, linha = this.getPrimeiraLinha()) {
         if (linha.uuid === uuid) {
@@ -42633,7 +45660,7 @@ class EtaQuill extends Quill {
     isInEtaBoxViewport(el) {
         const rect = el.getBoundingClientRect();
         const lxEtaBox = el.closest('#lx-eta-box');
-        const etaBoxHeight = lxEtaBox.getBoundingClientRect().bottom;
+        const etaBoxHeight = (lxEtaBox === null || lxEtaBox === void 0 ? void 0 : lxEtaBox.getBoundingClientRect().bottom) || 0;
         return rect.top >= 0 && rect.bottom <= etaBoxHeight;
     }
     cursorDeTextoEstaSobreLink(deslocamento = 0) {
@@ -42675,6 +45702,8 @@ class EtaBlotQuebraLinha extends EtaBlot {
 EtaBlotQuebraLinha.blotName = 'EtaBlotQuebraLinha';
 EtaBlotQuebraLinha.tagName = 'BR';
 
+// import { EtaContainerOpcoes } from './eta-container-opcoes';
+// import { EtaBlotOpcoesDiff } from './eta-blot-opcoes-diff';
 class EtaQuillUtil {
     static criarContainerLinha(elemento) {
         const etaTable = new EtaContainerTable(elemento);
@@ -42704,11 +45733,29 @@ class EtaQuillUtil {
             }
         }
         new EtaBlotEspaco().insertInto(etaTdEspaco);
+        if (elemento.revisao && isRevisaoPrincipal(elemento.revisao)) {
+            EtaQuillUtil.criarContainerRevisao(elemento).insertInto(etaTrContainer);
+        }
+        // if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.revisao)) {
+        //   EtaQuillUtil.criarContainerOpcoes(elemento).insertInto(etaTrContainer);
+        // }
         etaTdTexto.insertInto(etaTrContainer);
         etaTdEspaco.insertInto(etaTrContainer);
         etaTrContainer.insertInto(etaTable);
         return etaTable;
     }
+    static criarContainerRevisao(elemento) {
+        const etaContainerRevisao = new EtaContainerRevisao(elemento);
+        new EtaBlotRevisaoAceitar(elemento).insertInto(etaContainerRevisao);
+        new EtaBlotRevisaoRecusar(elemento).insertInto(etaContainerRevisao);
+        new EtaBlotRevisao(elemento).insertInto(etaContainerRevisao);
+        return etaContainerRevisao;
+    }
+    // static criarContainerOpcoes(elemento: Elemento): EtaContainerOpcoes {
+    //   const etaContainerOpcoes: EtaContainerOpcoes = new EtaContainerOpcoes(elemento);
+    //   new EtaBlotOpcoesDiff(elemento).insertInto(etaContainerOpcoes);
+    //   return etaContainerOpcoes;
+    // }
     static criarContainerMensagens(elemento) {
         const etaTrContainer = new EtaContainerTr(false, this.alinhamentoMenu);
         const etaTdMensagens = new EtaContainerTdEsquerdo(elemento);
@@ -42725,14 +45772,7 @@ class EtaQuillUtil {
         return etaTrContainer;
     }
 }
-EtaQuillUtil.alinhamentoMenu = AlinhamentoMenu.Esquerda;
-
-const padTo2Digits = (num) => {
-    return num.toString().padStart(2, '0');
-};
-const formatDDMMYYYY = (date) => {
-    return [padTo2Digits(date.getDate()), padTo2Digits(date.getMonth() + 1), date.getFullYear()].join('/');
-};
+EtaQuillUtil.alinhamentoMenu = AlinhamentoMenu$4.Esquerda;
 
 class Norma {
     constructor(urn = '', nomePreferido = '', nomePorExtenso = '', nomes = [], nomesAlternativos = [], ementa = '') {
@@ -43073,7 +46113,7 @@ let AutocompleteNorma = class AutocompleteNorma extends s {
     }
     async _searchNormas(query) {
         try {
-            const _response = await fetch(`api/autocomplete-norma?query=${query}`);
+            const _response = await fetch(`${this.urlAutocomplete}?query=${query}`);
             const _normas = await _response.json();
             return _normas.map(n => new Norma(n.urn, n.nomePreferido, n.nomePorExtenso, n.nomes, n.nomesAlternativos, n.ementa));
         }
@@ -43163,6 +46203,9 @@ __decorate([
     e$3({ type: String })
 ], AutocompleteNorma.prototype, "urnInicial", void 0);
 __decorate([
+    e$3({ type: String })
+], AutocompleteNorma.prototype, "urlAutocomplete", void 0);
+__decorate([
     e$3({ type: Function })
 ], AutocompleteNorma.prototype, "onSelect", void 0);
 __decorate([
@@ -43178,7 +46221,7 @@ AutocompleteNorma = __decorate([
     n$1('autocomplete-norma')
 ], AutocompleteNorma);
 
-async function assistenteAlteracaoDialog(elemento, quill, store, action) {
+async function assistenteAlteracaoDialog(elemento, quill, store, action, urlAutocomplete) {
     const dialogElem = document.createElement('sl-dialog');
     document.body.appendChild(dialogElem);
     dialogElem.label = 'Assistente de alteração de norma';
@@ -43230,7 +46273,7 @@ async function assistenteAlteracaoDialog(elemento, quill, store, action) {
       }
     }
   </style>
-  <autocomplete-norma id="auto-norma"></autocomplete-norma>
+  <autocomplete-norma id="auto-norma" urlAutocomplete="${urlAutocomplete}"></autocomplete-norma>
   <br />
     <sl-input name="dispositivos" id="dispositivos" placeholder="ex: inciso I do § 3º do Art.1º" label="Dispositivo da norma" clearable></sl-input>
     <span class="ajuda">Informar apenas um dispositivo. Depois poderão ser adicionados outros.</span>
@@ -43314,52 +46357,62 @@ async function assistenteAlteracaoDialog(elemento, quill, store, action) {
 }
 
 const editarNotaAlteracaoDialog = (elemento, quill, store) => {
-    const dialogElem = document.createElement('sl-dialog');
-    document.body.appendChild(dialogElem);
-    dialogElem.label = 'Nota de alteração';
-    dialogElem.addEventListener('sl-request-close', (event) => {
-        if (event.detail.source === 'overlay') {
-            event.preventDefault();
+    if (podeMostrarDialog(elemento)) {
+        const dialogElem = document.createElement('sl-dialog');
+        document.body.appendChild(dialogElem);
+        dialogElem.label = 'Nota de alteração';
+        dialogElem.addEventListener('sl-request-close', (event) => {
+            if (event.detail.source === 'overlay') {
+                event.preventDefault();
+            }
+        });
+        const content = document.createRange().createContextualFragment(`
+    <sl-radio-group fieldset label="Selecione o tipo de nota de alteração:">
+      <sl-radio class="nota" id="nota-nr" value="NR">Nova redação '(NR)'</sl-radio>
+      <sl-radio class="nota" id="nota-ac" value="AC">Acréscimo '(AC)'</sl-radio>
+      <sl-radio class="nota" id="nota-vazia" value="">Sem nota de alteração</sl-radio>
+    </sl-radio-group>
+    <sl-button slot="footer" variant="default">Cancelar</sl-button>
+    <sl-button slot="footer" variant="primary">Ok</sl-button>
+    `);
+        const opcoes = {
+            NR: content.querySelector('#nota-nr'),
+            AC: content.querySelector('#nota-ac'),
+            VZ: content.querySelector('#nota-vazia'),
+        };
+        opcoes[elemento.notaAlteracao || 'VZ'].checked = true;
+        const botoes = content.querySelectorAll('sl-button');
+        const cancelar = botoes[0];
+        const ok = botoes[1];
+        ok.onclick = () => {
+            const newValue = document.querySelector('sl-radio.nota[aria-checked="true"]').value;
+            if (elemento.notaAlteracao !== newValue) {
+                store.dispatch(atualizarNotaAlteracaoAction.execute(elemento, newValue));
+            }
+            dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+            dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
+        };
+        cancelar.onclick = () => {
+            quill.focus();
+            dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+            dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
+        };
+        quill.blur();
+        dialogElem.appendChild(content);
+        dialogElem.show();
+        // opcoes[elemento.notaAlteracao || 'VZ'].focus();
+    }
+};
+const podeMostrarDialog = (elemento) => {
+    if (elemento.revisao) {
+        if (elemento.revisao.descricao === 'Dispositivo removido') {
+            return false;
         }
-    });
-    const content = document.createRange().createContextualFragment(`
-  <sl-radio-group fieldset label="Selecione o tipo de nota de alteração:">
-    <sl-radio class="nota" id="nota-nr" value="NR">Nova redação '(NR)'</sl-radio>
-    <sl-radio class="nota" id="nota-ac" value="AC">Acréscimo '(AC)'</sl-radio>
-    <sl-radio class="nota" id="nota-vazia" value="">Sem nota de alteração</sl-radio>
-  </sl-radio-group>
-  <sl-button slot="footer" variant="default">Cancelar</sl-button>
-  <sl-button slot="footer" variant="primary">Ok</sl-button>
-  `);
-    const opcoes = {
-        NR: content.querySelector('#nota-nr'),
-        AC: content.querySelector('#nota-ac'),
-        VZ: content.querySelector('#nota-vazia'),
-    };
-    opcoes[elemento.notaAlteracao || 'VZ'].checked = true;
-    const botoes = content.querySelectorAll('sl-button');
-    const cancelar = botoes[0];
-    const ok = botoes[1];
-    ok.onclick = () => {
-        const newValue = document.querySelector('sl-radio.nota[aria-checked="true"]').value;
-        if (elemento.notaAlteracao !== newValue) {
-            store.dispatch(atualizarNotaAlteracaoAction.execute(elemento, newValue));
-        }
-        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
-        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
-    };
-    cancelar.onclick = () => {
-        quill.focus();
-        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
-        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
-    };
-    quill.blur();
-    dialogElem.appendChild(content);
-    dialogElem.show();
-    // opcoes[elemento.notaAlteracao || 'VZ'].focus();
+    }
+    return true;
 };
 
-async function informarNormaDialog(elemento, quill, store, action) {
+async function informarNormaDialog(elemento, quill, store, action, urlAutocomplete) {
     const dialogElem = document.createElement('sl-dialog');
     document.body.appendChild(dialogElem);
     dialogElem.label = 'Dados da norma vigente';
@@ -43371,7 +46424,7 @@ async function informarNormaDialog(elemento, quill, store, action) {
     const content = document.createRange().createContextualFragment(`
 
   <div class="input-validation-required">
-    <autocomplete-norma id="auto-norma" urnInicial="${elemento.norma}"></autocomplete-norma>
+    <autocomplete-norma id="auto-norma" urnInicial="${elemento.norma}" urlAutocomplete="${urlAutocomplete}"></autocomplete-norma>
   </div>
   <br/>
   <sl-alert variant="warning" closable class="alert-closable">
@@ -43420,16 +46473,138 @@ const transformarAction = (elemento, novoTipo) => {
     return action.execute(elemento);
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+class TextoDiff {
+}
+const exibirDiferencasDialog = (diff) => {
+    const textoDiff = textoDiffAsHtml(diff.textoAtual, diff.textoOriginal, 'diffWords');
+    Array.from(document.querySelectorAll('#slDialogExibirDiferencas')).forEach(el => document.body.removeChild(el));
+    const dialogElem = document.createElement('sl-dialog');
+    dialogElem.id = 'slDialogExibirDiferencas';
+    document.body.appendChild(dialogElem);
+    dialogElem.label = 'Texto alterado';
+    const fnDestroy = () => {
+        try {
+            diff.quill && diff.quill.focus();
+            dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+            document.body.removeChild(dialogElem);
+        }
+        catch (error) {
+            // console.log(error);
+        }
+    };
+    dialogElem.addEventListener('sl-after-hide', () => {
+        setTimeout(() => fnDestroy(), 0);
+    });
+    const content = document.createRange().createContextualFragment(`
+  <style>
+    .texto-alterado ins {
+      background-color: #c6ffc6;
+    }
+
+    .texto-alterado del {
+      background-color: #ffc6c6;
+    }
+  </style>
+  <div class="texto-alterado">
+    ${textoDiff}
+  </div>
+  <sl-button slot="footer" variant="primary">Fechar</sl-button>
+  `);
+    const fechar = content.querySelectorAll('sl-button')[0];
+    fechar.onclick = () => dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+    diff.quill && diff.quill.blur();
+    dialogElem.appendChild(content);
+    dialogElem.show();
+};
+
 let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     constructor() {
         super();
+        this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.eventosOnChange = [];
         this.inscricoes = [];
+        this._idSwitchRevisao = 'chk-em-revisao';
+        this._idBadgeQuantidadeRevisao = 'badge-marca-alteracao';
+        this.exibirBotoesParaTratarTodas = true;
         this.onSelectionChange = (range, oldRange, source) => {
             if ((range === null || range === void 0 ? void 0 : range.length) === 0 && source === Quill.sources.USER) {
                 this.ajustarLinkParaNorma();
             }
+        };
+        this.listenerRotulo = (event) => {
+            event.stopImmediatePropagation();
+            this.renumerarElemento();
+        };
+        this.listenerNotaAlteracao = (event) => {
+            event.stopImmediatePropagation();
+            this.editarNotaAlteracao(event.detail.elemento);
+        };
+        this.listenerToggleExistencia = (event) => {
+            event.stopImmediatePropagation();
+            this.toggleExistenciaElemento(event.detail.elemento);
+        };
+        this.listenerMensagem = (event) => {
+            var _a, _b;
+            event.stopImmediatePropagation();
+            const linha = this.quill.linhaAtual;
+            if (linha) {
+                if (AutoFix.RENUMERAR_DISPOSITIVO === ((_b = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.mensagem) === null || _b === void 0 ? void 0 : _b.descricao)) {
+                    this.renumerarElemento();
+                }
+                else {
+                    const blotConteudo = linha.blotConteudo;
+                    const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, blotConteudo.html, linha.numero, linha.hierarquia);
+                    rootStore.dispatch(autofixAction.execute(elemento, event.detail.mensagem));
+                }
+            }
+        };
+        this.listenerAceitarRevisao = (event) => {
+            event.stopImmediatePropagation();
+            this.aceitarRevisao(event.detail.elemento);
+        };
+        this.listenerRejeitarRevisao = (event) => {
+            event.stopImmediatePropagation();
+            this.rejeitarRevisao(event.detail.elemento);
+        };
+        this.atualizaQuantidadeRevisao = () => {
+            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this._idBadgeQuantidadeRevisao));
+        };
+        /**
+         * Método utilizado para navegar entre as marcas de revisão
+         * @param direcao
+         */
+        this.navegarEntreMarcasRevisao = (direcao) => {
+            const atributo = direcao === 'abaixo' ? 'next' : 'prev';
+            let linha = this.quill.linhaAtual;
+            if (linha.elemento.revisao) {
+                linha = linha[atributo];
+            }
+            while (linha && !linha.elemento.revisao) {
+                linha = linha[atributo];
+            }
+            if (linha) {
+                this.quill.desmarcarLinhaAtual(this.quill.linhaAtual);
+                this.quill.marcarLinhaAtual(linha);
+            }
+        };
+        this.checkedSwitchMarcaAlteracao = () => {
+            const switchMarcaAlteracaoView = document.getElementById(this._idSwitchRevisao);
+            setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
+        };
+        this.disabledParagrafoElementoRemovido = (event) => {
+            var _a;
+            const elementos = (_a = event.elementos) !== null && _a !== void 0 ? _a : [];
+            elementos.forEach((elemento) => {
+                const paragrafo = document.getElementById('texto__dispositivo' + elemento.uuid);
+                if (paragrafo) {
+                    if (elemento.revisao && elemento.revisao.descricao === 'Dispositivo removido') {
+                        paragrafo.setAttribute('contenteditable', 'false');
+                    }
+                    else {
+                        paragrafo.setAttribute('contenteditable', 'true');
+                    }
+                }
+            });
         };
         this.tabIndex = -1;
     }
@@ -43466,10 +46641,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     }
     disconnectedCallback() {
         this.inscricoes.forEach((i) => i.cancel());
-        this.removeEventListener('ontextchange', (event) => console.log(event));
-        this.removeEventListener('rotulo', (event) => console.log(event));
-        this.removeEventListener('nota-alteracao', (event) => console.log(event));
-        this.removeEventListener('toggle-existencia', (event) => console.log(event));
         this.destroiQuill();
         super.disconnectedCallback();
     }
@@ -43487,6 +46658,10 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         }
         .sl-toast-stack sl-alert::part(base) {
           background-color: var(--sl-color-danger-100);
+        }
+        .checkBoxRevisao {
+          padding: 3px 5px;
+          margin: 5px 5px 5px 4px;
         }
       </style>
       <div id="lx-eta-box">
@@ -43510,7 +46685,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
               />
             </svg>
           </button>
-          <button type="button" class="ql-clean">
+          <button type="button" class="ql-clean" title="Remover formatação">
             <svg class="" viewBox="0 0 18 18">
               <line class="ql-stroke" x1="5" x2="13" y1="3" y2="3"></line>
               <line class="ql-stroke" x1="6" x2="9.35" y1="12" y2="3"></line>
@@ -43519,6 +46694,23 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
               <rect class="ql-fill" height="1" rx="0.5" ry="0.5" width="7" x="2" y="14"></rect>
             </svg>
           </button>
+
+          <lexml-switch-revisao
+          class="revisao-container"
+          .nomeSwitch="${this._idSwitchRevisao}"
+          .nomeBadgeQuantidadeRevisao="${this._idBadgeQuantidadeRevisao}"
+          >
+          </lexml-switch-revisao>
+
+          <sl-button variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('abaixo')}>
+            <sl-icon-button name="arrow-down"></sl-icon-button>
+          </sl-button>
+
+          <sl-button variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('acima')}>
+            <sl-icon-button name="arrow-up"></sl-icon-button>
+          </sl-button>
+
+          ${this.exibirBotoesParaTratarTodas ? this.renderBotoesParaTratarTodasRevisoes() : ''}
 
           <input type="button" @click=${this.artigoOndeCouber} class="${'ql-hidden'} btn--artigoOndeCouber" value="Propor artigo onde couber" title="Artigo onde couber"></input>
           <div class="mobile-buttons">
@@ -43545,6 +46737,17 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <lexml-ajuda-modal></lexml-ajuda-modal>
       <lexml-emenda-comando-modal></lexml-emenda-comando-modal>
       <lexml-atalhos-modal></lexml-atalhos-modal>
+    `;
+    }
+    renderBotoesParaTratarTodasRevisoes() {
+        return $ `
+      <sl-icon-button id="btnRejeitarTodasRevisoes" name="x" label="" title="Rejeitar Revisões" ?disabled=${true} @click=${() => this.rejeitarTodasRevisoes()}>
+        Rejeitar Revisões
+      </sl-icon-button>
+
+      <sl-icon-button id="btnAceitarTodasRevisoes" name="check-lg" label="" title="Aceitar Revisões" ?disabled=${true} @click=${() => this.aceitarTodasRevisoes()}>
+        Aceitar Revisões
+      </sl-icon-button>
     `;
     }
     showAjudaModal() {
@@ -43626,9 +46829,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             textoLinha = this.quill.getConteudoHtmlParteLinha(blotConteudo, 0, blotConteudo.tamanho - tamanhoNovaLinha);
             textoNovaLinha = this.quill.getConteudoHtmlParteLinha(blotConteudo, range.index - indexInicio, tamanhoNovaLinha);
         }
-        const elemento = this.criarElemento(linha.uuid, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
+        const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
         if (this.isDesmembramento(blotConteudo.htmlAnt, textoLinha, textoNovaLinha)) {
-            const elemento = this.criarElemento(linha.uuid, linha.lexmlId, linha.tipo, textoLinha + textoNovaLinha, linha.numero, linha.hierarquia);
+            const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, textoLinha + textoNovaLinha, linha.numero, linha.hierarquia);
             rootStore.dispatch(atualizarTextoElementoAction.execute(elemento));
         }
         rootStore.dispatch(adicionarElementoAction.execute(elemento, textoNovaLinha));
@@ -43637,10 +46840,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         editarNotaAlteracaoDialog(elemento, this.quill, rootStore);
     }
     async renumerarElemento() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         const linha = this.quill.linhaAtual;
-        const atual = linha.blotConteudo.html;
-        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia, linha.descricaoSituacao, linha.existeNaNormaAlterada);
+        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, (_b = linha.uuid2) !== null && _b !== void 0 ? _b : '', linha.lexmlId, (_c = linha.tipo) !== null && _c !== void 0 ? _c : '', '', linha.numero, linha.hierarquia, linha.descricaoSituacao, linha.existeNaNormaAlterada);
         if (!podeRenumerar(rootStore.getState().elementoReducer.articulacao, elemento)) {
             this.alertar('Nessa situação, não é possível renumerar o dispositivo');
             return;
@@ -43673,7 +46875,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         };
         const content = document.createRange().createContextualFragment(`
       <div class="input-validation-required">
-        <sl-input type="text" help-text="${getMsgPlaceholder((_c = elemento.tipo) !== null && _c !== void 0 ? _c : '')}" label="Numeração do dispositivo:" clearable></sl-input>
+        <sl-input type="text" help-text="${getMsgPlaceholder((_d = elemento.tipo) !== null && _d !== void 0 ? _d : '')}" label="Numeração do dispositivo:" clearable></sl-input>
         <br/>
       </div>
       <br/>
@@ -43685,7 +46887,8 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <sl-button slot="footer" variant="primary">Ok</sl-button>
     `);
         const input = content.querySelector('sl-input');
-        input.value = `${rotuloParaEdicao(linha.blotRotulo.rotulo)}`;
+        const rotuloAtual = `${rotuloParaEdicao(linha.blotRotulo.rotulo)}`;
+        input.value = rotuloAtual;
         const botoes = content.querySelectorAll('sl-button');
         const cancelar = botoes[0];
         const ok = botoes[1];
@@ -43696,11 +46899,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             this.quill.focus();
             dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
             dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
-            if (((_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== atual) {
-                elemento.conteudo.texto = atual;
-                rootStore.dispatch(atualizarElementoAction.execute(elemento));
+            if (((_a = input.value) === null || _a === void 0 ? void 0 : _a.trim().toLowerCase()) !== (rotuloAtual === null || rotuloAtual === void 0 ? void 0 : rotuloAtual.toLowerCase())) {
+                rootStore.dispatch(renumerarElementoAction.execute(elemento, input.value.trim()));
             }
-            rootStore.dispatch(renumerarElementoAction.execute(elemento, input.value.trim()));
         };
         cancelar.onclick = () => {
             this.quill.focus();
@@ -43736,9 +46937,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         input.focus();
     }
     toggleExistencia() {
-        var _a, _b;
+        var _a, _b, _c;
         const linha = this.quill.linhaAtual;
-        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia, linha.descricaoSituacao, linha.existeNaNormaAlterada);
+        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, (_b = linha.uuid2) !== null && _b !== void 0 ? _b : '', linha.lexmlId, (_c = linha.tipo) !== null && _c !== void 0 ? _c : '', '', linha.numero, linha.hierarquia, linha.descricaoSituacao, linha.existeNaNormaAlterada);
         this.toggleExistenciaElemento(elemento);
     }
     adicionaAgrupador() {
@@ -43754,40 +46955,43 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     removerElementoSemTexto(key) {
         var _a, _b;
         const linha = this.quill.linhaAtual;
-        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
+        const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.uuid2, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
         rootStore.dispatch(removerElementoSemTextoAction.execute(elemento, key));
     }
     removerElemento() {
-        var _a;
+        var _a, _b;
         const linha = this.quill.linhaAtual;
         const mensagem = `Você realmente deseja remover o dispositivo ${(_a = linha.blotRotulo) === null || _a === void 0 ? void 0 : _a.rotulo}?`;
+        const elementoLinhaAnterior = (_b = this.quill.linhaAtual.prev) === null || _b === void 0 ? void 0 : _b.elemento;
         this.confirmar(mensagem, ['Sim', 'Não'], (event) => {
             var _a, _b;
             const choice = event.detail.closeResult;
             if (choice === 'Sim') {
-                const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
-                rootStore.dispatch(removerElementoAction.execute(elemento));
+                const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.uuid2, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
+                rootStore.dispatch(removerElementoAction.execute(elemento, elementoLinhaAnterior));
             }
             this.quill.focus();
         });
     }
     moverElemento(ev) {
         const linha = this.quill.linhaAtual;
-        const blotConteudo = linha.blotConteudo;
-        const textoLinha = blotConteudo.html;
-        const elemento = this.criarElemento(linha.uuid, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
-        if (ev.key === 'ArrowUp') {
-            rootStore.dispatch(moverElementoAcimaAction.execute(elemento));
-        }
-        else if (ev.key === 'ArrowDown') {
-            rootStore.dispatch(moverElementoAbaixoAction.execute(elemento));
+        if (linha) {
+            const blotConteudo = linha.blotConteudo;
+            const textoLinha = blotConteudo.html;
+            const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
+            if (ev.key === 'ArrowUp') {
+                rootStore.dispatch(moverElementoAcimaAction.execute(elemento));
+            }
+            else if (ev.key === 'ArrowDown') {
+                rootStore.dispatch(moverElementoAbaixoAction.execute(elemento));
+            }
         }
     }
     transformarElemento(ev) {
         const linha = this.quill.linhaAtual;
         const blotConteudo = linha.blotConteudo;
         const textoLinha = blotConteudo.html;
-        const elemento = this.criarElemento(linha.uuid, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
+        const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, textoLinha, linha.numero, linha.hierarquia);
         if (ev.key.toLowerCase() === 'o') {
             rootStore.dispatch(transformarAction(elemento, TipoDispositivo.omissis.name));
         }
@@ -43798,9 +47002,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     elementoSelecionado(uuid) {
         var _a;
         const linha = this.quill.linhaAtual;
-        const elemento = this.criarElemento(uuid, linha.lexmlId, (_a = linha.tipo) !== null && _a !== void 0 ? _a : '', '', linha.numero, linha.hierarquia);
-        rootStore.dispatch(elementoSelecionadoAction.execute(elemento));
-        this.quill.processandoMudancaLinha = false;
+        if (linha) {
+            const elemento = this.criarElemento(uuid, linha.uuid2, linha.lexmlId, (_a = linha.tipo) !== null && _a !== void 0 ? _a : '', '', linha.numero, linha.hierarquia);
+            rootStore.dispatch(elementoSelecionadoAction.execute(elemento));
+            this.quill.processandoMudancaLinha = false;
+        }
     }
     undoRedoEstrutura(tipo) {
         //
@@ -43823,14 +47029,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     this.carregarArticulacao((_a = event.elementos) !== null && _a !== void 0 ? _a : []);
                     break;
                 case StateType.InformarDadosAssistente:
-                    assistenteAlteracaoDialog(event.elementos[0], this.quill, rootStore, adicionarAlteracaoComAssistenteAction);
+                    assistenteAlteracaoDialog(event.elementos[0], this.quill, rootStore, adicionarAlteracaoComAssistenteAction, this.lexmlEtaConfig.urlAutocomplete);
                     break;
                 case StateType.InformarNorma:
-                    informarNormaDialog(event.elementos[0], this.quill, rootStore, atualizarReferenciaElementoAction);
+                    informarNormaDialog(event.elementos[0], this.quill, rootStore, atualizarReferenciaElementoAction, this.lexmlEtaConfig.urlAutocomplete);
                     break;
                 case StateType.ElementoIncluido:
                     this.inserirNovoElementoNoQuill(event.elementos[0], event.referencia, true);
                     this.inserirNovosElementosNoQuill(event, true);
+                    // this.atualizarReferenciaEmRevisoesDeExclusaoSeNecessario(events, event);
                     break;
                 case StateType.ElementoModificado:
                 case StateType.ElementoRestaurado:
@@ -43872,9 +47079,27 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     this.atualizarMensagemQuill(event);
                     this.atualizarOmissis(event);
                     break;
+                case StateType.RevisaoAtivada:
+                    this.checkedSwitchMarcaAlteracao();
+                    break;
+                case StateType.RevisaoDesativada:
+                    this.checkedSwitchMarcaAlteracao();
+                    this.atualizarEstiloBotaoRevisao();
+                    break;
+                case StateType.RevisaoAceita:
+                    this.processaRevisoesAceitas(events, event);
+                    break;
+                case StateType.RevisaoAdicionalRejeitada:
+                    this.removerLinhaQuill(event);
+                    break;
             }
+            this.disabledParagrafoElementoRemovido(event);
             this.quill.limparHistory();
         });
+        //this.indicadorTextoModificado(events);
+        this.indicadorMarcaRevisao(events);
+        this.atualizaQuantidadeRevisao();
+        this.atualizarStatusBotoesRevisao();
         // Os eventos que estão no array abaixo devem emitir um custom event "ontextchange"
         const eventosQueDevemEmitirTextChange = [
             StateType.ElementoModificado,
@@ -43890,32 +47115,56 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             this.eventosOnChange.push(...eventosFiltrados);
             this.agendarEmissaoEventoOnChange('stateEvents', eventosFiltrados);
         }
+        if (events === null || events === void 0 ? void 0 : events.some(ev => [StateType.RevisaoAtivada, StateType.RevisaoDesativada].includes(ev.stateType))) {
+            this.emitiEventoOnRevisao(rootStore.getState().elementoReducer.emRevisao);
+        }
+    }
+    processaRevisoesAceitas(events, event) {
+        if (this.isAceitandoRevisoesDeExclusao(event)) {
+            this.removerLinhaQuill(event);
+        }
+        else {
+            this.atualizarAtributos(event);
+            if (events[events.length - 1] === event) {
+                this.montarMenuContexto(event);
+            }
+            this.atualizarMensagemQuill(event);
+        }
+    }
+    isAceitandoRevisoesDeExclusao(event) {
+        var _a, _b;
+        return (_b = (_a = event.elementos) === null || _a === void 0 ? void 0 : _a.some(e => { var _a, _b; return ((_b = (_a = this.quill.getLinha(e.uuid)) === null || _a === void 0 ? void 0 : _a.elemento.revisao) === null || _b === void 0 ? void 0 : _b.stateType) === StateType.ElementoRemovido; })) !== null && _b !== void 0 ? _b : false;
+    }
+    existeReinclusaoDoElemento(elementosIncluidos, elemento) {
+        return elementosIncluidos.some(elementoIncluido => elementoIncluido.uuid === elemento.uuid);
     }
     marcarLinha(event) {
-        this.quill.desmarcarLinhaAtual(this.quill.linhaAtual);
-        const elemento = event.elementos[0];
-        const linha = this.quill.getLinha(elemento.uuid);
-        this.quill.atualizarLinhaCorrente(linha);
-        this.elementoSelecionado(linha.uuid);
-        const index = this.quill.getIndex(linha.blotConteudo);
         try {
-            this.quill.setIndex(index, Quill.sources.SILENT);
-            // eslint-disable-next-line no-empty
+            this.quill.desmarcarLinhaAtual(this.quill.linhaAtual);
+            const elemento = event.elementos[0];
+            const linha = this.quill.getLinha(elemento.uuid);
+            this.quill.atualizarLinhaCorrente(linha);
+            this.elementoSelecionado(linha.uuid);
+            const index = this.quill.getIndex(linha.blotConteudo);
+            try {
+                this.quill.setIndex(index, Quill.sources.SILENT);
+                // eslint-disable-next-line no-empty
+            }
+            catch (error) { }
+            if (event.moverParaFimLinha) {
+                setTimeout(() => {
+                    const posicao = this.quill.getSelection().index + this.quill.linhaAtual.blotConteudo.html.length;
+                    this.quill.setSelection(posicao, 0, Quill.sources.USER);
+                }, 0);
+            }
         }
-        catch (error) { }
-        if (event.moverParaFimLinha) {
-            setTimeout(() => {
-                const posicao = this.quill.getSelection().index + this.quill.linhaAtual.blotConteudo.html.length;
-                this.quill.setSelection(posicao, 0, Quill.sources.USER);
-            }, 0);
+        catch (error) {
+            // linha, provavelmente, foi removida do Quill
         }
     }
     processarEscolhaMenu(itemMenu) {
-        var _a, _b, _c;
-        /*     if (itemMenu === 'Remover dispositivo') {
-          this.removerElemento();
-        } else
-     */ if (itemMenu === renumerarElementoAction) {
+        var _a, _b, _c, _d, _e, _f, _g;
+        if (itemMenu === renumerarElementoAction) {
             this.renumerarElemento();
         }
         else if (itemMenu === atualizarNotaAlteracaoAction) {
@@ -43924,15 +47173,38 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         else if (itemMenu instanceof AdicionarAgrupadorArtigo) {
             this.adicionarAgrupadorArtigo(this.quill.linhaAtual.elemento);
         }
+        else if (itemMenu === removerElementoAction) {
+            const linha = this.quill.linhaAtual;
+            const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.uuid2, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
+            elemento.conteudo.texto = (_c = linha.blotConteudo.html) !== null && _c !== void 0 ? _c : '';
+            const elementoLinhaAnterior = (_d = this.quill.linhaAtual.prev) === null || _d === void 0 ? void 0 : _d.elemento;
+            rootStore.dispatch(itemMenu.execute(elemento, elementoLinhaAnterior));
+        }
         else {
             const linha = this.quill.linhaAtual;
-            const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
-            elemento.conteudo.texto = (_c = linha.blotConteudo.html) !== null && _c !== void 0 ? _c : '';
+            const elemento = this.criarElemento((_e = linha.uuid) !== null && _e !== void 0 ? _e : 0, linha.uuid2, linha.lexmlId, (_f = linha.tipo) !== null && _f !== void 0 ? _f : '', '', linha.numero, linha.hierarquia);
+            elemento.conteudo.texto = (_g = linha.blotConteudo.html) !== null && _g !== void 0 ? _g : '';
             rootStore.dispatch(itemMenu.execute(elemento));
         }
     }
     inserirNovoElementoNoQuill(elemento, referencia, selecionarLinha) {
         var _a, _b;
+        const fnSelecionarNovaLinha = (linha, linhaAtual) => {
+            this.quill.desmarcarLinhaAtual(linhaAtual);
+            this.quill.marcarLinhaAtual(linha);
+            try {
+                this.quill.setIndex(this.quill.getIndex(linha.blotConteudo), Quill.sources.SILENT);
+            }
+            catch (e) {
+                // console.log(e);
+            }
+        };
+        const linhaASerReinserida = this.quill.getLinha(elemento.uuid);
+        if (linhaASerReinserida) {
+            linhaASerReinserida.atualizarElemento(elemento);
+            selecionarLinha && fnSelecionarNovaLinha(linhaASerReinserida, this.quill.linhaAtual);
+            return;
+        }
         const linhaRef = this.quill.getLinha(((_a = elemento.elementoAnteriorNaSequenciaDeLeitura) === null || _a === void 0 ? void 0 : _a.uuid) || referencia.uuid);
         if (linhaRef) {
             const novaLinha = EtaQuillUtil.criarContainerLinha(elemento);
@@ -43944,16 +47216,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             }
             const isEmendaArtigoOndeCouber = rootStore.getState().elementoReducer.modo === ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER;
             if (((_b = this.quill.linhaAtual) === null || _b === void 0 ? void 0 : _b.blotConteudo.html) !== '' || novaLinha.blotConteudo.html === '' || isEmendaArtigoOndeCouber || elemento.tipo === 'Omissis') {
-                if (selecionarLinha) {
-                    this.quill.desmarcarLinhaAtual(this.quill.linhaAtual);
-                    this.quill.marcarLinhaAtual(novaLinha);
-                    try {
-                        this.quill.setIndex(this.quill.getIndex(novaLinha.blotConteudo), Quill.sources.SILENT);
-                    }
-                    catch (e) {
-                        // console.log(e);
-                    }
-                }
+                selecionarLinha && !this.timerOnChange && fnSelecionarNovaLinha(novaLinha, this.quill.linhaAtual);
             }
             else {
                 this.quill.linhaAtual.blotConteudo.htmlAnt = this.quill.linhaAtual.blotConteudo.html;
@@ -43981,6 +47244,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 if (elemento.descricaoSituacao !== linha.descricaoSituacao) {
                     linha.descricaoSituacao = elemento.descricaoSituacao;
                     linha.setEstilo(elemento);
+                    linha.atualizarElemento(elemento);
                 }
             }
         });
@@ -44060,21 +47324,33 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 if (linha.children.length === 2) {
                     linha.children.tail.remove();
                 }
-                if (elemento.mensagens && elemento.mensagens.length > 0) {
+                if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
                     EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
                 }
             }
         });
     }
+    elementoRemovidoEmRevisao(elemento) {
+        if (elemento.revisao && elemento.revisao.stateType === StateType.ElementoRemovido) {
+            return true;
+        }
+        return false;
+    }
     removerLinhaQuill(event) {
         var _a;
         const elementos = (_a = event.elementos) !== null && _a !== void 0 ? _a : [];
         let linha;
-        elementos.forEach((elemento) => {
-            var _a;
-            linha = this.quill.getLinha((_a = elemento.uuid) !== null && _a !== void 0 ? _a : 0, linha);
+        elementos.forEach((elemento, index) => {
+            var _a, _b;
+            linha = this.quill.getLinha((_a = elemento.uuid) !== null && _a !== void 0 ? _a : 0, linha) || this.quill.getLinha((_b = elemento.uuid) !== null && _b !== void 0 ? _b : 0);
             if (linha) {
-                linha.remove();
+                if (elemento.revisao && (!linha.elemento.revisao || !isRevisaoDeExclusao(linha.elemento.revisao))) {
+                    linha.atualizarElemento(elemento);
+                    index === 0 && this.montarMenuContexto(event);
+                }
+                else {
+                    linha.remove();
+                }
             }
         });
         const range = this.quill.getSelection();
@@ -44090,10 +47366,10 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         const elementos = (_a = event.elementos) !== null && _a !== void 0 ? _a : [];
         let linha;
         elementos.map((elemento) => {
-            var _a, _b;
-            linha = this.quill.getLinha((_a = elemento.uuid) !== null && _a !== void 0 ? _a : 0, linha);
+            var _a, _b, _c;
+            linha = this.quill.getLinha((_a = elemento.uuid) !== null && _a !== void 0 ? _a : 0, linha) || this.quill.getLinha((_b = elemento.uuid) !== null && _b !== void 0 ? _b : 0);
             if (linha) {
-                (_b = linha.blotRotulo) === null || _b === void 0 ? void 0 : _b.format(EtaBlotRotulo.blotName, elemento.rotulo);
+                (_c = linha.blotRotulo) === null || _c === void 0 ? void 0 : _c.format(EtaBlotRotulo.blotName, elemento.rotulo);
             }
         });
     }
@@ -44108,7 +47384,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 if ((linha === null || linha === void 0 ? void 0 : linha.children.length) === 2) {
                     linha.children.tail.remove();
                 }
-                if (elemento.mensagens && elemento.mensagens.length > 0) {
+                if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
                     EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
                 }
             }
@@ -44134,9 +47410,10 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             blotMenu.insertInto(this.quill.linhaAtual.containerDireito);
         }
     }
-    criarElemento(uuid, lexmlId, tipo, html, numero, hierarquia, descricaoSituacao, existeNaNormaAlterada) {
+    criarElemento(uuid, uuid2, lexmlId, tipo, html, numero, hierarquia, descricaoSituacao, existeNaNormaAlterada) {
         const elemento = new Elemento();
         elemento.uuid = uuid;
+        elemento.uuid2 = uuid2;
         elemento.lexmlId = lexmlId;
         elemento.tipo = tipo;
         elemento.numero = numero;
@@ -44168,33 +47445,35 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.inscricoes.push(this.quill.clipboard.onChange.subscribe(this.agendarEmissaoEventoOnChange.bind(this)));
         this.inscricoes.push(onChangeColarDialog.subscribe(this.agendarEmissaoEventoOnChange.bind(this)));
         this.inscricoes.push(this.quill.clipboard.onPasteTextoArticulado.subscribe(this.onPasteTextoArticulado.bind(this)));
-        editorHtml.addEventListener('rotulo', (event) => {
-            event.stopImmediatePropagation();
-            this.renumerarElemento();
-        });
-        editorHtml.addEventListener('nota-alteracao', (event) => {
-            event.stopImmediatePropagation();
-            this.editarNotaAlteracao(event.detail.elemento);
-        });
-        editorHtml.addEventListener('toggle-existencia', (event) => {
-            event.stopImmediatePropagation();
-            this.toggleExistenciaElemento(event.detail.elemento);
-        });
-        editorHtml.addEventListener('mensagem', (event) => {
-            var _a, _b;
-            event.stopImmediatePropagation();
-            const linha = this.quill.linhaAtual;
-            if (linha) {
-                if (AutoFix.RENUMERAR_DISPOSITIVO === ((_b = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.mensagem) === null || _b === void 0 ? void 0 : _b.descricao)) {
-                    this.renumerarElemento();
-                }
-                else {
-                    const blotConteudo = linha.blotConteudo;
-                    const elemento = this.criarElemento(linha.uuid, linha.lexmlId, linha.tipo, blotConteudo.html, linha.numero, linha.hierarquia);
-                    rootStore.dispatch(autofixAction.execute(elemento, event.detail.mensagem));
-                }
-            }
-        });
+        this.configListenersEta();
+    }
+    exibirDiferencas(elemento) {
+        const revisao = elemento.revisao;
+        const d = buscaDispositivoById(rootStore.getState().elementoReducer.articulacao, elemento.lexmlId);
+        const diff = new TextoDiff();
+        diff.textoOriginal = d.situacao.dispositivoOriginal.conteudo.texto;
+        diff.textoAtual = elemento.conteudo.texto;
+        diff.quill = this.quill;
+        if (revisao) {
+            diff.textoAntesRevisao = revisao.elementoAntesRevisao.conteudo.texto;
+            diff.textoAposRevisao = revisao.elementoAposRevisao.conteudo.texto;
+            exibirDiferencasDialog(diff);
+        }
+        else {
+            exibirDiferencasDialog(diff);
+        }
+    }
+    aceitarRevisao(elemento) {
+        rootStore.dispatch(aceitarRevisaoAction.execute(elemento, undefined));
+    }
+    rejeitarRevisao(elemento) {
+        rootStore.dispatch(rejeitarRevisaoAction.execute(elemento, undefined));
+    }
+    aceitarTodasRevisoes() {
+        rootStore.dispatch(aceitarRevisaoAction.execute(undefined, undefined));
+    }
+    rejeitarTodasRevisoes() {
+        rootStore.dispatch(rejeitarRevisaoAction.execute(undefined, undefined));
     }
     agendarEmissaoEventoOnChange(origemEvento, statesType = []) {
         clearTimeout(this.timerOnChange);
@@ -44203,7 +47482,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     atualizarTextoElemento(linhaAtual) {
         var _a, _b, _c;
         if ((_a = linhaAtual === null || linhaAtual === void 0 ? void 0 : linhaAtual.blotConteudo) === null || _a === void 0 ? void 0 : _a.alterado) {
-            const elemento = this.criarElemento(linhaAtual.uuid, linhaAtual.lexmlId, linhaAtual.tipo, (_c = (_b = linhaAtual.blotConteudo) === null || _b === void 0 ? void 0 : _b.html) !== null && _c !== void 0 ? _c : '', linhaAtual.numero, linhaAtual.hierarquia);
+            const elemento = this.criarElemento(linhaAtual.uuid, linhaAtual.uuid2, linhaAtual.lexmlId, linhaAtual.tipo, (_c = (_b = linhaAtual.blotConteudo) === null || _b === void 0 ? void 0 : _b.html) !== null && _c !== void 0 ? _c : '', linhaAtual.numero, linhaAtual.hierarquia);
             rootStore.dispatch(atualizarTextoElementoAction.execute(elemento));
         }
     }
@@ -44236,12 +47515,22 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 tipo: 'info',
                 mensagem: 'Cada emenda pode referir-se a apenas um dispositivo, salvo se houver correlação entre dispositivos. Verifique se há correlação entre os dispositivos emendados antes de submetê-la.',
                 podeFechar: true,
+                exibirComandoEmenda: true,
             };
             rootStore.dispatch(adicionarAlerta$1(alerta));
         }
         else if ((_b = (_a = rootStore.getState().elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.alertas) === null || _b === void 0 ? void 0 : _b.some(alerta => alerta.id === 'alerta-global-correlacao')) {
             rootStore.dispatch(removerAlerta('alerta-global-correlacao'));
         }
+    }
+    emitiEventoOnRevisao(emRevisao) {
+        this.dispatchEvent(new CustomEvent('onrevisao', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                emRevisao,
+            },
+        }));
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     emitirEventoOnChange(origemEvento, statesType = []) {
@@ -44259,6 +47548,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         }
         this.alertaGlobalVerificaCorrelacao();
         this.eventosOnChange = [];
+        this.timerOnChange = null;
     }
     carregarArticulacao(elementos) {
         setTimeout(() => {
@@ -44311,7 +47601,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <sl-button slot="footer" variant="primary">Sim</sl-button>
     `;
         dialog.innerHTML = mensagem + botoesHtml;
-        await document.body.appendChild(dialog);
+        document.body.appendChild(dialog);
         await dialog.show();
         const botoesDialog = dialog.querySelectorAll('sl-button');
         const nao = botoesDialog[0];
@@ -44338,11 +47628,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         });
     }
     alertar(mensagem) {
-        // const toast: any = this.querySelector('#toast-alerta');
-        // const elmHtml: HTMLElement = this.querySelector('#toast-msg') as HTMLElement;
-        // elmHtml.innerHTML = mensagem;
-        // toast.fromEdge = 'top';
-        // toast.open();
         const alert = Object.assign(document.createElement('sl-alert'), {
             variant: 'danger',
             closable: true,
@@ -44378,6 +47663,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         return this.querySelector(`#${id}`);
     }
     destroiQuill() {
+        this.removeListenersEta();
         this.getHtmlElement('lx-eta-editor').innerHTML = '';
         this.getHtmlElement('lx-eta-buffer').innerHTML = '';
         if (this.quill) {
@@ -44385,6 +47671,24 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             this.quill.destroi();
         }
         this._quill = undefined;
+    }
+    configListenersEta() {
+        const editorHtml = this.getHtmlElement('lx-eta-editor');
+        editorHtml.addEventListener('rotulo', this.listenerRotulo);
+        editorHtml.addEventListener('nota-alteracao', this.listenerNotaAlteracao);
+        editorHtml.addEventListener('toggle-existencia', this.listenerToggleExistencia);
+        editorHtml.addEventListener('mensagem', this.listenerMensagem);
+        editorHtml.addEventListener('aceitar-revisao', this.listenerAceitarRevisao);
+        editorHtml.addEventListener('rejeitar-revisao', this.listenerRejeitarRevisao);
+    }
+    removeListenersEta() {
+        const editorHtml = this.getHtmlElement('lx-eta-editor');
+        editorHtml.removeEventListener('rotulo', this.listenerRotulo);
+        editorHtml.removeEventListener('nota-alteracao', this.listenerNotaAlteracao);
+        editorHtml.removeEventListener('toggle-existencia', this.listenerToggleExistencia);
+        editorHtml.removeEventListener('mensagem', this.listenerMensagem);
+        editorHtml.removeEventListener('aceitar-revisao', this.listenerAceitarRevisao);
+        editorHtml.removeEventListener('rejeitar-revisao', this.listenerRejeitarRevisao);
     }
     async onPasteTextoArticulado(payload) {
         const linha = this.quill.linhaAtual;
@@ -44394,7 +47698,112 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         const infoTextoColado = await InfoTextoColado.newInstanceFromTexto(payload.textoColadoOriginal, payload.textoColadoAjustado, rootStore.getState().elementoReducer.articulacao, linha.elemento);
         colarTextoArticuladoDialog(this.quill, rootStore, infoTextoColado, payload.range);
     }
+    atualizarEstiloBotaoRevisao() {
+        const botaoRevisao = this.getHtmlElement('lx-eta-btn-revisao');
+        if (botaoRevisao) {
+            botaoRevisao.classList.toggle('revisao-ativa', rootStore.getState().elementoReducer.emRevisao);
+        }
+        this.dispatchEvent(new CustomEvent('onRevisao', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                emRevisao: rootStore.getState().elementoReducer.emRevisao,
+            },
+        }));
+    }
+    // private indicadorTextoModificado(events: StateEvent[]): void {
+    //   const ignorarStateTypes: StateType[] = [
+    //     StateType.DocumentoCarregado,
+    //     StateType.ElementoIncluido,
+    //     StateType.ElementoValidado,
+    //     StateType.AtualizaUsuario,
+    //     StateType.AtualizacaoAlertas,
+    //   ];
+    //   const mapElementos: Map<number, Elemento> = new Map();
+    //   events
+    //     .filter(ev => !ignorarStateTypes.includes(ev.stateType))
+    //     .map(ev => ev.elementos || [])
+    //     .flat()
+    //     .forEach(e => mapElementos.set(e.uuid!, e));
+    //   const elementos: Elemento[] = [...mapElementos.values()];
+    //   const uuidsElementosSemModificacao = elementos.filter(e => e.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_MODIFICADO).map(e => e.uuid!);
+    //   const uuidsElementosComModificacao = elementos
+    //     .filter(e => e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && e.revisao))
+    //     .map(e => e.uuid!);
+    //   uuidsElementosSemModificacao.forEach(uuid => {
+    //     const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
+    //     if (containerOpcoes) {
+    //       const linha = this.quill.getLinha(uuid);
+    //       linha?.containerOpcoes?.remove();
+    //       containerOpcoes.remove();
+    //     }
+    //   });
+    //   uuidsElementosComModificacao.forEach(uuid => {
+    //     const linha = this.quill.getLinha(uuid);
+    //     if (linha) {
+    //       if (linha.containerOpcoes?.blotBotaoExibirDiferencas) {
+    //         linha.containerOpcoes.atualizarElemento(mapElementos.get(uuid)!);
+    //       } else {
+    //         const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
+    //         if (containerOpcoes) {
+    //           containerOpcoes.remove();
+    //         }
+    //         const containerTr = linha.children.head;
+    //         containerTr.insertBefore(EtaQuillUtil.criarContainerOpcoes(mapElementos.get(uuid)!), linha.containerDireito.prev);
+    //       }
+    //     }
+    //   });
+    // }
+    indicadorMarcaRevisao(events) {
+        const ignorarStateTypes = [
+            StateType.DocumentoCarregado,
+            StateType.ElementoIncluido,
+            StateType.ElementoValidado,
+            StateType.AtualizaUsuario,
+            StateType.AtualizacaoAlertas,
+        ];
+        const mapElementos = new Map();
+        events
+            .filter(ev => !ignorarStateTypes.includes(ev.stateType))
+            .map(ev => ev.elementos || [])
+            .flat()
+            .forEach(e => mapElementos.set(e.uuid, e));
+        const elementos = [...mapElementos.values()];
+        const uuidsElementosSemRevisao = elementos.filter(e => !e.revisao).map(e => e.uuid);
+        const uuidsElementosComRevisao = elementos.filter(e => e.revisao && isRevisaoPrincipal(e.revisao)).map(e => e.uuid);
+        // Remove container de revisão de elementos que não estão mais em revisão
+        uuidsElementosSemRevisao.forEach(uuid => {
+            var _a;
+            const containerRevisao = document.getElementById(EtaContainerRevisao.className + uuid);
+            if (containerRevisao) {
+                const linha = this.quill.getLinha(uuid);
+                (_a = linha === null || linha === void 0 ? void 0 : linha.containerRevisao) === null || _a === void 0 ? void 0 : _a.remove();
+            }
+        });
+        // Adiciona (ou atualiza) container de revisão para elementos que estão em revisão
+        uuidsElementosComRevisao.forEach(uuid => {
+            var _a;
+            const linha = this.quill.getLinha(uuid);
+            if (linha) {
+                if ((_a = linha.containerRevisao) === null || _a === void 0 ? void 0 : _a.blotBotaoAceitarRevisao) {
+                    linha.containerRevisao.atualizarElemento(mapElementos.get(uuid));
+                }
+                else {
+                    const containerTr = linha.children.head;
+                    containerTr.insertBefore(EtaQuillUtil.criarContainerRevisao(mapElementos.get(uuid)), linha.containerDireito.prev);
+                }
+            }
+        });
+    }
+    atualizarStatusBotoesRevisao() {
+        const numRevisoes = getQuantidadeRevisoes(rootStore.getState().elementoReducer.revisoes);
+        this.btnAceitarTodasRevisoes && (this.btnAceitarTodasRevisoes.disabled = numRevisoes === 0);
+        this.btnRejeitarTodasRevisoes && (this.btnRejeitarTodasRevisoes.disabled = numRevisoes === 0);
+    }
 };
+__decorate([
+    e$3({ type: Object })
+], EditorComponent.prototype, "lexmlEtaConfig", void 0);
 __decorate([
     i$1('lexml-ajuda-modal')
 ], EditorComponent.prototype, "ajudaModal", void 0);
@@ -44404,6 +47813,15 @@ __decorate([
 __decorate([
     i$1('lexml-emenda-comando-modal')
 ], EditorComponent.prototype, "comandoEmendaModal", void 0);
+__decorate([
+    i$1('#btnAceitarTodasRevisoes')
+], EditorComponent.prototype, "btnAceitarTodasRevisoes", void 0);
+__decorate([
+    i$1('#btnRejeitarTodasRevisoes')
+], EditorComponent.prototype, "btnRejeitarTodasRevisoes", void 0);
+__decorate([
+    e$3({ type: Boolean })
+], EditorComponent.prototype, "exibirBotoesParaTratarTodas", void 0);
 EditorComponent = __decorate([
     n$1('lexml-eta-editor')
 ], EditorComponent);
@@ -44480,24 +47898,51 @@ let AtalhosComponent = class AtalhosComponent extends s {
         return $ `
       <div class="lx-eta-help">
         <div class="lx-eta-help-content">
-          <div><b>Ctrl+Shift+A</b>&nbsp;-&nbsp;Seleciona o texto do dispositivo atual</div>
-          <!-- <div><b>Ctrl+A</b>&nbsp;-&nbsp;Seleciona todos os dispositivos da articulação</div> -->
-          <div><b>Ctrl+Home</b>&nbsp;-&nbsp;Vai para o primeiro dispositivo</div>
-          <div><b>Ctrl+End</b>&nbsp;-&nbsp;Vai para o último dispositivo</div>
-          <div><b>Alt+&uarr;</b>&nbsp;-&nbsp;Move o dispositivo acima</div>
-          <div><b>Alt+&darr;</b>&nbsp;-&nbsp;Move o dispositivo abaixo</div>
-          <div><b>Ctrl+F;</b>&nbsp;-&nbsp;Localizar texto</div>
-          <hr></hr>
-          <div><b>Enter</b>&nbsp;-&nbsp;Finaliza a edição do dispositivo atual e cria um novo</div>
-          <div><b>Ctrl+D</b>&nbsp;-&nbsp;Remove dispositivo atual</div>
-          <div><b>Ctrl+Z</b>&nbsp;-&nbsp;Desfaz ultima alteração</div>
-          <div><b>Ctrl+Y</b>&nbsp;-&nbsp;Refaz alteração</div>
-          <hr></hr>
-          <div><b>Tab</b>&nbsp;-&nbsp;Indenta para a direita o dispositivo, transformando-o no tipo mais provável</div>
-          <div><b>Shift+Tab</b>&nbsp;-&nbsp;Recua o dispositivo para a esquerda, transformando-o no tipo mais provável</div>
-          <hr></hr>
-          <div><b>Ctrl+Alt+N</b>&nbsp;-&nbsp;Numera o dispositivo</div>
-          <div><b>Ctrl+Alt+O</b>&nbsp;-&nbsp;Omite dispositivos</div>
+          <h4>Desfazer e refazer</h4>
+          <div class="lx-eta-help-group">
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Z</sl-badge>&nbsp;-&nbsp;Desfaz ultima alteração</div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Y</sl-badge>&nbsp;-&nbsp;Refaz alteração</div>
+          </div>
+          <h4>Seleção e navegação</h4>
+          <div class="lx-eta-help-group">
+            <div>
+              <sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Shift</sl-badge>+<sl-badge variant="neutral">A</sl-badge>&nbsp;-&nbsp;Seleciona o texto do
+              dispositivo atual
+            </div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Home</sl-badge>&nbsp;-&nbsp;Vai para o primeiro dispositivo</div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">End</sl-badge>&nbsp;-&nbsp;Vai para o último dispositivo</div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">F</sl-badge>&nbsp;-&nbsp;Localizar texto</div>
+          </div>
+          <h4>Criação e edição de dispositivos adicionados</h4>
+          <div class="lx-eta-help-group">
+            <div>
+              <sl-badge variant="neutral">Enter</sl-badge>&nbsp;-&nbsp;Cria um novo dispositivo do mesmo tipo ou cria dispositivo subordinado quando termina com dois pontos
+            </div>
+            <div><span class="lx-eta-help-info">Os atalhos abaixo funcionam apenas para dispositivos adicionados</span></div>
+            <div><sl-badge variant="neutral">Tab</sl-badge>&nbsp;-&nbsp;Indenta para a direita o dispositivo, transformando-o no tipo mais provável</div>
+            <div>
+              <sl-badge variant="neutral">Shift</sl-badge>+<sl-badge variant="neutral">Tab</sl-badge>&nbsp;-&nbsp;Recua o dispositivo para a esquerda, transformando-o no tipo mais
+              provável
+            </div>
+            <div><sl-badge variant="neutral">Alt</sl-badge>+<sl-badge variant="neutral">&uarr;</sl-badge>&nbsp;-&nbsp;Move o dispositivo para cima</div>
+            <div><sl-badge variant="neutral">Alt</sl-badge>+<sl-badge variant="neutral">&darr;</sl-badge>&nbsp;-&nbsp;Move o dispositivo para baixo</div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">D</sl-badge>&nbsp;-&nbsp;Remove dispositivo atual</div>
+            <div><span class="lx-eta-help-info">Os atalhos abaixo funcionam apenas para dispositivos adicionados em alteração de normas</span></div>
+            <div>
+              <sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Alt</sl-badge>+<sl-badge variant="neutral">N</sl-badge>&nbsp;-&nbsp;Numera o dispositivo que
+              foi adicionado em alteração de norma
+            </div>
+            <div>
+              <sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">Alt</sl-badge>+<sl-badge variant="neutral">O</sl-badge>&nbsp;-&nbsp;Omite dispositivos
+              (transforma em linha pontilhada que representa um ou mais dispositivos omitidos)
+            </div>
+            <div><sl-badge variant="neutral">...</sl-badge>&nbsp;-&nbsp;Digitando três pontos no texto do dispositivo, cria-se uma linha pontilhada</div>
+          </div>
+          <h4>Formatação de texto</h4>
+          <div class="lx-eta-help-group">
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">B</sl-badge>&nbsp;-&nbsp;Aplica <b>negrito</b> ao texto selecionado</div>
+            <div><sl-badge variant="neutral">Ctrl</sl-badge>+<sl-badge variant="neutral">I</sl-badge>&nbsp;-&nbsp;Aplica <i>itálico</i> ao texto selecionado</div>
+          </div>
         </div>
       </div>
     `;
@@ -44509,9 +47954,9 @@ AtalhosComponent.styles = r$2 `
       padding: 10px;
       font-family: var(--sl-font-sans);
     }
-    .lx-eta-help-content div {
+    .lx-eta-help-content div div {
       color: black;
-      padding: 2px 0px;
+      padding: 0.4rem 0;
       text-decoration: none;
       display: block;
       white-space: wrap;
@@ -44520,20 +47965,82 @@ AtalhosComponent.styles = r$2 `
       text-align: left;
     }
 
-    /* .lx-eta-help:hover .lx-eta-help-content {
+    .lx-eta-help-info {
       display: block;
-    } */
+      font-weight: normal !important;
+      text-align: left;
+      color: #555555;
+      background-color: #fefefe;
+      border: 0.5px solid #ccc;
+      padding: 0.5rem;
+      margin-block: 0.1rem;
+      border-radius: 0.5rem;
+      font-style: italic;
+    }
+    .lx-eta-help-content h4 {
+      padding: 1rem 0 0.5rem 0;
+      margin: 0;
+    }
+
+    .lx-eta-help-group {
+      background-color: #eeeeee;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      border: 0.5px solid #ccc;
+      box-shadow: var(--sl-shadow-x-large);
+      margin-block-end: 1rem;
+    }
   `;
 AtalhosComponent = __decorate([
     n$1('lexml-eta-atalhos')
 ], AtalhosComponent);
 
-let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
+const atualizaRevisaoJustificativa = (state, removeAllRevisoesJustificativa = false) => {
+    if (!state.emRevisao) {
+        return state;
+    }
+    if (!removeAllRevisoesJustificativa) {
+        let revisoes = [];
+        revisoes = criaRevisaoJustificativa(state);
+        if (revisoes.length > 0) {
+            state.revisoes.push(...revisoes);
+        }
+    }
+    else {
+        remove(state);
+    }
+    return state;
+};
+const remove = (state) => {
+    var _a;
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoJustificativaEnum.JustificativaAlterada);
+};
+const criaRevisaoJustificativa = (state) => {
+    const result = [];
+    if (!jaExisteRevisaoUsuarioAtual(state)) {
+        result.push(new RevisaoJustificativa(state.usuario, formatDateTime(new Date()), RevisaoJustificativaEnum.JustificativaAlterada));
+    }
+    return result;
+};
+const jaExisteRevisaoUsuarioAtual = (state) => {
+    var _a;
+    const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoJustificativaEnum.JustificativaAlterada; });
+    if (revisoesUsuarioAtual.length > 0) {
+        const revisaoDataHoraModificada = revisoesUsuarioAtual[0];
+        revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
+        return true;
+    }
+    return false;
+};
+
+let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(rootStore)(s) {
     constructor() {
         super();
         this.texto = '';
         this.registroEvento = '';
         this.onChange = new Observable();
+        this._idSwitchRevisao = 'chk-em-revisao-justificativa';
+        this._idBadgeQuantidadeRevisao = 'badge-marca-alteracao-justificativa';
         this.toolbarOptions = [
             ['bold', 'italic', 'underline'],
             [{ list: 'ordered' }, { list: 'bullet' }],
@@ -44549,13 +48056,14 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
             this.container = document.querySelector(`#${this.id}-inner`);
             if (this.container) {
                 this.quill = new Quill(this.container, {
-                    formats: ['bold', 'italic', 'underline', 'align', 'list', 'script', 'blockquote'],
+                    formats: ['estilo', 'bold', 'italic', 'underline', 'align', 'list', 'script', 'blockquote'],
                     modules: {
                         toolbar: {
                             container: '#toolbar' + this.id,
                             handlers: {
                                 undo: this.undo,
                                 redo: this.redo,
+                                estilo: this.changeEstilo,
                             },
                         },
                         history: {
@@ -44570,6 +48078,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
                 });
                 this.setContent(this.texto);
                 (_a = this.quill) === null || _a === void 0 ? void 0 : _a.on('text-change', this.updateTexto);
+                this.loadDropDownEstilo();
             }
         };
         this.setContent = (texto) => {
@@ -44589,6 +48098,10 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
                 : '';
             this.texto = texto === '<p><br></p>' ? '' : texto;
             this.agendarEmissaoEventoOnChange();
+            atualizaRevisaoJustificativa(rootStore.getState().elementoReducer);
+            this.atualiazaRevisaoJusutificativaIcon();
+            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0);
+            this.atualizaQuantidadeRevisao();
         };
         this.undo = () => {
             var _a;
@@ -44597,6 +48110,78 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
         this.redo = () => {
             var _a;
             return (_a = this.quill) === null || _a === void 0 ? void 0 : _a.history.redo();
+        };
+        this.changeEstilo = (value) => {
+            var _a, _b;
+            const label = document.querySelector(`#toolbar${this.id} .ql-estilo .ql-picker-label`);
+            const itens = document.querySelectorAll(`#toolbar${this.id} .ql-estilo .ql-picker-item`);
+            const placeholderPickerItems = Array.prototype.slice.call(itens);
+            const item = placeholderPickerItems.filter(item => item.dataset.value === value)[0];
+            label.innerHTML = item.dataset.label + '&nbsp;&nbsp;&nbsp;&nbsp;' + controleDropdown;
+            const range = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection();
+            if (range) {
+                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getLines(range.index)[0].domNode.setAttribute('class', value);
+            }
+        };
+        this.loadDropDownEstilo = () => {
+            const label = document.querySelector(`#toolbar${this.id} .ql-estilo .ql-picker-label`);
+            const itens = document.querySelectorAll(`#toolbar${this.id} .ql-estilo .ql-picker-item`);
+            if (this.container && label) {
+                const placeholderPickerItems = Array.prototype.slice.call(itens);
+                placeholderPickerItems.forEach(item => (item.textContent = item.dataset.label));
+                label.innerHTML = 'Texto Normal &nbsp;&nbsp;&nbsp;&nbsp;' + controleDropdown;
+            }
+        };
+        this.atualiazaRevisaoJusutificativaIcon = () => {
+            // const contadorView = document.getElementById('revisoes-justificativa-icon') as any;
+            // contadorView.setAttribute('title', this.getMensagemRevisaoJustificativa());
+            const contentRevisoes = document.querySelector('#revisoes-justificativa-icon > div[slot=content]');
+            const iconRevisoes = document.querySelector('#revisoes-justificativa-icon > sl-icon');
+            if (this.getRevisoesJustificativa().length !== 0) {
+                contentRevisoes.innerHTML = this.getMensagemRevisaoJustificativa();
+                iconRevisoes.classList.add('revisoes-justificativa-icon__ativo');
+            }
+            else {
+                contentRevisoes.innerHTML = 'Revisões na justificativa';
+                iconRevisoes.classList.remove('revisoes-justificativa-icon__ativo');
+            }
+        };
+        this.getMensagemRevisaoJustificativa = () => {
+            const revisoesJustificativa = this.getRevisoesJustificativa();
+            let mensagem = '<ul class="lista-revisoes-justificativa">';
+            if (revisoesJustificativa.length > 0) {
+                revisoesJustificativa.forEach((revisao) => {
+                    const pipe = ' | ';
+                    mensagem = mensagem + '<li>' + revisao.usuario.nome + pipe + revisao.dataHora + '</li>';
+                });
+            }
+            return mensagem + '</ul>';
+        };
+        this.aceitaRevisoesJustificativa = () => {
+            atualizaRevisaoJustificativa(rootStore.getState().elementoReducer, true);
+            this.atualiazaRevisaoJusutificativaIcon();
+            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0);
+            this.atualizaQuantidadeRevisao();
+        };
+        this.getRevisoesJustificativa = () => {
+            const revisoes = rootStore.getState().elementoReducer.revisoes;
+            return revisoes.filter(r => r.descricao === RevisaoJustificativaEnum.JustificativaAlterada);
+        };
+        this.desabilitaBtnAceitarRevisoes = (desabilita) => {
+            const contadorView = document.getElementById('aceita-revisao-justificativa');
+            if (desabilita) {
+                contadorView.setAttribute('disabled', desabilita);
+            }
+            else {
+                contadorView.removeAttribute('disabled');
+            }
+        };
+        this.checkedSwitchMarcaAlteracao = () => {
+            const switchMarcaAlteracaoView = document.getElementById('chk-em-revisao-justificativa');
+            setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
+        };
+        this.atualizaQuantidadeRevisao = () => {
+            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this._idBadgeQuantidadeRevisao), true);
         };
         this.icons['undo'] = `<svg viewbox="0 0 18 18">
     <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
@@ -44628,6 +48213,23 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
     createRenderRoot() {
         return this;
     }
+    stateChanged(state) {
+        var _a;
+        if ((_a = state.elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.events) {
+            this.processarStateEvents(state.elementoReducer.ui.events);
+        }
+    }
+    processarStateEvents(events) {
+        events === null || events === void 0 ? void 0 : events.forEach((event) => {
+            switch (event.stateType) {
+                case StateType.RevisaoAtivada:
+                case StateType.RevisaoDesativada:
+                    this.checkedSwitchMarcaAlteracao();
+                    break;
+            }
+            this.atualizaQuantidadeRevisao();
+        });
+    }
     render() {
         return $ `
       <style>
@@ -44640,8 +48242,74 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
         .ql-toolbar.ql-snow .ql-formats {
           margin-right: 8px;
         }
+        .editor-texto-rico .estilo-artigo-subordinados {
+          text-indent: 0 !important;
+          text-align: justify;
+        }
+        .editor-texto-rico .estilo-agrupador-artigo {
+          text-indent: 0 !important;
+          text-align: center;
+        }
+        .editor-texto-rico .estilo-emenda {
+          text-indent: 0 !important;
+          text-align: justify;
+          margin-left: 40%;
+
+        #revisoes-justificativa-icon sl-icon,
+        #aceita-revisao-justificativa {
+          margin-right: 0.1rem;
+        }
+
+        .revisoes-justificativa-icon__ativo {
+          color: white;
+          background-color: var(--sl-color-warning-600) !important;
+          border-color: white !important;
+        }
+        .lista-revisoes-justificativa {
+          padding-left: 1rem;
+          padding-right: 0.5rem;
+        }
+        #chk-em-revisao-justificativa {
+          border: 1px solid #ccc !important;
+          padding: 5px 10px !important;
+          border-radius: 20px !important;
+          margin-left: auto;
+          margin-right: 5px;
+          font-weight: bold;
+          background-color: #eee;
+        }
+        #chk-em-revisao-justificativa[checked] {
+          background-color: var(--sl-color-blue-100);
+        }
+        #toolbar {
+          padding: 1.5px 0 1.5px 8px;
+        }
+
+        #badge-marca-alteracao-justificativa::part(base) {
+          min-width: 1.4rem;
+        }
+        revisao-container {
+          margin-left: auto;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-buttons {
+            display: inline-block !important;
+          }
+          #chk-em-revisao-justificativa span {
+            display: none;
+          }
+        }
       </style>
       <div id="${`toolbar${this.id}`}">
+        <span class="ql-formats">
+          <select id="select-estilo" class="ql-estilo" title="Estilo">
+            <option value="estilo-normal">Texto normal</option>
+            <option value="estilo-artigo-subordinados">Artigo e subordinados</option>
+            <option value="estilo-agrupador-artigo">Agrupador de artigo</option>
+            <option value="estilo-emenda">Ementa</option>
+          </select>
+        </span>
         <span class="ql-formats">
           <button type="button" class="ql-bold" title="Negrito (Ctrl+b)"></button>
           <button type="button" class="ql-italic" title="Itálico (Ctrl+i)"></button>
@@ -44673,12 +48341,45 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends s {
         <span class="ql-formats">
           <button type="button" class="ql-clean" title="Limpar formatação"></button>
         </span>
+
+        <!-- <sl-icon id="revisoes-justificativa-icon" name="exclamation-octagon" label="Settings" title=""></sl-icon> -->
+
+        <!--
+        <sl-switch id="chk-em-revisao-justificativa" size="small" @sl-change=${() => this.ativarDesativarMarcaDeRevisao()}><span>Marcas de revisão</span> <sl-badge id="badge-marca-alteracao-justificativa" variant="warning" pill>0</sl-badge>
+        </sl-switch>
+        -->
+
+        <lexml-switch-revisao class="revisao-container" .nomeSwitch="${this._idSwitchRevisao}" .nomeBadgeQuantidadeRevisao="${this._idBadgeQuantidadeRevisao}">
+        </lexml-switch-revisao>
+
+        <sl-tooltip id="revisoes-justificativa-icon" placement="bottom-end">
+          <div slot="content">
+            <div>Revisões na justificativa</div>
+          </div>
+          <sl-icon name="person-check-fill"></sl-icon>
+        </sl-tooltip>
+
+        <sl-button
+          id="aceita-revisao-justificativa"
+          variant="default"
+          size="small"
+          title="Limpar revisões na justificativa"
+          @click=${() => this.aceitaRevisoesJustificativa()}
+          disabled
+          circle
+        >
+          <sl-icon name="check-lg"></sl-icon>
+        </sl-button>
       </div>
       <div id="${this.id}-inner" class="editor-texto-rico"></div>
     `;
     }
     firstUpdated() {
         this.init();
+    }
+    ativarDesativarMarcaDeRevisao() {
+        ativarDesativarMarcaDeRevisao(rootStore);
+        this.checkedSwitchMarcaAlteracao();
     }
 };
 __decorate([
@@ -45172,6 +48873,7 @@ class Emenda {
         this.data = new Date().toISOString().replace(/T.*/, ''); // formato “YYYY-MM-DD”
         this.autoria = new Autoria();
         this.opcoesImpressao = new OpcoesImpressao();
+        this.revisoes = [];
     }
 }
 var ModoEdicaoEmenda;
@@ -47526,6 +51228,7 @@ const DOCUMENTO_PADRAO = {
 let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
     constructor() {
         super(...arguments);
+        this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
         this.projetoNorma = {};
         this._timerLoadEmenda = 0;
@@ -47547,7 +51250,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         const articulacao = rootStore.getState().elementoReducer.articulacao;
         return new DispositivosEmendaBuilder(this.modo, urn, articulacao).getDispositivosEmenda();
     }
-    setDispositivosEmenda(dispositivosEmenda) {
+    setDispositivosERevisoesEmenda(dispositivosEmenda, revisoes) {
+        this.revisoes = revisoes;
         if (dispositivosEmenda) {
             this.dispositivosEmenda = dispositivosEmenda;
             this.loadEmenda();
@@ -47596,7 +51300,7 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         if (this.dispositivosEmenda) {
             clearInterval(this._timerLoadEmenda);
             this._timerLoadEmenda = window.setTimeout(() => {
-                rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(this.dispositivosEmenda));
+                rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(this.dispositivosEmenda, this.revisoes));
             }, 1000);
         }
     }
@@ -47620,11 +51324,13 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
           box-shadow: none;
         }
       </style>
-
-      <lexml-eta-articulacao></lexml-eta-articulacao>
+      <lexml-eta-articulacao .lexmlEtaConfig=${this.lexmlEtaConfig}></lexml-eta-articulacao>
     `;
     }
 };
+__decorate([
+    e$3({ type: Object })
+], LexmlEtaComponent.prototype, "lexmlEtaConfig", void 0);
 LexmlEtaComponent = __decorate([
     n$1('lexml-eta')
 ], LexmlEtaComponent);
@@ -48631,6 +52337,15 @@ DataComponent = __decorate([
     n$1('lexml-data')
 ], DataComponent);
 
+class Usuario {
+    constructor(nome, id, sigla) {
+        this.nome = 'Anônimo';
+        this.nome = nome || 'Anônimo';
+        this.id = id;
+        this.sigla = sigla;
+    }
+}
+
 // src/components/badge/badge.styles.ts
 var badge_styles_default = r$5`
   ${component_styles_default}
@@ -49506,6 +53221,8 @@ const editorStyles = $ `
       box-sizing: border-box;
       font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
       /* padding: 8px; */
+      display: flex;
+      align-items: center;
     }
     #lx-eta-box .ql-snow.ql-toolbar button,
     .ql-snow .ql-toolbar button {
@@ -49826,6 +53543,7 @@ const editorStyles = $ `
       border-radius: 4px;
       font-size: 12px;
       white-space: nowrap;
+      display: none;
     }
 
     .agrupador .blot-tipo-omissis {
@@ -50013,6 +53731,9 @@ const editorStyles = $ `
       .mobile-buttons {
         display: inline-block !important;
       }
+      #chk-em-revisao span {
+        display: none;
+      }
     }
 
     @media (max-width: 480px) {
@@ -50023,6 +53744,149 @@ const editorStyles = $ `
         display: none !important;
       }
     }
+
+    .revisao-ativa {
+      background-color: #add8e6 !important;
+    }
+
+    [em-revisao='true'] {
+      background-color: var(--sl-color-blue-100);
+    }
+
+    [excluido='true'] .texto__dispositivo {
+      text-decoration: line-through;
+      /* background-color: #d3d3d3; */
+    }
+
+    .blot__revisao {
+      padding: 3px 7px;
+      border: 1px solid white;
+      border-radius: 1rem;
+      background-color: rgb(217, 119, 6);
+      color: white;
+      cursor: pointer;
+      position: relative;
+      top: -1px;
+    }
+
+    .blot__revisao_aceitar {
+      padding: 5px;
+      border: 1px solid black;
+      border-radius: 1rem;
+      background-color: rgb(217, 119, 6);
+      color: white;
+      cursor: pointer;
+      position: relative;
+      width: 1.3rem;
+      height: 1.3rem;
+      top: -1px;
+      background: url('assets/icons/check-lg.svg') no-repeat center, white;
+      background-size: 1rem;
+    }
+
+    .blot__revisao_aceitar:hover {
+      filter: invert(100%);
+    }
+
+    .blot__opcoes_diff {
+      padding: 5px;
+      border: 1px solid black;
+      border-radius: 1rem;
+      background-color: rgb(217, 119, 6);
+      color: white;
+      cursor: pointer;
+      position: relative;
+      width: 1.3rem;
+      height: 1.3rem;
+      top: -1px;
+      background: url('assets/icons/plus-minus.svg') no-repeat center, white;
+      background-size: 0.8rem;
+    }
+
+    .blot__opcoes_diff:hover {
+      filter: invert(100%);
+    }
+
+    .blot__revisao_recusar {
+      padding: 5px;
+      border: 1px solid black;
+      border-radius: 1rem;
+      background-color: rgb(217, 119, 6);
+      color: white;
+      cursor: pointer;
+      position: relative;
+      width: 1.3rem;
+      height: 1.3rem;
+      top: -1px;
+      background: url('assets/icons/x.svg') no-repeat center, white;
+      background-size: 1rem;
+    }
+
+    .blot__revisao_recusar:hover {
+      filter: invert(100%);
+    }
+
+    .blot__revisao_aceitar:focus,
+    .blot__opcoes_diff:focus .blot__revisao_recusar:focus {
+      outline: 1px solid #000;
+      border: 1px solid #000;
+    }
+
+    #chk-em-revisao {
+      border: 1px solid #ccc !important;
+      padding: 5px 10px !important;
+      border-radius: 20px !important;
+      margin-left: auto;
+      margin-right: 5px;
+      font-weight: bold;
+      background-color: #eee;
+    }
+    #chk-em-revisao[checked] {
+      background-color: var(--sl-color-blue-100);
+    }
+
+    .container__revisao {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.1rem;
+      @media (max-width: 768px) {
+        flex-direction: column;
+      }
+    }
+
+    .container__opcoes {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      margin-left: 0.1rem;
+      gap: 0.1rem;
+      @media (max-width: 768px) {
+        flex-direction: column;
+      }
+    }
+
+    /*
+    [em-revisao='true'] .container__revisao {
+      border: 3px solid #f98b88;
+      width: 30px;
+      background-color: #f98b88;
+      width: 30px;
+    }*/
+
+    /*
+    [em-revisao='false'] .blot__revisao {
+      visibility:hidden;
+    }
+
+    [em-revisao='true'] .blot__revisao {
+      visibility:visible;
+    }
+    */
+
+    /* .container__menu {
+      border: 1px solid blue;
+    } */
   </style>
 `;
 
@@ -50990,6 +54854,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.totalAlertas = 0;
         this.exibirAjuda = true;
         this.parlamentares = [];
+        this.lexmlEmendaConfig = new LexmlEmendaConfig();
         this.modo = ClassificacaoDocumento.EMENDA;
         this.motivo = '';
         this.projetoNorma = {};
@@ -51004,7 +54869,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     async getParlamentares() {
         try {
-            const _response = await fetch('api/parlamentares');
+            const _response = await fetch(this.lexmlEmendaConfig.urlConsultaParlamentares);
             const _parlamentares = await _response.json();
             return _parlamentares.map(p => ({
                 identificacao: p.id + '',
@@ -51072,9 +54937,19 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.epigrafe.texto = `EMENDA Nº         - CMMPV ${numeroProposicao}/${emenda.proposicao.ano}`;
         emenda.epigrafe.complemento = `(à ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
+        emenda.revisoes = this.getRevisoes();
         return emenda;
     }
-    inicializarEdicao(modo, projetoNorma, emenda, motivo = '') {
+    getRevisoes() {
+        const revisoes = ordernarRevisoes([...rootStore.getState().elementoReducer.revisoes]);
+        revisoes.filter(isRevisaoElemento).forEach(r => {
+            const re = r;
+            removeAtributosDoElemento(re.elementoAposRevisao);
+            re.elementoAntesRevisao && removeAtributosDoElemento(re.elementoAntesRevisao);
+        });
+        return revisoes;
+    }
+    inicializarEdicao(modo, projetoNorma, emenda, motivo = '', usuario) {
         this._lexmlEmendaComando.emenda = [];
         this.modo = modo;
         this.projetoNorma = projetoNorma;
@@ -51088,14 +54963,19 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         else {
             this.resetaEmenda(modo);
         }
+        this.limparAlertas();
         if (this.modo === 'emendaTextoLivre' && !this._lexmlEmendaTextoRico.texto) {
             this.showAlertaEmendaTextoLivre();
         }
+        this.setUsuario(usuario !== null && usuario !== void 0 ? usuario : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
+    }
+    setUsuario(usuario = new Usuario()) {
+        rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
     }
     setEmenda(emenda) {
         if (this._lexmlEta) {
-            this._lexmlEta.setDispositivosEmenda(emenda.componentes[0].dispositivos);
+            this._lexmlEta.setDispositivosERevisoesEmenda(emenda.componentes[0].dispositivos, emenda.revisoes);
         }
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
@@ -51145,7 +55025,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         super.disconnectedCallback();
     }
     firstUpdated() {
-        var _a;
+        var _a, _b, _c;
         setTimeout(() => this.atualizaListaParlamentares(), 5000);
         (_a = this._tabsEsquerda) === null || _a === void 0 ? void 0 : _a.addEventListener('sl-tab-show', (event) => {
             const tabName = event.detail.name;
@@ -51157,6 +55037,25 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
             else if (tabName === 'autoria') {
                 this.parlamentares.length === 0 && this.atualizaListaParlamentares();
+            }
+        });
+        const badgeAtalhos = (_b = this._tabsDireita) === null || _b === void 0 ? void 0 : _b.querySelector('#badgeAtalhos');
+        if (badgeAtalhos) {
+            const naoPulsarBadgeAtalhos = localStorage.getItem('naoPulsarBadgeAtalhos');
+            if (!naoPulsarBadgeAtalhos) {
+                badgeAtalhos.pulse = true;
+                badgeAtalhos.setAttribute('variant', 'warning');
+            }
+        }
+        (_c = this._tabsDireita) === null || _c === void 0 ? void 0 : _c.addEventListener('sl-tab-show', (event) => {
+            const tabName = event.detail.name;
+            if (tabName === 'atalhos') {
+                const badge = event.target.querySelector('sl-badge');
+                if (badge) {
+                    badge.pulse = false;
+                    badge.setAttribute('variant', 'primmay');
+                }
+                localStorage.setItem('naoPulsarBadgeAtalhos', 'true');
             }
         });
     }
@@ -51230,6 +55129,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
         }
     }
+    limparAlertas() {
+        rootStore.dispatch(limparAlertas$1());
+    }
     showAlertaEmendaTextoLivre() {
         const alerta = {
             id: 'alerta-global-emenda-texto-livre',
@@ -51277,6 +55179,18 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           height: 16px;
           margin-top: -4px;
         }
+
+        #badgeAtalhos::part(base) {
+          height: 16px;
+          margin-top: 2px;
+          font-size: var(--sl-font-size-small);
+          background-color: transparent;
+          color: var(--sl-color-neutral-600);
+        }
+        sl-tab[panel='atalhos'][active] #badgeAtalhos::part(base) {
+          color: var(--sl-color-primary-600);
+        }
+
         sl-split-panel {
           --divider-width: ${this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre' ? '15px' : '0px'};
         }
@@ -51307,7 +55221,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             </sl-tab>
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
               ${this.modo && this.modo !== 'emendaTextoLivre'
-            ? $ `<lexml-eta id="lexmlEta" @onchange=${this.onChange}></lexml-eta>`
+            ? $ `<lexml-eta id="lexmlEta" .lexmlEtaConfig=${this.lexmlEmendaConfig} @onchange=${this.onChange}></lexml-eta>`
             : $ `<editor-texto-rico id="editor-texto-rico-emenda" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>`}
             </sl-tab-panel>
             <sl-tab-panel name="justificativa" class="overflow-hidden">
@@ -51327,7 +55241,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           </sl-tab-group>
         </div>
         <div slot="end">
-          <sl-tab-group>
+          <sl-tab-group id="tabs-direita">
             <sl-tab slot="nav" panel="comando">
               <sl-icon name="code"></sl-icon>
               Comando
@@ -51337,8 +55251,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
               Dicas
             </sl-tab>
             <sl-tab slot="nav" panel="atalhos">
-              <sl-icon name="keyboard"></sl-icon>
-              Atalhos
+              <sl-badge variant="primary" id="badgeAtalhos" pill>
+                <sl-icon name="keyboard"></sl-icon>
+                Atalhos
+              </sl-badge>
             </sl-tab>
             <sl-tab-panel name="comando" class="overflow-hidden">
               <lexml-emenda-comando></lexml-emenda-comando>
@@ -51367,6 +55283,9 @@ __decorate([
 __decorate([
     e$3({ type: Array })
 ], LexmlEmendaComponent.prototype, "parlamentares", void 0);
+__decorate([
+    e$3({ type: Object })
+], LexmlEmendaComponent.prototype, "lexmlEmendaConfig", void 0);
 __decorate([
     e$3({ type: String })
 ], LexmlEmendaComponent.prototype, "modo", void 0);
@@ -51397,6 +55316,9 @@ __decorate([
 __decorate([
     i$1('#tabs-esquerda')
 ], LexmlEmendaComponent.prototype, "_tabsEsquerda", void 0);
+__decorate([
+    i$1('#tabs-direita')
+], LexmlEmendaComponent.prototype, "_tabsDireita", void 0);
 __decorate([
     i$1('lexml-emenda-comando')
 ], LexmlEmendaComponent.prototype, "_lexmlEmendaComando", void 0);
@@ -52043,5 +55965,88 @@ OpcoesImpressaoComponent = __decorate([
     n$1('lexml-opcoes-impressao')
 ], OpcoesImpressaoComponent);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent };
+let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootStore)(s) {
+    constructor() {
+        super();
+        this.quantidadeRevisao = 0;
+        this.nomeSwitch = '';
+        this.nomeBadgeQuantidadeRevisao = '';
+        this.checkedRevisao = false;
+        this.onChange = new Observable();
+        this.checkedSwitchMarcaAlteracao = () => {
+            const switchMarcaAlteracaoView = document.getElementById(this.nomeSwitch);
+            setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
+        };
+    }
+    update(changedProperties) {
+        super.update(changedProperties);
+    }
+    createRenderRoot() {
+        return this;
+    }
+    render() {
+        return $ `
+      <style>
+        #revisoes-justificativa-icon sl-icon {
+          border: 1px solid #ccc !important;
+          padding: 0.4rem 0.4rem !important;
+          border-radius: 15px !important;
+          font-weight: bold;
+          background-color: #eee;
+          cursor: pointer;
+        }
+        #chk-em-revisao {
+          border: 1px solid #ccc !important;
+          padding: 5px 10px !important;
+          border-radius: 20px !important;
+          margin-left: auto;
+          margin-right: 5px;
+          font-weight: bold;
+          background-color: #eee;
+        }
+        #chk-em-revisao[checked] {
+          background-color: var(--sl-color-blue-100);
+        }
+        .revisao-container {
+          margin-left: auto;
+        }
+        @media (max-width: 992px) {
+          .mobile-buttons {
+            display: inline-block !important;
+          }
+          #chk-em-revisao span {
+            display: none;
+          }
+        }
+      </style>
+      <div id="toolbar">
+        <sl-switch id="${this.nomeSwitch}" size="small" @sl-change=${() => this.ativarDesativarMarcaDeRevisao()}>
+          <span>Marcas de revisão</span>
+          <sl-badge id="${this.nomeBadgeQuantidadeRevisao}" variant="warning" pill>0</sl-badge>
+        </sl-switch>
+      </div>
+    `;
+    }
+    ativarDesativarMarcaDeRevisao() {
+        ativarDesativarMarcaDeRevisao(rootStore);
+        this.checkedSwitchMarcaAlteracao();
+    }
+};
+__decorate([
+    e$3({ type: Number })
+], SwitchRevisaoComponent.prototype, "quantidadeRevisao", void 0);
+__decorate([
+    e$3({ type: String })
+], SwitchRevisaoComponent.prototype, "nomeSwitch", void 0);
+__decorate([
+    e$3({ type: String })
+], SwitchRevisaoComponent.prototype, "nomeBadgeQuantidadeRevisao", void 0);
+__decorate([
+    e$3({ type: Boolean, reflect: true })
+], SwitchRevisaoComponent.prototype, "checkedRevisao", void 0);
+SwitchRevisaoComponent = __decorate([
+    n$1('lexml-switch-revisao')
+], SwitchRevisaoComponent);
+
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent };
 //# sourceMappingURL=index.js.map
