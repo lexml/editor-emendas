@@ -1,3 +1,4 @@
+import { Ambiente, ambiente } from './../components/edt-ambiente';
 import { Proposicao } from '../model/proposicao';
 import { toggleCarregando } from '../components/edt-app';
 
@@ -66,7 +67,7 @@ export const pesquisarProposicoesEmTramitacao = async (
 };
 
 export const sendEmailMotivoEmendaTextoLivre = (motivo: string): void => {
-  if (location.host.includes('congressonacional.leg.br')) {
+  if (ambiente === Ambiente.PRODUCAO) {
     fetch('api/motivo-emenda-texo-livre', {
       headers: {
         Accept: 'application/json',
