@@ -100,6 +100,11 @@ export class EdtMenu extends LitElement {
                 >
                   Onde couber
                 </sl-menu-item>
+                <sl-menu-item
+                  @click=${(): void => this.emitirEvento('texto-livre')}
+                >
+                  Texto Livre
+                </sl-menu-item>
               </sl-menu>
             </sl-dropdown>
             <sl-button
