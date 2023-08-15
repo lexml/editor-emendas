@@ -15,15 +15,23 @@ import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
 import {
   getProposicaoJsonix,
   pesquisarProposicoes,
+  sendEmailMotivoEmendaTextoLivre,
 } from './../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
+import { Usuario } from '../model/usuario';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   private tituloEmenda = '';
   private labelTipoEmenda = '';
+
+  @state()
+  private usuario: Usuario = {
+    nome: 'Anônimo',
+    sigla: undefined,
+  };
 
   @state()
   private versao = '---';
@@ -40,6 +48,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-onde-couber')
   private modalOndeCouber!: any;
 
+  @query('edt-modal-texto-livre')
+  private modalTextoLivre!: any;
+
   @query('edt-menu')
   private edtMenu!: EdtMenu;
 
@@ -49,12 +60,17 @@ export class EdtApp extends LitElement {
   @query('edt-modal-ajuda')
   private modalAjuda!: any;
 
+  @query('edt-modal-usuario')
+  private modalUsuario!: any;
+
   private jsonixProposicao: any = {};
 
   private showEditor = false;
 
   @state()
   private modo = 'emenda';
+
+  private motivo = '';
 
   @state()
   private proposicao: Proposicao = {};
@@ -446,6 +462,11 @@ export class EdtApp extends LitElement {
     this.modalOndeCouber.show();
   }
 
+  private novaEmendaTextoLivre(): void {
+    this.fileHandle = undefined;
+    this.modalTextoLivre.show();
+  }
+
   private abrirEmenda(): void {
     this.abrirPdf();
   }
@@ -480,6 +501,8 @@ export class EdtApp extends LitElement {
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
+    } else if (ev.detail.itemMenu === 'texto-livre') {
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaTextoLivre());
     } else if (ev.detail.itemMenu === 'download') {
       this.downloadPdf();
     } else if (ev.detail.itemMenu === 'salvar') {
@@ -508,11 +531,34 @@ export class EdtApp extends LitElement {
   }
 
   private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
-    this.modo = 'emenda';
+    this.criarNovaEmenda(proposicao, 'emenda');
+  }
+
+  private async criarNovaEmendaTextoLivre(
+    proposicao: Proposicao,
+    motivo: string
+  ): Promise<void> {
+    this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
+    sendEmailMotivoEmendaTextoLivre(motivo);
+  }
+
+  private async criarNovaEmenda(
+    proposicao: Proposicao,
+    modo: string,
+    motivo = ''
+  ): Promise<void> {
+    this.modo = modo;
+    this.motivo = motivo;
     this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
-    this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
+
+    this.lexmlEmenda.inicializarEdicao(
+      this.modo,
+      this.jsonixProposicao,
+      null,
+      this.motivo
+    );
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(
         JSON.stringify(this.lexmlEmenda.getEmenda())
@@ -585,6 +631,16 @@ export class EdtApp extends LitElement {
       JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
 
     return _isDirty;
+  }
+
+  private informarUsuario(): void {
+    this.modalUsuario.usuario = this.usuario;
+    this.modalUsuario.show();
+  }
+
+  private atualizarUsuario(usuario: Usuario): void {
+    this.usuario = usuario;
+    this.lexmlEmenda.setUsuario(usuario);
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -672,7 +728,10 @@ export class EdtApp extends LitElement {
             </sl-button>
           </sl-dialog>
         </div>
-        <lexml-emenda @onchange=${this.onChange}></lexml-emenda>
+        <lexml-emenda
+          modo=${this.modo}
+          @onchange=${this.onChange}
+        ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
@@ -691,9 +750,22 @@ export class EdtApp extends LitElement {
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
 
+      <edt-modal-texto-livre
+        @nova-emenda-texto-livre=${(ev: CustomEvent): any =>
+          this.criarNovaEmendaTextoLivre(
+            { ...this.proposicao },
+            ev.detail.motivo
+          )}
+      ></edt-modal-texto-livre>
+
       <edt-modal-confirmacao-salvar
         @confirm-result=${this.processarResultadoConfirmacao}
       ></edt-modal-confirmacao-salvar>
+
+      <edt-modal-usuario
+        @atualizar-usuario=${(ev: CustomEvent): any =>
+          this.atualizarUsuario(ev.detail.usuario)}
+      ></edt-modal-usuario>
     `;
   }
 
@@ -705,7 +777,10 @@ export class EdtApp extends LitElement {
       document.body.classList.remove('no-scroll');
     }
     return html`
-      <edt-cabecalho></edt-cabecalho>
+      <edt-cabecalho
+        .usuario=${this.usuario}
+        @informar-usuario=${this.informarUsuario}
+      ></edt-cabecalho>
       <edt-menu
         .proposicao=${this.proposicao}
         @item-selecionado=${this.onItemMenuSelecionado}

@@ -1,3 +1,4 @@
+import { Ambiente, ambiente } from './../components/edt-ambiente';
 import { Proposicao } from '../model/proposicao';
 import { toggleCarregando } from '../components/edt-app';
 
@@ -63,4 +64,17 @@ export const pesquisarProposicoesEmTramitacao = async (
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
     }))
     .sort(compareProposicoesDesc);
+};
+
+export const sendEmailMotivoEmendaTextoLivre = (motivo: string): void => {
+  if (ambiente === Ambiente.PRODUCAO) {
+    fetch('api/motivo-emenda-texo-livre', {
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+      body: JSON.stringify({ motivo }),
+    });
+  }
 };

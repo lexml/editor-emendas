@@ -3,6 +3,7 @@ import { customElement, state, query } from 'lit/decorators.js';
 import { html, LitElement, TemplateResult } from 'lit';
 import { menuStyles } from './app.css';
 import { supported } from 'browser-fs-access';
+import { Ambiente, ambiente } from './edt-ambiente';
 
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
@@ -18,6 +19,8 @@ export class EdtMenu extends LitElement {
 
   @query('#btn-save-as')
   btnSaveAs: any;
+
+  private textoLivreHabilitado = ambiente === Ambiente.DESENVOLVIMENTO;
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
@@ -100,6 +103,15 @@ export class EdtMenu extends LitElement {
                 >
                   Onde couber
                 </sl-menu-item>
+                ${this.textoLivreHabilitado
+                  ? html`
+                      <sl-menu-item
+                        @click=${(): void => this.emitirEvento('texto-livre')}
+                      >
+                        Texto Livre
+                      </sl-menu-item>
+                    `
+                  : ''}
               </sl-menu>
             </sl-dropdown>
             <sl-button
