@@ -80,8 +80,10 @@ export async function getHttpError(
 
 export function isUserAbortException(err: any): boolean {
   if (err instanceof DOMException) {
-    const msg = (err as DOMException).message;
-    return /cancel|abort|showSaveFilePicker|showOpenFilePicker/.test(msg);
+    return (
+      /cancel|abort|showSaveFilePicker|showOpenFilePicker/.test(err.message) ||
+      err.name === 'NotAllowedError'
+    );
   }
   return false;
 }
