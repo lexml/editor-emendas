@@ -608,6 +608,12 @@ export class EdtApp extends LitElement {
     this.updateStateElements();
   }
 
+  private onRevisao(evt: CustomEvent): void {
+    if (evt.detail?.emRevisao && this.usuario.nome === 'Anônimo') {
+      this.informarUsuario();
+    }
+  }
+
   private updateStateElements(tituloEmenda?: string): void {
     setTimeout(() => {
       this.edtMenu.btnSave.disabled = !this.isDirty;
@@ -731,6 +737,7 @@ export class EdtApp extends LitElement {
         <lexml-emenda
           modo=${this.modo}
           @onchange=${this.onChange}
+          @onrevisao=${this.onRevisao}
         ></lexml-emenda>
       </div>
 
