@@ -469,7 +469,7 @@ export const novaEmendaStyles = html`
       }
     }
 
-    .col-1 {
+    .col-center {
       width: 120px;
       text-align: center;
       white-space: nowrap;
@@ -498,7 +498,7 @@ export const novaEmendaStyles = html`
     sl-dialog {
       --width: 80vw;
     }
-    sl-badge::part(base) {
+    sl-badge[variant='neutral']::part(base) {
       background-color: var(--sl-color-neutral-100);
       color: var(--sl-color-neutral-500);
       border-color: var(--sl-color-neutral-300);
@@ -530,7 +530,7 @@ export const novaEmendaStyles = html`
       .ano-proposicao {
         width: 60px;
       }
-      .col-1 {
+      .col-center {
         width: 80px;
         font-size: 14px;
         white-space: break-spaces;
