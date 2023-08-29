@@ -20,7 +20,7 @@ export class EdtMenu extends LitElement {
   @query('#btn-save-as')
   btnSaveAs: any;
 
-  private textoLivreHabilitado = ambiente === Ambiente.DESENVOLVIMENTO;
+  private textoLivreHabilitado = ambiente !== Ambiente.PRODUCAO;
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
