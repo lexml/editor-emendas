@@ -242,17 +242,7 @@ export class EdtModalNovaEmenda extends LitElement {
                           const diferencaDias = Math.round(
                             (agora.getTime() - dataPassada.getTime()) / umDia
                           );
-                          const meses = Math.floor(diferencaDias / 30);
-                          const anos = Math.floor(meses / 12);
-
-                          if (diferencaDias === 0) return 'hoje';
-                          if (diferencaDias === 1) return 'ontem';
-                          if (diferencaDias < 30)
-                            return `há ${diferencaDias} dias`;
-                          if (meses < 12) return `há ${meses} meses`;
-                          if (meses % 12 === 0) return `há ${anos} anos`;
-
-                          return `há ${anos} anos e ${meses % 12} meses`;
+                          return `${diferencaDias}º dia`;
                         };
 
                         const dataPassada = dataAleatoriaNoPassado();
