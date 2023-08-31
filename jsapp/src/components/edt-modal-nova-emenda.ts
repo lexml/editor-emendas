@@ -151,8 +151,6 @@ export class EdtModalNovaEmenda extends LitElement {
             <thead>
               <tr>
                 <th class="col-center">Proposição</th>
-                <th class="col-2">Prazo de emendas</th>
-                <th class="col-2">Tramitação</th>
                 <th class="col-2">Ementa</th>
               </tr>
             </thead>
@@ -175,91 +173,6 @@ export class EdtModalNovaEmenda extends LitElement {
                       '/' +
                       p.ano}
                     </td>
-                    <td class="col-center">
-                      ${(() => {
-                        const dataAtual = new Date();
-                        const diasAleatorios =
-                          Math.floor(Math.random() * 11) - 5;
-                        const dataAleatoria = new Date(dataAtual);
-                        dataAleatoria.setDate(
-                          dataAtual.getDate() + diasAleatorios
-                        );
-
-                        const dataFormatada = `${(
-                          '0' + dataAleatoria.getDate()
-                        ).slice(-2)}/${(
-                          '0' +
-                          (dataAleatoria.getMonth() + 1)
-                        ).slice(-2)}/${dataAleatoria.getFullYear()}`;
-
-                        const diferencaEmDias = Math.round(
-                          (dataAleatoria.getTime() - dataAtual.getTime()) /
-                            (1000 * 3600 * 24)
-                        );
-
-                        if (diferencaEmDias === 0) {
-                          return html`${dataFormatada}<br /><sl-badge
-                              title="${dataFormatada}"
-                              variant="neutral"
-                              >hoje</sl-badge
-                            >`;
-                        } else if (diferencaEmDias > 0) {
-                          if (diferencaEmDias === 1) {
-                            return html`${dataFormatada}<br /><sl-badge
-                                title="${dataFormatada}"
-                                variant="neutral"
-                                >amanhã</sl-badge
-                              >`;
-                          }
-                          return html`${dataFormatada}<br /><sl-badge
-                              title="${dataFormatada}"
-                              variant="neutral"
-                              >${diferencaEmDias} dias</sl-badge
-                            >`;
-                        } else {
-                          return html`${dataFormatada}<br /><sl-badge
-                              title="${dataFormatada}"
-                              variant="neutral"
-                              >encerrado</sl-badge
-                            >`;
-                        }
-                      })()}
-                    </td>
-                    <td class="col-center">
-                      ${(() => {
-                        const dataAleatoriaNoPassado = () => {
-                          const diasPassados = Math.floor(Math.random() * 3650); // até 10 anos atrás
-                          const dataPassada = new Date();
-                          dataPassada.setDate(
-                            dataPassada.getDate() - diasPassados
-                          );
-                          return dataPassada;
-                        };
-
-                        const formataTempoTramitacao = (dataPassada: Date) => {
-                          const agora = new Date();
-                          const umDia = 24 * 60 * 60 * 1000; // horas*minutos*segundos*milliseconds
-                          const diferencaDias = Math.round(
-                            (agora.getTime() - dataPassada.getTime()) / umDia
-                          );
-                          return `${diferencaDias}º dia`;
-                        };
-
-                        const dataPassada = dataAleatoriaNoPassado();
-                        const textoTramitacao =
-                          formataTempoTramitacao(dataPassada);
-                        const dataFormatada = `${dataPassada.getDate()}/${
-                          dataPassada.getMonth() + 1
-                        }/${dataPassada.getFullYear()}`;
-
-                        return html`<sl-badge
-                          variant="neutral"
-                          title="${dataFormatada}"
-                          >${textoTramitacao}</sl-badge
-                        >`;
-                      })()}
-                    </td>
-
                     <td class="col-2">
                       <span class="ementa">
                         ${p.idSdlegDocumentoItemDigital
