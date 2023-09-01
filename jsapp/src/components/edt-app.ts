@@ -419,6 +419,7 @@ export class EdtApp extends LitElement {
   private atualizarTituloEditor(tituloEmenda = ''): void {
     if (tituloEmenda) {
       this.tituloEmenda = this.removeExtensoesPadrao(tituloEmenda);
+      document.title = this.tituloEmenda + ' - Editor de Emendas';
     }
 
     const titulo = document.querySelector('#titulo');
