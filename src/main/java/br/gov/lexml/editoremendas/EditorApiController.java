@@ -128,9 +128,10 @@ public class EditorApiController {
     public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
             @RequestParam int ano,
-            @RequestParam(required = false) String numero) {
+            @RequestParam(required = false) String numero,
+            @RequestParam(required = false) Boolean carregarDatasDeMPs) {
 
-    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -155,9 +156,10 @@ public class EditorApiController {
     
     @GetMapping(path = "/proposicoesEmTramitacao-novo", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoesNovo(
-            @RequestParam String sigla) {
+            @RequestParam String sigla,
+            @RequestParam(required = false) Boolean carregarDatasDeMPs) {
     	
-    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
