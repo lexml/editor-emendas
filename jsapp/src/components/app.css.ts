@@ -149,6 +149,10 @@ export const appStyles = html`
       display: inline-block;
       background-color: var(--sl-color-neutral-50);
     }
+
+    label {
+      font-weight: bold;
+    }
   </style>
 `;
 

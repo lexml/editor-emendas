@@ -674,6 +674,16 @@ export class EdtApp extends LitElement {
               ${this.proposicao.nomeProposicao}
             </sl-tag>
 
+            <sl-tag
+              class="detalhe-emenda--prazo"
+              variant="primary"
+              size="small"
+              title="Prazo de apresentação da emenda - Tramitação"
+              pill
+            >
+              01/09/2023 - 9º dia
+            </sl-tag>
+
             ${this.modo === 'emendaArtigoOndeCouber'
               ? html`<sl-tag variant="primary" size="small" pill
                   >${this.labelTipoEmenda}</sl-tag
@@ -715,8 +725,14 @@ export class EdtApp extends LitElement {
             class="dialog-emenda"
           >
             ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
-            <br />
-            <br />
+            <br /><br />
+            <label>Prazo para apresentar emenda:</label>
+            01/09/2023
+            <sl-badge title="01/01/2023" variant="neutral">4 dias</sl-badge>
+            <br /><br />
+            <label>Tramitação:</label>
+            <sl-badge variant="neutral" title="9º dia">9º dia</sl-badge>
+            <br /><br />
             <sl-button
               href="#"
               variant="primary"
