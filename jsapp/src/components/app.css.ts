@@ -416,12 +416,7 @@ export const novaEmendaStyles = html`
     tr:nth-of-type(even) {
       background-color: whitesmoke;
     }
-
-    td:nth-of-type(3) {
-      white-space: nowrap;
-    }
-
-    .table-wrap::-webkit-scrollbar {
+    */ .table-wrap::-webkit-scrollbar {
       -webkit-appearance: none;
       border-left: 1px solid #ccc;
       background-image: linear-gradient(to top, whitesmoke, white);

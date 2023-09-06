@@ -152,7 +152,7 @@ export class EdtModalNovaEmenda extends LitElement {
               <tr>
                 <th class="col-center">Proposição</th>
                 <th class="col-2">Prazo de emendas</th>
-                <th class="col-2">Tramitação</th>
+                <!-- <th class="col-2">Tramitação</th> -->
                 <th class="col-2">Ementa</th>
               </tr>
             </thead>
@@ -182,21 +182,18 @@ export class EdtModalNovaEmenda extends LitElement {
                         >4 dias</sl-badge
                       >
                     </td>
-                    <td class="col-center">
-                      <sl-badge variant="neutral" title="9º dia"
-                        >9º dia</sl-badge
-                      >
-                    </td>
-
-                    <td class="col-2">
-                      <span class="ementa">
+                    <!-- <td class="col-center">
+                      <sl-badge variant="neutral" title="9º dia">9º dia</sl-badge>
+                    </td> -->
+                    <td>
+                      <div class="ementa">
                         ${p.idSdlegDocumentoItemDigital
                           ? p.ementa
                           : html`<sl-badge variant="neutral"
                                 >Texto indisponível</sl-badge
                               >
                               ${p.ementa}`}
-                      </span>
+                      </div>
                     </td>
                   </tr>
                 `;
