@@ -1,261 +1,213 @@
 <html lang="pt-br">
-  <head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="author" content="Congresso Nacional" />
 
-    <!--/* icons conforme home da visitação do senado */-->
-    <link
-      rel="shortcut icon"
-      type="image/x-icon"
-      href="./assets/img/favicon/favicon.ico"
-      th:href="@{/img/favicon/favicon.ico}"
-    />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/apple-touch-icon.png"
-      th:href="@{/img/favicon/apple-touch-icon.png}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-32x32.png"
-      th:href="@{/img/favicon/favicon-32x32.png}"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-16x16.png"
-      th:href="@{/img/favicon/favicon-16x16.png}"
-    />
-    <link
-      rel="mask-icon"
-      color="#306060"
-      href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/safari-pinned-tab.svg"
-      th:href="@{/img/favicon/safari-pinned-tab.svg}"
-    />
-    <link
-      rel="shortcut icon"
-      href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon.ico"
-      th:href="@{/img/favicon/favicon.ico}"
-    />
-    <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="author" content="Congresso Nacional" />
 
-    <meta
-      name="apple-mobile-web-app-title"
-      content="Busca do Congresso Nacional"
-    />
-    <meta name="application-name" content="Busca do Congresso Nacional" />
+  <!--/* icons conforme home da visitação do senado */-->
+  <link rel="shortcut icon" type="image/x-icon" href="./assets/img/favicon/favicon.ico"
+    th:href="@{/img/favicon/favicon.ico}" />
+  <link rel="apple-touch-icon" sizes="180x180"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/apple-touch-icon.png"
+    th:href="@{/img/favicon/apple-touch-icon.png}" />
+  <link rel="icon" type="image/png" sizes="32x32"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-32x32.png"
+    th:href="@{/img/favicon/favicon-32x32.png}" />
+  <link rel="icon" type="image/png" sizes="16x16"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon-16x16.png"
+    th:href="@{/img/favicon/favicon-16x16.png}" />
+  <link rel="mask-icon" color="#306060"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/safari-pinned-tab.svg"
+    th:href="@{/img/favicon/safari-pinned-tab.svg}" />
+  <link rel="shortcut icon"
+    href="https://www2.congressonacional.leg.br/visite/++resource++visitacao.agendamento/favicon/favicon.ico"
+    th:href="@{/img/favicon/favicon.ico}" />
+  <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
 
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="./assets/css/application.css"
-      th:href="@{/css/application.css}"
-    />
+  <meta name="apple-mobile-web-app-title" content="Busca do Congresso Nacional" />
+  <meta name="application-name" content="Busca do Congresso Nacional" />
 
-    <meta
-      property="og:title"
-      content="Quadro de Emendas a Medidas Provisórias - Congresso Nacional"
-    />
-    <meta property="og:type" content="website" />
-    <meta
-      property="og:description"
-      content="Elabore emendas de forma fácil e precisa do seu computador, tablet e celular."
-    />
-    <meta
-      property="og:image"
-      content="https://www3.congressonacional.leg.br/editor-emendas/assets/jpg/imagem-editor-celular.jpg"
-    />
-    <meta
-      property="og:url"
-      content="https://www3.congressonacional.leg.br/editor-emendas/"
-    />
-    <meta name="twitter:card" content="summary_large_image" />
+  <link rel="stylesheet" type="text/css" href="./assets/css/application.css" th:href="@{/css/application.css}" />
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: sans-serif;
-      }
-    </style>
-     <style>
+  <meta property="og:title" content="Quadro de Emendas a Medidas Provisórias - Congresso Nacional" />
+  <meta property="og:type" content="website" />
+  <meta property="og:description"
+    content="Elabore emendas de forma fácil e precisa do seu computador, tablet e celular." />
+  <meta property="og:image"
+    content="https://www3.congressonacional.leg.br/editor-emendas/assets/jpg/imagem-editor-celular.jpg" />
+  <meta property="og:url" content="https://www3.congressonacional.leg.br/editor-emendas/" />
+  <meta name="twitter:card" content="summary_large_image" />
 
-      .links-header .link-externo {
-        color: #fff;
-        text-decoration: none;
-      }
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
 
-      .links-header .link-externo:nth-child(1):hover {
-        text-decoration: underline;
-      }
+    .links-header .link-externo {
+      color: #fff;
+      text-decoration: none;
+    }
 
+    .links-header .link-externo:nth-child(1):hover {
+      text-decoration: underline;
+    }
+
+    .cn-rodape-logo {
+      padding: 0 20px 0 0;
+      margin-top: inherit;
+    }
+
+    @media screen and (max-width: 767px) {
       .cn-rodape-logo {
-        padding: 0 20px 0 0;
-        margin-top: inherit;
+        text-align: center;
+        padding: 0;
       }
 
-      @media screen and (max-width: 767px) {
-        .cn-rodape-logo {
-          text-align: center;
-          padding: 0;
-        }
-
-        .cn-rodape-txt {
-          padding: 1em;
-        }
+      .cn-rodape-txt {
+        padding: 1em;
       }
+    }
 
-      /* .cn-topo, .cn-rodape {
+    iframe {
+      min-height: 100vh;
+    }
+
+    /* .cn-topo, .cn-rodape {
         display: none;
       } */
+  </style>
+  <script type="text/javascript">
+    // const baseUrl = "https://emendas.camara.leg.br/#/";
+    const baseUrl = "http://localhost:3000/#/";
+    const origem = 'congresso';
+    const embedded = 'true';
 
-    </style>
-    <script type="text/javascript">
+    function convertToURL(urlString) {
+      const url = new URL(urlString);
+      return url.hash ? new URL(`${url.origin}${url.pathname}${url.hash.substring(2)}`) : url;
+    }
 
-      function setIframeUrl() {
-        var url = new URL(window.location.href);
-        var sigla = url.searchParams.get("sigla");
-        var numero = url.searchParams.get("numero");
-        var ano = url.searchParams.get("ano");
-        var origem = 'congresso';
-        var embedded = 'true';
-        var iframe = document.querySelector("iframe");
+    function extractParamsFromUrl(urlString) {
+      const url = convertToURL(urlString);
+      const sigla = url.searchParams.get("sigla");
+      const numero = url.searchParams.get("numero");
+      const ano = url.searchParams.get("ano");
 
-        if (sigla == null || numero == null || ano == null) {
-          iframe.src =
-          "https://emendas.camara.leg.br/#/?origem=" + origem + '&embedded=' + embedded;
-        } else {
-          iframe.src =
-          "https://emendas.camara.leg.br/#/quadroEmendas?sigla=" + sigla +
-          "&numero=" + numero +
-          "&ano=" + ano +
-          "&origem=" + origem +
-          '&embedded=' + embedded;
+      return { sigla, numero, ano };
+    }
+
+    function setIframeUrl(iframe) {
+      const { sigla, numero, ano } = extractParamsFromUrl(window.location.href);
+
+      if (!sigla || !numero || !ano) {
+        iframe.src = `${baseUrl}?origem=${origem}&embedded=${embedded}`;
+      } else {
+        iframe.src = `${baseUrl}quadroEmendas?sigla=${sigla}&numero=${numero}&ano=${ano}&origem=${origem}&embedded=${embedded}`;
+      }
+    }
+
+    function sincronizarUrl(urlIframe) {
+      const { sigla, numero, ano } = extractParamsFromUrl(urlIframe);
+      const parametros = [`sigla=${sigla}`, `numero=${numero}`, `ano=${ano}`].filter(s => !s.includes('null')).join('&');
+
+      let complemento = parametros;
+      if (complemento) {
+        complemento = '?' + complemento + (urlIframe.includes('quadroEmendas') ? '&exibir=quadro' : '');
+      }
+
+      const newUrl = `${window.location.origin}${window.location.pathname}${complemento}`;
+      if (newUrl !== window.location.href) {
+        window.history.replaceState({}, '', newUrl);
+      }
+    }
+
+    function resizeIframe(iframe, height) {
+      iframe.style.height = height + 10 + "px";
+    }
+
+    function configMessageListener(iframe) {
+      let timerResizeIframe = null;
+      window.addEventListener("message", function (event) {
+        if (event.data.type === "quadro-emendas:resize") {
+          clearTimeout(timerResizeIframe);
+          timerResizeIframe = setTimeout(() => resizeIframe(iframe, event.data.payload.height), 200);
+        } else if (event.data.type === "quadro-emendas:ready") {
+          // console.log(11111, 'iframe ready');
+        } else if (event.data.type === "quadro-emendas:urlchange") {
+          sincronizarUrl(event.data.payload.url);
         }
+      });
+    }
 
-        window.addEventListener("message", function (event) {
-          if (event.data.type && event.data.type === "quadro-emendas-resize") {
-            // iframe.style.height = event.data.payload.height + 10 + "px";
-            resizeIframe(iframe, event.data.payload.height);
-          }
-        });
-      }
+    window.onload = function () {
+      const iframe = document.querySelector("iframe");
+      setIframeUrl(iframe);
+      configMessageListener(iframe);
+    };
+  </script>
+  <title>Quadro de Emendas</title>
+</head>
 
-      function resizeIframe(iframe, height) {
-        iframe.style.height = height + 10 + "px";
-      }
-
-      window.onload = function () {
-        setIframeUrl();
-      };
-
-    </script>
-    <title>Quadro de Emendas</title>
-  </head>
-  <body>
-    <main class="">
-      <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
-      <div class="cn-topo">
-        <div class="container px-4 px-lg-5">
-          <div class="row cn-vertical-align">
-            <div class="col-4">
-              <a
-                href="https://www.congressonacional.leg.br"
-                title="Ir para o Portal do Congresso Nacional"
-              >
-                <img
-                  class="cn-topo-logo"
-                  src="./assets/img/logo_cn.png"
-                  th:src="@{/img/logo_cn.png}"
-                  alt="Logo Congresso Nacional"
-                />
-              </a>
-            </div>
-            <div class="col-8 text-end links-header">
-              <a
-                href="https://www.congressonacional.leg.br/fale-conosco"
-                class="pull-right d-none d-sm-inline px-2 link-externo"
-                >Fale conosco</a
-              >
-              <span class="d-none d-sm-inline">|</span>
-              <a
-                href="https://www12.senado.leg.br/hpsenado"
-                class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
-                  alt="Senado"
-                  title="Senado"
-                />
-              </a>
-              <a
-                href="https://www.camara.leg.br/"
-                class="pull-right d-none d-sm-inline px-1 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
-                  alt="Câmara"
-                  title="Câmara"
-                />
-              </a>
-              <a
-                href="https://portal.tcu.gov.br/inicio/index.htm"
-                class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg"
-                  alt="TCU"
-                  title="TCU"
-                />
-              </a>
-            </div>
+<body>
+  <main class="">
+    <a class="sr-only" href="#iniciar">Ir para conteúdo principal</a>
+    <div class="cn-topo">
+      <div class="container px-4 px-lg-5">
+        <div class="row cn-vertical-align">
+          <div class="col-4">
+            <a href="https://www.congressonacional.leg.br" title="Ir para o Portal do Congresso Nacional">
+              <img class="cn-topo-logo" src="./assets/img/logo_cn.png" th:src="@{/img/logo_cn.png}"
+                alt="Logo Congresso Nacional" />
+            </a>
+          </div>
+          <div class="col-8 text-end links-header">
+            <a href="https://www.congressonacional.leg.br/fale-conosco"
+              class="pull-right d-none d-sm-inline px-2 link-externo">Fale conosco</a>
+            <span class="d-none d-sm-inline">|</span>
+            <a href="https://www12.senado.leg.br/hpsenado" class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo"
+              target="_blank">
+              <img src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png" alt="Senado"
+                title="Senado" />
+            </a>
+            <a href="https://www.camara.leg.br/" class="pull-right d-none d-sm-inline px-1 link-externo"
+              target="_blank">
+              <img src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png" alt="Câmara"
+                title="Câmara" />
+            </a>
+            <a href="https://portal.tcu.gov.br/inicio/index.htm"
+              class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo" target="_blank">
+              <img src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg" alt="TCU"
+                title="TCU" />
+            </a>
           </div>
         </div>
       </div>
+    </div>
 
-      <iframe
-        src="#"
-        width="100%"
-        height="100%"
-        frameborder="0"
-        scrolling="no"
-      ></iframe>
+    <iframe src="" width="100%" frameborder="0" scrolling="no"></iframe>
 
-
-      <!-- Footer-->
-      <div class="cn-rodape">
-        <div class="container">
-          <div class="row cn-vertical-align">
-            <div
-              class="col-md-6 cn-rodape-logo text-center text-md-end pt-4 pt-md-0"
-            >
-              <a href="https://www.congressonacional.leg.br"
-                ><img
-                  src="./assets/img/logo_cn.png"
-                  th:src="@{/img/logo_cn.png}"
-              /></a>
-            </div>
-            <div class="col-md-6 cn-rodape-txt">
-              <i class="icon-globe icon-white"></i> Praça dos Três Poderes -
-              Brasília, DF - CEP 70160-900 <br />
-              <i class="icon-headphones icon-white"></i> Fale com o Senado: 0800
-              612 211 <br />
-              <i class="icon-headphones icon-white"></i> Disque Câmara: 0800 619
-              619
-            </div>
+    <!-- Footer-->
+    <div class="cn-rodape">
+      <div class="container">
+        <div class="row cn-vertical-align">
+          <div class="col-md-6 cn-rodape-logo text-center text-md-end pt-4 pt-md-0">
+            <a href="https://www.congressonacional.leg.br"><img src="./assets/img/logo_cn.png"
+                th:src="@{/img/logo_cn.png}" /></a>
+          </div>
+          <div class="col-md-6 cn-rodape-txt">
+            <i class="icon-globe icon-white"></i> Praça dos Três Poderes - Brasília, DF - CEP 70160-900 <br />
+            <i class="icon-headphones icon-white"></i> Fale com o Senado: 0800 0 612 211 <br />
+            <i class="icon-headphones icon-white"></i> Disque Câmara: 0800 0 619 619
           </div>
         </div>
       </div>
-    </main>
-  </body>
+    </div>
+  </main>
+</body>
+
 </html>
