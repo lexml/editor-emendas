@@ -472,6 +472,10 @@ export const novaEmendaStyles = html`
       width: 120px;
       text-align: center;
       white-space: nowrap;
+      vertical-align: baseline;
+    }
+    td.col-2 {
+      vertical-align: baseline;
     }
     .ementa {
       overflow: clip;
