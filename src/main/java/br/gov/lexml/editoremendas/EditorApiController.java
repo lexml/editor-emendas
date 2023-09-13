@@ -90,7 +90,7 @@ public class EditorApiController {
 
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public byte[] salvaEmenda(@RequestBody final EmendaPojo emenda) throws IOException {
-        LOGGER.info("emenda: {}", emenda);
+//        LOGGER.info("emenda: {}", emenda);
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
         pdfGenerator.generate(emenda, os);
         return os.toByteArray();

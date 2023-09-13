@@ -151,7 +151,7 @@ export class EdtModalNovaEmenda extends LitElement {
             <thead>
               <tr>
                 <th class="col-center">Proposição</th>
-                <th class="col-2">Prazo de emendas</th>
+                <!-- <th class="col-2">Prazo de emendas</th> -->
                 <!-- <th class="col-2">Tramitação</th> -->
                 <th class="col-2">Ementa</th>
               </tr>
@@ -175,13 +175,13 @@ export class EdtModalNovaEmenda extends LitElement {
                       '/' +
                       p.ano}
                     </td>
-                    <td class="col-center">
+                    <!-- <td class="col-center">
                       01/01/2023
                       <br />
                       <sl-badge title="01/01/2023" variant="neutral"
                         >4 dias</sl-badge
                       >
-                    </td>
+                    </td> -->
                     <!-- <td class="col-center">
                       <sl-badge variant="neutral" title="9º dia">9º dia</sl-badge>
                     </td> -->
