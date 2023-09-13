@@ -330,7 +330,7 @@ export class EdtApp extends LitElement {
   private abrirQuadroDeEmendas(): void {
     if (this.proposicao) {
       window.open(
-        'https://emendas.camara.leg.br/#/quadroEmendas?sigla=' +
+        'https://emendas.camara.leg.br/quadroEmendas?sigla=' +
           this.proposicao.sigla +
           '&numero=' +
           this.proposicao.numero +
