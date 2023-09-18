@@ -576,17 +576,19 @@ export class EdtApp extends LitElement {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda onde couber';
-    this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
-    this.atualizarTituloEditor();
     setTimeout(() => {
-      this.emendaComAlteracoesSalvas = JSON.parse(
-        JSON.stringify(this.lexmlEmenda.getEmenda())
-      );
-      this.isDirty = false;
-      this.isOpenFile = false;
-      this.wasSaved = false;
-      this.updateStateElements();
-    }, 200);
+      this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
+      this.atualizarTituloEditor();
+      setTimeout(() => {
+        this.emendaComAlteracoesSalvas = JSON.parse(
+          JSON.stringify(this.lexmlEmenda.getEmenda())
+        );
+        this.isDirty = false;
+        this.isOpenFile = false;
+        this.wasSaved = false;
+        this.updateStateElements();
+      }, 0);
+    }, 0);
   }
 
   private atualizarTituloEmenda(evt: Event): void {
