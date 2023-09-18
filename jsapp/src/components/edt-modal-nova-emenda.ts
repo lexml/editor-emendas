@@ -176,10 +176,15 @@ export class EdtModalNovaEmenda extends LitElement {
                       p.ano}
                     </td>
                     <!-- <td class="col-center">
-                      01/01/2023
+                      ${p.dataPublicacao?.split('-').reverse().join('/')}
                       <br />
-                      <sl-badge title="01/01/2023" variant="neutral"
-                        >4 dias</sl-badge
+                      <sl-badge title=${p.dataLimiteRecebimentoEmendas
+                      ?.split('-')
+                      .reverse()
+                      .join('/')} variant="neutral"
+                        >${p.labelPrazoRecebimentoEmendas?.includes(' ')
+                      ? p.labelPrazoRecebimentoEmendas.substring(11)
+                      : p.labelPrazoRecebimentoEmendas}</sl-badge
                       >
                     </td> -->
                     <!-- <td class="col-center">
