@@ -1,14 +1,19 @@
 package br.gov.lexml.editoremendas;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -88,9 +94,24 @@ public class EditorApiController {
         return "Hello";
     }
 
+    @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.APPLICATION_PDF_VALUE)
+    public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws IOException {
+    	File f = File.createTempFile("emenda-" + UUID.randomUUID(), ".pdf");
+        pdfGenerator.generate(emenda, new FileOutputStream(f));
+        return f.getName();
+    }
+    
+    @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public void getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+        File f = new File(System.getProperty("java.io.tmpdir"), fileName);
+        OutputStream out = response.getOutputStream();
+        IOUtils.copy(new FileInputStream(f), out);
+        out.flush();
+        f.delete();
+    }
+    
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
     public byte[] salvaEmenda(@RequestBody final EmendaPojo emenda) throws IOException {
-//        LOGGER.info("emenda: {}", emenda);
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
         pdfGenerator.generate(emenda, os);
         return os.toByteArray();

@@ -30107,6 +30107,108 @@ setDefaultAnimation("tooltip.hide", {
   options: { duration: 150, easing: "ease" }
 });
 
+// src/components/card/card.styles.ts
+var card_styles_default = r$5`
+  ${component_styles_default}
+
+  :host {
+    --border-color: var(--sl-color-neutral-200);
+    --border-radius: var(--sl-border-radius-medium);
+    --border-width: 1px;
+    --padding: var(--sl-spacing-large);
+
+    display: inline-block;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--sl-panel-background-color);
+    box-shadow: var(--sl-shadow-x-small);
+    border: solid var(--border-width) var(--border-color);
+    border-radius: var(--border-radius);
+  }
+
+  .card__image {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+    margin: calc(-1 * var(--border-width));
+    overflow: hidden;
+  }
+
+  .card__image ::slotted(img) {
+    display: block;
+    width: 100%;
+  }
+
+  .card:not(.card--has-image) .card__image {
+    display: none;
+  }
+
+  .card__header {
+    border-bottom: solid var(--border-width) var(--border-color);
+    padding: calc(var(--padding) / 2) var(--padding);
+  }
+
+  .card:not(.card--has-header) .card__header {
+    display: none;
+  }
+
+  .card__body {
+    padding: var(--padding);
+  }
+
+  .card--has-footer .card__footer {
+    border-top: solid var(--border-width) var(--border-color);
+    padding: var(--padding);
+  }
+
+  .card:not(.card--has-footer) .card__footer {
+    display: none;
+  }
+`;
+
+// src/components/card/card.ts
+var SlCard = class extends s4 {
+  constructor() {
+    super(...arguments);
+    this.hasSlotController = new HasSlotController(this, "footer", "header", "image");
+  }
+  render() {
+    return $$1`
+      <div
+        part="base"
+        class=${o$7({
+      card: true,
+      "card--has-footer": this.hasSlotController.test("footer"),
+      "card--has-image": this.hasSlotController.test("image"),
+      "card--has-header": this.hasSlotController.test("header")
+    })}
+      >
+        <div part="image" class="card__image">
+          <slot name="image"></slot>
+        </div>
+
+        <div part="header" class="card__header">
+          <slot name="header"></slot>
+        </div>
+
+        <div part="body" class="card__body">
+          <slot></slot>
+        </div>
+
+        <div part="footer" class="card__footer">
+          <slot name="footer"></slot>
+        </div>
+      </div>
+    `;
+  }
+};
+SlCard.styles = card_styles_default;
+SlCard = __decorateClass([
+  n$6("sl-card")
+], SlCard);
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -33297,10 +33399,18 @@ const validaTextoDispositivo = (dispositivo) => {
         (!hasFilhos(dispositivo) || isTodosFilhosTipoEnumeracaoSuprimidos(dispositivo)) &&
         !hasIndicativoFinalSequencia(dispositivo) &&
         !isUltimaAlteracao(dispositivo) &&
-        isUltimaEnumeracao(dispositivo)) {
+        isUltimaEnumeracao(dispositivo) &&
+        !isSeguidoDeOmissis(dispositivo)) {
         addMensagem(mensagens, TipoMensagem.ERROR, `Último dispositivo de uma sequência deveria terminar com ${converteIndicadorParaTexto(dispositivo.INDICADOR_FIM_SEQUENCIA)}.`);
     }
     return [...new Set(mensagens)];
+};
+const isSeguidoDeOmissis = (dispositivo) => {
+    const proximo = getDispositivoPosteriorNaSequenciaDeLeitura(dispositivo);
+    if (proximo !== undefined) {
+        return proximo.tipo === TipoDispositivo.omissis.name;
+    }
+    return false;
 };
 const addMensagem = (mensagens, tipo, descricao, fix) => {
     const existe = mensagens.filter(m => m.descricao === descricao).length > 0;
@@ -34489,8 +34599,13 @@ const createElemento = (dispositivo, acoes = true, procurarElementoAnterior = fa
     }
     let elementoAnteriorNaSequenciaDeLeitura;
     if (procurarElementoAnterior) {
-        const dispositivoAnteriorNaSequenciaDeLeitura = getDispositivoAnteriorNaSequenciaDeLeitura(dispositivo);
+        let dispositivoAnteriorNaSequenciaDeLeitura = getDispositivoAnteriorNaSequenciaDeLeitura(dispositivo);
         if (dispositivoAnteriorNaSequenciaDeLeitura) {
+            if (isArticulacao(dispositivoAnteriorNaSequenciaDeLeitura) &&
+                !isArticulacaoAlteracao(dispositivoAnteriorNaSequenciaDeLeitura) &&
+                hasEmenta(dispositivoAnteriorNaSequenciaDeLeitura)) {
+                dispositivoAnteriorNaSequenciaDeLeitura = dispositivoAnteriorNaSequenciaDeLeitura.projetoNorma.ementa;
+            }
             elementoAnteriorNaSequenciaDeLeitura = createElemento(isCaput(dispositivoAnteriorNaSequenciaDeLeitura) || isArticulacaoAlteracao(dispositivoAnteriorNaSequenciaDeLeitura)
                 ? dispositivoAnteriorNaSequenciaDeLeitura.pai
                 : dispositivoAnteriorNaSequenciaDeLeitura);
@@ -34727,6 +34842,8 @@ var StateType;
     StateType["RevisaoAceita"] = "RevisaoAceita";
     StateType["RevisaoRejeitada"] = "RevisaoRejeitada";
     StateType["RevisaoAdicionalRejeitada"] = "RevisaoAdicionalRejeitada";
+    StateType["AdicionarAnexoEmendaTextoLivre"] = "AdicionarAnexoEmendaTextoLivre";
+    StateType["RemoverAnexoEmendaTextoLivre"] = "RemoverAnexoEmendaTextoLivre";
 })(StateType || (StateType = {}));
 
 const load = (articulacao, modo) => {
@@ -35518,7 +35635,7 @@ function NumeracaoParagrafo(Base) {
 
 class AdicionarTextoOmissisAction {
     constructor() {
-        this.descricao = 'Omitir texto do dispositivo';
+        this.descricao = 'Linha pontilhada';
     }
     execute(atual) {
         atual.conteudo.texto = TEXTO_OMISSIS;
@@ -35567,6 +35684,20 @@ class RejeitarRevisao {
     }
 }
 const rejeitarRevisaoAction = new RejeitarRevisao();
+
+const EXIBIR_DIFERENCA = 'EXIBIR_DIFERENCA';
+class ExibirDiferenca {
+    constructor() {
+        this.descricao = 'Exibir diferenças';
+    }
+    execute(elemento) {
+        return {
+            type: EXIBIR_DIFERENCA,
+            elemento,
+        };
+    }
+}
+const exibirDiferencaAction = new ExibirDiferenca();
 
 const acoesMenu = [];
 acoesMenu.push(informarNormaAction);
@@ -35636,6 +35767,7 @@ acoesMenu.push(adicionarTextoOmissisAction);
 acoesMenu.push(removerTextoOmissisAction);
 acoesMenu.push(aceitarRevisaoAction);
 acoesMenu.push(rejeitarRevisaoAction);
+acoesMenu.push(exibirDiferencaAction);
 const acoesExclusivasEdicao = [];
 acoesExclusivasEdicao.push(adicionarElementoAction);
 acoesExclusivasEdicao.push(adicionarArtigo);
@@ -37063,6 +37195,12 @@ class AtivarDesativarRevisao {
 }
 const ativarDesativarRevisaoAction = new AtivarDesativarRevisao();
 
+var Modo;
+(function (Modo) {
+    Modo["JUSTIFICATIVA"] = "justificativa";
+    Modo["TEXTO_LIVRE"] = "textoLivre";
+})(Modo || (Modo = {}));
+
 const getRevisoesElemento = (revisoes = []) => {
     return revisoes.filter(isRevisaoElemento).map(r => r);
 };
@@ -37131,7 +37269,7 @@ const mapperActionTypeToDescricao = {
     [REDO]: (revisao) => buildDescricaoRevisaoFromStateType(revisao),
 };
 const mapperStateTypeToDescricao = {
-    [StateType.ElementoIncluido]: () => 'Dispositivo incluído',
+    [StateType.ElementoIncluido]: () => 'Dispositivo adicionado',
     [StateType.ElementoRemovido]: () => 'Dispositivo removido',
     [StateType.ElementoRestaurado]: () => 'Dispositivo restaurado',
     [StateType.ElementoModificado]: () => 'Texto do dispositivo foi alterado',
@@ -37161,7 +37299,10 @@ const getUuidPaiElementoRevisado = (state, revisao) => {
 const getUuidPai = (state, elemento) => {
     var _a, _b, _c, _d, _e, _f;
     const d = getDispositivoFromElemento(state.articulacao, elemento);
-    if (isDispositivoAlteracao(d)) {
+    if (!d) {
+        return undefined;
+    }
+    else if (isDispositivoAlteracao(d)) {
         return isArticulacaoAlteracao(d.pai) || isCaput(d.pai) ? (_b = (_a = d.pai) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.uuid : (_c = d.pai) === null || _c === void 0 ? void 0 : _c.uuid;
     }
     else {
@@ -37213,6 +37354,10 @@ var RevisaoJustificativaEnum;
 (function (RevisaoJustificativaEnum) {
     RevisaoJustificativaEnum["JustificativaAlterada"] = "Justificativa Alterada";
 })(RevisaoJustificativaEnum || (RevisaoJustificativaEnum = {}));
+var RevisaoTextoLivreEnum;
+(function (RevisaoTextoLivreEnum) {
+    RevisaoTextoLivreEnum["TextoLivreAlterado"] = "Texto Livre Alterado";
+})(RevisaoTextoLivreEnum || (RevisaoTextoLivreEnum = {}));
 const ordernarRevisoes = (revisoes = []) => {
     const result = revisoes.filter(r => isRevisaoElemento(r) && !isRevisaoDeExclusao(r));
     result.push(...getRevisoesDeExclusaoOrdenadasPorUuid(revisoes));
@@ -37254,8 +37399,8 @@ const getQuantidadeRevisoes = (revisoes = []) => {
 const getQuantidadeRevisoesJustificativa = (revisoes = []) => {
     return revisoes.filter(e => e.descricao === RevisaoJustificativaEnum.JustificativaAlterada).length;
 };
-const mostrarDialogDisclaimerRevisao = (rootStore) => {
-    if (localStorage.getItem('naoMostrarNovamenteDisclaimerMarcaAlteracao') !== 'true' && !rootStore.getState().elementoReducer.emRevisao) {
+const mostrarDialogDisclaimerRevisao = () => {
+    if (localStorage.getItem('naoMostrarNovamenteDisclaimerMarcaAlteracao') !== 'true') {
         const dialog = document.createElement('sl-dialog');
         dialog.label = 'Marcas de revisão';
         const botoesHtml = ` <sl-button slot="footer" variant="primary" id="closeButton">Fechar</sl-button>`;
@@ -37283,6 +37428,9 @@ const mostrarDialogDisclaimerRevisao = (rootStore) => {
         });
     }
 };
+const getQuantidadeRevisoesTextoLivre = (revisoes = []) => {
+    return revisoes.filter(e => e.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado).length;
+};
 const salvaNoNavegadorOpcaoNaoMostrarNovamente = () => {
     const checkbox = document.getElementById('chk-nao-mostrar-modal-novamente');
     if (checkbox) {
@@ -37290,11 +37438,14 @@ const salvaNoNavegadorOpcaoNaoMostrarNovamente = () => {
     }
 };
 const ativarDesativarMarcaDeRevisao = (rootStore) => {
-    mostrarDialogDisclaimerRevisao(rootStore);
     rootStore.dispatch(ativarDesativarRevisaoAction.execute());
 };
-const atualizaQuantidadeRevisao = (revisoes = [], element, justificativa = false) => {
-    const quantidade = justificativa ? getQuantidadeRevisoesJustificativa(revisoes) : getQuantidadeRevisoes(revisoes);
+const atualizaQuantidadeRevisao = (revisoes = [], element, modo) => {
+    const quantidade = modo === Modo.JUSTIFICATIVA
+        ? getQuantidadeRevisoesJustificativa(revisoes)
+        : modo === 'textoLivre'
+            ? getQuantidadeRevisoesTextoLivre(revisoes)
+            : getQuantidadeRevisoes(revisoes);
     if (element) {
         element.innerHTML = quantidade;
     }
@@ -38049,6 +38200,9 @@ const adicionaElemento$1 = (state, action) => {
     else if (atual.hasAlteracao()) {
         novo = criaDispositivoCabecaAlteracao(TipoDispositivo.artigo.tipo, atual.alteracoes, undefined, 0);
     }
+    else if (isEmenta(atual) && action.novo.tipo) {
+        novo = criaDispositivo(state.articulacao, action.novo.tipo, undefined, 0);
+    }
     else if (action.novo.tipo && atual.tipo !== action.novo.tipo) {
         novo = criaDispositivo(atual, action.novo.tipo, refUltimoFilho);
     }
@@ -38670,7 +38824,7 @@ const buildEventoRevisaoDispositivoRestaurado = (state, revisoes) => {
     return result;
 };
 const processarElementoDaRevisao = (state, revisao, elementoAnterior, elementosExcluidosEmModoDeRevisao) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
     if (isRevisaoDeExclusao(revisao)) {
         let e;
         if (isRevisaoPrincipal(revisao)) {
@@ -38706,15 +38860,26 @@ const processarElementoDaRevisao = (state, revisao, elementoAnterior, elementosE
             revisao.elementoAntesRevisao.hierarquia.pai.uuid = (_k = (_j = e.hierarquia) === null || _j === void 0 ? void 0 : _j.pai) === null || _k === void 0 ? void 0 : _k.uuid;
             revisao.elementoAntesRevisao.hierarquia.pai.uuid2 = (_m = (_l = e.hierarquia) === null || _l === void 0 ? void 0 : _l.pai) === null || _m === void 0 ? void 0 : _m.uuid2;
         }
+        if (e.dispositivoAlteracao) {
+            revisao.elementoAposRevisao.hierarquia.pai.uuidAlteracao = (_p = (_o = e.hierarquia) === null || _o === void 0 ? void 0 : _o.pai) === null || _p === void 0 ? void 0 : _p.uuidAlteracao;
+            revisao.elementoAposRevisao.hierarquia.pai.uuid2Alteracao = (_r = (_q = e.hierarquia) === null || _q === void 0 ? void 0 : _q.pai) === null || _r === void 0 ? void 0 : _r.uuid2Alteracao;
+        }
     }
 };
 const atualizarUuidDoPaiDoElementoRemovido = (state, revisao) => {
     let uuid = 0;
     let uuid2 = '';
+    let uuidAlteracao = undefined;
+    let uuid2Alteracao = undefined;
     if (isRevisaoPrincipal(revisao)) {
         const pai = buscaDispositivoById(state.articulacao, revisao.elementoAposRevisao.hierarquia.pai.lexmlId);
         uuid = pai === null || pai === void 0 ? void 0 : pai.uuid;
         uuid2 = pai === null || pai === void 0 ? void 0 : pai.uuid2;
+        if (pai && isDispositivoAlteracao(pai)) {
+            const articulacaoAlteracao = getArticulacao(pai);
+            uuidAlteracao = articulacaoAlteracao === null || articulacaoAlteracao === void 0 ? void 0 : articulacaoAlteracao.uuid;
+            uuid2Alteracao = articulacaoAlteracao === null || articulacaoAlteracao === void 0 ? void 0 : articulacaoAlteracao.uuid2;
+        }
     }
     else {
         const revisaoPai = findRevisaoById(state.revisoes, revisao.idRevisaoElementoPai);
@@ -38725,6 +38890,10 @@ const atualizarUuidDoPaiDoElementoRemovido = (state, revisao) => {
     revisao.elementoAposRevisao.hierarquia.pai.uuid2 = uuid2;
     revisao.elementoAntesRevisao.hierarquia.pai.uuid = uuid;
     revisao.elementoAntesRevisao.hierarquia.pai.uuid2 = uuid2;
+    revisao.elementoAposRevisao.hierarquia.pai.uuidAlteracao = uuidAlteracao;
+    revisao.elementoAposRevisao.hierarquia.pai.uuid2Alteracao = uuid2Alteracao;
+    revisao.elementoAntesRevisao.hierarquia.pai.uuidAlteracao = uuidAlteracao;
+    revisao.elementoAntesRevisao.hierarquia.pai.uuid2Alteracao = uuid2Alteracao;
 };
 
 const atualizaElemento = (state, action) => {
@@ -38772,7 +38941,7 @@ const atualizaNotaAlteracao = (state, action) => {
         return state;
     }
     const original = createElemento(dispositivo);
-    cabecaAlteracao.notaAlteracao = action.notaAlteracao;
+    cabecaAlteracao.notaAlteracao = action.notaAlteracao || undefined;
     const alterado = createElemento(dispositivo);
     const eventos = [];
     eventos.push({
@@ -40439,9 +40608,9 @@ const buildDispositivo$1 = (pai, el, cabecasAlteracao) => {
     ultimoDispositivoCriado = dispositivo;
     return dispositivo;
 };
-const montaReferencia = (value) => {
-    return `<a href="${value.href}"> ${value.content[0]} </a>`;
-};
+// const montaReferencia = (value: any): string => {
+//   return `<a href="${value.href}"> ${value.content[0]} </a>`;
+// };
 const buildContentDispositivo = (el) => {
     var _a, _b, _c, _d, _e;
     let texto = '';
@@ -40470,7 +40639,7 @@ const buildContent$1 = (content) => {
     let texto = '';
     content === null || content === void 0 ? void 0 : content.forEach((element) => {
         if (element.value) {
-            texto += montaReferencia(element.value);
+            texto += montaTag(element.name, element.value);
         }
         else {
             let elementTexto = element;
@@ -40480,6 +40649,16 @@ const buildContent$1 = (content) => {
         }
     });
     return texto;
+};
+const montaTag = (name, value) => {
+    const localPart = name.localPart;
+    if (localPart === 'span' && value.href) {
+        return `<a href="${value.href}">${buildContent$1(value.content)}</a>`;
+    }
+    if (localPart === 'b' || localPart === 'i' || localPart === 'sub' || localPart === 'sup') {
+        return `<${localPart}>${buildContent$1(value.content)}</${localPart}>`;
+    }
+    return '';
 };
 
 const buildDispositivoFromJsonix = (documentoLexml) => {
@@ -40710,7 +40889,7 @@ const isArticulacaoInconsistente = (articulacao) => {
 };
 const isDispositivoInconsistente = (dispositivo) => {
     var _a, _b;
-    return !((_b = (_a = dispositivo.pai) === null || _a === void 0 ? void 0 : _a.tiposPermitidosFilhos) === null || _b === void 0 ? void 0 : _b.includes(dispositivo.tipo)) && !isOmissis(dispositivo) && !isArticulacao(dispositivo.pai);
+    return !((_b = (_a = dispositivo.pai) === null || _a === void 0 ? void 0 : _a.tiposPermitidosFilhos) === null || _b === void 0 ? void 0 : _b.includes(dispositivo.tipo)) && !isOmissis(dispositivo) && !!dispositivo.pai && !isArticulacao(dispositivo.pai);
 };
 const getTextoInconsistencia = (dispositivos) => {
     var _a, _b;
@@ -40889,7 +41068,9 @@ const ajustaHtmlParaColagem = (htmlInicial) => {
         .replace(/^["“']/g, '')
         .replace(/<\/?body[^>]*>/gi, '')
         .replace(/\r/g, '')
-        .replace(/\n+/g, '\n');
+        .replace(/\n+/g, '\n')
+        .replace(/&ldquo; |&ldquo;/g, '“')
+        .replace(/&rdquo;/g, '”');
     const allowedTags = ['B', 'STRONG', 'I', 'EM', 'SUP', 'SUB', 'P'];
     allowedTags.map(tag => tag.toLowerCase()).forEach(tag => (html = html.replace(new RegExp(`<${tag}[^>]*>`, 'gi'), `<${tag}>`)));
     // Substitui tags "strong" por "b" e "em" por "i"
@@ -41297,11 +41478,11 @@ const getMensagemTipoRevisoes = (state) => {
     const contemRevisoesDispositivos = state.revisoes.filter(e => e.descricao !== RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
     const contemRevisoesJustificativa = state.revisoes.filter(e => e.descricao === RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
     return contemRevisoesDispositivos && contemRevisoesJustificativa
-        ? ' (TEXTO | JUSTIFICATIVA) '
+        ? ' das abas texto e justificativa '
         : contemRevisoesDispositivos
-            ? ' (TEXTO) '
+            ? ' da aba texto '
             : contemRevisoesJustificativa
-                ? ' (JUSTIFICATIVA) '
+                ? ' da aba justificativa '
                 : ' ';
 };
 
@@ -41317,6 +41498,12 @@ class RevisaoJustificativa extends Revisao {
     constructor(usuario, dataHora, descricao) {
         super(usuario, dataHora, descricao);
         this.type = 'RevisaoJustificativa';
+    }
+}
+class RevisaoTextoLivre extends Revisao {
+    constructor(usuario, dataHora, descricao) {
+        super(usuario, dataHora, descricao);
+        this.type = 'RevisaoTextoLivre';
     }
 }
 class RevisaoElemento extends Revisao {
@@ -41370,9 +41557,11 @@ const atualizaRevisao = (state, actionType) => {
         return state;
     }
     if (UNDO === actionType && (((_b = state.past) === null || _b === void 0 ? void 0 : _b.length) || 0) < state.numEventosPassadosAntesDaRevisao) {
+        associarRevisoesAosElementosDosEventos(state);
         return state;
     }
     if (REDO === actionType && (((_c = state.past) === null || _c === void 0 ? void 0 : _c.length) || 0) <= state.numEventosPassadosAntesDaRevisao) {
+        associarRevisoesAosElementosDosEventos(state);
         return state;
     }
     if (((_e = (_d = state.ui) === null || _d === void 0 ? void 0 : _d.message) === null || _e === void 0 ? void 0 : _e.tipo) === TipoMensagem.ERROR) {
@@ -41442,14 +41631,27 @@ const processaEventosDeModificacao = (state, actionType) => {
                 revisoesParaRemover.push(revisao);
             }
             revisao.elementoAposRevisao = JSON.parse(JSON.stringify(e));
+            state.usuario && (revisao.usuario = state.usuario);
+            revisao.dataHora = formatDateTime(new Date());
         }
         else {
             const eAux = getElementoAntesModificacao(state, e);
-            result.push(new RevisaoElemento(actionType, StateType.ElementoModificado, '', state.usuario, formatDateTime(new Date()), eAux, JSON.parse(JSON.stringify(e))));
+            // result.push(new RevisaoElemento(actionType, StateType.ElementoModificado, '', state.usuario!, formatDateTime(new Date()), eAux, JSON.parse(JSON.stringify(e))));
+            if (!isAjusteTextoOmitido(eAux, e)) {
+                result.push(new RevisaoElemento(actionType, StateType.ElementoModificado, '', state.usuario, formatDateTime(new Date()), eAux, JSON.parse(JSON.stringify(e))));
+            }
         }
     });
     state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !revisoesParaRemover.includes(r));
     return result;
+};
+const isAjusteTextoOmitido = (eAntesRevisao, eAposRevisao) => {
+    var _a, _b, _c, _d, _e, _f, _g;
+    // O texto omitido do dispositivo original pode possuir um span com a classe texto__omissis, que não deve ser considerado para fins de comparação de modificação.
+    return !!(eAposRevisao.tipo === (eAntesRevisao === null || eAntesRevisao === void 0 ? void 0 : eAntesRevisao.tipo) &&
+        ((_b = (_a = eAposRevisao.conteudo) === null || _a === void 0 ? void 0 : _a.texto) === null || _b === void 0 ? void 0 : _b.includes(TEXTO_OMISSIS)) &&
+        ((_d = (_c = eAntesRevisao === null || eAntesRevisao === void 0 ? void 0 : eAntesRevisao.conteudo) === null || _c === void 0 ? void 0 : _c.texto) === null || _d === void 0 ? void 0 : _d.includes(TEXTO_OMISSIS)) &&
+        ((_f = (_e = eAposRevisao.conteudo) === null || _e === void 0 ? void 0 : _e.texto) === null || _f === void 0 ? void 0 : _f.replace('<span class="texto__omissis">', '').replace('</span>', '')) === ((_g = eAntesRevisao === null || eAntesRevisao === void 0 ? void 0 : eAntesRevisao.conteudo) === null || _g === void 0 ? void 0 : _g.texto));
 };
 const processaEventosDeMoverOuTransformar = (state, actionType) => {
     var _a;
@@ -41709,12 +41911,15 @@ const aceitaRevisao = (state, action) => {
     }
 };
 const aceitarRevisaoEmLote = (state, revisoes = []) => {
+    var _a;
     const tempStates = [];
     revisoes.filter(isRevisaoPrincipal).forEach((revisao) => {
         const tempState = { ...state, past: [], present: [], future: [], ui: { ...state.ui, events: [] } };
         tempStates.push(aceitarRevisao(tempState, { revisao }));
     });
-    return mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'aceitar');
+    const tempState = mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'aceitar');
+    tempState.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !isRevisaoPrincipal(r));
+    return tempState;
 };
 const aceitarRevisao = (state, action) => {
     var _a, _b;
@@ -41770,12 +41975,15 @@ const rejeitaRevisao = (state, action) => {
     }
 };
 const rejeitarRevisaoEmLote = (state, revisoes = []) => {
+    var _a;
     const tempStates = [];
     revisoes.filter(isRevisaoPrincipal).forEach((revisao) => {
         const tempState = { ...state, past: [], present: [], future: [], ui: { ...state.ui, events: [] } };
         tempStates.push(rejeitarRevisao(tempState, { revisao }));
     });
-    return mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'rejeitar');
+    const tempState = mergeEventosStatesAposAceitarOuRejeitarMultiplasRevisoes(state, tempStates, revisoes, 'rejeitar');
+    tempState.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => !isRevisaoPrincipal(r));
+    return tempState;
 };
 const rejeitarRevisao = (state, action) => {
     var _a, _b;
@@ -41930,13 +42138,60 @@ const montarListaElementosValidados = (state, result) => {
         .map(d => createElementoValidado(d));
 };
 
+const adicionaDiffMenuOpcoes = (state) => {
+    var _a;
+    (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events.forEach(se => {
+        var _a;
+        return (_a = se.elementos) === null || _a === void 0 ? void 0 : _a.filter(Boolean).forEach(e => {
+            var _a, _b, _c;
+            if (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO ||
+                (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && e.revisao && e.revisao.descricao === 'Texto do dispositivo foi alterado') ||
+                (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL && e.revisao && ((_b = (_a = e.revisao.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.conteudo) === null || _b === void 0 ? void 0 : _b.texto) !== ((_c = e.conteudo) === null || _c === void 0 ? void 0 : _c.texto))) {
+                !e.acoesPossiveis.includes(exibirDiferencaAction) && e.acoesPossiveis.push(exibirDiferencaAction);
+            }
+        });
+    });
+    return state;
+};
+
+const LIMPAR_REVISAO = 'LIMPAR_REVISAO';
+class LimparRevisao {
+    execute() {
+        const revisoes = [];
+        return {
+            type: LIMPAR_REVISAO,
+            revisoes,
+        };
+    }
+}
+const limparRevisaoAction = new LimparRevisao();
+
+const limpaRevisao = (state) => {
+    var _a;
+    return {
+        articulacao: state.articulacao,
+        modo: state.modo,
+        past: state.past,
+        present: state.present,
+        future: state.future,
+        ui: {
+            events: [{ stateType: StateType.AtualizacaoAlertas }],
+            message: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.mensagem,
+            alertas: state.alertas,
+        },
+        revisoes: [],
+        emRevisao: false,
+        usuario: state.usuario,
+    };
+};
+
 const elementoReducer = (state = {}, action) => {
     var _a, _b;
     let tempState;
     let usuario = state.usuario;
     let actionType = action.type;
     let emRevisao = state.emRevisao;
-    const revisoes = state.revisoes || [];
+    let revisoes = state.revisoes || [];
     let numEventosPassadosAntesDaRevisao = state.numEventosPassadosAntesDaRevisao || 0;
     switch (action.type) {
         case ADICIONAR_AGRUPADOR_ARTIGO:
@@ -42055,20 +42310,28 @@ const elementoReducer = (state = {}, action) => {
         case REJEITAR_REVISAO:
             tempState = rejeitaRevisao(state, action);
             break;
+        case LIMPAR_REVISAO:
+            tempState = limpaRevisao(state);
+            break;
         default:
             actionType = undefined;
             tempState = state;
             break;
     }
+    if ([LIMPAR_REVISAO].includes(actionType)) {
+        //tempState.revisoes = [];
+        revisoes = [];
+    }
     if (![ABRIR_ARTICULACAO, APLICAR_ALTERACOES_EMENDA, ACEITAR_REVISAO, REJEITAR_REVISAO].includes(actionType) &&
         !isRedoDeRevisaoAceita(actionType, tempState) &&
         !isRedoDeRevisaoRejeitada(actionType, tempState)) {
         tempState.revisoes = revisoes;
+        tempState.numEventosPassadosAntesDaRevisao = emRevisao ? numEventosPassadosAntesDaRevisao : ((_b = tempState.past) === null || _b === void 0 ? void 0 : _b.length) || 0;
     }
     tempState.emRevisao = emRevisao;
     tempState.usuario = usuario;
-    tempState.numEventosPassadosAntesDaRevisao = emRevisao ? numEventosPassadosAntesDaRevisao : ((_b = tempState.past) === null || _b === void 0 ? void 0 : _b.length) || 0;
-    return atualizaRevisao(tempState, actionType);
+    tempState = atualizaRevisao(tempState, actionType);
+    return adicionaDiffMenuOpcoes(tempState);
 };
 const isRedoDeRevisaoAceita = (actionType, state) => {
     var _a;
@@ -43485,8 +43748,8 @@ class Elemento extends Referencia {
     }
 }
 
-const Block = Quill.import('blots/block');
-class EtaBlot extends Block {
+const Block$2 = Quill.import('blots/block');
+class EtaBlot extends Block$2 {
     constructor(domNode) {
         super(domNode);
     }
@@ -44046,8 +44309,8 @@ EtaBlotRevisaoAceitar.blotName = 'EtaBlotRevisaoAceitar';
 EtaBlotRevisaoAceitar.className = 'blot__revisao_aceitar';
 EtaBlotRevisaoAceitar.tagName = 'button';
 
-const Container = Quill.import('blots/container');
-class EtaContainer extends Container {
+const Container$4 = Quill.import('blots/container');
+class EtaContainer extends Container$4 {
     constructor(node) {
         super(node);
     }
@@ -44527,8 +44790,9 @@ class EtaKeyboard extends Keyboard {
             }
         });
         this.quill.root.addEventListener('keydown', (ev) => {
+            var _a;
             this.altGraphPressionado = ev.altKey && ev.location === 2;
-            const elementoLinhaAtual = this.quill.linhaAtual.elemento;
+            const elementoLinhaAtual = (_a = this.quill.linhaAtual) === null || _a === void 0 ? void 0 : _a.elemento;
             if (!(this.quill.cursorDeTextoEstaSobreLink() || (ev.key === 'Backspace' && this.quill.cursorDeTextoEstaSobreLink(-1))) && this.isTeclaQueAlteraTexto(ev)) {
                 this.onChange.notify('keyboard');
             }
@@ -44562,7 +44826,7 @@ class EtaKeyboard extends Keyboard {
                 cancelarPropagacaoDoEvento(ev);
                 return;
             }
-            else if (elementoLinhaAtual.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO && this.isNotTeclasDeNavegacao(ev)) {
+            else if ((elementoLinhaAtual === null || elementoLinhaAtual === void 0 ? void 0 : elementoLinhaAtual.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO && this.isNotTeclasDeNavegacao(ev)) {
                 cancelarPropagacaoDoEvento(ev);
             }
             else if (ev.ctrlKey) {
@@ -44710,8 +44974,8 @@ class EtaKeyboard extends Keyboard {
         if (textoSelec.conteudo) {
             if (textoSelec.quantidadeCR > 0) {
                 if (textoSelec.quantidadeCR === 1 && /\n$/gi.test(textoSelec.conteudo)) {
-                    const range = this.quill.getSelection(true);
-                    this.quill.setSelection(range.index, range.length - 1, Quill.sources.API);
+                    const range = this.quill.getSelection();
+                    range && this.quill.setSelection(range.index, range.length - 1, Quill.sources.API);
                     return true;
                 }
                 else {
@@ -44904,7 +45168,7 @@ class EtaKeyboard extends Keyboard {
     }
     verificaSelecaoComLink() {
         var _a, _b, _c, _d;
-        const range = this.quill.getSelection(true);
+        const range = this.quill.getSelection();
         if (!range) {
             return false;
         }
@@ -44934,21 +45198,20 @@ class EtaKeyboard extends Keyboard {
 
 const negrito = `
 <svg class="icon-negrito" id="negrito" viewBox="0 0 16 16">
-<path class="st0" d="M10.7,13.5c-0.1,0-0.4,0-0.6-0.2L6,7.8C6,7.7,5.8,7.7,5.8,7.8l0,5.1c0,0.3-0.2,0.5-0.5,0.5H3.7
+<path class="ql-fill" d="M10.7,13.5c-0.1,0-0.4,0-0.6-0.2L6,7.8C6,7.7,5.8,7.7,5.8,7.8l0,5.1c0,0.3-0.2,0.5-0.5,0.5H3.7
 	c-0.3,0-0.5-0.2-0.5-0.5l0-9.5c-0.1-0.2,0-0.4,0.1-0.5c0.1-0.2,0.4-0.4,0.7-0.4h1c0.1,0,0.4,0,0.6,0.2l4.4,5.9
 	c0.1,0.1,0.2,0,0.2-0.1V3c0-0.3,0.2-0.5,0.5-0.5h1.5c0.3,0,0.5,0.2,0.5,0.5V13c0,0.3-0.2,0.5-0.5,0.5H10.7z"/>
 </svg>
 `;
 const sublinhado = `
 <svg class="icon-sublinhado" id="sublinhado" viewBox="0 0 16 16">
-<path class="st0" d="M4.3,9.4c0-0.2,0.1-0.3,0.4-0.3h0.7c0.2,0,0.4,0.1,0.4,0.3C5.8,10.4,6.7,11,8.1,11c1.3,0,2.2-0.5,2.2-1.4
+<path class="ql-fill" d="M4.3,9.4c0-0.2,0.1-0.3,0.4-0.3h0.7c0.2,0,0.4,0.1,0.4,0.3C5.8,10.4,6.7,11,8.1,11c1.3,0,2.2-0.5,2.2-1.4
 	c0-1.1-1.2-1.4-2.5-1.9C6.3,7.3,4.5,6.8,4.5,5c0-1.6,1.5-2.7,3.5-2.7c1.9,0,3.3,1.1,3.4,2.6c0,0.2-0.1,0.3-0.4,0.3h-0.7
 	c-0.2,0-0.3-0.1-0.4-0.3C9.9,4.1,9.2,3.7,8.1,3.7C6.8,3.7,6,4.2,6,5c0,0.9,0.9,1.2,2.2,1.6c1.6,0.5,3.5,1.1,3.5,3.1
 	c0,1.6-1.5,2.7-3.6,2.7C5.9,12.3,4.3,11.2,4.3,9.4z"/>
-<rect x="3" y="12.9" class="st0" width="9.9" height="0.8"/>
+<rect x="3" y="12.9" class="ql-fill" width="9.9" height="0.8"/>
 </svg>
 `;
-const controleDropdown = '<svg viewBox="0 0 18 18"> <polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon> <polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon> </svg>';
 
 const Inline = Quill.import('blots/inline');
 class EtaBlotConteudoOmissis extends Inline {
@@ -45334,6 +45597,21 @@ class EtaQuill extends Quill {
         this.undoRedoEstrutura = new Observable();
         this.elementoSelecionado = new Observable();
         this.aspasAberta = false;
+        this.customClickHandler = (ev) => {
+            try {
+                let blot = EtaQuill.find(ev.target);
+                if (['EtaBlotOpcoesDiff'].includes(blot.instanceBlotName)) {
+                    return;
+                }
+                while (blot && blot.instanceBlotName !== 'EtaContainerTable') {
+                    blot = blot.parent;
+                }
+                blot && blot === this.linhaAtual && blot.blotConteudo.domNode.focus();
+            }
+            catch (error) {
+                // não faz nada
+            }
+        };
         this.observableSelectionChange = new Observable();
         this.onSelectionChange = (range, oldRange) => {
             // Guarda a linhaAtual corrente
@@ -45363,6 +45641,7 @@ class EtaQuill extends Quill {
         this.root.addEventListener('drop', (e) => {
             e.preventDefault();
         });
+        this.root.addEventListener('click', this.customClickHandler);
     }
     get mudouDeLinha() {
         var _a;
@@ -45382,7 +45661,7 @@ class EtaQuill extends Quill {
     }
     get textoSelecionado() {
         var _a, _b, _c;
-        const range = (_a = this.getSelection(true)) !== null && _a !== void 0 ? _a : { index: 0, length: 0 };
+        const range = (_a = this.getSelection()) !== null && _a !== void 0 ? _a : { index: 0, length: 0 };
         const texto = this.getText().substr(range.index, range.length);
         return {
             conteudo: texto,
@@ -45418,6 +45697,13 @@ class EtaQuill extends Quill {
         const DataRotulo = new Parchment.Attributor.Attribute('dataRotulo', 'data-rotulo', { scope: Parchment.Scope.BLOCK });
         const icons = Quill.import('ui/icons');
         icons['bold'] = negrito;
+        // set Quill to use <b> and <i>, not <strong> and <em>
+        const bold = Quill.import('formats/bold');
+        bold.tagName = 'b'; // Quill uses <strong> by default
+        Quill.register(bold, true);
+        const italic = Quill.import('formats/italic');
+        italic.tagName = 'i'; // Quill uses <em> by default
+        Quill.register(italic, true);
         EtaQuill.register('modules/clipboard', EtaClipboard, true);
         EtaQuill.register('modules/keyboard', EtaKeyboard, true);
         EtaQuill.register(EtaBlotConteudoOmissis, true);
@@ -45454,11 +45740,12 @@ class EtaQuill extends Quill {
         EtaQuill.register(DataRotulo, true);
     }
     destroi() {
-        var _a, _b;
+        var _a, _b, _c;
+        (_a = this.root) === null || _a === void 0 ? void 0 : _a.removeEventListener('click', this.customClickHandler);
         this.off('text-change', this.onTextChange);
         this.off('selection-change', this.onSelectionChange);
-        (_a = this.keyboard) === null || _a === void 0 ? void 0 : _a.operacaoTecladoInvalida.clean();
-        (_b = this.keyboard) === null || _b === void 0 ? void 0 : _b.adicionaElementoTeclaEnter.clean();
+        (_b = this.keyboard) === null || _b === void 0 ? void 0 : _b.operacaoTecladoInvalida.clean();
+        (_c = this.keyboard) === null || _c === void 0 ? void 0 : _c.adicionaElementoTeclaEnter.clean();
     }
     getConteudoHtmlParteLinha(blotConteudo, offset, tamanho) {
         return this.buffer.getConteudoHtml(blotConteudo.html, offset, tamanho);
@@ -45665,7 +45952,7 @@ class EtaQuill extends Quill {
     }
     cursorDeTextoEstaSobreLink(deslocamento = 0) {
         var _a;
-        const range = this.getSelection(true);
+        const range = this.getSelection();
         if (range) {
             const ops = this.getContents(range.index + deslocamento, 1).ops;
             return !ops || !ops[0] ? false : (_a = ops[0].attributes) === null || _a === void 0 ? void 0 : _a.link;
@@ -45673,7 +45960,7 @@ class EtaQuill extends Quill {
         return false;
     }
     cursorDeTextoEstaSobreOmissis() {
-        const range = this.getSelection(true);
+        const range = this.getSelection();
         if (range) {
             const textBlot = this.getLeaf(range.index);
             return textBlot[0].text === TEXTO_OMISSIS;
@@ -45702,8 +45989,6 @@ class EtaBlotQuebraLinha extends EtaBlot {
 EtaBlotQuebraLinha.blotName = 'EtaBlotQuebraLinha';
 EtaBlotQuebraLinha.tagName = 'BR';
 
-// import { EtaContainerOpcoes } from './eta-container-opcoes';
-// import { EtaBlotOpcoesDiff } from './eta-blot-opcoes-diff';
 class EtaQuillUtil {
     static criarContainerLinha(elemento) {
         const etaTable = new EtaContainerTable(elemento);
@@ -45728,17 +46013,16 @@ class EtaQuillUtil {
         // new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
         if (elemento.fechaAspas !== undefined && elemento.fechaAspas) {
             new EtaBlotFechaAspas(elemento).insertInto(etaTdTexto);
-            if (elemento.notaAlteracao) {
-                new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
-            }
+            new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
         }
         new EtaBlotEspaco().insertInto(etaTdEspaco);
+        if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO ||
+            (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.revisao && elemento.revisao.descricao === 'Texto do dispositivo foi alterado')) {
+            EtaQuillUtil.criarContainerOpcoes(elemento).insertInto(etaTrContainer);
+        }
         if (elemento.revisao && isRevisaoPrincipal(elemento.revisao)) {
             EtaQuillUtil.criarContainerRevisao(elemento).insertInto(etaTrContainer);
         }
-        // if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.revisao)) {
-        //   EtaQuillUtil.criarContainerOpcoes(elemento).insertInto(etaTrContainer);
-        // }
         etaTdTexto.insertInto(etaTrContainer);
         etaTdEspaco.insertInto(etaTrContainer);
         etaTrContainer.insertInto(etaTable);
@@ -45751,11 +46035,11 @@ class EtaQuillUtil {
         new EtaBlotRevisao(elemento).insertInto(etaContainerRevisao);
         return etaContainerRevisao;
     }
-    // static criarContainerOpcoes(elemento: Elemento): EtaContainerOpcoes {
-    //   const etaContainerOpcoes: EtaContainerOpcoes = new EtaContainerOpcoes(elemento);
-    //   new EtaBlotOpcoesDiff(elemento).insertInto(etaContainerOpcoes);
-    //   return etaContainerOpcoes;
-    // }
+    static criarContainerOpcoes(elemento) {
+        const etaContainerOpcoes = new EtaContainerOpcoes(elemento);
+        new EtaBlotOpcoesDiff(elemento).insertInto(etaContainerOpcoes);
+        return etaContainerOpcoes;
+    }
     static criarContainerMensagens(elemento) {
         const etaTrContainer = new EtaContainerTr(false, this.alinhamentoMenu);
         const etaTdMensagens = new EtaContainerTdEsquerdo(elemento);
@@ -46474,14 +46758,17 @@ const transformarAction = (elemento, novoTipo) => {
 };
 
 class TextoDiff {
+    constructor() {
+        this.adicionado = false;
+    }
 }
+const OMISSIS = '....................';
 const exibirDiferencasDialog = (diff) => {
-    const textoDiff = textoDiffAsHtml(diff.textoAtual, diff.textoOriginal, 'diffWords');
     Array.from(document.querySelectorAll('#slDialogExibirDiferencas')).forEach(el => document.body.removeChild(el));
     const dialogElem = document.createElement('sl-dialog');
     dialogElem.id = 'slDialogExibirDiferencas';
     document.body.appendChild(dialogElem);
-    dialogElem.label = 'Texto alterado';
+    dialogElem.label = 'Exibir diferenças do texto atual com';
     const fnDestroy = () => {
         try {
             diff.quill && diff.quill.focus();
@@ -46495,8 +46782,74 @@ const exibirDiferencasDialog = (diff) => {
     dialogElem.addEventListener('sl-after-hide', () => {
         setTimeout(() => fnDestroy(), 0);
     });
+    diff = trataOmissisDiff(diff);
+    const contemRevisao = diff.textoAntesRevisao !== undefined && diff.textoAposRevisao !== undefined;
+    const diferencaModificado = textoDiffAsHtml(diff.textoOriginal, contemRevisao ? diff.textoAposRevisao : diff.textoAtual, 'diffWords');
+    const tabModificado = !diff.adicionado && diferencaModificado !== diff.textoOriginal ? `<sl-tab slot="nav" panel="modificado"> Texto original </sl-tab>` : '';
+    const tabModificadoRevisao = contemRevisao ? `<sl-tab slot="nav" panel="modificadoRevisao">Texto antes da revisão</sl-tab>` : '';
+    const tabPanelModificado = !diff.adicionado && diferencaModificado !== diff.textoOriginal
+        ? `<sl-tab-panel name="modificado">
+
+        <sl-card class="card-header texto-alterado">
+          <div slot="header">
+            Texto original
+          </div>
+          ${diff.textoOriginal}
+        </sl-card>
+
+        <sl-card class="card-header texto-alterado">
+          <div slot="header">
+            Diferença
+          </div>
+          ${diferencaModificado}
+        </sl-card>
+
+        <sl-card class="card-header texto-alterado">
+          <div slot="header">
+          Texto atual
+          </div>
+          ${!contemRevisao ? diff.textoAtual : diff.textoAposRevisao}
+        </sl-card>
+
+      </sl-tab-panel>`
+        : '';
+    const tabPanelModificadoRevisao = diff.textoAntesRevisao !== undefined && diff.textoAposRevisao !== undefined
+        ? `<sl-tab-panel name="modificadoRevisao">
+
+          <sl-card class="card-header texto-alterado">
+            <div slot="header">
+              Texto antes da revisão
+            </div>
+            ${diff.textoAntesRevisao}
+          </sl-card>
+
+          <sl-card class="card-header texto-alterado">
+            <div slot="header">
+              Diferença
+            </div>
+            ${textoDiffAsHtml(diff.textoAntesRevisao, diff.textoAposRevisao, 'diffWords')}
+          </sl-card>
+
+          <sl-card class="card-header texto-alterado">
+            <div slot="header">
+              ${diff.textoAposRevisao === diff.textoOriginal ? 'Texto original' : 'Texto após revisão (atual)'}
+            </div>
+            ${diff.textoAposRevisao}
+          </sl-card>
+
+        </sl-tab-panel>`
+        : '';
     const content = document.createRange().createContextualFragment(`
   <style>
+
+    sl-dialog {
+      --width: 90vw;
+    }
+    sl-dialog::part(base) {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
     .texto-alterado ins {
       background-color: #c6ffc6;
     }
@@ -46504,10 +46857,51 @@ const exibirDiferencasDialog = (diff) => {
     .texto-alterado del {
       background-color: #ffc6c6;
     }
+
+    sl-tab-panel::part(base) {
+      padding-top: 1rem;
+      display: flex;
+      flex-direction: row;
+      gap: 1rem;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    sl-card {
+      box-shadow: var(--sl-shadow-x-large) !important;
+      width: 100%;
+    }
+
+    sl-card::part(base){
+      height: 100%;
+    }
+
+    sl-card::part(header) {
+      background-color: var(--sl-color-neutral-200);
+    }
+
+
+    @media (max-width: 768px) {
+      sl-tab-panel::part(base) {
+        flex-direction: column;
+      }
+      sl-dialog {
+        --width: 100vw !important;
+      }
+    }
+
   </style>
   <div class="texto-alterado">
-    ${textoDiff}
+    <sl-tab-group>
+      ${tabModificado}
+      ${tabModificadoRevisao}
+
+      ${tabPanelModificado}
+      ${tabPanelModificadoRevisao}
+    </sl-tab-group>
   </div>
+
+
   <sl-button slot="footer" variant="primary">Fechar</sl-button>
   `);
     const fechar = content.querySelectorAll('sl-button')[0];
@@ -46516,16 +46910,44 @@ const exibirDiferencasDialog = (diff) => {
     dialogElem.appendChild(content);
     dialogElem.show();
 };
+const trataOmissisDiff = (diff) => {
+    if (diff.textoAtual.includes('....')) {
+        diff.textoAtual = OMISSIS;
+    }
+    if (diff.textoAposRevisao && diff.textoAposRevisao.includes('....')) {
+        diff.textoAposRevisao = OMISSIS;
+    }
+    return diff;
+};
+
+const alertarInfo = (mensagem) => {
+    const idAlert = 'alertaInfo';
+    const currentAlert = document.getElementById(idAlert);
+    if (!currentAlert) {
+        const alert = Object.assign(document.createElement('sl-alert'), {
+            variant: 'danger',
+            closable: true,
+            duration: 4000,
+            innerHTML: `
+          <sl-icon name="exclamation-octagon" slot="icon" id="${idAlert}"></sl-icon>
+          ${mensagem}
+        `,
+        });
+        document.body.append(alert);
+        alert.toast();
+    }
+};
 
 let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     constructor() {
         super();
         this.lexmlEtaConfig = new LexmlEmendaConfig();
+        this.modo = ClassificacaoDocumento.EMENDA;
         this.eventosOnChange = [];
         this.inscricoes = [];
         this._idSwitchRevisao = 'chk-em-revisao';
         this._idBadgeQuantidadeRevisao = 'badge-marca-alteracao';
-        this.exibirBotoesParaTratarTodas = true;
+        this.exibirBotoesParaTratarTodas = false;
         this.onSelectionChange = (range, oldRange, source) => {
             if ((range === null || range === void 0 ? void 0 : range.length) === 0 && source === Quill.sources.USER) {
                 this.ajustarLinkParaNorma();
@@ -46565,9 +46987,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.listenerRejeitarRevisao = (event) => {
             event.stopImmediatePropagation();
             this.rejeitarRevisao(event.detail.elemento);
-        };
-        this.atualizaQuantidadeRevisao = () => {
-            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this._idBadgeQuantidadeRevisao));
         };
         /**
          * Método utilizado para navegar entre as marcas de revisão
@@ -46632,7 +47051,8 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.quill.redoEstruturaVazio = ((_b = state.elementoReducer.future) !== null && _b !== void 0 ? _b : []).length === 0;
         if (state.elementoReducer.ui) {
             if (state.elementoReducer.ui.message) {
-                this.alertar(state.elementoReducer.ui.message.descricao);
+                //this.alertar(state.elementoReducer.ui.message.descricao);
+                alertarInfo(state.elementoReducer.ui.message.descricao);
             }
             else if (((_c = state.elementoReducer.ui.events[0]) === null || _c === void 0 ? void 0 : _c.stateType) !== 'AtualizacaoAlertas') {
                 this.processarStateEvents(state.elementoReducer.ui.events);
@@ -46654,7 +47074,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         #lx-eta-editor {
           overflow: var(--lx-eta-editor-overflow);
           display: block;
-          height: calc(100% - 12px);
+          height: var(--heightEmenda);
         }
         .sl-toast-stack sl-alert::part(base) {
           background-color: var(--sl-color-danger-100);
@@ -46699,14 +47119,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
           class="revisao-container"
           .nomeSwitch="${this._idSwitchRevisao}"
           .nomeBadgeQuantidadeRevisao="${this._idBadgeQuantidadeRevisao}"
+          modo="${this.modo}"
           >
           </lexml-switch-revisao>
 
-          <sl-button variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('abaixo')}>
+          <sl-button class="button-navegacao-marca" variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('abaixo')}>
             <sl-icon-button name="arrow-down"></sl-icon-button>
           </sl-button>
 
-          <sl-button variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('acima')}>
+          <sl-button class="button-navegacao-marca" variant="default" size="small" circle @click=${() => this.navegarEntreMarcasRevisao('acima')}>
             <sl-icon-button name="arrow-up"></sl-icon-button>
           </sl-button>
 
@@ -46714,11 +47135,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
 
           <input type="button" @click=${this.artigoOndeCouber} class="${'ql-hidden'} btn--artigoOndeCouber" value="Propor artigo onde couber" title="Artigo onde couber"></input>
           <div class="mobile-buttons">
-            <button class="mobile-button" title="Comando" @click=${this.showComandoEmendaModal}>
+            <button class="mobile-button btn-comando" title="Comando" @click=${this.showComandoEmendaModal}>
               <sl-icon name="code"></sl-icon>
               <span>Comando</span>
             </button>
-            <button class="mobile-button" title="Dicas" @click=${this.showAjudaModal}>
+            <button class="mobile-button btn-dicas" title="Dicas" @click=${this.showAjudaModal}>
               <sl-icon name="lightbulb"></sl-icon>
               <span>Dicas</span>
             </button>
@@ -47096,9 +47517,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             this.disabledParagrafoElementoRemovido(event);
             this.quill.limparHistory();
         });
-        //this.indicadorTextoModificado(events);
         this.indicadorMarcaRevisao(events);
-        this.atualizaQuantidadeRevisao();
+        this.indicadorTextoModificado(events);
+        //this.atualizaQuantidadeRevisao();
         this.atualizarStatusBotoesRevisao();
         // Os eventos que estão no array abaixo devem emitir um custom event "ontextchange"
         const eventosQueDevemEmitirTextChange = [
@@ -47114,9 +47535,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             // TODO: Implementar lógica do atributo eventosFiltrados, sem repetir os itens
             this.eventosOnChange.push(...eventosFiltrados);
             this.agendarEmissaoEventoOnChange('stateEvents', eventosFiltrados);
-        }
-        if (events === null || events === void 0 ? void 0 : events.some(ev => [StateType.RevisaoAtivada, StateType.RevisaoDesativada].includes(ev.stateType))) {
-            this.emitiEventoOnRevisao(rootStore.getState().elementoReducer.emRevisao);
         }
     }
     processaRevisoesAceitas(events, event) {
@@ -47179,6 +47597,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             elemento.conteudo.texto = (_c = linha.blotConteudo.html) !== null && _c !== void 0 ? _c : '';
             const elementoLinhaAnterior = (_d = this.quill.linhaAtual.prev) === null || _d === void 0 ? void 0 : _d.elemento;
             rootStore.dispatch(itemMenu.execute(elemento, elementoLinhaAnterior));
+        }
+        else if (itemMenu === exibirDiferencaAction) {
+            this.exibirDiferencas(this.quill.linhaAtual.elemento);
         }
         else {
             const linha = this.quill.linhaAtual;
@@ -47445,26 +47866,76 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.inscricoes.push(this.quill.clipboard.onChange.subscribe(this.agendarEmissaoEventoOnChange.bind(this)));
         this.inscricoes.push(onChangeColarDialog.subscribe(this.agendarEmissaoEventoOnChange.bind(this)));
         this.inscricoes.push(this.quill.clipboard.onPasteTextoArticulado.subscribe(this.onPasteTextoArticulado.bind(this)));
+        editorHtml.addEventListener('rotulo', (event) => {
+            event.stopImmediatePropagation();
+            this.renumerarElemento();
+        });
+        editorHtml.addEventListener('nota-alteracao', (event) => {
+            event.stopImmediatePropagation();
+            this.editarNotaAlteracao(event.detail.elemento);
+        });
+        editorHtml.addEventListener('toggle-existencia', (event) => {
+            event.stopImmediatePropagation();
+            this.toggleExistenciaElemento(event.detail.elemento);
+        });
+        editorHtml.addEventListener('mensagem', (event) => {
+            var _a, _b;
+            event.stopImmediatePropagation();
+            const linha = this.quill.linhaAtual;
+            if (linha) {
+                if (AutoFix.RENUMERAR_DISPOSITIVO === ((_b = (_a = event.detail) === null || _a === void 0 ? void 0 : _a.mensagem) === null || _b === void 0 ? void 0 : _b.descricao)) {
+                    this.renumerarElemento();
+                }
+                else {
+                    const blotConteudo = linha.blotConteudo;
+                    const elemento = this.criarElemento(linha.uuid, linha.uuid2, linha.lexmlId, linha.tipo, blotConteudo.html, linha.numero, linha.hierarquia);
+                    rootStore.dispatch(autofixAction.execute(elemento, event.detail.mensagem));
+                }
+            }
+        });
+        editorHtml.addEventListener('aceitar-revisao', (event) => {
+            event.stopImmediatePropagation();
+            this.aceitarRevisao(event.detail.elemento);
+        });
+        editorHtml.addEventListener('rejeitar-revisao', (event) => {
+            event.stopImmediatePropagation();
+            this.rejeitarRevisao(event.detail.elemento);
+        });
+        editorHtml.addEventListener('exibir-diferencas', (event) => {
+            event.stopImmediatePropagation();
+            this.exibirDiferencas(event.detail.elemento);
+        });
         this.configListenersEta();
     }
     exibirDiferencas(elemento) {
-        const revisao = elemento.revisao;
-        const d = buscaDispositivoById(rootStore.getState().elementoReducer.articulacao, elemento.lexmlId);
+        var _a;
         const diff = new TextoDiff();
-        diff.textoOriginal = d.situacao.dispositivoOriginal.conteudo.texto;
         diff.textoAtual = elemento.conteudo.texto;
         diff.quill = this.quill;
+        const revisao = elemento.revisao;
+        const d = buscaDispositivoById(rootStore.getState().elementoReducer.articulacao, elemento.lexmlId);
         if (revisao) {
             diff.textoAntesRevisao = revisao.elementoAntesRevisao.conteudo.texto;
+            if (d && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+                diff.textoOriginal = d.situacao.dispositivoOriginal.conteudo.texto;
+            }
+            else {
+                diff.textoOriginal = elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL ? diff.textoAtual : diff.textoAntesRevisao;
+                diff.adicionado = true;
+            }
             diff.textoAposRevisao = revisao.elementoAposRevisao.conteudo.texto;
             exibirDiferencasDialog(diff);
         }
         else {
+            if (d && ((_a = d.situacao.dispositivoOriginal) === null || _a === void 0 ? void 0 : _a.conteudo) !== undefined) {
+                diff.textoOriginal = d.situacao.dispositivoOriginal.conteudo.texto;
+            }
             exibirDiferencasDialog(diff);
         }
     }
     aceitarRevisao(elemento) {
         rootStore.dispatch(aceitarRevisaoAction.execute(elemento, undefined));
+        this.alertaGlobalRevisao();
     }
     rejeitarRevisao(elemento) {
         rootStore.dispatch(rejeitarRevisaoAction.execute(elemento, undefined));
@@ -47523,14 +47994,23 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             rootStore.dispatch(removerAlerta('alerta-global-correlacao'));
         }
     }
-    emitiEventoOnRevisao(emRevisao) {
-        this.dispatchEvent(new CustomEvent('onrevisao', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                emRevisao,
-            },
-        }));
+    alertaGlobalRevisao() {
+        var _a, _b;
+        const id = 'alerta-global-revisao';
+        const revisoesElementos = document.getElementsByClassName('blot__revisao');
+        if (revisoesElementos.length > 0) {
+            const alerta = {
+                id: id,
+                tipo: 'info',
+                mensagem: 'Este documento contém marcas de revisão e não deve ser protocolado até que estas sejam removidas.',
+                podeFechar: true,
+                exibirComandoEmenda: true,
+            };
+            rootStore.dispatch(adicionarAlerta$1(alerta));
+        }
+        else if ((_b = (_a = rootStore.getState().elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.alertas) === null || _b === void 0 ? void 0 : _b.some(alerta => alerta.id === id)) {
+            rootStore.dispatch(removerAlerta(id));
+        }
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     emitirEventoOnChange(origemEvento, statesType = []) {
@@ -47547,6 +48027,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             this.alertaGlobalVerificaRenumeracao();
         }
         this.alertaGlobalVerificaCorrelacao();
+        this.alertaGlobalRevisao();
         this.eventosOnChange = [];
         this.timerOnChange = null;
     }
@@ -47703,57 +48184,70 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         if (botaoRevisao) {
             botaoRevisao.classList.toggle('revisao-ativa', rootStore.getState().elementoReducer.emRevisao);
         }
-        this.dispatchEvent(new CustomEvent('onRevisao', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                emRevisao: rootStore.getState().elementoReducer.emRevisao,
-            },
-        }));
     }
-    // private indicadorTextoModificado(events: StateEvent[]): void {
-    //   const ignorarStateTypes: StateType[] = [
-    //     StateType.DocumentoCarregado,
-    //     StateType.ElementoIncluido,
-    //     StateType.ElementoValidado,
-    //     StateType.AtualizaUsuario,
-    //     StateType.AtualizacaoAlertas,
-    //   ];
-    //   const mapElementos: Map<number, Elemento> = new Map();
-    //   events
-    //     .filter(ev => !ignorarStateTypes.includes(ev.stateType))
-    //     .map(ev => ev.elementos || [])
-    //     .flat()
-    //     .forEach(e => mapElementos.set(e.uuid!, e));
-    //   const elementos: Elemento[] = [...mapElementos.values()];
-    //   const uuidsElementosSemModificacao = elementos.filter(e => e.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_MODIFICADO).map(e => e.uuid!);
-    //   const uuidsElementosComModificacao = elementos
-    //     .filter(e => e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && e.revisao))
-    //     .map(e => e.uuid!);
-    //   uuidsElementosSemModificacao.forEach(uuid => {
-    //     const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
-    //     if (containerOpcoes) {
-    //       const linha = this.quill.getLinha(uuid);
-    //       linha?.containerOpcoes?.remove();
-    //       containerOpcoes.remove();
-    //     }
-    //   });
-    //   uuidsElementosComModificacao.forEach(uuid => {
-    //     const linha = this.quill.getLinha(uuid);
-    //     if (linha) {
-    //       if (linha.containerOpcoes?.blotBotaoExibirDiferencas) {
-    //         linha.containerOpcoes.atualizarElemento(mapElementos.get(uuid)!);
-    //       } else {
-    //         const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
-    //         if (containerOpcoes) {
-    //           containerOpcoes.remove();
-    //         }
-    //         const containerTr = linha.children.head;
-    //         containerTr.insertBefore(EtaQuillUtil.criarContainerOpcoes(mapElementos.get(uuid)!), linha.containerDireito.prev);
-    //       }
-    //     }
-    //   });
-    // }
+    indicadorTextoModificado(events) {
+        const ignorarStateTypes = [
+            StateType.DocumentoCarregado,
+            StateType.ElementoIncluido,
+            StateType.ElementoValidado,
+            StateType.AtualizaUsuario,
+            StateType.AtualizacaoAlertas,
+        ];
+        const mapElementos = new Map();
+        events
+            .filter(ev => !ignorarStateTypes.includes(ev.stateType))
+            .map(ev => ev.elementos || [])
+            .flat()
+            .forEach(e => mapElementos.set(e.uuid, e));
+        const elementos = [...mapElementos.values()];
+        const uuidsElementosSemModificacao = elementos.filter(e => e.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_MODIFICADO).map(e => e.uuid);
+        const uuidsElementosComModificacao = elementos
+            .filter(e => {
+            var _a, _b, _c;
+            return e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO ||
+                (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && e.revisao && e.revisao.descricao === 'Texto do dispositivo foi alterado') ||
+                (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL &&
+                    e.revisao &&
+                    ((_b = (_a = e.revisao.elementoAntesRevisao) === null || _a === void 0 ? void 0 : _a.conteudo) === null || _b === void 0 ? void 0 : _b.texto) !== ((_c = e.conteudo) === null || _c === void 0 ? void 0 : _c.texto));
+        }
+        // || (e.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL && e.revisao
+        //   && (e.revisao.descricao === 'Dispositivo restaurado' || e.revisao.descricao === 'Texto do dispositivo foi alterado'))
+        )
+            .map(e => e.uuid);
+        uuidsElementosSemModificacao.forEach(uuid => {
+            var _a;
+            const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
+            if (containerOpcoes) {
+                const linha = this.quill.getLinha(uuid);
+                (_a = linha === null || linha === void 0 ? void 0 : linha.containerOpcoes) === null || _a === void 0 ? void 0 : _a.remove();
+                containerOpcoes.remove();
+            }
+        });
+        uuidsElementosComModificacao.forEach(uuid => {
+            var _a;
+            const linha = this.quill.getLinha(uuid);
+            if (linha) {
+                this.adicionaRemoveOpcaoDiffMenu(linha.elemento, uuidsElementosComModificacao);
+                if ((_a = linha.containerOpcoes) === null || _a === void 0 ? void 0 : _a.blotBotaoExibirDiferencas) {
+                    linha.containerOpcoes.atualizarElemento(mapElementos.get(uuid));
+                }
+                else {
+                    const containerOpcoes = document.getElementById(EtaContainerOpcoes.className + uuid);
+                    if (containerOpcoes) {
+                        containerOpcoes.remove();
+                    }
+                    const containerTr = linha.children.head;
+                    containerTr.insertBefore(EtaQuillUtil.criarContainerOpcoes(mapElementos.get(uuid)), linha.containerDireito.prev);
+                }
+            }
+        });
+    }
+    adicionaRemoveOpcaoDiffMenu(elemento, uuidsElementosComModificacao) {
+        var _a;
+        if (uuidsElementosComModificacao.includes(elemento.uuid)) {
+            (_a = elemento.acoesPossiveis) === null || _a === void 0 ? void 0 : _a.push(exibirDiferencaAction);
+        }
+    }
     indicadorMarcaRevisao(events) {
         const ignorarStateTypes = [
             StateType.DocumentoCarregado,
@@ -47795,6 +48289,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             }
         });
     }
+    // private atualizaQuantidadeRevisao = (): void => {
+    //   atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this._idBadgeQuantidadeRevisao) as any);
+    // };
     atualizarStatusBotoesRevisao() {
         const numRevisoes = getQuantidadeRevisoes(rootStore.getState().elementoReducer.revisoes);
         this.btnAceitarTodasRevisoes && (this.btnAceitarTodasRevisoes.disabled = numRevisoes === 0);
@@ -48007,22 +48504,22 @@ const atualizaRevisaoJustificativa = (state, removeAllRevisoesJustificativa = fa
         }
     }
     else {
-        remove(state);
+        remove$1(state);
     }
     return state;
 };
-const remove = (state) => {
+const remove$1 = (state) => {
     var _a;
     state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoJustificativaEnum.JustificativaAlterada);
 };
 const criaRevisaoJustificativa = (state) => {
     const result = [];
-    if (!jaExisteRevisaoUsuarioAtual(state)) {
+    if (!jaExisteRevisaoUsuarioAtual$1(state)) {
         result.push(new RevisaoJustificativa(state.usuario, formatDateTime(new Date()), RevisaoJustificativaEnum.JustificativaAlterada));
     }
     return result;
 };
-const jaExisteRevisaoUsuarioAtual = (state) => {
+const jaExisteRevisaoUsuarioAtual$1 = (state) => {
     var _a;
     const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoJustificativaEnum.JustificativaAlterada; });
     if (revisoesUsuarioAtual.length > 0) {
@@ -48033,38 +48530,2599 @@ const jaExisteRevisaoUsuarioAtual = (state) => {
     return false;
 };
 
+async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
+    const dialogElem = document.createElement('sl-dialog');
+    editorTextoRico.appendChild(dialogElem);
+    dialogElem.label = 'Enviar Anexo';
+    dialogElem.addEventListener('sl-request-close', (event) => {
+        if (event.detail.source === 'overlay') {
+            event.preventDefault();
+        }
+    });
+    const content = document.createRange().createContextualFragment(`
+  <style>
+    .anexo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-bottom: 1em;
+    }
+
+    sl-icon[name="paperclip"] {
+      width: 1.5em;
+      height: 1.5em;
+    }
+
+    sl-button sl-icon {
+      font-size: 1.5em;
+      pointer-events: none;
+      vertical-align: -4px;
+    }
+
+    #input-upload::part(form-control) {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1em;
+    }
+  </style>
+  <div id="wp-upload">
+    <label for="input-upload">Selecione o arquivo a ser anexado à emenda</label>
+    <br/>
+    <br/>
+    <input id="input-upload" type="file" accept="application/pdf" size="small"></input>
+  </div>
+  <br/>
+  <div id="form" class="input-validation-required"></div>
+  <br/>
+  <sl-button class="controls" slot="footer" variant="primary">Confirmar</sl-button>
+  <sl-button class="controls" slot="footer" variant="default">Cancelar</sl-button>
+  `);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const removerAnexo = (e) => {
+        const nomeArquivo = e.target.getAttribute('nomeArquivo');
+        anexos = anexos.filter(a => a.nomeArquivo !== nomeArquivo);
+        conteudoDinamico();
+    };
+    // cria função para exibir anexo em nova aba
+    const exibirAnexo = (e) => {
+        var _a, _b;
+        const nomeArquivo = e.target.getAttribute('nomeArquivo');
+        const anexo = anexos.find(a => a.nomeArquivo === nomeArquivo);
+        const win = window.open();
+        if ((_a = anexo === null || anexo === void 0 ? void 0 : anexo.nomeArquivo) === null || _a === void 0 ? void 0 : _a.match(/\.(pdf)$/)) {
+            win === null || win === void 0 ? void 0 : win.document.write(`<embed src="${anexo === null || anexo === void 0 ? void 0 : anexo.base64}" width="100%" height="100%" type="application/pdf"></embed>`);
+            return;
+        }
+        if ((_b = anexo === null || anexo === void 0 ? void 0 : anexo.nomeArquivo) === null || _b === void 0 ? void 0 : _b.match(/\.(jpeg|jpg|gif|png|svg)$/)) {
+            win === null || win === void 0 ? void 0 : win.document.write(`<img src="${anexo === null || anexo === void 0 ? void 0 : anexo.base64}" style="width:100%; height:auto;">`);
+            return;
+        }
+        win === null || win === void 0 ? void 0 : win.document.write(`<a href="${anexo === null || anexo === void 0 ? void 0 : anexo.base64}" download="${anexo === null || anexo === void 0 ? void 0 : anexo.nomeArquivo}">Download do arquivo anexo</a>`);
+    };
+    const conteudoDinamico = () => {
+        let htmlConteudo = '';
+        wpUpload.hidden = anexos.length ? true : false;
+        anexos.forEach(a => (htmlConteudo += `<span class="anexo-item">
+                            <sl-icon name="paperclip"></sl-icon>
+                            <span>${a.nomeArquivo}</span>
+                            <!--
+                            <sl-button class="btn-preview-anexo" size="small" title="Visualizar o anexo em uma nova janela" nomeArquivo="${a.nomeArquivo}">
+                              <sl-icon name="eye"></sl-icon>
+                            </sl-button>
+                            -->
+                            <sl-button class="btn-remove-anexo" size="small" title="Remover anexo" nomeArquivo="${a.nomeArquivo}">
+                              <sl-icon name="x"></sl-icon>
+                            </sl-button>
+                          </span>`));
+        form.innerHTML = htmlConteudo;
+        const btns = form === null || form === void 0 ? void 0 : form.querySelectorAll('.btn-remove-anexo');
+        (btns || []).forEach(btn => (btn.onclick = removerAnexo));
+        const btns_preview = form === null || form === void 0 ? void 0 : form.querySelectorAll('.btn-preview-anexo');
+        (btns_preview || []).forEach(btn_preview => (btn_preview.onclick = exibirAnexo));
+    };
+    const wpUpload = content.querySelector('#wp-upload');
+    const inputUpload = content.querySelector('#input-upload');
+    const form = content.querySelector('#form');
+    const botoes = content.querySelectorAll('.controls');
+    const confirmar = botoes[0];
+    const fechar = botoes[1];
+    inputUpload.oninput = () => {
+        addAnexo();
+    };
+    confirmar.onclick = () => {
+        atualizaAnexo(anexos);
+        agendarEmissaoEventoOnChange(dialogElem);
+        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
+        anexos = [];
+    };
+    fechar.onclick = () => {
+        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.hide();
+        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.remove();
+        anexos = [];
+    };
+    const agendarEmissaoEventoOnChange = (elemento) => {
+        elemento.dispatchEvent(new CustomEvent('onchange', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                origemEvento: 'anexo',
+            },
+        }));
+    };
+    const addAnexo = async () => {
+        if (inputUpload === null || inputUpload === void 0 ? void 0 : inputUpload.files) {
+            const file = inputUpload.files[0];
+            const anexo = await convertAnexo(file);
+            anexos.push(anexo);
+            inputUpload.files = null;
+            conteudoDinamico();
+        }
+    };
+    const convertAnexo = (file) => {
+        return new Promise((resolve, reject) => {
+            confirmar.disabled = true;
+            fechar.disabled = true;
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(file);
+            fileReader.onload = () => {
+                var _a;
+                confirmar.disabled = false;
+                fechar.disabled = false;
+                resolve({ nomeArquivo: file.name, base64: (((_a = fileReader.result) === null || _a === void 0 ? void 0 : _a.toString()) || '').replace(/.*;base64,/, '') });
+            };
+            fileReader.onerror = error => reject(error);
+        });
+    };
+    conteudoDinamico();
+    await dialogElem.appendChild(content);
+    await dialogElem.show();
+}
+
+const atualizaRevisaoTextoLivre = (state, removeAllRevisoesTextoLivre = false) => {
+    if (!state.emRevisao) {
+        return state;
+    }
+    if (!removeAllRevisoesTextoLivre) {
+        let revisoes = [];
+        revisoes = criaRevisaoTextoLivre(state);
+        if (revisoes.length > 0) {
+            state.revisoes.push(...revisoes);
+        }
+    }
+    else {
+        remove(state);
+    }
+    return state;
+};
+const remove = (state) => {
+    var _a;
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoTextoLivreEnum.TextoLivreAlterado);
+};
+const criaRevisaoTextoLivre = (state) => {
+    const result = [];
+    if (!jaExisteRevisaoUsuarioAtual(state)) {
+        result.push(new RevisaoTextoLivre(state.usuario, formatDateTime(new Date()), RevisaoTextoLivreEnum.TextoLivreAlterado));
+    }
+    return result;
+};
+const jaExisteRevisaoUsuarioAtual = (state) => {
+    var _a;
+    const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado; });
+    if (revisoesUsuarioAtual.length > 0) {
+        const revisaoDataHoraModificada = revisoesUsuarioAtual[0];
+        revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
+        return true;
+    }
+    return false;
+};
+
+const editorTextoRicoCss = $ `
+  <style>
+    .ql-snow.ql-toolbar .ql-margin-bottom {
+      background: url('data:image/svg+xml;utf8, <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path class="ql-fill" d="M3.1 13.1Q2.9 13.1 2.75 13.25 2.6 13.4 2.6 13.55 2.6 13.75 2.75 13.9 2.9 14.05 3.1 14.05L12.9 14.05Q13.1 14.05 13.25 13.9 13.4 13.75 13.4 13.55 13.4 13.4 13.25 13.25 13.1 13.1 12.9 13.1L3.1 13.1M13.25 2.2Q13.1 2.05 12.9 2.05L3.1 2.05Q2.9 2.05 2.75 2.2 2.6 2.3 2.6 2.5 2.6 2.7 2.75 2.85 2.9 2.95 3.1 2.95L12.9 2.95Q13.1 2.95 13.25 2.85 13.4 2.7 13.4 2.5 13.4 2.3 13.25 2.2M10.3 5.9Q10.3 5.7 10.2 5.55L8.35 3.7Q8.2 3.55 8 3.55 7.8 3.55 7.7 3.7L5.85 5.55Q5.7 5.7 5.7 5.9 5.7 6.05 5.85 6.2 6 6.35 6.15 6.35 6.35 6.35 6.5 6.2L7.55 5.15 7.55 10.9 6.5 9.85Q6.35 9.75 6.15 9.75 6 9.75 5.85 9.85 5.7 10 5.7 10.2 5.7 10.4 5.85 10.5L7.7 12.35Q7.8 12.5 8 12.5 8.2 12.5 8.35 12.35L10.2 10.5Q10.3 10.4 10.3 10.2 10.3 10 10.2 9.85 10.05 9.75 9.85 9.75 9.65 9.75 9.55 9.85L8.5 10.9 8.5 5.15 9.55 6.2Q9.65 6.35 9.85 6.35 10.05 6.35 10.2 6.2 10.3 6.05 10.3 5.9Z"></path></svg>')
+          no-repeat center,
+        white;
+      background-size: 16px;
+    }
+    .ql-snow.ql-toolbar .ql-text-indent {
+      background: url('data:image/svg+xml;utf8, <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path class="ql-fill" d="M 1.65,2.3 0.9,3.05 2.65,4.95 0.9,6.9 1.65,7.65 4.15,4.95 1.65,2.3 M 2.5,12.45 v 1.1 h 11.25 v -1.1 H 2.5 m 11.25,-2.1 V 9.25 H 2.5 v 1.1 h 11.25 m 0,-4.3 H 6.25 V 7.1 h 7.5 V 6.05 m 0,-3.25 h -7.5 v 1.1 h 7.5 z"></path></svg>')
+          no-repeat center,
+        white;
+      background-size: 16px;
+    }
+    .editor-texto-rico {
+      height: 375px;
+      font-size: 18px !important;
+    }
+    .editor-texto-rico p,
+    .editor-texto-rico ol,
+    .editor-texto-rico ul {
+      margin-bottom: 0.7rem;
+    }
+    .editor-texto-rico p:not(.ql-align-rigth, .ql-align-center) {
+      text-indent: 3rem;
+    }
+    .ql-toolbar.ql-snow .ql-formats {
+      margin-right: 8px;
+    }
+    .editor-texto-rico .estilo-ementa {
+      text-indent: 0 !important;
+      text-align: justify;
+      margin-left: 40%;
+    }
+    .editor-texto-rico .estilo-norma-alterada {
+      margin-left: 3rem;
+    }
+
+    #revisoes-justificativa-icon sl-icon,
+    #revisoes-texto-livre-icon sl-icon,
+    #aceita-revisao-justificativa {
+      margin-right: 0.1rem;
+    }
+
+    .revisoes-justificativa-icon__ativo {
+      color: white;
+      background-color: var(--sl-color-warning-600) !important;
+      border-color: white !important;
+    }
+    .revisoes-texto-livre-icon__ativo {
+      color: white;
+      background-color: var(--sl-color-warning-600) !important;
+      border-color: white !important;
+    }
+    .lista-revisoes-justificativa {
+      padding-left: 1rem;
+      padding-right: 0.5rem;
+    }
+    #chk-em-revisao-justificativa {
+      border: 1px solid #ccc !important;
+      padding: 5px 10px !important;
+      border-radius: 20px !important;
+      margin-left: auto;
+      margin-right: 5px;
+      font-weight: bold;
+      background-color: #eee;
+    }
+    #chk-em-revisao-justificativa[checked] {
+      background-color: var(--sl-color-blue-100);
+    }
+
+    #chk-em-revisao-texto-livre {
+      border: 1px solid #ccc !important;
+      padding: 5px 10px !important;
+      border-radius: 20px !important;
+      margin-left: auto;
+      margin-right: 5px;
+      font-weight: bold;
+      background-color: #eee;
+    }
+    #chk-em-revisao-texto-livre[checked] {
+      background-color: var(--sl-color-blue-100);
+    }
+    #toolbar {
+      padding: 1.5px 0 1.5px 8px;
+    }
+
+    #badge-marca-alteracao-justificativa::part(base) {
+      min-width: 1.4rem;
+    }
+
+    #badge-marca-alteracao-texto-livre::part(base) {
+      min-width: 1.4rem;
+    }
+    revisao-container {
+      margin-left: auto;
+    }
+
+    .ql-toolbar .panel-revisao {
+      display: flex;
+      flex-grow: 1;
+    }
+
+    .ql-picker.ql-estilo .ql-picker-label {
+      width: 160px;
+    }
+
+    .ql-picker.ql-estilo .ql-picker-label::before,
+    .ql-picker.ql-estilo .ql-picker-item::before {
+      content: 'Texto normal';
+    }
+
+    .ql-picker.ql-estilo .ql-picker-label[data-value='ementa']:before,
+    .ql-picker.ql-estilo .ql-picker-item[data-value='ementa']:before {
+      content: 'Ementa';
+    }
+
+    .ql-picker.ql-estilo .ql-picker-label[data-value='norma-alterada']:before,
+    .ql-picker.ql-estilo .ql-picker-item[data-value='norma-alterada']:before {
+      content: 'Norma alterada';
+    }
+
+    .ql-estilo span.ql-picker-label {
+      border-color: #ccc !important;
+    }
+
+    .ql-picker-item[data-value='insert']::after {
+      content: 'Inserir tabela';
+    }
+
+    .ql-picker-item[data-value='append-col']::after {
+      content: 'Inserir coluna';
+    }
+
+    .ql-picker-item[data-value='append-col-before']::after {
+      content: 'Inserir coluna à esquerda';
+    }
+
+    .ql-picker-item[data-value='append-col-after']::after {
+      content: 'Inserir coluna à direita';
+    }
+
+    .ql-picker-item[data-value='remove-col']::after {
+      content: 'Remover coluna';
+    }
+
+    .ql-picker-item[data-value='append-row']::after {
+      content: 'Inserir linha';
+    }
+
+    .ql-picker-item[data-value='append-row-above']::after {
+      content: 'Inserir linha acima';
+    }
+
+    .ql-picker-item[data-value='append-row-below']::after {
+      content: 'Inserir linha abaixo';
+    }
+
+    .ql-picker-item[data-value='remove-row']::after {
+      content: 'Remover linha';
+    }
+
+    .ql-picker-item[data-value='split-cell']::after {
+      content: 'Dividir célula';
+    }
+
+    .ql-picker-item[data-value='merge-selection']::after {
+      content: 'Mesclar células';
+    }
+
+    .ql-picker-item[data-value='remove-cell']::after {
+      content: 'Remover célula';
+    }
+
+    .ql-picker-item[data-value='remove-selection']::after {
+      content: 'Remover seleção';
+    }
+
+    .ql-picker-item[data-value='undo']::after {
+      content: 'Desfazer';
+    }
+
+    .ql-picker-item[data-value='redo']::after {
+      content: 'Refazer';
+    }
+
+    .ql-picker-item[data-value='remove-table']:before {
+      content: 'Remover tabela';
+    }
+
+    .ql-editor td > p {
+      text-indent: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    .table-selected {
+      border: 1px solid #87ceeb; /* Define a borda sólida em tom azul claro */
+      box-shadow: 0 0 10px rgba(135, 206, 235, 0.5); /* Adiciona sombra com tom azul claro */
+    }
+
+    @media (max-width: 768px) {
+      .mobile-buttons {
+        display: inline-block !important;
+      }
+      #chk-em-revisao-justificativa span {
+        display: none;
+      }
+    }
+  </style>
+`;
+
+const Parchment$9 = Quill.import('parchment');
+const config$2 = {
+    scope: Parchment$9.Scope.BLOCK,
+    whitelist: ['ementa', 'norma-alterada'],
+};
+const EstiloTextoClass = new Parchment$9.Attributor.Class('estilo', 'estilo', config$2);
+
+const quillTableCss = $ `<style>
+  .ql-editor table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ql-editor table td {
+    border: 1px solid black;
+    padding: 2px 5px;
+    height: 25px;
+    vertical-align: top;
+    white-space: pre-wrap; /* https://github.com/quilljs/quill/issues/1760 */
+  }
+
+  .ql-editor table td[rowspan='2'] {
+    height: 50px;
+  }
+
+  .ql-editor table td[rowspan='3'] {
+    height: 75px;
+  }
+
+  .ql-editor table td[rowspan='4'] {
+    height: 100px;
+  }
+
+  .ql-editor table td[rowspan='5'] {
+    height: 125px;
+  }
+
+  .ql-editor table td[rowspan='6'] {
+    height: 150px;
+  }
+
+  .ql-editor table td[rowspan='7'] {
+    height: 175px;
+  }
+
+  .ql-editor table td[rowspan='8'] {
+    height: 200px;
+  }
+
+  .ql-editor table td[rowspan='9'] {
+    height: 225px;
+  }
+
+  .ql-editor table td.ql-cell-selected {
+    background-color: #cce0f8;
+  }
+
+  .ql-editor table td[merge_id] {
+    display: none;
+  }
+
+  .quill-better-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .ql-picker.ql-table {
+    width: auto !important;
+    margin-right: 0;
+  }
+
+  .ql-picker.ql-table .ql-picker-label svg {
+    display: none;
+  }
+
+  .ql-picker.ql-table .ql-picker-label::before {
+    display: block;
+    font-size: 14px;
+  }
+
+  .ql-table:nth-of-type(1) .ql-picker-label {
+    background: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-table" viewBox="0 0 16 16"><path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm15 2h-4v3h4V4zm0 4h-4v3h4V8zm0 4h-4v3h3a1 1 0 0 0 1-1v-2zm-5 3v-3H6v3h4zm-5 0v-3H1v2a1 1 0 0 0 1 1h3zm-4-4h4V8H1v3zm0-4h4V4H1v3zm5-3v3h4V4H6zm4 4H6v3h4V8z"/></svg>')
+        no-repeat center,
+      white;
+    background-size: 16px;
+  }
+
+  .ql-picker.ql-table .ql-picker-label::before {
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    padding-top: 2px;
+    line-height: 1em;
+  }
+
+  .ql-table:nth-of-type(1),
+  .ql-contain {
+    width: 90px;
+    margin-right: 0;
+  }
+
+  .ql-picker.ql-table:nth-of-type(1) {
+    font-size: 11px;
+    font-weight: normal;
+  }
+
+  .ql-picker.ql-table .ql-picker-label {
+    padding: 2px 3px;
+    width: 23px;
+  }
+
+  .ql-picker.ql-table:nth-of-type(1) .ql-picker-options {
+    width: 180px;
+  }
+
+  .ql-picker.ql-table:nth-of-type(1) .ql-picker-item {
+    display: block;
+    float: left;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    padding: 0px;
+    margin: 1px;
+  }
+
+  .ql-toolbar .ql-picker.ql-table .ql-picker-item {
+    display: none;
+  }
+
+  .ql-toolbar .ql-picker.ql-table .ql-picker-item.enabled {
+    display: block;
+  }
+
+  .ql-picker.ql-table:nth-of-type(2) {
+    display: flex;
+    width: 145px;
+  }
+
+  .ql-table:nth-of-type(2) .ql-picker-label {
+    background: url('data:image/svg+xml;utf8, <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-border" viewBox="0 0 16 16"><path d="M0 0h.969v.5H1v.469H.969V1H.5V.969H0V0zm2.844 1h-.938V0h.938v1zm1.875 0H3.78V0h.938v1zm1.875 0h-.938V0h.938v1zm.937 0V.969H7.5V.5h.031V0h.938v.5H8.5v.469h-.031V1H7.53zm2.813 0h-.938V0h.938v1zm1.875 0h-.938V0h.938v1zm1.875 0h-.938V0h.938v1zM15.5 1h-.469V.969H15V.5h.031V0H16v.969h-.5V1zM1 1.906v.938H0v-.938h1zm6.5.938v-.938h1v.938h-1zm7.5 0v-.938h1v.938h-1zM1 3.78v.938H0V3.78h1zm6.5.938V3.78h1v.938h-1zm7.5 0V3.78h1v.938h-1zM1 5.656v.938H0v-.938h1zm6.5.938v-.938h1v.938h-1zm7.5 0v-.938h1v.938h-1zM.969 8.5H.5v-.031H0V7.53h.5V7.5h.469v.031H1v.938H.969V8.5zm1.875 0h-.938v-1h.938v1zm1.875 0H3.78v-1h.938v1zm1.875 0h-.938v-1h.938v1zm1.875-.031V8.5H7.53v-.031H7.5V7.53h.031V7.5h.938v.031H8.5v.938h-.031zm1.875.031h-.938v-1h.938v1zm1.875 0h-.938v-1h.938v1zm1.875 0h-.938v-1h.938v1zm1.406 0h-.469v-.031H15V7.53h.031V7.5h.469v.031h.5v.938h-.5V8.5zM0 10.344v-.938h1v.938H0zm7.5 0v-.938h1v.938h-1zm8.5-.938v.938h-1v-.938h1zM0 12.22v-.938h1v.938H0zm7.5 0v-.938h1v.938h-1zm8.5-.938v.938h-1v-.938h1zM0 14.094v-.938h1v.938H0zm7.5 0v-.938h1v.938h-1zm8.5-.938v.938h-1v-.938h1zM.969 16H0v-.969h.5V15h.469v.031H1v.469H.969v.5zm1.875 0h-.938v-1h.938v1zm1.875 0H3.78v-1h.938v1zm1.875 0h-.938v-1h.938v1zm.937 0v-.5H7.5v-.469h.031V15h.938v.031H8.5v.469h-.031v.5H7.53zm2.813 0h-.938v-1h.938v1zm1.875 0h-.938v-1h.938v1zm1.875 0h-.938v-1h.938v1zm.937 0v-.5H15v-.469h.031V15h.469v.031h.5V16h-.969z"/></svg>')
+        no-repeat center,
+      white;
+    background-size: 16px;
+  }
+  .ql-picker.ql-table:nth-of-type(2) {
+    color: #444;
+  }
+
+  .ql-picker.ql-table:nth-of-type(1) .ql-picker-item {
+    border: 1px solid #444;
+    color: #444;
+  }
+
+  .ql-table:nth-of-type(2) .ql-picker-label.ql-active {
+    color: #444 !important;
+  }
+
+  .ql-toolbar .ql-picker-item.ql-selected:before,
+  .ql-picker.ql-table:nth-of-type(2) .ql-picker-item {
+    color: #444;
+  }
+
+  .ql-picker-label.ql-active .ql-stroke {
+    stroke: #444 !important;
+  }
+
+  .ql-picker-item[data-value='remove-table'] {
+    border: none !important;
+    width: 100%;
+  }
+
+  .ql-picker-item[data-value='newtable_1_1']:before {
+    content: '1x1';
+  }
+
+  .ql-picker-item[data-value='newtable_1_2']:before {
+    content: '1x2';
+  }
+
+  .ql-picker-item[data-value='newtable_1_3']:before {
+    content: '1x3';
+  }
+
+  .ql-picker-item[data-value='newtable_1_4']:before {
+    content: '1x4';
+  }
+
+  .ql-picker-item[data-value='newtable_1_5']:before {
+    content: '1x5';
+  }
+
+  .ql-picker-item[data-value='newtable_2_1']:before {
+    content: '2x1';
+  }
+
+  .ql-picker-item[data-value='newtable_2_2']:before {
+    content: '2x2';
+  }
+
+  .ql-picker-item[data-value='newtable_2_3']:before {
+    content: '2x3';
+  }
+
+  .ql-picker-item[data-value='newtable_2_4']:before {
+    content: '2x4';
+  }
+
+  .ql-picker-item[data-value='newtable_2_5']:before {
+    content: '2x5';
+  }
+
+  .ql-picker-item[data-value='newtable_3_1']:before {
+    content: '3x1';
+  }
+
+  .ql-picker-item[data-value='newtable_3_2']:before {
+    content: '3x2';
+  }
+
+  .ql-picker-item[data-value='newtable_3_3']:before {
+    content: '3x3';
+  }
+
+  .ql-picker-item[data-value='newtable_3_4']:before {
+    content: '3x4';
+  }
+
+  .ql-picker-item[data-value='newtable_3_5']:before {
+    content: '3x5';
+  }
+
+  .ql-picker-item[data-value='newtable_4_1']:before {
+    content: '4x1';
+  }
+
+  .ql-picker-item[data-value='newtable_4_2']:before {
+    content: '4x2';
+  }
+
+  .ql-picker-item[data-value='newtable_4_3']:before {
+    content: '4x3';
+  }
+
+  .ql-picker-item[data-value='newtable_4_4']:before {
+    content: '4x4';
+  }
+
+  .ql-picker-item[data-value='newtable_4_5']:before {
+    content: '4x5';
+  }
+
+  .ql-picker-item[data-value='newtable_5_1']:before {
+    content: '5x1';
+  }
+
+  .ql-picker-item[data-value='newtable_5_2']:before {
+    content: '5x2';
+  }
+
+  .ql-picker-item[data-value='newtable_5_3']:before {
+    content: '5x3';
+  }
+
+  .ql-picker-item[data-value='newtable_5_4']:before {
+    content: '5x4';
+  }
+
+  .ql-picker-item[data-value='newtable_5_5']:before {
+    content: '5x5';
+  }
+
+  p:has(img) {
+    text-align: center !important;
+    text-indent: 0 !important;
+  }
+</style>`;
+
+// import Quill from 'quill';
+
+const Container$3 = Quill.import('blots/container');
+const Block$1 = Quill.import('blots/block');
+const BlockEmbed$1 = Quill.import('blots/block/embed');
+const Parchment$8 = Quill.import('parchment');
+
+class ContainBlot extends Container$3 {
+  static create(value) {
+    return super.create(value);
+  }
+
+  formats(domNode) {
+    if (domNode) {
+      return domNode.tagName;
+    }
+    return this.domNode.tagName;
+  }
+}
+
+ContainBlot.blotName = 'contain';
+ContainBlot.tagName = 'contain';
+ContainBlot.scope = Parchment$8.Scope.BLOCK_BLOT;
+ContainBlot.defaultChild = 'block';
+ContainBlot.allowedChildren = [Block$1, BlockEmbed$1, Container$3];
+
+// import Quill from 'quill';
+
+const Container$2 = Quill.import('blots/container');
+const Block = Quill.import('blots/block');
+const BlockEmbed = Quill.import('blots/block/embed');
+const Parchment$7 = Quill.import('parchment');
+
+class TableCell extends ContainBlot {
+  static create(value) {
+    const tagName = 'td';
+    let node = super.create(tagName);
+    let ids = value.split('|');
+    node.setAttribute('table_id', ids[0]);
+    node.setAttribute('row_id', ids[1]);
+    node.setAttribute('cell_id', ids[2]);
+    if (ids[3]) {
+      node.setAttribute('merge_id', ids[3]);
+    }
+    if (ids[4]) {
+      node.setAttribute('colspan', ids[4]);
+    }
+    if (ids[5]) {
+      node.setAttribute('rowspan', ids[5]);
+    }
+    return node;
+  }
+
+  format() {}
+
+  formats() {
+    // We don't inherit from FormatBlot
+    return {
+      [this.statics.blotName]:
+        [
+          this.domNode.getAttribute('table_id'),
+          this.domNode.getAttribute('row_id'),
+          this.domNode.getAttribute('cell_id'),
+          this.domNode.getAttribute('merge_id'),
+          this.domNode.getAttribute('colspan'),
+          this.domNode.getAttribute('rowspan')
+        ].join('|')
+    }
+  }
+
+  optimize(context) {
+    super.optimize(context);
+
+    let parent = this.parent;
+    if (parent != null) {
+      if (parent.statics.blotName === 'td') {
+        this.moveChildren(parent, this);
+        this.remove();
+        return;
+      } else if (parent.statics.blotName !== 'tr') {
+        // we will mark td position, put in table and replace mark
+        let mark = Parchment$7.create('block');
+        this.parent.insertBefore(mark, this.next);
+        let table = Parchment$7.create('table', this.domNode.getAttribute('table_id'));
+        let tr = Parchment$7.create('tr', this.domNode.getAttribute('row_id'));
+        table.appendChild(tr);
+        tr.appendChild(this);
+        table.replace(mark);
+      }
+    }
+
+    // merge same TD id
+    let next = this.next;
+    if (next != null && next.prev === this &&
+      next.statics.blotName === this.statics.blotName &&
+      next.domNode.tagName === this.domNode.tagName &&
+      next.domNode.getAttribute('cell_id') === this.domNode.getAttribute('cell_id')
+    ) {
+      next.moveChildren(this);
+      next.remove();
+    }
+  }
+
+  insertBefore(childBlot, refBlot) {
+    if (this.statics.allowedChildren != null && !this.statics.allowedChildren.some(function (child) {
+      return childBlot instanceof child;
+    })) {
+      let newChild = Parchment$7.create(this.statics.defaultChild);
+      newChild.appendChild(childBlot);
+      childBlot = newChild;
+    }
+    super.insertBefore(childBlot, refBlot);
+  }
+
+  replace(target) {
+    if (target.statics.blotName !== this.statics.blotName) {
+      let item = Parchment$7.create(this.statics.defaultChild);
+      target.moveChildren(item);
+      this.appendChild(item);
+    }
+    if (target.parent == null) return;
+    super.replace(target);
+  }
+
+  moveChildren(targetParent, refNode) {
+    this.children.forEach(function (child) {
+      targetParent.insertBefore(child, refNode);
+    });
+  }
+}
+
+TableCell.blotName = 'td';
+TableCell.tagName = 'td';
+TableCell.className = 'td-q';
+TableCell.scope = Parchment$7.Scope.BLOCK_BLOT;
+TableCell.allowedChildren = [Block, BlockEmbed, Container$2];
+
+// import Quill from 'quill';
+
+const Parchment$6 = Quill.import('parchment');
+
+class TableHistory {
+  // Register DOM change into current table history entry
+  static register(type, change) {
+    TableHistory.changes.push({ type, ...change });
+  }
+
+  // Add table history entry
+  static add(quill) {
+    if (!TableHistory.changes.length) return;
+
+    const historyChangeStatus = quill.history.ignoreChange;
+    // ignore history change and reset last recorded time for adding later changes in a new history entry
+    quill.history.ignoreChange = true;
+    quill.history.lastRecorded = 0;
+
+    // wait history update
+    setTimeout(() => {
+      // reset history changes value
+      quill.history.ignoreChange = historyChangeStatus;
+
+      // add new entry in table stack
+      const id = TableTrick.random_id();
+      quill.history.tableStack[id] = TableHistory.changes;
+
+      // set reference to table stack entry in a new history entry
+      quill.history.stack.undo.push({ type: 'tableHistory', id: id });
+
+      TableHistory.changes = [];
+    }, 0);
+  }
+
+  static undo(quill, id) {
+    const historyChangeStatus = quill.history.ignoreChange;
+    quill.history.ignoreChange = true;
+
+    const entry = quill.history.tableStack[id];
+    if (typeof entry !== 'undefined') {
+      // apply changes from last change to first change (undo)
+      entry.reverse().forEach(change => {
+        const oldDelta = quill.getContents();
+        switch (change.type) {
+          case 'insert':
+            // remove node (undo)
+            TableHistory.remove(change);
+            break;
+          case 'remove':
+            // add node (undo)
+            TableHistory.insert(change);
+            break;
+          case 'split':
+            // merge cell (redo)
+            TableHistory.merge(change, true);
+            // force triggering text-change event
+            TableTrick.emitTextChange(quill, oldDelta);
+            break;
+          case 'merge':
+            // split cell (redo)
+            TableHistory.split(change, true);
+            break;
+          case 'propertyChange':
+            // property change (undo)
+            TableHistory.propertyChange(change, true);
+            break;
+        }
+      });
+    }
+
+    // wait history update
+    setTimeout(() => {
+      // update history
+      const historyEntry = quill.history.stack.undo.pop();
+      quill.history.stack.redo.push(historyEntry);
+      quill.history.ignoreChange = historyChangeStatus;
+    }, 0);
+  }
+
+  static redo(quill, id) {
+    const historyChangeStatus = quill.history.ignoreChange;
+    quill.history.ignoreChange = true;
+
+    const entry = quill.history.tableStack[id];
+    if (typeof entry !== 'undefined') {
+      // apply changes from first change to last change (redo)
+      entry.forEach(change => {
+        switch (change.type) {
+          case 'insert':
+            // add node (redo)
+            TableHistory.insert(change);
+            break;
+          case 'remove':
+            // remove node (redo)
+            TableHistory.remove(change);
+            break;
+          case 'split':
+            // split cell (redo)
+            TableHistory.split(change, false);
+            break;
+          case 'merge':
+            // merge cell (redo)
+            TableHistory.merge(change, false);
+            break;
+          case 'propertyChange':
+            // property change (redo)
+            TableHistory.propertyChange(change, false);
+            break;
+        }
+      });
+    }
+
+    // wait history update
+    setTimeout(() => {
+      // update history
+      const historyEntry = quill.history.stack.redo.pop();
+      quill.history.stack.undo.push(historyEntry);
+      quill.history.ignoreChange = historyChangeStatus;
+    }, 0);
+  }
+
+  static insert(change) {
+    const parentNode = change.parentNode || change.nextNode.parentNode;
+    if (parentNode) {
+      const _parentNode = Parchment$6.find(parentNode);
+      if (_parentNode) {
+        const _node = Parchment$6.create(change.node);
+        if (change.nextNode) {
+          const _nextNode = Parchment$6.find(change.nextNode);
+          if (_nextNode) {
+            _parentNode.insertBefore(_node, _nextNode);
+          }
+        } else {
+          _parentNode.appendChild(_node);
+        }
+      }
+
+      // force re-rendering cells border (Firefox bug)
+      const tableNode = change.node.nodeName === 'TABLE' ? change.node : parentNode.closest('table');
+      tableNode.style.setProperty('overflow', (window.getComputedStyle(tableNode)['overflow'] || 'visible') === 'visible' ? 'hidden' : 'visible');
+      setTimeout(() => {
+        tableNode.style.removeProperty('overflow');
+      }, 0);
+
+      return true;
+    }
+    return false;
+  }
+
+  static remove(change) {
+    change.node.remove();
+    return true;
+  }
+
+  static split(change, revert) {
+    const td = change.node;
+    // remove colspan and rowspan attributes
+    td.removeAttribute('colspan');
+    td.removeAttribute('rowspan');
+    // for each merged node, remove merge_id attribute and restore content
+    change.mergedNodes.forEach(cell => {
+      cell.node.removeAttribute('merge_id');
+      cell.node.innerHTML = cell[revert ? 'oldContent' : 'newContent'];
+    });
+    // restore content
+    td.innerHTML = change[revert ? 'oldContent' : 'newContent'];
+    return true;
+  }
+
+  static merge(change, revert) {
+    const td = change.node;
+    const cell_id = td.getAttribute('cell_id');
+    // set colspan and rowspan attributes
+    td.setAttribute('colspan', change.colSpan);
+    td.setAttribute('rowspan', change.rowSpan);
+    // for each node to merge, set merge_id attribute and restore content
+    change.mergedNodes.forEach(cell => {
+      cell.node.innerHTML = cell[revert ? 'oldContent' : 'newContent'];
+      cell.node.setAttribute('merge_id', cell_id);
+    });
+    // restore content
+    td.innerHTML = change[revert ? 'oldContent' : 'newContent'];
+    return true;
+  }
+
+  static propertyChange(change, revert) {
+    const { node, property, oldValue, newValue } = change;
+    const value = revert ? oldValue : newValue;
+    if (value !== null) {
+      node.setAttribute(property, value);
+    } else {
+      node.removeAttribute(property);
+    }
+  }
+}
+
+TableHistory.changes = [];
+
+class TableToolbar {
+  static get(quill) {
+    if (quill.container.previousSibling && quill.container.previousSibling.classList && quill.container.previousSibling.classList.contains('ql-toolbar')) {
+      return quill.container.previousSibling;
+    }
+    return null;
+  }
+
+  static toggle(quill, actions = [], enable = true) {
+    const toolbar = TableToolbar.get(quill);
+    if (!toolbar) return;
+    if (typeof actions === 'string') actions = [actions];
+
+    actions.forEach(action => {
+      let selector = `.ql-table .ql-picker-item[data-value="${action}"], .ql-table[value="${action}"]`;
+      if (action.startsWith('*') && action.endsWith('*')) {
+        selector = `.ql-table .ql-picker-item[data-value*="${action.substring(1, action.length - 1)}"], .ql-table[value*="${action.substring(1, action.length - 1)}"]`;
+      } else if (action.startsWith('*')) {
+        selector = `.ql-table .ql-picker-item[data-value$="${action.substring(1)}"], .ql-table[value$="${action.substring(1)}"]`;
+      } else if (action.endsWith('*')) {
+        selector = `.ql-table .ql-picker-item[data-value^="${action.substring(0, action.length - 1)}"], .ql-table[value^="${action.substring(0, action.length - 1)}"]`;
+      }
+
+      toolbar.querySelectorAll(selector).forEach(item => {
+        item.classList[enable ? 'add' : 'remove']('enabled');
+      });
+    });
+  }
+
+  static enable(quill, actions) {
+    TableToolbar.toggle(quill, actions, true);
+  }
+
+  static disable(quill, actions) {
+    TableToolbar.toggle(quill, actions, false);
+  }
+
+  static disableAll(quill) {
+    const toolbar = TableToolbar.get(quill);
+    if (!toolbar) return false;
+    toolbar.querySelectorAll('.ql-table .ql-picker-item.enabled, .ql-table.enabled[value]').forEach(item => item.classList.remove('enabled'));
+  }
+
+  static isEnabled(quill, action) {
+    const toolbar = TableToolbar.get(quill);
+    if (!toolbar) return false;
+    const item = toolbar.querySelector(`.ql-table .ql-picker-item[data-value="${action}"], .ql-table[value="${action}"]`);
+    return item && item.classList.contains('enabled');
+  }
+}
+
+class TableSelection {
+  static mouseDown(quill, e, inCellSelectionOnClick) {
+    if (inCellSelectionOnClick !== undefined){ //we may have no options set for onClick
+      TableSelection.cellSelectionOnClick = inCellSelectionOnClick;
+    }
+
+    if (e.which !== 1) {
+      // do nothing with center or right click
+      return;
+    }
+
+    TableSelection.resetSelection();
+
+    if ((!TableSelection.cellSelectionOnClick && e.ctrlKey) || TableSelection.cellSelectionOnClick){
+      TableSelection.isMouseDown = true;
+      // reset cell selection
+      TableSelection.previousSelection = [TableSelection.selectionStartElement, TableSelection.selectionEndElement];
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableSelection.resetSelection();
+
+      const targetCell = TableSelection.getTargetCell(e);
+      if (!targetCell) {
+        // default mouse down event when clicking outside a cell
+        TableSelection.focusedCell = null;
+        return;
+      }
+
+      if ((!TableSelection.preventMouseDown && targetCell === TableSelection.clickedCellTimeout) || TableSelection.focusedCell === targetCell) {
+        // default mouse down event when multiple click in less than 500ms in the same cell or if the cell is already focused
+        TableSelection.focusedCell = targetCell;
+        return;
+      }
+
+      // single mouse left click = start selection
+      e.preventDefault();
+      TableSelection.focusedCell = null;
+
+      clearTimeout(TableSelection.dblClickTimeout);
+      TableSelection.dblClickTimeout = setTimeout(() => {
+        TableSelection.preventMouseDown = true;
+        TableSelection.clickedCellTimeout = null;
+      }, 500);
+      TableSelection.preventMouseDown = false;
+
+      TableSelection.selectionStartElement = TableSelection.clickedCellTimeout = targetCell;
+
+      if (TableSelection.selectionStartElement) {
+        TableSelection.selectionStartElement.classList.add('ql-cell-selected');
+      }
+    }
+  }
+
+  static mouseMove(quill, e) {
+    if (TableSelection.isMouseDown && TableSelection.selectionStartElement) {
+      const previousSelectionEndElement = TableSelection.selectionEndElement;
+      TableSelection.selectionEndElement = TableSelection.getTargetCell(e);
+      // Update selection if: mouse button is down, selection changed, start and end element exist and are in the same table
+      if (
+        TableSelection.selectionEndElement &&
+        TableSelection.selectionEndElement !== previousSelectionEndElement &&
+        TableSelection.selectionStartElement.closest('table') === TableSelection.selectionEndElement.closest('table')
+      ) {
+        TableSelection.resetSelection();
+
+        // set new selection
+        const coords = TableSelection.getSelectionCoords();
+        for (let y = coords.minY; y <= coords.maxY; y++) {
+          for (let x = coords.minX; x <= coords.maxX; x++) {
+            let cell = TableSelection.getCellAt(x, y);
+            if (cell) {
+              cell.classList.add('ql-cell-selected');
+            }
+          }
+        }
+      }
+    }
+  }
+
+  static mouseUp(quill, e) {
+    TableSelection.isMouseDown = false;
+    if (!TableSelection.selectionEndElement) {
+      TableSelection.selectionEndElement = TableSelection.selectionStartElement;
+    }
+
+    if (
+      TableSelection.previousSelection[0] !== TableSelection.selectionStartElement &&
+      TableSelection.previousSelection[1] !== TableSelection.selectionEndElement
+    ) {
+      TableSelection.selectionChange(quill);
+    }
+  }
+
+  static selectionChange(quill, range = null, oldRange = null) {
+    let isInTable = false;
+    if (TableSelection.selectionStartElement || TableSelection.selectionEndElement) {
+      // there is a table selection
+      isInTable = true;
+      TableToolbar.enable(quill, ['split-cell', 'merge-selection', 'remove-selection']);
+    } else {
+      // Text selection
+      TableToolbar.disable(quill, ['split-cell', 'merge-selection', 'remove-selection']);
+      let selectionStartElement, selectionEndElement;
+      if (range === null && oldRange !== null) {
+        // There is a previous Quill selection but editor is no longer focused (selection-change event)
+        const [startLeaf] = quill.getLeaf(oldRange.index);
+        const [endLeaf] = quill.getLeaf(oldRange.index + oldRange.length);
+        selectionStartElement = startLeaf.parent.domNode;
+        selectionEndElement = endLeaf.parent.domNode;
+      } else {
+        // No Quill selection, use window.getSelection instead
+        const selection = window.getSelection();
+        selectionStartElement = selection.anchorNode ? (selection.anchorNode.nodeType === Node.TEXT_NODE ? selection.anchorNode.parentElement : selection.anchorNode) : null;
+        selectionEndElement = selection.focusNode ? (selection.focusNode.nodeType === Node.TEXT_NODE ? selection.focusNode.parentElement : selection.focusNode) : null;
+      }
+
+      if (selectionStartElement && selectionEndElement) {
+        // there is a text selection
+        let closestTable = selectionStartElement.closest('table');
+        if (closestTable && closestTable.closest('.ql-editor')) {
+          if (selectionEndElement !== selectionStartElement) {
+            closestTable = selectionEndElement.closest('table');
+            isInTable = closestTable && closestTable.closest('.ql-editor');
+          } else {
+            isInTable = true;
+          }
+        }
+      } // no selection = not in table
+    }
+
+    if (!isInTable && quill.table.isInTable) {
+      // disable
+      quill.table.isInTable = false;
+      TableToolbar.disableAll(quill);
+      TableToolbar.enable(quill, ['newtable_*', 'insert', 'undo', 'redo']);
+    }
+
+    if (isInTable && !quill.table.isInTable) {
+      // enable
+      quill.table.isInTable = true;
+      TableToolbar.enable(quill, ['append-row*', 'append-col*', 'remove-cell', 'remove-row', 'remove-col', 'remove-table']);
+    }
+  }
+
+  static getSelectionCoords() {
+    if (TableSelection.selectionStartElement && TableSelection.selectionEndElement) {
+      const coords = [
+        [
+          Array.prototype.indexOf.call(TableSelection.selectionStartElement.parentElement.children, TableSelection.selectionStartElement),
+          Array.prototype.indexOf.call(TableSelection.selectionStartElement.parentElement.parentElement.children, TableSelection.selectionStartElement.parentElement)
+        ],
+        [
+          Array.prototype.indexOf.call(TableSelection.selectionEndElement.parentElement.children, TableSelection.selectionEndElement),
+          Array.prototype.indexOf.call(TableSelection.selectionEndElement.parentElement.parentElement.children, TableSelection.selectionEndElement.parentElement)
+        ]
+      ];
+
+      return {
+        coords,
+        minX: Math.min(coords[0][0], coords[1][0]),
+        maxX: Math.max(coords[0][0], coords[1][0]),
+        minY: Math.min(coords[0][1], coords[1][1]),
+        maxY: Math.max(coords[0][1], coords[1][1])
+      };
+    }
+    return null;
+  }
+
+  static getCellAt(x, y) {
+    const currentTable = TableSelection.selectionStartElement.closest('table');
+    if (currentTable) {
+      if (typeof currentTable.children[y] !== 'undefined' && typeof currentTable.children[y].children[x] !== 'undefined') {
+        return currentTable.children[y].children[x];
+      }
+    }
+    return null;
+  }
+
+  static getTargetCell(e) {
+    let element = e.target;
+    let cell = null;
+    do {
+      if (['td', 'th'].includes(element.tagName.toLowerCase())) {
+        cell = element;
+        break;
+      }
+      element = element.parentNode;
+    } while (element && element !== e.currentTarget);
+    return cell;
+  }
+
+  static resetSelection(container) {
+    // reset selection for all instances
+    document.querySelectorAll('.ql-editor td.ql-cell-selected').forEach(cell => {
+      cell.classList.remove('ql-cell-selected');
+    });
+  }
+}
+
+TableSelection.focusedCell = null;
+TableSelection.isMouseDown = false;
+TableSelection.selectionStartElement = null;
+TableSelection.selectionEndElement = null;
+TableSelection.previousSelection = [];
+
+TableSelection.dblClickTimeout = null;
+TableSelection.clickedCellTimeout = null;
+TableSelection.preventMouseDown = true;
+TableSelection.cellSelectionOnClick = true;
+
+// import Quill from 'quill';
+
+const Parchment$5 = Quill.import('parchment');
+const Container$1 = Quill.import('blots/container');
+const Scroll = Quill.import('blots/scroll');
+
+class TableTrick {
+  static random_id() {
+    return Math.random().toString(36).slice(2);
+  }
+
+  static getBlot(quill) {
+    let blot = null;
+    const selection = quill.getSelection();
+    if (selection) {
+      blot = quill.getLeaf(selection['index'])[0];
+    }
+    return blot;
+  }
+
+  static find_td(quill) {
+    let blot = TableTrick.getBlot(quill);
+    if (blot) {
+      for (; blot != null && blot.statics.blotName !== 'td';) {
+        blot = blot.parent;
+      }
+    }
+    return blot; // return TD or NULL
+  }
+
+  static getQuill(el) {
+    // Get Quill instance from node/element or blot
+    let quill = null;
+    if (el instanceof Node) {
+      if (!el instanceof Element) {
+        el = el.parentElement;
+      }
+    } else if (typeof el === 'object' && typeof el.domNode !== 'undefined') {
+      el = el.domNode;
+    }
+
+    if (el instanceof Element) {
+      const editorNode = el.closest('.ql-container');
+      if (editorNode) {
+        quill = Quill.find(editorNode);
+      }
+    }
+    return quill;
+  }
+
+  static insertTable(quill, col_count, row_count) {
+    const table_id = TableTrick.random_id();
+    const table = Parchment$5.create('table', table_id);
+    for (let ri = 0; ri < row_count; ri++) {
+      const row_id = TableTrick.random_id();
+      const tr = Parchment$5.create('tr', row_id);
+      table.appendChild(tr);
+      for (let ci = 0; ci < col_count; ci++) {
+        const cell_id = TableTrick.random_id();
+        const value = [table_id, row_id, cell_id].join('|');
+        const td = Parchment$5.create('td', value);
+        tr.appendChild(td);
+        const p = Parchment$5.create('block');
+        td.appendChild(p);
+        const br = Parchment$5.create('break');
+        p.appendChild(br);
+      }
+    }
+    let blot = TableTrick.getBlot(quill);
+    let top_branch = null;
+    for (; blot != null && !(blot instanceof Container$1 || blot instanceof Scroll);) {
+      top_branch = blot;
+      blot = blot.parent;
+    }
+    blot.insertBefore(table, top_branch);
+    TableHistory.register('insert', { node: table.domNode, nextNode: top_branch.domNode });
+    TableHistory.add(quill);
+  }
+
+  static removeTable(quill) {
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let table;
+    if (coords) {
+      const _table = TableSelection.selectionStartElement.closest('table');
+      table = Parchment$5.find(_table);
+    } else {
+      const td = TableTrick.find_td(quill);
+      if (td) {
+        table = td.parent.parent;
+      }
+    }
+
+    if (table) {
+      TableHistory.register('remove', { node: table.domNode, nextNode: table.next ? table.next.domNode : null, parentNode: table.parent.domNode });
+      TableHistory.add(quill);
+      table.remove();
+    }
+  }
+
+  static addCol(quill, direction = 'after') {
+    // direction = before: append col before current cell or before leftmost cell of selection
+    // direction = after: append col after current cell or after rightmost cell of selection
+    const coords = TableSelection.getSelectionCoords();
+    let td = TableTrick.find_td(quill);
+    if (coords) {
+      const cell = TableSelection.getCellAt(coords.maxX, coords.minY) || TableSelection.getCellAt(coords.maxX, coords.maxY);
+      if (cell) {
+        td = Parchment$5.find(cell);
+      }
+    }
+
+    if (td) {
+      if (direction !== 'before' && td.domNode.getAttribute('colspan')) {
+        // for direction = after, if the cell is merged, append column at the end of merged cell (not after the first cell)
+        const endCell = td.parent.domNode.children[
+          Array.prototype.indexOf.call(td.parent.domNode.children, td.domNode) + Number.parseInt(td.domNode.getAttribute('colspan')) - 1
+        ];
+        if (endCell) {
+          td = Parchment$5.find(endCell);
+        }
+      }
+
+      // get cell index
+      const index = Array.prototype.indexOf.call(td.parent.domNode.children, td.domNode) + (direction === 'before' ? 0 : 1);
+      // is this the last cell?
+      const last_cell = index === td.parent.domNode.children.length;
+      const table = td.parent.parent;
+      const table_id = table.domNode.getAttribute('table_id');
+      let managed_merged_cells = [];
+
+      table.children.forEach(function (tr) {
+        const row_id = tr.domNode.getAttribute('row_id');
+        const cell_id = TableTrick.random_id();
+        const new_td = Parchment$5.create('td', [table_id, row_id, cell_id].join('|'));
+        // do not add the cell for this row if selected cell is the last cell and if this row has more or less cells
+        if (!last_cell || index === tr.domNode.children.length) {
+          if (typeof tr.domNode.children[index] === 'undefined') {
+            tr.appendChild(new_td);
+            TableHistory.register('insert', { node: new_td.domNode, parentNode: tr.domNode });
+          } else {
+            const td = Parchment$5.find(tr.domNode.children[index]);
+            if (td) {
+              // manage merged cells
+              if (td.domNode.previousSibling) {
+                let merge_id = td.domNode.previousSibling.getAttribute('merge_id');
+                const _colSpan = Number.parseInt(td.domNode.previousSibling.getAttribute('colspan') || 1);
+                if (_colSpan > 1) {
+                  merge_id = td.domNode.previousSibling.getAttribute('cell_id');
+                }
+
+                if (merge_id) {
+                  new_td.domNode.setAttribute('merge_id', merge_id);
+                  if (managed_merged_cells.indexOf(merge_id) === -1) {
+                    managed_merged_cells.push(merge_id);
+                    const _cell = table.domNode.querySelector('td[cell_id="' + merge_id + '"]');
+                    if (_cell) {
+                      const colSpan = Number.parseInt(_cell.getAttribute('colspan'));
+                      _cell.setAttribute('colspan', colSpan + 1);
+                      TableHistory.register('propertyChange', { node: _cell, property: 'colspan', oldValue: colSpan, newValue: colSpan + 1 });
+                    }
+                  }
+                }
+              }
+              tr.insertBefore(new_td, td);
+              TableHistory.register('insert', { node: new_td.domNode, nextNode: td.domNode });
+            }
+          }
+        }
+      });
+      TableHistory.add(quill);
+    }
+  }
+
+  static addRow(quill, direction = 'after') {
+    // direction = before: append row above current cell or above topmost cell of selection
+    // direction = after: append row below current cell or below bottommost cell of selection
+    const coords = TableSelection.getSelectionCoords();
+    let td = TableTrick.find_td(quill);
+    if (coords) {
+      const cell = TableSelection.getCellAt(coords.minX, coords.maxY) || TableSelection.getCellAt(coords.maxX, coords.maxY);
+      if (cell) {
+        td = Parchment$5.find(cell);
+      }
+    }
+
+    if (td) {
+      const tr = td.parent;
+      const col_count = tr.domNode.children.length;
+      const table = tr.parent;
+      const new_row = tr.clone();
+      // get row index
+      let index = Array.prototype.indexOf.call(table.domNode.children, tr.domNode) + (direction === 'before' ? 0 : 1);
+
+      let manage_merged_cells = true;
+      const rowSpan = Number.parseInt(td.domNode.getAttribute('rowspan') || 1);
+      if (rowSpan > 1) {
+        manage_merged_cells = false;
+        if (direction !== 'before') {
+          // add row below merged cell
+          index += rowSpan - 1;
+        }
+      }
+
+      const table_id = table.domNode.getAttribute('table_id');
+      const row_id = TableTrick.random_id();
+      new_row.domNode.setAttribute('row_id', row_id);
+      let managed_merged_cells = [];
+      let managed_unmerged_cells = [];
+
+      for (let i = 0; i < col_count; i++) {
+        const prev_cell = tr.domNode.children[i];
+        const cell_id = TableTrick.random_id();
+        const td = Parchment$5.create('td', [table_id, row_id, cell_id].join('|'));
+        if (prev_cell && manage_merged_cells) {
+          // manage merged cells
+          let merge_id, merged_cell;
+          if (prev_cell.getAttribute('rowspan')) {
+            merge_id = prev_cell.getAttribute('cell_id');
+            merged_cell = prev_cell;
+            if (direction === 'before') {
+              // do not merge cells if we add a row before a merged cell
+              if (managed_unmerged_cells.indexOf(merge_id) === -1) {
+                managed_unmerged_cells.push(merge_id);
+              }
+            }
+          } else if (prev_cell.getAttribute('merge_id')) {
+            merge_id = prev_cell.getAttribute('merge_id');
+            merged_cell = table.domNode.querySelector('td[cell_id="' + merge_id + '"]');
+          }
+
+          if (merge_id && merged_cell && managed_unmerged_cells.indexOf(merge_id) === -1 && merged_cell.getAttribute('rowspan')) {
+            // merge cells of the new row according to previous row
+            let merge_rowspan = Number.parseInt(merged_cell.getAttribute('rowspan'));
+            if (merge_rowspan > 1) {
+              if (managed_merged_cells.indexOf(merge_id) === -1) {
+                managed_merged_cells.push(merge_id);
+                merged_cell.setAttribute('rowspan', merge_rowspan + 1);
+                TableHistory.register('propertyChange', { node: merged_cell, property: 'rowspan', oldValue: merge_rowspan, newValue: merge_rowspan + 1 });
+              }
+              td.domNode.setAttribute('merge_id', merge_id);
+            }
+          }
+        }
+
+        new_row.appendChild(td);
+        const p = Parchment$5.create('block');
+        td.appendChild(p);
+        const br = Parchment$5.create('break');
+        p.appendChild(br);
+      }
+
+      if (typeof table.domNode.children[index] === 'undefined') {
+        table.appendChild(new_row);
+        TableHistory.register('insert', { node: new_row.domNode, parentNode: table.domNode });
+      } else {
+        const row = Parchment$5.find(table.domNode.children[index]);
+        if (row) {
+          table.insertBefore(new_row, row);
+          TableHistory.register('insert', { node: new_row.domNode, nextNode: row.domNode });
+        }
+      }
+      TableHistory.add(quill);
+    }
+  }
+
+  static removeCol(quill) {
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let table, colIndex, colsToRemove;
+    if (coords) {
+      // if we have a selection, remove all selected columns
+      const _table = TableSelection.selectionStartElement.closest('table');
+      table = Parchment$5.find(_table);
+      colIndex = coords.minX;
+      colsToRemove = coords.maxX - coords.minX + 1;
+    } else {
+      // otherwise, remove only the column of current cell
+      colsToRemove = 1;
+      const currentCell = TableTrick.find_td(quill);
+      if (currentCell) {
+        table = currentCell.parent.parent;
+        colIndex = Array.prototype.indexOf.call(currentCell.parent.domNode.children, currentCell.domNode);
+      }
+    }
+
+    if (table && typeof colIndex === 'number' && typeof colsToRemove === 'number') {
+      // Remove all TDs with the colIndex and repeat it colsToRemove times if there are multiple columns to delete
+      for (let i = 0; i < colsToRemove; i++) {
+        table.children.forEach(function (tr) {
+          const td = tr.domNode.children[colIndex];
+          if (td) {
+            const merge_id = td.getAttribute('merge_id');
+            if (merge_id) {
+              // if a cell is merged to another cell, get target cell and decrement colspan
+              const cell = table.domNode.querySelector(`td[cell_id="${merge_id}"]`);
+              if (cell) {
+                const colSpan = Number.parseInt(cell.getAttribute('colspan'));
+                cell.setAttribute('colspan', colSpan - 1);
+                TableHistory.register('propertyChange', { node: cell, property: 'colspan', oldValue: colSpan, newValue: colSpan - 1 });
+              }
+            }
+
+            if (td.getAttribute('colspan')) {
+              TableTrick._split(td);
+            }
+
+            TableHistory.register('remove', { node: td, nextNode: td.nextSibling, parentNode: tr.domNode });
+            const _td = Parchment$5.find(td);
+            if (_td) { // remove node this way in order to update delta
+              _td.remove();
+            }
+          }
+        });
+      }
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableHistory.add(quill);
+    }
+  }
+
+  static removeRow(quill) {
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+
+    const manageMergedCells = (tr) => {
+      let managed_merged_cells = [];
+      [...tr.children].forEach(function(td) {
+        const merge_id = td.getAttribute('merge_id');
+        if (merge_id && managed_merged_cells.indexOf(merge_id) === -1) {
+          // if a cell is merged to another cell, get target cell and decrement rowspan
+          const cell = tr.parentNode.querySelector(`td[cell_id="${merge_id}"]`);
+          managed_merged_cells.push(merge_id);
+          if (cell) {
+            const rowSpan = Number.parseInt(cell.getAttribute('rowspan'));
+            cell.setAttribute('rowspan', rowSpan - 1);
+            TableHistory.register('propertyChange', { node: cell, property: 'rowspan', oldValue: rowSpan, newValue: rowSpan - 1 });
+          }
+        }
+
+        if (td.getAttribute('rowspan')) {
+          TableTrick._split(td);
+        }
+      });
+    };
+
+    if (coords) {
+      // if we have a selection, remove all selected rows
+      const table = TableSelection.selectionStartElement.closest('table');
+      const rowIndex = coords.minY;
+      const rowsToRemove = coords.maxY - coords.minY + 1;
+
+      for (let i = 0; i < rowsToRemove; i++) {
+        const tr = table.children[rowIndex];
+        if (tr) {
+          manageMergedCells(tr);
+          TableHistory.register('remove', { node: tr, nextNode: tr.nextSibling, parentNode: table });
+          const _tr = Parchment$5.find(tr);
+          if (_tr) { // remove node this way in order to update delta
+            _tr.remove();
+          }
+        }
+      }
+    } else {
+      // otherwise, remove only the row of current cell
+      const td = TableTrick.find_td(quill);
+      if (td) {
+        const tr = td.parent;
+        manageMergedCells(tr.domNode);
+        TableHistory.register('remove', { node: tr.domNode, nextNode: tr.next ? tr.next.domNode : null, parentNode: tr.parent.domNode });
+        const _tr = Parchment$5.find(tr.domNode);
+        if (_tr) { // remove node this way in order to update delta
+          _tr.remove();
+        }
+      }
+    }
+    TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+    TableHistory.add(quill);
+  }
+
+  static splitCell(quill) {
+    // get cell
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let td = TableTrick.find_td(quill);
+    if (coords && coords.maxX - coords.minX === 0 && coords.maxY - coords.minY === 0) {
+      const _td = TableSelection.getCellAt(coords.minX, coords.minY);
+      td = Parchment$5.find(_td);
+    }
+
+    if (td && TableTrick._split(td.domNode)) {
+      // add changes to history
+      // TableTrick._split already register 'split' change to history
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      // force triggering text-change event
+      td.domNode.innerHTML = td.domNode.innerHTML;
+      TableHistory.add(quill);
+    }
+  }
+
+  static mergeSelection(quill) {
+    // get selection
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    if (coords) {
+      const table = TableSelection.selectionStartElement.closest('table');
+      const colSpan = coords.maxX - coords.minX + 1;
+      const rowSpan = coords.maxY - coords.minY + 1;
+      if (colSpan > 1 || rowSpan > 1) {
+        let node = null;
+        let oldContent = null;
+        let mergedNodes = [];
+        let mergedCellContent = [];
+        let cell_id;
+        // get selected cells
+        for (let y = coords.minY; y <= coords.maxY; y++) {
+          for (let x = coords.minX; x <= coords.maxX; x++) {
+            const cell = table.children[y].children[x];
+            if (cell) {
+              if (cell.textContent !== '') {
+                // merge all contents
+                mergedCellContent.push(cell.innerHTML);
+              }
+
+              if (!node) {
+                // first cell (this cell will be kept)
+                cell_id = cell.getAttribute('cell_id');
+                node = cell;
+                oldContent = node.innerHTML;
+              } else {
+                // other cells that will be merged
+                let _oldContent = cell.innerHTML;
+                // update mergedNodes array for history purposes
+                mergedNodes.push({ node: cell, oldContent: _oldContent, newContent: '<p><br></p>' });
+              }
+
+              if (cell.getAttribute('colspan') || cell.getAttribute('rowspan')) {
+                // cannot merge cell already merged
+                alert('Cannot merge already merged cell');
+                return false;
+              }
+            }
+          }
+        }
+
+        if (node && mergedNodes.length) {
+          mergedNodes.forEach(mergedNode => {
+            mergedNode.node.setAttribute('merge_id', cell_id);
+            mergedNode.node.innerHTML = mergedNode.newContent;
+          });
+
+          // set colspan and rowspan attributes
+          node.setAttribute('colspan', colSpan);
+          node.setAttribute('rowspan', rowSpan);
+          // set merged content
+          node.innerHTML = mergedCellContent.join('');
+        }
+        // add changes to history
+        TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+        TableHistory.register('merge', { node, mergedNodes, colSpan, rowSpan, oldContent, newContent: node.innerHTML });
+        TableHistory.add(quill);
+      }
+    }
+  }
+
+  static removeCell(quill) {
+    // get cell
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let td = TableTrick.find_td(quill);
+    if (coords && coords.maxX - coords.minX === 0 && coords.maxY - coords.minY === 0) {
+      const _td = TableSelection.getCellAt(coords.minX, coords.minY);
+      td = Parchment$5.find(_td);
+    }
+
+    if (td && TableTrick._removeCell(td.domNode)) {
+      // add changes to history
+      // TableTrick._removeCell already register 'remove' change to history
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableHistory.add(quill);
+    }
+  }
+
+  static removeSelection(quill) {
+    // get selection
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    if (coords) {
+      const table = TableSelection.selectionStartElement.closest('table');
+      let nodesToRemove = [];
+      for (let y = coords.minY; y <= coords.maxY; y++) {
+        for (let x = coords.minX; x <= coords.maxX; x++) {
+          const cell = table.children[y].children[x];
+          if (cell) {
+            // if a cell is merged to another cell, split target cell
+            const merge_id = cell.getAttribute('merge_id');
+            if (merge_id) {
+              const targetCell = table.querySelector(`td[cell_id="${merge_id}"]`);
+              if (targetCell) {
+                TableTrick._split(targetCell);
+              }
+            }
+
+            if (cell.getAttribute('rowspan') || cell.getAttribute('colspan')) {
+              TableTrick._split(cell);
+            }
+
+            // remove cell (and row if empty)
+            let node = cell;
+            let nextNode = cell.nextSibling;
+            let parentNode = cell.parentNode;
+            if (parentNode.nodeName === 'TR' && parentNode.childNodes.length <= 1) {
+              // remove row if only one node (cell to be removed)
+              node = parentNode;
+              nextNode = node.nextSibling;
+              parentNode = node.parentNode;
+            }
+            nodesToRemove.push(node);
+            TableHistory.register('remove', { node, nextNode, parentNode });
+          }
+        }
+      }
+
+      nodesToRemove.forEach(node => {
+        const _node = Parchment$5.find(node);
+        if (_node) { // remove node this way in order to update delta
+          _node.remove();
+        }
+      });
+
+      // add changes to history
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableHistory.add(quill);
+    }
+  }
+
+  static _removeCell(cell, recursive = true) {
+    let cell_id = cell.getAttribute('cell_id');
+    if (cell.nodeName === 'TD') {
+      if (recursive) {
+        if (cell.getAttribute('merge_id')) {
+          // remove merged cells
+          cell = cell.closest('table').querySelector('td[cell_id="' + cell.getAttribute('merge_id') + '"]');
+          if (!cell) return false;
+          cell_id = cell.getAttribute('cell_id');
+        }
+
+        if (cell.getAttribute('colspan') || cell.getAttribute('rowspan')) {
+          // remove merged cells
+          cell.parentNode.parentNode.querySelectorAll(`td[merge_id="${cell_id}"`).forEach(node => {
+            TableTrick._removeCell(node, false);
+          });
+        }
+      }
+
+      let node = cell;
+      let nextNode = cell.nextSibling;
+      let parentNode = cell.parentNode;
+      if (parentNode.nodeName === 'TR' && parentNode.childNodes.length <= 1) {
+        // remove row if only one node (cell to be removed)
+        node = parentNode;
+        nextNode = node.nextSibling;
+        parentNode = node.parentNode;
+        if (parentNode.nodeName === 'TABLE' && parentNode.childNodes.length <= 1) {
+          // remove table if only one node (row to be removed)
+          node = parentNode;
+          nextNode = node.nextSibling;
+          parentNode = node.parentNode;
+        }
+      }
+
+      const _node = Parchment$5.find(node);
+      if (_node) { // remove node this way in order to update delta
+        _node.remove();
+      }
+
+      TableHistory.register('remove', { node, nextNode, parentNode });
+      return true;
+    }
+    return false;
+  }
+
+  static _split(cell) {
+    const cell_id = cell.getAttribute('cell_id');
+    // get merged nodes and update mergedNodes array for history purposes, remove merge_id attribute
+    let mergedNodes = [];
+    cell.parentNode.parentNode.querySelectorAll(`td[merge_id="${cell_id}"`).forEach(node => {
+      mergedNodes.push({ node, oldContent: node.innerHTML, newContent: node.innerHTML });
+      node.removeAttribute('merge_id');
+    });
+
+    const colSpan = Number.parseInt(cell.getAttribute('colspan') || 1);
+    const rowSpan = Number.parseInt(cell.getAttribute('rowspan') || 1);
+    if (colSpan > 1 || rowSpan > 1) {
+      // remove colspan and rowspan attributes
+      cell.removeAttribute('colspan');
+      cell.removeAttribute('rowspan');
+      // register changes to history
+      TableHistory.register('split', { node: cell, mergedNodes, colSpan, rowSpan, oldContent: cell.innerHTML, newContent: cell.innerHTML });
+      return true;
+    }
+    return false;
+  }
+
+  static emitTextChange(quill, oldDelta, source = 'user') {
+    const newDelta = quill.getContents();
+    quill.emitter.emit('text-change', oldDelta.diff(newDelta), oldDelta, source);
+  }
+
+  static table_handler(value, quill) {
+    // Check if the selection is for the same Quill instance, otherwise reset selection
+    if (
+      (TableSelection.selectionStartElement && !quill.container.contains(TableSelection.selectionStartElement)) ||
+      (TableSelection.selectionEndElement && !quill.container.contains(TableSelection.selectionEndElement))
+    ) {
+      TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableSelection.resetSelection();
+    }
+
+    if (value.includes('newtable_')) {
+      const sizes = value.split('_');
+      const row_count = Number.parseInt(sizes[1]);
+      const col_count = Number.parseInt(sizes[2]);
+      TableTrick.insertTable(quill, col_count, row_count);
+    } else {
+      let append_direction = 'after';
+      switch (value) {
+        case 'append-col-before':
+          append_direction = 'before';
+        case 'append-col':
+        case 'append-col-after':
+          TableTrick.addCol(quill, append_direction);
+          break;
+        case 'remove-col':
+          TableTrick.removeCol(quill);
+          break;
+        case 'append-row-above':
+          append_direction = 'before';
+        case 'append-row':
+        case 'append-row-below':
+          TableTrick.addRow(quill, append_direction);
+          break;
+        case 'remove-row':
+          TableTrick.removeRow(quill);
+          break;
+        case 'insert':
+          TableTrick.insertTable(quill, 1, 1);
+          break;
+        case 'remove-table':
+          TableTrick.removeTable(quill);
+          break;
+        case 'split-cell':
+          TableTrick.splitCell(quill);
+          break;
+        case 'merge-selection':
+          TableTrick.mergeSelection(quill);
+          break;
+        case 'remove-cell':
+          TableTrick.removeCell(quill);
+          break;
+        case 'remove-selection':
+          TableTrick.removeSelection(quill);
+          break;
+        case 'undo':
+          if (quill.history.stack.undo.length) {
+            const entry = quill.history.stack.undo[quill.history.stack.undo.length - 1];
+            if (typeof entry.type !== 'undefined' && typeof entry.id !== 'undefined' && entry.type === 'tableHistory') {
+              // Table history entry
+              TableHistory.undo(quill, entry.id);
+              return false;
+            }
+            // Classic history entry
+          }
+          return true;
+        case 'redo':
+          if (quill.history.stack.redo.length) {
+            const entry = quill.history.stack.redo[quill.history.stack.redo.length - 1];
+            if (typeof entry.type !== 'undefined' && typeof entry.id !== 'undefined' && entry.type === 'tableHistory') {
+              // Table history entry
+              TableHistory.redo(quill, entry.id);
+              return false;
+            }
+            // Classic history entry
+          }
+          return true;
+        case 'copy':
+          if (TableSelection.selectionStartElement && TableSelection.selectionEndElement) {
+            // Copy text in selection
+            // Save previous selection
+            let { anchorNode, anchorOffset, focusNode, focusOffset } = window.getSelection();
+            // Get table selection position
+            // Set selection and copy
+            window.getSelection().removeAllRanges();
+            let range = document.createRange();
+            range.setStart(TableSelection.selectionStartElement, 0);
+            range.setEnd(TableSelection.selectionEndElement, TableSelection.selectionEndElement.childNodes.length);
+            window.getSelection().addRange(range);
+            if (TableSelection.selectionStartElement === TableSelection.selectionEndElement) {
+              TableSelection.selectionStartElement.classList.remove('ql-cell-selected');
+            }
+            document.execCommand('copy');
+            if (TableSelection.selectionStartElement === TableSelection.selectionEndElement) {
+              TableSelection.selectionStartElement.classList.add('ql-cell-selected');
+            }
+            // Remove selection and restore previous selection
+            window.getSelection().removeAllRanges();
+            range.setStart(anchorNode, anchorOffset);
+            range.setEnd(focusNode, focusOffset);
+            window.getSelection().addRange(range);
+            return false;
+          }
+          return true;
+      }
+    }
+  }
+}
+
+// import Quill from 'quill';
+
+const Parchment$4 = Quill.import('parchment');
+
+class TableRow extends ContainBlot {
+  static create(value) {
+    const tagName = 'tr';
+    let node = super.create(tagName);
+    node.setAttribute('row_id', value ? value : TableTrick.random_id());
+    return node;
+  }
+
+  format() {}
+
+  optimize(context) {
+    if (this.children.length === 0) {
+      if (this.statics.defaultChild != null) {
+        var child = this.createDefaultChild();
+        this.appendChild(child);
+        child.optimize(context);
+      } else {
+        this.remove();
+      }
+    }
+    let next = this.next;
+    if (next != null && next.prev === this &&
+      next.statics.blotName === this.statics.blotName &&
+      next.domNode.tagName === this.domNode.tagName &&
+      next.domNode.getAttribute('row_id') === this.domNode.getAttribute('row_id')
+    ) {
+      next.moveChildren(this);
+      next.remove();
+    }
+  }
+
+  insertBefore(childBlot, refBlot) {
+    if (this.statics.allowedChildren != null && !this.statics.allowedChildren.some(function (child) {
+      return childBlot instanceof child;
+    })) {
+      let newChild = this.createDefaultChild(refBlot);
+      newChild.appendChild(childBlot);
+      childBlot = newChild;
+    }
+    super.insertBefore(childBlot, refBlot);
+  }
+
+  replace(target) {
+    if (target.statics.blotName !== this.statics.blotName) {
+      let item = this.createDefaultChild();
+      target.moveChildren(item, this);
+      this.appendChild(item);
+    }
+    super.replace(target);
+  }
+
+  createDefaultChild(refBlot) {
+    let table_id = null;
+    if (refBlot) {
+      table_id = refBlot.domNode.getAttribute('table_id');
+    } else if (this.parent) {
+      table_id = this.parent.domNode.getAttribute('table_id');
+    } else {
+      table_id = this.domNode.parent.getAttribute('table_id');
+    }
+
+    return Parchment$4.create(this.statics.defaultChild, [table_id, this.domNode.getAttribute('row_id'), TableTrick.random_id()].join('|'));
+  }
+}
+
+TableRow.blotName = 'tr';
+TableRow.tagName = 'tr';
+TableRow.scope = Parchment$4.Scope.BLOCK_BLOT;
+TableRow.defaultChild = 'td';
+TableRow.allowedChildren = [TableCell];
+
+// import Quill from 'quill';
+
+const Parchment$3 = Quill.import('parchment');
+
+class Table extends ContainBlot {
+  static create(value) {
+    const tagName = 'table';
+    let node = super.create(tagName);
+    node.setAttribute('table_id', value ? value : TableTrick.random_id());
+    node.setAttribute('border', '1');
+    return node;
+  }
+
+  format() {}
+
+  optimize(context) {
+    super.optimize(context);
+    let quill = TableTrick.getQuill(this.domNode);
+    if (!quill) return;
+    let next = this.next;
+    const table_id = this.domNode.getAttribute('table_id');
+
+    if (
+      next != null && next.prev === this && next.domNode.getAttribute('table_id') === table_id &&
+      next.statics.blotName === this.statics.blotName && next.domNode.tagName === this.domNode.tagName
+    ) {
+      // merge table containing single cell with table
+      next.moveChildren(this);
+      next.remove();
+    }
+
+    if (
+      typeof quill.table.tables[table_id] !== 'undefined' &&
+      quill.table.tables[table_id].cell_counter === this.domNode.querySelectorAll('td').length &&
+      quill.table.tables[table_id].row_counter === this.domNode.querySelectorAll('tr').length
+    ) {
+      // our table is fully initialized, we can do more optimizations
+
+      // add hidden merged cells
+      this.domNode.querySelectorAll('td[cell_id][colspan], td[cell_id][rowspan]').forEach(cell => {
+        const index = Array.prototype.indexOf.call(cell.parentNode.children, cell);
+        const colSpan = Number.parseInt(cell.getAttribute('colspan') || 1);
+        const rowSpan = Number.parseInt(cell.getAttribute('rowspan') || 1);
+
+        if (!this.domNode.querySelector('td[merge_id="' + cell.getAttribute('cell_id') + '"]') && (colSpan > 1 || rowSpan > 1)) {
+          let row = cell.parentNode;
+          for (let y = 1; y <= rowSpan; y++) {
+            if (!row) break;
+            // we want to add the cell between cell with colspan/rowspan and next cell
+            // for next rows, add the cell before the cell with the same index
+            let nextCell = y === 1 ? row.children[index + 1] : row.children[index];
+            for (let x = 1; x <= colSpan; x++) {
+              if (x === 1 && y === 1) {
+                continue; // do not add a cell at the original cell position
+              }
+              let newCell = document.createElement('td');
+              newCell.setAttribute('cell_id', TableTrick.random_id());
+              newCell.setAttribute('row_id', row.getAttribute('row_id'));
+              newCell.setAttribute('table_id', this.domNode.getAttribute('table_id'));
+              newCell.setAttribute('merge_id', cell.getAttribute('cell_id'));
+              let p = document.createElement('p');
+              let br = document.createElement('br');
+              p.appendChild(br);
+              newCell.appendChild(p);
+              row.insertBefore(newCell, nextCell);
+            }
+            row = row.nextSibling;
+          }
+        }
+      });
+
+      if (quill.table.tables[table_id].pasted) {
+        // add to history
+        TableHistory.register('insert', { node: this.domNode, nextNode: this.domNode.nextSibling, parentNode: this.domNode.parentNode });
+        TableHistory.add(quill);
+      }
+
+      // delete entry for optimizing only once
+      delete quill.table.tables[table_id];
+    }
+  }
+
+  insertBefore(childBlot, refBlot) {
+    if (this.statics.allowedChildren != null && !this.statics.allowedChildren.some(function (child) {
+      return childBlot instanceof child;
+    })) {
+      let newChild = Parchment$3.create(this.statics.defaultChild, TableTrick.random_id());
+      newChild.appendChild(childBlot);
+      childBlot = newChild;
+    }
+    super.insertBefore(childBlot, refBlot);
+  }
+}
+
+Table.blotName = 'table';
+Table.tagName = 'table';
+Table.scope = Parchment$3.Scope.BLOCK_BLOT;
+Table.defaultChild = 'tr';
+Table.allowedChildren = [TableRow];
+
+// import Quill from 'quill';
+
+const Container = Quill.import('blots/container');
+const Parchment$2 = Quill.import('parchment');
+const Delta = Quill.import("delta");
+
+const nodeListToArray = collection => {
+  const elementsIndex = [];
+  for (let i = 0; i < collection.length; i++) {
+    elementsIndex.push(i);
+  }
+  return elementsIndex.map(i => collection.item(i));
+};
+
+Container.order = [
+  'list', 'contain',   // Must be lower
+  'td', 'tr', 'table'  // Must be higher
+];
+
+const emitirEventoTableInTable = (quill) => {
+  quill.container.dispatchEvent(
+    new CustomEvent('onTableInTable', {
+      bubbles: true,
+      composed: true,
+    })
+  );
+};
+
+class TableModule {
+  static register() {
+    Quill.register(TableCell, true);
+    Quill.register(TableRow, true);
+    Quill.register(Table, true);
+    Quill.register(ContainBlot, true);
+  }
+
+  constructor(quill, options) {
+    quill.history.tableStack = {};
+    quill.table = {
+      isInTable: false,
+      tables: {}
+    };
+
+    // selection mouse events
+    quill.container.addEventListener('mousedown', (e) => TableSelection.mouseDown(quill, e, options.cellSelectionOnClick));
+    quill.container.addEventListener('mousemove', (e) => TableSelection.mouseMove(quill, e));
+    quill.container.addEventListener('mouseup', (e) => TableSelection.mouseUp(quill, e));
+    quill.on('selection-change', (range, oldRange) => TableSelection.selectionChange(quill, range, oldRange));
+
+    const toolbar = quill.getModule('toolbar');
+    toolbar.addHandler('table', function (value) {
+      if (isInsertTable(value) && isInTable(quill)) {
+        emitirEventoTableInTable(quill);
+        return false;
+      }
+      return TableTrick.table_handler(value, quill);
+    });
+
+    const clipboard = quill.getModule('clipboard');
+    clipboard.addMatcher('TABLE', function (node, delta) {
+      if (isInTable(quill)) {
+        emitirEventoTableInTable(quill);
+        return new Delta();
+      }
+
+      const is_pasted_data = node.closest('.ql-editor') === null;
+      const table_id = node.getAttribute('table_id');
+      if (table_id) {
+        quill.table.tables[table_id] = {
+          pasted: is_pasted_data,
+          row_counter: node.querySelectorAll('tr').length,
+          cell_counter: node.querySelectorAll('td').length
+        };
+      }
+      return delta;
+    });
+    clipboard.addMatcher('TR', function (node, delta) {
+      return delta;
+    });
+    clipboard.addMatcher('TD, TH', function (node, delta) {
+      if (delta.length() === 0) {
+        // fix https://github.com/dclement8/quill1-table/issues/7 (empty td removed)
+        delta.ops = [
+          {insert: '\n'}
+        ];
+      } else if (delta.ops && delta.ops.length) {
+        // fix https://github.com/dclement8/quill1-table/issues/7 (td with no child node)
+        const lastIndex = delta.ops.reduce((lastIndex, op, idx) => typeof op.insert !== 'undefined' ? idx : lastIndex, -1);
+        if (lastIndex >= 0 && !delta.ops[lastIndex].insert.endsWith('\n')) {
+          delta.ops[lastIndex].insert += '\n';
+        }
+      }
+
+      const tableNode = node.closest('table');
+      if (!node.getAttribute('table_id') && tableNode) {
+        if (!tableNode.getAttribute('table_id')) {
+          tableNode.setAttribute('table_id', TableTrick.random_id());
+        }
+        node.setAttribute('table_id', tableNode.getAttribute('table_id'));
+      }
+
+      if (!node.getAttribute('row_id')) {
+        const rowNode = node.closest('tr');
+        if (rowNode) {
+          if (!rowNode.getAttribute('row_id')) {
+            rowNode.setAttribute('row_id', TableTrick.random_id());
+          }
+          node.setAttribute('row_id', rowNode.getAttribute('row_id'));
+        }
+      }
+
+      if (!node.getAttribute('cell_id')) {
+        node.setAttribute('cell_id', TableTrick.random_id());
+      }
+
+      const newDelta = delta.compose(new Delta().retain(delta.length(), {
+        td: [
+          node.getAttribute('table_id'),
+          node.getAttribute('row_id'),
+          node.getAttribute('cell_id'),
+          node.getAttribute('merge_id'),
+          node.getAttribute('colspan'),
+          node.getAttribute('rowspan')
+        ].join('|')
+      }));
+      return newDelta;
+    });
+
+    TableToolbar.enable(quill, ['newtable_*', 'insert', 'undo', 'redo']);
+  }
+
+  static tableOptions() {
+    const maxRows = 5;
+    const maxCols = 5;
+    const tableOptions = [];
+    for (let r = 1; r <= maxRows; r++) {
+      for (let c = 1; c <= maxCols; c++) {
+        tableOptions.push('newtable_' + r + '_' + c);
+      }
+    }
+    return tableOptions;
+  }
+
+  static removeNodeChildren(node) {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  }
+
+  static keyboardHandler(quill, key, range, keycontext) {
+    const format_start = quill.getFormat(range.index - 1);
+    const format_end = quill.getFormat(range.index + range.length);
+
+    if (key === 'undo' || key === 'redo' || key === 'copy') {
+      return TableTrick.table_handler(key, quill);
+    }
+
+    // If the event is not in a cell, then pass the standard handler
+    if (!format_start.td && !keycontext.format.td && !format_end.td) {
+      return true;
+    }
+
+    if (key === 'backspace') {
+      // if the selection is at the cell border
+      // BUG: after undo brings back deleted cell when backspace comes in the keycontext offset is 0, which throws it to the end
+      if (!keycontext.offset && !range.length) {
+        const selection = window.getSelection();
+        const nodeList = document.querySelectorAll(".ql-editor p");
+        // remove selected content
+        const resultNodes = nodeListToArray(nodeList).filter(cell =>
+          selection.containsNode(cell, true)
+        );
+
+        // deletion does not affect the cell
+        if (!resultNodes.length) {
+          return true;
+        }
+        // do not delete if we have a selection (TODO: manage selection deletion)
+        if (TableSelection.getSelectionCoords()) {
+          return false;
+        }
+
+        let nodeRemoved = false;
+        resultNodes.forEach((resultNode, i) => {
+          if (resultNode.previousSibling) {
+            if (resultNode.previousSibling.nodeName === 'TABLE') {
+              // remove last cell if we are right after a table
+              const cells = resultNode.previousSibling.querySelectorAll('td');
+              if (cells.length && TableTrick._removeCell(cells[cells.length - 1])) {
+                nodeRemoved = true;
+              }
+            }
+          } else if (resultNode.parentNode.nodeName === 'TD') {
+            // remove current cell if we are inside it
+            if (TableTrick._removeCell(resultNode.parentNode)) {
+              nodeRemoved = true;
+            }
+          }
+        });
+
+        if (nodeRemoved) {
+          TableHistory.add(quill);
+        }
+
+        // if at least one node has been removed, then return false (do not call standard handler)
+        return !nodeRemoved;
+      }
+
+      // If we delete not at the cell border, then pass the standard handler
+      return true;
+    }
+
+    if (key === 'tab') {
+      TableSelection.resetSelection();
+      const [leaf] = quill.getLeaf(quill.getSelection().index);
+      let selectionIndex;
+      let blot;
+      let unmergedCell;
+      if (leaf.parent.domNode.closest('td')) {
+        if (leaf.parent.domNode.closest('td').nextSibling) {
+          unmergedCell = leaf.parent.domNode.closest('td').nextSibling;
+          while (unmergedCell && unmergedCell.getAttribute('merge_id')) {
+            unmergedCell = unmergedCell.nextSibling;
+          }
+          blot = Quill.find(unmergedCell ? unmergedCell : leaf.parent.domNode.closest('tr').nextSibling); //we truly dont have any more cells
+        } else { //we dont need to find the first child here since quill does the right thing
+          if (leaf.parent.domNode.closest('tr').nextSibling) { //no more cells, go to the next row
+            blot = Quill.find(leaf.parent.domNode.closest('tr').nextSibling);
+          } else { //no more rows to the tables next sibling which will be the next quill run p,h1-h4
+            if (leaf.parent.domNode.closest('table').nextSibling) {
+              blot = Quill.find(leaf.parent.domNode.closest('table').nextSibling);
+            }
+          }
+        }
+        //we get the actual editor index when we have the blot aka element in editor
+        selectionIndex = blot.offset(quill.scroll);
+        quill.setSelection(selectionIndex, 0);
+
+        return false
+      }
+      return true
+    }
+
+    if (key === "shiftTab") {
+      //previous cell
+      TableSelection.resetSelection();
+      const [leaf] = quill.getLeaf(quill.getSelection().index);
+      let selectionIndex;
+      let blot;
+      let unmergedCell;
+      if (leaf.parent.domNode.closest('td')) {
+        if (leaf.parent.domNode.closest('td').previousSibling) {
+          unmergedCell = leaf.parent.domNode.closest('td').previousSibling;
+          while (unmergedCell.getAttribute('merge_id')) { //this a merged cell, in dom but styled/css out
+            unmergedCell = unmergedCell.previousSibling;
+          }
+          blot = Quill.find(unmergedCell);
+        } else {
+          if (leaf.parent.domNode.closest('tr').previousSibling) { //no more cells, go to the next row
+            unmergedCell = leaf.parent.domNode.closest('tr').previousSibling.lastChild;
+            while (unmergedCell.getAttribute('merge_id')) { //this a merged cell, in dom but styled/css out
+              unmergedCell = unmergedCell.previousSibling;
+            }
+            blot = Quill.find(unmergedCell);
+          } else {
+            if (leaf.parent.domNode.closest('table').previousSibling) { //no more rows to the tables prev sibling which will just go to electron default.
+              return true;
+            }
+          }
+        }
+        //we get the actual editor index when we have the blot aka element in editor
+        selectionIndex = blot.offset(quill.scroll);
+        quill.setSelection(selectionIndex, 0);
+
+        return false;
+      }
+      return true;
+    }
+
+    let node = quill.selection.getNativeRange().start.node;
+    if (!node) return false;
+    let blot = Parchment$2.find(node);
+
+    if (
+      key === 'delete' && blot &&
+      keycontext.offset < (blot.text ? blot.text.length : 0)
+    ) {
+      return true;
+    }
+
+    const [prev] = quill.getLine(range.index - 1);
+    const [next] = quill.getLine(range.index + 1);
+    // If a cell has multiple rows, you can delete as standard
+
+    if (key === 'selectAll') {
+      let [line] = quill.getLine(quill.getSelection().index);
+      let blot;
+      let nextBlot;
+      if (line.parent.domNode.nodeName === "TD") {
+        if (line.parent.domNode.nextSibling){
+          nextBlot = Quill.find(line.parent.domNode.nextSibling);
+        } else { //no next cell to bounce the end to
+          if (line.parent.domNode.closest('tr').nextSibling) { //no next row either
+            nextBlot = Quill.find(line.parent.domNode.closest('tr').nextSibling);
+          } else { //the only other thing is get tables sibling which is the next p in editor
+            nextBlot = Quill.find(line.parent.domNode.closest('table').nextSibling);
+          }
+        }
+        blot = Quill.find(line.parent.domNode);
+        let selectionIndex = blot.offset(quill.scroll); //index for cell start
+        let nextBlotIndex = nextBlot.offset(quill.scroll); //index for cell ending
+        quill.setSelection(selectionIndex, nextBlotIndex-selectionIndex-1);
+        return false;
+      }
+      return true;
+    }
+    if (key === 'backspace' && prev && prev.next) {
+      return true;
+    }
+    if (key === 'delete' && next && next.prev) {
+      return true;
+    }
+  }
+}
+
+const isInsertTable = (value = '') => value.includes('newtable_');
+
+const isInTable = (quill) => quill && quill.getSelection(true) && quill.getFormat(quill.getSelection(true)).td;
+
+const removeElementosTDOcultos = (html = '') => {
+    // O quill1table adiciona elementos td ocultos para identificar/gerenciar undo de células mescladas.
+    // Esses elementos não devem fazer parte do texto html a ser salvo.
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    const elementosOcultos = tempDiv.querySelectorAll('td[merge_id]');
+    elementosOcultos.forEach((elemento) => { var _a; return (_a = elemento.parentNode) === null || _a === void 0 ? void 0 : _a.removeChild(elemento); });
+    return tempDiv.innerHTML;
+};
+
+//import Parchment from 'parchment';
+const Parchment$1 = Quill.import('parchment');
+class NoIndentAttributor extends Parchment$1.Attributor.Style {
+    constructor(attrName, keyName, options) {
+        super(attrName, keyName, options);
+    }
+    add(node, value) {
+        if (!this.value(node)) {
+            return super.add(node, value);
+        }
+        this.remove(node);
+        return true;
+    }
+}
+const config$1 = {
+    scope: Parchment$1.Scope.BLOCK,
+    whitelist: ['0px'],
+};
+const NoIndentClass = new NoIndentAttributor('text-indent', 'text-indent', config$1);
+
+//import Parchment from 'parchment';
+const Parchment = Quill.import('parchment');
+class MarginBottomAttributor extends Parchment.Attributor.Style {
+    constructor(attrName, keyName, options) {
+        super(attrName, keyName, options);
+    }
+    add(node, value) {
+        if (!this.value(node)) {
+            return super.add(node, value);
+        }
+        this.remove(node);
+        return true;
+    }
+}
+const config = {
+    scope: Parchment.Scope.BLOCK,
+    whitelist: ['0px'],
+};
+const MarginBottomClass = new MarginBottomAttributor('margin-bottom', 'margin-bottom', config);
+
+const DefaultKeyboardModule = Quill.import('modules/keyboard');
+const DefaultClipboardModule = Quill.import('modules/clipboard');
 let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(rootStore)(s) {
     constructor() {
         super();
         this.texto = '';
+        this.anexos = [];
         this.registroEvento = '';
+        this.modo = '';
         this.onChange = new Observable();
-        this._idSwitchRevisao = 'chk-em-revisao-justificativa';
-        this._idBadgeQuantidadeRevisao = 'badge-marca-alteracao-justificativa';
-        this.toolbarOptions = [
-            ['bold', 'italic', 'underline'],
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            [{ script: 'sub' }, { script: 'super' }],
-            ['blockquote'],
-            ['undo', 'redo'],
-            [{ align: [] }],
-            ['clean'],
-        ];
         this.icons = Quill.import('ui/icons');
-        this.init = () => {
+        this.MAX_WIDTH_IMAGEM = 400;
+        this.labelAnexo = () => {
             var _a;
-            this.container = document.querySelector(`#${this.id}-inner`);
-            if (this.container) {
-                this.quill = new Quill(this.container, {
-                    formats: ['estilo', 'bold', 'italic', 'underline', 'align', 'list', 'script', 'blockquote'],
+            const lengthAnexos = (_a = this.anexos) === null || _a === void 0 ? void 0 : _a.length;
+            return lengthAnexos === 1 ? '1 anexo' : lengthAnexos > 1 ? `${lengthAnexos} anexos` : '';
+        };
+        this.onTableInTable = () => {
+            clearTimeout(this.timerAlerta);
+            this.timerAlerta = setTimeout(() => this.alertar('Não é permitido inserir uma tabela dentro de outra tabela.'), 100);
+        };
+        this.getIdTooltip = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? 'revisoes-justificativa-icon' : 'revisoes-texto-livre-icon';
+        };
+        this.getIdButtonAceitarRevisoes = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? 'aceita-revisao-justificativa' : 'aceita-revisao-texto-livre';
+        };
+        this.init = () => {
+            var _a, _b;
+            const quillContainer = document.querySelector(`#${this.id}-inner`);
+            if (quillContainer) {
+                Quill.register('modules/keyboard', DefaultKeyboardModule, true);
+                Quill.register('modules/clipboard', DefaultClipboardModule, true);
+                Quill.register('modules/table', TableModule, true);
+                Quill.register('formats/estilo-texto', EstiloTextoClass, true);
+                Quill.register('formats/text-indent', NoIndentClass, true);
+                Quill.register('formats/margin-bottom', MarginBottomClass, true);
+                this.quill = new Quill(quillContainer, {
+                    formats: ['estilo', 'bold', 'italic', 'image', 'underline', 'align', 'list', 'script', 'image', 'table', 'tr', 'td', 'text-indent', 'margin-bottom'],
                     modules: {
                         toolbar: {
-                            container: '#toolbar' + this.id,
+                            container: toolbarOptions,
                             handlers: {
                                 undo: this.undo,
                                 redo: this.redo,
-                                estilo: this.changeEstilo,
                             },
+                        },
+                        table: {
+                            cellSelectionOnClick: false,
                         },
                         history: {
                             delay: 0,
@@ -48072,103 +51130,268 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                             userOnly: true,
                         },
                         clipboard: {},
+                        keyboard: {
+                            // Since Quill’s default handlers are added at initialization, the only way to prevent them is to add yours in the configuration.
+                            bindings: {
+                                tab: {
+                                    key: 'tab',
+                                    handler: (range, keycontext) => {
+                                        const Delta = Quill.import('delta');
+                                        const outSideOfTable = TableModule.keyboardHandler(this.quill, 'tab', range, keycontext);
+                                        if (outSideOfTable && this.quill) {
+                                            //for some reason when you return true as quill says it should hand it to the default like the other bindings... for tab it doesnt.
+                                            this.quill.history.cutoff(); //mimic the exact same thing quill does
+                                            const delta = new Delta().retain(range.index).delete(range.length).insert('\t');
+                                            this.quill.updateContents(delta, Quill.sources.USER);
+                                            this.quill.history.cutoff();
+                                            this.quill.setSelection(range.index + 1, Quill.sources.SILENT);
+                                        }
+                                    },
+                                },
+                                shiftTab: {
+                                    key: 'tab',
+                                    shiftKey: true,
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'shiftTab', range, keycontext);
+                                    },
+                                },
+                                selectAll: {
+                                    key: 'a',
+                                    ctrlKey: true,
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'selectAll', range, keycontext);
+                                    },
+                                },
+                                backspace: {
+                                    key: 'backspace',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'backspace', range, keycontext);
+                                    },
+                                },
+                                delete: {
+                                    key: 'delete',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'delete', range, keycontext);
+                                    },
+                                },
+                                undo: {
+                                    ctrlKey: true,
+                                    key: 'z',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'undo', range, keycontext);
+                                    },
+                                },
+                                redo: {
+                                    ctrlKey: true,
+                                    key: 'y',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'redo', range, keycontext);
+                                    },
+                                },
+                                redo2: {
+                                    ctrlKey: true,
+                                    shiftKey: true,
+                                    key: 'z',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'redo', range, keycontext);
+                                    },
+                                },
+                                copy: {
+                                    ctrlKey: true,
+                                    key: 'c',
+                                    handler: (range, keycontext) => {
+                                        return TableModule.keyboardHandler(this.quill, 'copy', range, keycontext);
+                                    },
+                                },
+                            },
+                        },
                     },
                     placeholder: '',
                     theme: 'snow',
                 });
                 this.setContent(this.texto);
+                this.addBotoesExtra();
+                this.configureTooltip();
+                this.elTableManagerButton = this.querySelectorAll('span.ql-table')[1];
                 (_a = this.quill) === null || _a === void 0 ? void 0 : _a.on('text-change', this.updateTexto);
-                this.loadDropDownEstilo();
+                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('selection-change', this.onSelectionChange);
             }
         };
+        this.onSelectionChange = (range) => {
+            setTimeout(() => {
+                var _a;
+                const format = range && ((_a = this.quill) === null || _a === void 0 ? void 0 : _a.getFormat(range));
+                this.highLightBotaoGerenciarTabela(format);
+            }, 0);
+        };
+        this.highLightBotaoGerenciarTabela = (format) => {
+            var _a, _b;
+            (format === null || format === void 0 ? void 0 : format.td) ? (_a = this.elTableManagerButton) === null || _a === void 0 ? void 0 : _a.classList.add('table-selected') : (_b = this.elTableManagerButton) === null || _b === void 0 ? void 0 : _b.classList.remove('table-selected');
+        };
+        this.addBotoesExtra = () => {
+            const toolbarContainer = this.quill.getModule('toolbar').container;
+            const elAnexo = this.querySelector('.panel-anexo');
+            const elRevisao = this.querySelector('.panel-revisao');
+            if (elAnexo) {
+                elAnexo.parentNode.removeChild(elAnexo);
+                toolbarContainer.appendChild(elAnexo);
+            }
+            elRevisao.parentNode.removeChild(elRevisao);
+            toolbarContainer.appendChild(elRevisao);
+        };
+        this.configureTooltip = () => {
+            const toolbarContainer = this.quill.getModule('toolbar').container;
+            this.setTitle(toolbarContainer, 'button.ql-bold', 'Negrito (Ctrl+b)');
+            this.setTitle(toolbarContainer, 'button.ql-italic', 'Itálico (Ctrl+i)');
+            this.setTitle(toolbarContainer, 'button.ql-underline', 'Sublinhado (Ctrl+u)');
+            this.setTitle(toolbarContainer, 'button.ql-list[value="ordered"]', 'Lista ordenada');
+            this.setTitle(toolbarContainer, 'button.ql-list[value="bullet"]', 'Lista não ordenada');
+            this.setTitle(toolbarContainer, 'button.ql-blockquote', 'Bloco de citação');
+            this.setTitle(toolbarContainer, 'button.ql-script[value="sub"]', 'Subscrito');
+            this.setTitle(toolbarContainer, 'button.ql-script[value="super"]', 'Sobrescrito');
+            this.setTitle(toolbarContainer, '.ql-align .ql-picker-options > span:nth-child(1)', 'Alinhar à esquerda');
+            this.setTitle(toolbarContainer, '.ql-align .ql-picker-options > span:nth-child(2)', 'Centralizar');
+            this.setTitle(toolbarContainer, '.ql-align .ql-picker-options > span:nth-child(3)', 'Alinhar à direita');
+            this.setTitle(toolbarContainer, '.ql-align .ql-picker-options > span:nth-child(4)', 'Justificar');
+            this.setTitle(toolbarContainer, 'button.ql-clean', 'Limpar formatação');
+            this.setTitle(toolbarContainer, 'button.ql-image', 'Inserir imagem');
+            this.setTitle(toolbarContainer, 'button.ql-undo', 'Desfazer (Ctrl+z)');
+            this.setTitle(toolbarContainer, 'button.ql-redo', 'Refazer (Ctrl+y)');
+            this.setTitle(toolbarContainer, 'button.ql-margin-bottom', 'Distância entre parágrafos');
+            this.setTitle(toolbarContainer, 'button.ql-text-indent', 'Recuo de parágrafo');
+        };
+        this.setTitle = (toolbarContainer, seletor, title) => { var _a; return (_a = toolbarContainer.querySelector(seletor)) === null || _a === void 0 ? void 0 : _a.setAttribute('title', title); };
         this.setContent = (texto) => {
             if (!this.quill || !this.quill.root) {
                 return;
             }
-            this.quill.root.innerHTML = texto
+            this.texto = texto;
+            const textoAjustado = (texto || '')
                 .replace(/indent/g, 'ql-indent')
                 .replace(/align-justify/g, 'ql-align-justify')
                 .replace(/align-center/g, 'ql-align-center')
                 .replace(/align-right/g, 'ql-align-right');
+            this.quill.history.clear(); // Não remover: isso é um workaround para o bug que ocorre ao limpar conteúdo depois de alguma inserção de tabela
+            this.quill.setContents(this.quill.clipboard.convert(textoAjustado), 'silent');
+            setTimeout(() => this.quill.history.clear(), 100); // A linha anterior gera um history, então é necessário limpar novamente.
         };
         this.updateTexto = () => {
             var _a, _b;
-            const texto = ((_a = this.quill) === null || _a === void 0 ? void 0 : _a.root.innerHTML)
-                ? (_b = this.quill) === null || _b === void 0 ? void 0 : _b.root.innerHTML.replace(/ql-indent/g, 'indent').replace(/ql-align-justify/g, 'align-justify').replace(/ql-align-center/g, 'align-center').replace(/ql-align-right/g, 'align-right')
-                : '';
+            const texto = this.ajustaHtml((_a = this.quill) === null || _a === void 0 ? void 0 : _a.root.innerHTML);
             this.texto = texto === '<p><br></p>' ? '' : texto;
             this.agendarEmissaoEventoOnChange();
-            atualizaRevisaoJustificativa(rootStore.getState().elementoReducer);
-            this.atualiazaRevisaoJusutificativaIcon();
-            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0);
-            this.atualizaQuantidadeRevisao();
+            this.buildRevisoes();
+            this.onSelectionChange((_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection());
         };
-        this.undo = () => {
-            var _a;
-            return (_a = this.quill) === null || _a === void 0 ? void 0 : _a.history.undo();
+        this.ajustaHtml = (html = '') => {
+            const result = html
+                .replace(/ql-indent/g, 'indent')
+                .replace(/ql-align-justify/g, 'align-justify')
+                .replace(/ql-align-center/g, 'align-center')
+                .replace(/ql-align-right/g, 'align-right');
+            return removeElementosTDOcultos(result);
         };
-        this.redo = () => {
-            var _a;
-            return (_a = this.quill) === null || _a === void 0 ? void 0 : _a.history.redo();
-        };
-        this.changeEstilo = (value) => {
-            var _a, _b;
-            const label = document.querySelector(`#toolbar${this.id} .ql-estilo .ql-picker-label`);
-            const itens = document.querySelectorAll(`#toolbar${this.id} .ql-estilo .ql-picker-item`);
-            const placeholderPickerItems = Array.prototype.slice.call(itens);
-            const item = placeholderPickerItems.filter(item => item.dataset.value === value)[0];
-            label.innerHTML = item.dataset.label + '&nbsp;&nbsp;&nbsp;&nbsp;' + controleDropdown;
-            const range = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection();
-            if (range) {
-                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getLines(range.index)[0].domNode.setAttribute('class', value);
-            }
-        };
-        this.loadDropDownEstilo = () => {
-            const label = document.querySelector(`#toolbar${this.id} .ql-estilo .ql-picker-label`);
-            const itens = document.querySelectorAll(`#toolbar${this.id} .ql-estilo .ql-picker-item`);
-            if (this.container && label) {
-                const placeholderPickerItems = Array.prototype.slice.call(itens);
-                placeholderPickerItems.forEach(item => (item.textContent = item.dataset.label));
-                label.innerHTML = 'Texto Normal &nbsp;&nbsp;&nbsp;&nbsp;' + controleDropdown;
-            }
-        };
-        this.atualiazaRevisaoJusutificativaIcon = () => {
-            // const contadorView = document.getElementById('revisoes-justificativa-icon') as any;
-            // contadorView.setAttribute('title', this.getMensagemRevisaoJustificativa());
-            const contentRevisoes = document.querySelector('#revisoes-justificativa-icon > div[slot=content]');
-            const iconRevisoes = document.querySelector('#revisoes-justificativa-icon > sl-icon');
-            if (this.getRevisoesJustificativa().length !== 0) {
-                contentRevisoes.innerHTML = this.getMensagemRevisaoJustificativa();
-                iconRevisoes.classList.add('revisoes-justificativa-icon__ativo');
+        this.buildRevisoes = () => {
+            if (this.modo === Modo.JUSTIFICATIVA) {
+                atualizaRevisaoJustificativa(rootStore.getState().elementoReducer);
             }
             else {
-                contentRevisoes.innerHTML = 'Revisões na justificativa';
-                iconRevisoes.classList.remove('revisoes-justificativa-icon__ativo');
+                atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer);
+            }
+            this.atualizaRevisaoIcon();
+            this.desabilitaBtnAceitarRevisoes(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
+        };
+        this.undo = () => {
+            var _a, _b;
+            if (TableModule.keyboardHandler(this.quill, 'undo', (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection(true), undefined)) {
+                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.history.undo();
             }
         };
-        this.getMensagemRevisaoJustificativa = () => {
-            const revisoesJustificativa = this.getRevisoesJustificativa();
+        this.redo = () => {
+            var _a, _b;
+            if (TableModule.keyboardHandler(this.quill, 'redo', (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection(true), undefined)) {
+                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.history.redo();
+            }
+        };
+        this.atualizaAnexo = (anexo) => {
+            this.anexos = [...anexo];
+        };
+        this.getNomeSwitch = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? 'chk-em-revisao-justificativa' : 'chk-em-revisao-texto-livre';
+        };
+        this.getNomeBadge = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? 'badge-marca-alteracao-justificativa' : 'badge-marca-alteracao-texto-livre';
+        };
+        this.atualizaRevisaoIcon = () => {
+            const idIcon = '#' + this.getIdTooltip() + '>';
+            const contentRevisoes = document.querySelector(idIcon + 'div[slot=content]');
+            const iconRevisoes = document.querySelector(idIcon + 'sl-icon');
+            if (contentRevisoes && iconRevisoes) {
+                if (this.getRevisoes().length !== 0) {
+                    contentRevisoes.innerHTML = this.getMensagemRevisoes();
+                    iconRevisoes.classList.add(this.getIdTooltip() + '__ativo');
+                    iconRevisoes.removeAttribute('disabled');
+                }
+                else {
+                    contentRevisoes.innerHTML = this.getTitle();
+                    iconRevisoes.classList.remove(this.getIdTooltip() + '__ativo');
+                    this.desabilitaBtnAceitarRevisoes(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
+                }
+            }
+        };
+        this.getTitle = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificativa' : 'Revisões no texto livre';
+        };
+        this.getMensagemRevisoes = () => {
+            let revisoes;
+            if (this.modo === Modo.JUSTIFICATIVA) {
+                revisoes = this.getRevisoesJustificativa();
+            }
+            else {
+                revisoes = this.getRevisoesTextoLivre();
+            }
             let mensagem = '<ul class="lista-revisoes-justificativa">';
-            if (revisoesJustificativa.length > 0) {
-                revisoesJustificativa.forEach((revisao) => {
+            if (revisoes.length > 0) {
+                revisoes.forEach((revisao) => {
                     const pipe = ' | ';
                     mensagem = mensagem + '<li>' + revisao.usuario.nome + pipe + revisao.dataHora + '</li>';
                 });
             }
             return mensagem + '</ul>';
         };
+        this.aceitarRevisoes = () => {
+            if (this.modo === Modo.JUSTIFICATIVA) {
+                this.aceitaRevisoesJustificativa();
+            }
+            else {
+                this.aceitaRevisoesTextoLivre();
+            }
+        };
         this.aceitaRevisoesJustificativa = () => {
             atualizaRevisaoJustificativa(rootStore.getState().elementoReducer, true);
-            this.atualiazaRevisaoJusutificativaIcon();
-            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0);
+            this.atualizaRevisaoIcon();
+            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0, 'aceita-revisao-justificativa');
             this.atualizaQuantidadeRevisao();
+        };
+        this.aceitaRevisoesTextoLivre = () => {
+            atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer, true);
+            this.atualizaRevisaoIcon();
+            this.desabilitaBtnAceitarRevisoes(this.getRevisoesTextoLivre().length === 0, 'aceita-revisao-texto-livre');
+            this.atualizaQuantidadeRevisao();
+        };
+        this.getRevisoes = () => {
+            return this.modo === Modo.JUSTIFICATIVA ? this.getRevisoesJustificativa() : this.getRevisoesTextoLivre();
         };
         this.getRevisoesJustificativa = () => {
             const revisoes = rootStore.getState().elementoReducer.revisoes;
             return revisoes.filter(r => r.descricao === RevisaoJustificativaEnum.JustificativaAlterada);
         };
-        this.desabilitaBtnAceitarRevisoes = (desabilita) => {
-            const contadorView = document.getElementById('aceita-revisao-justificativa');
+        this.getRevisoesTextoLivre = () => {
+            const revisoes = rootStore.getState().elementoReducer.revisoes;
+            return revisoes.filter(r => r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado);
+        };
+        this.desabilitaBtnAceitarRevisoes = (desabilita, button) => {
+            const contadorView = document.getElementById(button);
             if (desabilita) {
                 contadorView.setAttribute('disabled', desabilita);
             }
@@ -48176,12 +51399,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 contadorView.removeAttribute('disabled');
             }
         };
-        this.checkedSwitchMarcaAlteracao = () => {
-            const switchMarcaAlteracaoView = document.getElementById('chk-em-revisao-justificativa');
-            setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
-        };
         this.atualizaQuantidadeRevisao = () => {
-            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this._idBadgeQuantidadeRevisao), true);
+            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.getNomeBadge()), this.modo);
         };
         this.icons['undo'] = `<svg viewbox="0 0 18 18">
     <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
@@ -48191,8 +51410,33 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     <polygon class="ql-fill ql-stroke" points="12 10 14 12 16 10 12 10"></polygon>
     <path class="ql-stroke" d="M9.91,13.91A4.6,4.6,0,0,1,9,14a5,5,0,1,1,5-5"></path>
     </svg>`;
+        //this.icons['anexo'] = anexo + ;
         this.icons['bold'] = negrito;
         this.icons['underline'] = sublinhado;
+    }
+    limparRedimencionamentoImagens() {
+        const imagens = document.querySelectorAll('#editor-texto-rico-emenda-inner img');
+        if (imagens === null || imagens === void 0 ? void 0 : imagens.length) {
+            imagens.forEach(img => {
+                img.removeAttribute('width');
+                img.removeAttribute('height');
+            });
+        }
+    }
+    redimencionarImagens() {
+        const imagens = document.querySelectorAll('#editor-texto-rico-emenda-inner img');
+        if (imagens === null || imagens === void 0 ? void 0 : imagens.length) {
+            imagens.forEach(img => this.redimencionarImagem(img));
+        }
+    }
+    redimencionarImagem(img) {
+        const imgWidth = img.width;
+        const imgHeight = img.height;
+        if (imgWidth > this.MAX_WIDTH_IMAGEM) {
+            const porcentagem = (imgWidth - this.MAX_WIDTH_IMAGEM) / imgWidth;
+            img.width = imgWidth - imgWidth * porcentagem;
+            img.height = imgHeight - imgHeight * porcentagem;
+        }
     }
     agendarEmissaoEventoOnChange() {
         clearTimeout(this.timerOnChange);
@@ -48216,181 +51460,120 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     stateChanged(state) {
         var _a;
         if ((_a = state.elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.events) {
-            this.processarStateEvents(state.elementoReducer.ui.events);
+            this.atualizaRevisaoIcon();
         }
-    }
-    processarStateEvents(events) {
-        events === null || events === void 0 ? void 0 : events.forEach((event) => {
-            switch (event.stateType) {
-                case StateType.RevisaoAtivada:
-                case StateType.RevisaoDesativada:
-                    this.checkedSwitchMarcaAlteracao();
-                    break;
-            }
-            this.atualizaQuantidadeRevisao();
-        });
     }
     render() {
         return $ `
-      <style>
-        .editor-texto-rico {
-          height: 375px;
-        }
-        .editor-texto-rico p:not(.ql-align-rigth, .ql-align-center) {
-          text-indent: 3em;
-        }
-        .ql-toolbar.ql-snow .ql-formats {
-          margin-right: 8px;
-        }
-        .editor-texto-rico .estilo-artigo-subordinados {
-          text-indent: 0 !important;
-          text-align: justify;
-        }
-        .editor-texto-rico .estilo-agrupador-artigo {
-          text-indent: 0 !important;
-          text-align: center;
-        }
-        .editor-texto-rico .estilo-emenda {
-          text-indent: 0 !important;
-          text-align: justify;
-          margin-left: 40%;
+      ${quillTableCss} ${editorTextoRicoCss} ${this.modo === Modo.TEXTO_LIVRE ? this.renderBotaoAnexo() : ''}
 
-        #revisoes-justificativa-icon sl-icon,
-        #aceita-revisao-justificativa {
-          margin-right: 0.1rem;
-        }
-
-        .revisoes-justificativa-icon__ativo {
-          color: white;
-          background-color: var(--sl-color-warning-600) !important;
-          border-color: white !important;
-        }
-        .lista-revisoes-justificativa {
-          padding-left: 1rem;
-          padding-right: 0.5rem;
-        }
-        #chk-em-revisao-justificativa {
-          border: 1px solid #ccc !important;
-          padding: 5px 10px !important;
-          border-radius: 20px !important;
-          margin-left: auto;
-          margin-right: 5px;
-          font-weight: bold;
-          background-color: #eee;
-        }
-        #chk-em-revisao-justificativa[checked] {
-          background-color: var(--sl-color-blue-100);
-        }
-        #toolbar {
-          padding: 1.5px 0 1.5px 8px;
-        }
-
-        #badge-marca-alteracao-justificativa::part(base) {
-          min-width: 1.4rem;
-        }
-        revisao-container {
-          margin-left: auto;
-        }
-
-        @media (max-width: 768px) {
-          .mobile-buttons {
-            display: inline-block !important;
-          }
-          #chk-em-revisao-justificativa span {
-            display: none;
-          }
-        }
-      </style>
-      <div id="${`toolbar${this.id}`}">
-        <span class="ql-formats">
-          <select id="select-estilo" class="ql-estilo" title="Estilo">
-            <option value="estilo-normal">Texto normal</option>
-            <option value="estilo-artigo-subordinados">Artigo e subordinados</option>
-            <option value="estilo-agrupador-artigo">Agrupador de artigo</option>
-            <option value="estilo-emenda">Ementa</option>
-          </select>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-bold" title="Negrito (Ctrl+b)"></button>
-          <button type="button" class="ql-italic" title="Itálico (Ctrl+i)"></button>
-          <button type="button" class="ql-underline" title="Sublinhado (Ctrl+u)"></button>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-list" value="ordered" title="Lista ordenada"></button>
-          <button type="button" class="ql-list" value="bullet" title="Lista não ordenada"></button>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-script" value="sub" title="Subscrito"></button>
-          <button type="button" class="ql-script" value="super" title="Sobrescrito"></button>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-blockquote" title="Bloco de citação"></button>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-undo" title="Desfazer (Ctrl+z)"></button>
-          <button type="button" class="ql-redo" title="Refazer (Ctrl+Shift+z)"></button>
-        </span>
-        <span class="ql-formats">
-          <select class="ql-align" title="Alinhar">
-            <option value=""></option>
-            <option value="center"></option>
-            <option value="right"></option>
-            <option value="justify"></option>
-          </select>
-        </span>
-        <span class="ql-formats">
-          <button type="button" class="ql-clean" title="Limpar formatação"></button>
-        </span>
-
-        <!-- <sl-icon id="revisoes-justificativa-icon" name="exclamation-octagon" label="Settings" title=""></sl-icon> -->
-
-        <!--
-        <sl-switch id="chk-em-revisao-justificativa" size="small" @sl-change=${() => this.ativarDesativarMarcaDeRevisao()}><span>Marcas de revisão</span> <sl-badge id="badge-marca-alteracao-justificativa" variant="warning" pill>0</sl-badge>
-        </sl-switch>
-        -->
-
-        <lexml-switch-revisao class="revisao-container" .nomeSwitch="${this._idSwitchRevisao}" .nomeBadgeQuantidadeRevisao="${this._idBadgeQuantidadeRevisao}">
+      <div class="panel-revisao">
+        <lexml-switch-revisao modo="${this.modo}" class="revisao-container" .nomeSwitch="${this.getNomeSwitch()}" .nomeBadgeQuantidadeRevisao="${this.getNomeBadge()}">
         </lexml-switch-revisao>
 
-        <sl-tooltip id="revisoes-justificativa-icon" placement="bottom-end">
+        <sl-tooltip id="${this.getIdTooltip()}" placement="bottom-end">
           <div slot="content">
-            <div>Revisões na justificativa</div>
+            <div>${this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificativa' : 'Revisões no texto livre'}</div>
           </div>
           <sl-icon name="person-check-fill"></sl-icon>
         </sl-tooltip>
 
-        <sl-button
-          id="aceita-revisao-justificativa"
-          variant="default"
-          size="small"
-          title="Limpar revisões na justificativa"
-          @click=${() => this.aceitaRevisoesJustificativa()}
-          disabled
-          circle
-        >
+        <sl-button id="${this.getIdButtonAceitarRevisoes()}" variant="default" size="small" title="Limpar revisões" @click=${() => this.aceitarRevisoes()} disabled circle>
           <sl-icon name="check-lg"></sl-icon>
         </sl-button>
       </div>
-      <div id="${this.id}-inner" class="editor-texto-rico"></div>
+      <div id="${this.id}-inner" class="editor-texto-rico" @onTableInTable=${this.onTableInTable}></div>
     `;
+    }
+    renderBotaoAnexo() {
+        return $ `
+      <div class="panel-anexo">
+        <button type="button" style="width:auto" title="Enviar anexo" @click=${() => uploadAnexoDialog(this.anexos, this.atualizaAnexo, this)}>
+          <span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 35 35" data-name="Layer 2" id="Layer_2">
+              <path
+                d="M18,34.75A11.32,11.32,0,0,1,6.69,23.45V8A7.78,7.78,0,0,1,22.25,8V22.49a4.58,4.58,0,1,1-9.15,0V9.29a1.25,1.25,0,0,1,2.5,0v13.2a2.08,2.08,0,1,0,4.15,0V8A5.28,5.28,0,0,0,9.19,8V23.45A8.82,8.82,0,0,0,18,32.25c4.6,0,7.81-3.62,7.81-8.8V9.66a1.25,1.25,0,0,1,2.5,0V23.45C28.31,30,24,34.75,18,34.75Z"
+              />
+            </svg>
+            ${this.labelAnexo()}
+          </span>
+        </button>
+      </div>
+    `;
+    }
+    alertar(mensagem) {
+        const alert = Object.assign(document.createElement('sl-alert'), {
+            variant: 'danger',
+            closable: true,
+            duration: 4000,
+            innerHTML: `
+        <sl-icon name="exclamation-octagon" slot="icon"></sl-icon>
+        ${mensagem}
+      `,
+        });
+        document.body.append(alert);
+        alert.toast();
     }
     firstUpdated() {
         this.init();
     }
-    ativarDesativarMarcaDeRevisao() {
-        ativarDesativarMarcaDeRevisao(rootStore);
-        this.checkedSwitchMarcaAlteracao();
+    disconnectedCallback() {
+        var _a, _b;
+        (_a = this.quill) === null || _a === void 0 ? void 0 : _a.off('text-change', this.updateTexto);
+        (_b = this.quill) === null || _b === void 0 ? void 0 : _b.off('selection-change', this.onSelectionChange);
+        super.disconnectedCallback();
     }
 };
 __decorate([
     e$3({ type: String })
 ], EditorTextoRicoComponent.prototype, "texto", void 0);
 __decorate([
+    t$1(),
+    e$3({ type: Array })
+], EditorTextoRicoComponent.prototype, "anexos", void 0);
+__decorate([
     e$3({ type: String, attribute: 'registro-evento' })
 ], EditorTextoRicoComponent.prototype, "registroEvento", void 0);
+__decorate([
+    e$3({ type: String })
+], EditorTextoRicoComponent.prototype, "modo", void 0);
 EditorTextoRicoComponent = __decorate([
     n$1('editor-texto-rico')
 ], EditorTextoRicoComponent);
+const toolbarOptions = [
+    [{ estilo: [false, 'ementa', 'norma-alterada'] }],
+    ['bold', 'italic', 'underline'],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ script: 'sub' }, { script: 'super' }],
+    // ['blockquote'],
+    ['undo', 'redo'],
+    [{ align: [] }],
+    [{ 'text-indent': '0px' }],
+    [{ 'margin-bottom': '0px' }],
+    ['clean'],
+    [
+        {
+            table: TableModule.tableOptions(),
+        },
+        {
+            table: [
+                // 'insert',
+                'append-row-above',
+                'append-row-below',
+                'append-col-before',
+                'append-col-after',
+                'remove-col',
+                'remove-row',
+                'remove-table',
+                'split-cell',
+                'merge-selection',
+                // 'remove-cell',
+                // 'remove-selection',
+            ],
+        },
+    ],
+    ['image'],
+];
 
 // Foi utilizado TemplateResult porque o articulacao.component.ts não usa ShadowDom
 const shoelaceLightThemeStyles = $ `
@@ -48873,6 +52056,7 @@ class Emenda {
         this.data = new Date().toISOString().replace(/T.*/, ''); // formato “YYYY-MM-DD”
         this.autoria = new Autoria();
         this.opcoesImpressao = new OpcoesImpressao();
+        this.anexos = [];
         this.revisoes = [];
     }
 }
@@ -49321,8 +52505,13 @@ class CitacaoComandoMultipla {
         if (cabeca.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO || isAgrupadorNaoArticulacao(cabeca)) {
             return;
         }
-        // Busca último nó à direita
         let d = cabeca;
+        // Trata caso específico de alteração de caput de artigo com alteração de norma
+        if (cabeca.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO && isArtigo(d) && d.hasAlteracao()) {
+            sb.append(this.tagOmissisSemRotulo().toString());
+            return;
+        }
+        // Busca último nó à direita
         while (d.filhos.length) {
             d = d.filhos[d.filhos.length - 1];
         }
@@ -53204,10 +56393,12 @@ const editorStyles = $ `
     }
 
     #lx-eta-box {
-      display: grid;
+      /* display: grid;
       grid-template-columns: 1fr;
-      grid-template-rows: 42px calc(100% - 30px);
-      height: 100%;
+      grid-template-rows: 42px calc(100% - 30px); */
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     /* #lx-eta-box .ql-toolbar.ql-snow {
@@ -53222,7 +56413,9 @@ const editorStyles = $ `
       font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
       /* padding: 8px; */
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
+      min-height: 55px;
     }
     #lx-eta-box .ql-snow.ql-toolbar button,
     .ql-snow .ql-toolbar button {
@@ -53260,7 +56453,7 @@ const editorStyles = $ `
     }
 
     #lx-eta-editor {
-      overflow-y: auto;
+      overflow-y: hidden;
     }
 
     #lx-eta-editor .ql-editor {
@@ -53324,7 +56517,7 @@ const editorStyles = $ `
     }
 
     .lx-eta-btn-desfazer {
-      margin-left: 10px !important;
+      margin-left: 10px;
     }
 
     .icon-undo-redo {
@@ -53734,9 +56927,12 @@ const editorStyles = $ `
       #chk-em-revisao span {
         display: none;
       }
+      .button-navegacao-marca {
+        display: none;
+      }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 640px) {
       .mobile-button span {
         display: none;
       }
@@ -53801,6 +56997,7 @@ const editorStyles = $ `
       top: -1px;
       background: url('assets/icons/plus-minus.svg') no-repeat center, white;
       background-size: 0.8rem;
+      margin-right: 1.2px;
     }
 
     .blot__opcoes_diff:hover {
@@ -53866,27 +57063,17 @@ const editorStyles = $ `
       }
     }
 
-    /*
-    [em-revisao='true'] .container__revisao {
-      border: 3px solid #f98b88;
-      width: 30px;
-      background-color: #f98b88;
-      width: 30px;
-    }*/
-
-    /*
-    [em-revisao='false'] .blot__revisao {
-      visibility:hidden;
+    @media (max-width: 480px) {
+      .lx-eta-btn-desfazer {
+        margin-left: 0px;
+      }
     }
 
-    [em-revisao='true'] .blot__revisao {
-      visibility:visible;
+    @media (max-width: 398px) {
+      .btn-dicas {
+        display: none !important;
+      }
     }
-    */
-
-    /* .container__menu {
-      border: 1px solid blue;
-    } */
   </style>
 `;
 
@@ -54859,6 +58046,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.motivo = '';
         this.projetoNorma = {};
         this.autoria = new Autoria();
+        this.desativarMarcaRevisao = () => {
+            if (rootStore.getState().elementoReducer.emRevisao) {
+                rootStore.dispatch(ativarDesativarRevisaoAction.execute());
+            }
+        };
         this.MOBILE_WIDTH = 768;
         this.splitPanelPosition = 68;
         this.sizeMode = '';
@@ -54918,15 +58110,23 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return emenda;
     }
     getEmenda() {
+        // Para evitar erros de referência nula quando chamado antes da inicialização do componente
+        if (!this.projetoNorma['value']) {
+            return new Emenda();
+        }
         const emenda = this.montarEmendaBasicaFromProjetoNorma(this.projetoNorma, this.modo);
         const numeroProposicao = emenda.proposicao.numero.replace(/^0+/, '');
         if (this._lexmlEta) {
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
+            emenda.comandoEmendaTextoLivre.motivo = undefined;
+            emenda.comandoEmendaTextoLivre.texto = undefined;
         }
         else {
             emenda.comandoEmendaTextoLivre.motivo = this.motivo;
+            this._lexmlEmendaTextoRico.redimencionarImagens();
             emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
+            emenda.anexos = this._lexmlEmendaTextoRico.anexos;
         }
         emenda.justificativa = this._lexmlJustificativa.texto;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
@@ -54950,6 +58150,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return revisoes;
     }
     inicializarEdicao(modo, projetoNorma, emenda, motivo = '', usuario) {
+        var _a;
         this._lexmlEmendaComando.emenda = [];
         this.modo = modo;
         this.projetoNorma = projetoNorma;
@@ -54969,6 +58170,27 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         this.setUsuario(usuario !== null && usuario !== void 0 ? usuario : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
+        if (!((_a = emenda === null || emenda === void 0 ? void 0 : emenda.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+            this.desativarMarcaRevisao();
+        }
+    }
+    stateChanged(state) {
+        var _a, _b, _c, _d, _e, _f;
+        const revisaoAtivada = (_c = (_b = (_a = state === null || state === void 0 ? void 0 : state.elementoReducer) === null || _a === void 0 ? void 0 : _a.ui) === null || _b === void 0 ? void 0 : _b.events) === null || _c === void 0 ? void 0 : _c.some((ev) => ev.stateType === StateType.RevisaoAtivada);
+        const revisaoDesativada = (_f = (_e = (_d = state === null || state === void 0 ? void 0 : state.elementoReducer) === null || _d === void 0 ? void 0 : _d.ui) === null || _e === void 0 ? void 0 : _e.events) === null || _f === void 0 ? void 0 : _f.some((ev) => ev.stateType === StateType.RevisaoDesativada);
+        revisaoAtivada && this.mostrarDialogDisclaimerRevisao();
+        if (revisaoAtivada || revisaoDesativada) {
+            this.emitiEventoOnRevisao(rootStore.getState().elementoReducer.emRevisao);
+        }
+    }
+    emitiEventoOnRevisao(emRevisao) {
+        this.dispatchEvent(new CustomEvent('onrevisao', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                emRevisao,
+            },
+        }));
     }
     setUsuario(usuario = new Usuario()) {
         rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
@@ -54982,6 +58204,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlJustificativa.setContent(emenda.justificativa);
         if (this._lexmlEmendaTextoRico) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
+            this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
+            rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(emenda.componentes[0].dispositivos, emenda.revisoes));
         }
         this._lexmlData.data = emenda.data;
     }
@@ -54990,6 +58214,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.modoEdicao = modoEdicao;
         this._lexmlEmendaComando.emenda = {};
         this.setEmenda(emenda);
+        rootStore.dispatch(limparRevisaoAction.execute());
     }
     createRenderRoot() {
         return this;
@@ -55039,6 +58264,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 this.parlamentares.length === 0 && this.atualizaListaParlamentares();
             }
         });
+        this.slSplitPanel.addEventListener('sl-reposition', () => {
+            this.ajustarAltura();
+        });
         const badgeAtalhos = (_b = this._tabsDireita) === null || _b === void 0 ? void 0 : _b.querySelector('#badgeAtalhos');
         if (badgeAtalhos) {
             const naoPulsarBadgeAtalhos = localStorage.getItem('naoPulsarBadgeAtalhos');
@@ -55084,22 +58312,60 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
         }
     }
-    // procura por uma altura definida e ajusta componente
     ajustarAltura(altura) {
         var _a, _b;
-        let alturaElemento = altura !== undefined ? altura : this.pesquisarAlturaParentElement(this);
+        const alturaElementoBase = altura !== null && altura !== void 0 ? altura : this.pesquisarAlturaParentElement(this);
         const lexmlEtaTabs = (_b = (_a = document.querySelector('sl-tab-group')) === null || _a === void 0 ? void 0 : _a.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('.tab-group__nav-container');
-        // altura dos tabs
         const alturaLexmlEtaTabs = lexmlEtaTabs === null || lexmlEtaTabs === void 0 ? void 0 : lexmlEtaTabs.clientHeight;
-        if (alturaLexmlEtaTabs) {
-            alturaElemento = alturaElemento - alturaLexmlEtaTabs - 12;
-            if (alturaElemento > 0) {
-                this === null || this === void 0 ? void 0 : this.style.setProperty('--height', alturaElemento + 'px');
-                this === null || this === void 0 ? void 0 : this.style.setProperty('--overflow', 'hidden');
-                return true;
+        if (!alturaLexmlEtaTabs)
+            return false;
+        const alturaElemento = alturaElementoBase - alturaLexmlEtaTabs - 12;
+        if (alturaElemento <= 0)
+            return false;
+        const getElement = (selector) => document.querySelector(selector);
+        const justificativaTabPanel = getElement('sl-tab-panel[name="justificativa"]');
+        const emendaTabPanel = getElement('sl-tab-panel[name="lexml-eta"]');
+        const qlToolbarJustificativa = getElement('#editor-texto-rico-justificativa .ql-toolbar');
+        const qlToolbarEmenda = getElement('#lx-eta-barra-ferramenta');
+        const estilosOriginais = {
+            justificativa: {
+                display: justificativaTabPanel.style.display,
+                opacity: justificativaTabPanel.style.opacity,
+                pointerEvents: justificativaTabPanel.style.pointerEvents,
+            },
+            emenda: {
+                display: emendaTabPanel.style.display,
+                opacity: emendaTabPanel.style.opacity,
+                pointerEvents: emendaTabPanel.style.pointerEvents,
+            },
+        };
+        const setTabPanelStyles = (tabPanel, estilos, isTemporary = false) => {
+            if (isTemporary) {
+                tabPanel.style.opacity = '0';
+                tabPanel.style.pointerEvents = 'none';
+                tabPanel.style.display = 'block';
             }
+            else {
+                tabPanel.style.opacity = estilos.opacity;
+                tabPanel.style.pointerEvents = estilos.pointerEvents;
+                tabPanel.style.display = estilos.display;
+            }
+        };
+        if (estilosOriginais.justificativa.display === 'none') {
+            setTabPanelStyles(justificativaTabPanel, estilosOriginais.justificativa, true);
         }
-        return false;
+        if (estilosOriginais.emenda.display === 'none') {
+            setTabPanelStyles(emendaTabPanel, estilosOriginais.emenda, true);
+        }
+        const alturaToolBarJustificativa = (qlToolbarJustificativa === null || qlToolbarJustificativa === void 0 ? void 0 : qlToolbarJustificativa.clientHeight) + 5;
+        const alturaToolBarEmenda = (qlToolbarEmenda === null || qlToolbarEmenda === void 0 ? void 0 : qlToolbarEmenda.clientHeight) + 5;
+        setTabPanelStyles(justificativaTabPanel, estilosOriginais.justificativa);
+        setTabPanelStyles(emendaTabPanel, estilosOriginais.emenda);
+        this.style.setProperty('--heightJustificativa', `${alturaElemento - alturaToolBarJustificativa}px`);
+        this.style.setProperty('--heightEmenda', `${alturaElemento - alturaToolBarEmenda}px`);
+        this.style.setProperty('--height', `${alturaElemento}px`);
+        this.style.setProperty('--overflow', 'hidden');
+        return true;
     }
     onChange() {
         var _a;
@@ -55141,6 +58407,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         };
         rootStore.dispatch(adicionarAlerta$1(alerta));
     }
+    mostrarDialogDisclaimerRevisao() {
+        mostrarDialogDisclaimerRevisao();
+    }
     render() {
         return $ `
       ${shoelaceLightThemeStyles} ${quillSnowStyles} ${editorStyles}
@@ -55149,14 +58418,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           --height: 100%;
           --overflow: visible;
           --min-height: 300px;
+          --heightJustificativa: 100%;
+          --heightEmenda: 100%;
         }
         sl-tab-panel {
           --padding: 0px;
         }
         sl-tab-panel::part(base) {
           height: var(--height);
-          /* overflow: var(--overflow); */
-          /* overflow-y: auto; */
         }
         sl-tab-panel.overflow-hidden::part(base) {
           overflow-y: auto;
@@ -55170,8 +58439,17 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           font-family: var(--eta-font-serif);
           text-align: left;
         }
-        #editor-texto-rico-justificativa #editor-texto-rico {
+        /* #editor-texto-rico-justificativa #editor-texto-rico {
           height: calc(var(--height) - 44px);
+          overflow: var(--overflow);
+        } */
+
+        #editor-texto-rico-emenda-inner {
+          height: calc(var(--heightJustificativa));
+          overflow: var(--overflow);
+        }
+        #editor-texto-rico-justificativa-inner {
+          height: calc(var(--heightJustificativa));
           overflow: var(--overflow);
         }
         .badge-pulse {
@@ -55222,10 +58500,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
               ${this.modo && this.modo !== 'emendaTextoLivre'
             ? $ `<lexml-eta id="lexmlEta" .lexmlEtaConfig=${this.lexmlEmendaConfig} @onchange=${this.onChange}></lexml-eta>`
-            : $ `<editor-texto-rico id="editor-texto-rico-emenda" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>`}
+            : $ `<editor-texto-rico modo="textoLivre" id="editor-texto-rico-emenda" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>`}
             </sl-tab-panel>
             <sl-tab-panel name="justificativa" class="overflow-hidden">
-              <editor-texto-rico id="editor-texto-rico-justificativa" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>
+              <editor-texto-rico modo="justificativa" id="editor-texto-rico-justificativa" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>
             </sl-tab-panel>
             <sl-tab-panel name="autoria" class="overflow-hidden">
               <div class="tab-autoria__container">
@@ -55972,10 +59250,14 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
         this.nomeSwitch = '';
         this.nomeBadgeQuantidadeRevisao = '';
         this.checkedRevisao = false;
+        this.modo = '';
         this.onChange = new Observable();
         this.checkedSwitchMarcaAlteracao = () => {
             const switchMarcaAlteracaoView = document.getElementById(this.nomeSwitch);
             setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
+        };
+        this.atualizaQuantidadeRevisao = () => {
+            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.nomeBadgeQuantidadeRevisao), this.modo);
         };
     }
     update(changedProperties) {
@@ -55984,10 +59266,42 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
     createRenderRoot() {
         return this;
     }
+    stateChanged(state) {
+        var _a;
+        if (state.elementoReducer.ui) {
+            if (state.elementoReducer.ui.events) {
+                if (state.elementoReducer.ui.message && ((_a = state.elementoReducer.ui.events[0]) === null || _a === void 0 ? void 0 : _a.stateType) === 'AtualizacaoAlertas') {
+                    alertarInfo(state.elementoReducer.ui.message.descricao);
+                }
+                this.processarStateEvents(state.elementoReducer.ui.events);
+            }
+        }
+    }
+    processarStateEvents(events) {
+        events === null || events === void 0 ? void 0 : events.forEach((event) => {
+            switch (event.stateType) {
+                case StateType.RevisaoAtivada:
+                case StateType.RevisaoDesativada:
+                    this.checkedSwitchMarcaAlteracao();
+                    break;
+            }
+            this.atualizaQuantidadeRevisao();
+            // this.atualiazaRevisaoJusutificativaIcon();
+        });
+    }
     render() {
         return $ `
       <style>
         #revisoes-justificativa-icon sl-icon {
+          border: 1px solid #ccc !important;
+          padding: 0.4rem 0.4rem !important;
+          border-radius: 15px !important;
+          font-weight: bold;
+          background-color: #eee;
+          cursor: pointer;
+        }
+
+        #revisoes-texto-livre-icon sl-icon {
           border: 1px solid #ccc !important;
           padding: 0.4rem 0.4rem !important;
           border-radius: 15px !important;
@@ -56009,6 +59323,9 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
         }
         .revisao-container {
           margin-left: auto;
+        }
+        .sl-toast-stack sl-alert::part(base) {
+          background-color: var(--sl-color-danger-100);
         }
         @media (max-width: 992px) {
           .mobile-buttons {
@@ -56044,9 +59361,12 @@ __decorate([
 __decorate([
     e$3({ type: Boolean, reflect: true })
 ], SwitchRevisaoComponent.prototype, "checkedRevisao", void 0);
+__decorate([
+    e$3({ type: String })
+], SwitchRevisaoComponent.prototype, "modo", void 0);
 SwitchRevisaoComponent = __decorate([
     n$1('lexml-switch-revisao')
 ], SwitchRevisaoComponent);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
