@@ -6,4 +6,7 @@ export interface Proposicao {
   ementa?: string;
   nomeProposicao?: string;
   idSdlegDocumentoItemDigital?: string;
+  dataPublicacao?: string;
+  dataLimiteRecebimentoEmendas?: string;
+  labelPrazoRecebimentoEmendas?: string;
 }

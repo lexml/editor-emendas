@@ -24,8 +24,8 @@ export const pesquisarProposicoes = async (
   toggleCarregando();
   const searchParams = new URLSearchParams(
     numero
-      ? { sigla, numero, ano: ano.toString() }
-      : { sigla, ano: ano.toString() }
+      ? { sigla, numero, ano: ano.toString(), carregarDatasDeMPs: 'true' }
+      : { sigla, ano: ano.toString(), carregarDatasDeMPs: 'true' }
   ).toString();
   const resp = await fetch('api/proposicoes-novo?' + searchParams);
   const proposicoes = await resp.json();
@@ -38,6 +38,9 @@ export const pesquisarProposicoes = async (
       ementa: p.ementa,
       nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
+      dataPublicacao: p.dataPublicacao,
+      dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
+      labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
     }))
     .sort(compareProposicoesDesc);
 };
@@ -51,7 +54,9 @@ export const pesquisarProposicoesEmTramitacao = async (
   sigla: string
 ): Promise<Proposicao[]> => {
   toggleCarregando();
-  const resp = await fetch('api/proposicoesEmTramitacao-novo?sigla=' + sigla);
+  const resp = await fetch(
+    'api/proposicoesEmTramitacao-novo?carregarDatasDeMPs=true&sigla=' + sigla
+  );
   const proposicoes = await resp.json();
   toggleCarregando();
   return proposicoes
@@ -62,6 +67,9 @@ export const pesquisarProposicoesEmTramitacao = async (
       ementa: p.ementa,
       nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
+      dataPublicacao: p.dataPublicacao,
+      dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
+      labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
     }))
     .sort(compareProposicoesDesc);
 };
