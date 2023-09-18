@@ -240,7 +240,8 @@ export class EdtApp extends LitElement {
         this.updateStateElements(tempFileData.name);
         this.fileHandle = tempFileData.handle;
         this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
-        this.emendaComAlteracoesSalvas = undefined;
+        //this.emendaComAlteracoesSalvas = undefined;
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
         this.isDirty = false;
         this.isOpenFile = true;
       })
