@@ -9,7 +9,7 @@ import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 @customElement('edt-modal-visualizar-pdf')
 export class EdtModalVisualizarPdf extends LitElement {
   @state()
-  private pdfBase64: any = '';
+  private pdfUrl = '';
 
   @property({ type: String }) tituloEmenda = '';
   @property({ type: Object }) emenda = {};
@@ -20,21 +20,22 @@ export class EdtModalVisualizarPdf extends LitElement {
   public show(): void {
     this.slDialog.show();
     this.slDialog.addEventListener('sl-request-close', (event: any) => {
-      this.pdfBase64 = '';
+      this.pdfUrl = '';
     });
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
     try {
-      const resp = await fetch('api/emenda/json2pdf', {
+      const resp = await fetch('api/emenda/json2pdfFile', {
         method: 'POST',
         body: JSON.stringify(this.emenda),
         headers: {
           'Content-Type': 'application/json;charset=UTF-8',
         },
       });
-      const pdf = await resp.blob();
-      this.pdfBase64 = await blobToBase64(pdf);
+      const fileName = await resp.text();
+      console.log(fileName);
+      this.pdfUrl = 'api/emenda/pdfFile/' + fileName;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(`Erro inesperado ao gerar o PDF`);
@@ -85,7 +86,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">
         <div class="pdf-area">
           <embed
-            src=${this.pdfBase64}
+            src=${this.pdfUrl}
             type="application/pdf"
             frameborder="0"
             width="100%"
