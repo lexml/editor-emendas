@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,7 +47,7 @@ import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 @CrossOrigin("*")
 public class EditorApiController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EditorApiController.class);
+    private static final Logger log = LoggerFactory.getLogger(EditorApiController.class);
 
     private final PdfGenerator pdfGenerator;
     
@@ -65,7 +64,7 @@ public class EditorApiController {
     private final AutoCompleteNormaService autoCompleteNormaService;
     
     private final InfoAppService infoAppService;
-
+    
     public EditorApiController(
             PdfGenerator pdfGenerator,
             EmendaJsonGenerator jsonGenerator,
@@ -94,16 +93,19 @@ public class EditorApiController {
         return "Hello";
     }
 
-    @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.TEXT_PLAIN_VALUE)
     public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws IOException {
-    	File f = File.createTempFile("emenda-" + UUID.randomUUID(), ".pdf");
+    	File f = File.createTempFile("emenda", ".pdf");
         pdfGenerator.generate(emenda, new FileOutputStream(f));
+        log.warn("File: " + f.getAbsolutePath() + ", existe: "+ f.exists());
         return f.getName();
     }
     
-    @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
+    @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public void getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
         File f = new File(System.getProperty("java.io.tmpdir"), fileName);
+        log.warn("File: " + f.getAbsolutePath() + ", existe: "+ f.exists());
+        response.addHeader("Content-Disposition", "inline");
         OutputStream out = response.getOutputStream();
         IOUtils.copy(new FileInputStream(f), out);
         out.flush();
