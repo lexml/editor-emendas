@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -47,6 +48,8 @@ import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 public class EditorApiController {
 
     private static final Logger log = LoggerFactory.getLogger(EditorApiController.class);
+    
+    private static final File tempDir = new File(System.getProperty("java.io.tmpdir"));
 
     private final PdfGenerator pdfGenerator;
     
@@ -94,19 +97,19 @@ public class EditorApiController {
 
     @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.TEXT_PLAIN_VALUE)
     public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws IOException {
-    	File f = File.createTempFile("emenda", ".pdf");
-        pdfGenerator.generate(emenda, new FileOutputStream(f));
-        log.warn("File: " + f.getAbsolutePath() + ", existe: "+ f.exists());
+    	File f = new File(tempDir, "emenda-" + UUID.randomUUID() + ".pdf");
+    	FileOutputStream fos = new FileOutputStream(f);
+        pdfGenerator.generate(emenda, fos);
+        fos.flush();
+        fos.close();
         return f.getName();
     }
     
     @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
     public byte[] getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
     	response.addHeader("Content-Disposition", "inline");
-        File f = new File(System.getProperty("java.io.tmpdir"), fileName);
-        log.warn("File: " + f.getAbsolutePath() + ", existe: "+ f.exists());
+        File f = new File(tempDir, fileName);
         return FileUtils.readFileToByteArray(f);
-//        f.delete();
     }
     
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
