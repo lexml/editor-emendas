@@ -2,11 +2,9 @@ package br.gov.lexml.editoremendas;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,6 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -101,15 +100,13 @@ public class EditorApiController {
         return f.getName();
     }
     
-    @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public void getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+    @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public byte[] getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+    	response.addHeader("Content-Disposition", "inline");
         File f = new File(System.getProperty("java.io.tmpdir"), fileName);
         log.warn("File: " + f.getAbsolutePath() + ", existe: "+ f.exists());
-        response.addHeader("Content-Disposition", "inline");
-        OutputStream out = response.getOutputStream();
-        IOUtils.copy(new FileInputStream(f), out);
-        out.flush();
-        f.delete();
+        return FileUtils.readFileToByteArray(f);
+//        f.delete();
     }
     
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
