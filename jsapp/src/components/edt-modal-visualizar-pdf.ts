@@ -18,10 +18,8 @@ export class EdtModalVisualizarPdf extends LitElement {
   private slDialog!: any;
 
   public show(): void {
+    this.pdfUrl = '';
     this.slDialog.show();
-    this.slDialog.addEventListener('sl-request-close', (event: any) => {
-      this.pdfUrl = '';
-    });
   }
 
   private async atualizaEmendaEmPDF(): Promise<void> {
@@ -35,7 +33,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       });
       const fileName = await resp.text();
       console.log(fileName);
-      this.pdfUrl = 'api/emenda/pdfFile/' + fileName;
+      this.pdfUrl = './api/emenda/pdfFile/' + fileName;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(`Erro inesperado ao gerar o PDF`);

@@ -2,11 +2,9 @@ package br.gov.lexml.editoremendas;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -20,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotBlank;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -48,7 +47,9 @@ import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
 @CrossOrigin("*")
 public class EditorApiController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EditorApiController.class);
+    private static final Logger log = LoggerFactory.getLogger(EditorApiController.class);
+    
+    private static final File tempDir = new File(System.getProperty("java.io.tmpdir"));
 
     private final PdfGenerator pdfGenerator;
     
@@ -65,7 +66,7 @@ public class EditorApiController {
     private final AutoCompleteNormaService autoCompleteNormaService;
     
     private final InfoAppService infoAppService;
-
+    
     public EditorApiController(
             PdfGenerator pdfGenerator,
             EmendaJsonGenerator jsonGenerator,
@@ -94,20 +95,21 @@ public class EditorApiController {
         return "Hello";
     }
 
-    @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.APPLICATION_PDF_VALUE)
+    @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.TEXT_PLAIN_VALUE)
     public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws IOException {
-    	File f = File.createTempFile("emenda-" + UUID.randomUUID(), ".pdf");
-        pdfGenerator.generate(emenda, new FileOutputStream(f));
+    	File f = new File(tempDir, "emenda-" + UUID.randomUUID() + ".pdf");
+    	FileOutputStream fos = new FileOutputStream(f);
+        pdfGenerator.generate(emenda, fos);
+        fos.flush();
+        fos.close();
         return f.getName();
     }
     
     @GetMapping(path = "/emenda/pdfFile/{fileName}", produces = MediaType.APPLICATION_PDF_VALUE)
-    public void getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
-        File f = new File(System.getProperty("java.io.tmpdir"), fileName);
-        OutputStream out = response.getOutputStream();
-        IOUtils.copy(new FileInputStream(f), out);
-        out.flush();
-        f.delete();
+    public byte[] getArquivoTemporario(@PathVariable String fileName, HttpServletResponse response) throws IOException {
+    	response.addHeader("Content-Disposition", "inline");
+        File f = new File(tempDir, fileName);
+        return FileUtils.readFileToByteArray(f);
     }
     
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
