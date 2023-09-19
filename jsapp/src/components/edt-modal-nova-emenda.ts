@@ -188,7 +188,9 @@ export class EdtModalNovaEmenda extends LitElement {
                         )}
                         variant="neutral"
                         >${p.labelPrazoRecebimentoEmendas?.includes(' ')
-                          ? p.labelPrazoRecebimentoEmendas.substring(11)
+                          ? p.labelPrazoRecebimentoEmendas
+                              .substring(11)
+                              .replace(/[()]/g, '')
                           : p.labelPrazoRecebimentoEmendas}</sl-badge
                       >
                     </td>
