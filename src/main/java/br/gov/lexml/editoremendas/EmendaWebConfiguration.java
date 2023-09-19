@@ -77,6 +77,24 @@ public class EmendaWebConfiguration {
 	    registration.setOrder(2);
 	    return registration;
 	}
+	
+	@Bean
+	public FilterRegistrationBean filterRegistrationSession() {
+		HttpFilter filter = new HttpFilter() {
+			@Override
+			protected void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+					throws IOException, ServletException {
+				request.getSession(true);
+				super.doFilter(request, response, chain);
+			}
+		};
+	    FilterRegistrationBean registration = new FilterRegistrationBean();
+	    registration.setFilter(filter);
+	    registration.addUrlPatterns("/api/*");
+	    registration.setName("Session-Filter");
+	    registration.setOrder(3);
+	    return registration;
+	}	
 
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
