@@ -409,7 +409,7 @@ export class EdtApp extends LitElement {
       );
     } finally {
       this.atualizarTituloEditor();
-      this.resizeObserver();
+      // this.resizeObserver();
       this.toggleCarregando();
     }
   }

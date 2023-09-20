@@ -44474,7 +44474,7 @@ class EtaContainerTable extends EtaContainer {
         var _a, _b;
         const node = super.create();
         const conteudo = normalizaSeForOmissis((_b = (_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '').trim();
-        node.setAttribute('contenteditable', 'false'); //elemento?.editavel ? 'true' : 'false');
+        // node.setAttribute('contenteditable', 'false'); //elemento?.editavel ? 'true' : 'false');
         node.setAttribute('class', EtaContainerTable.className + ' ' + EtaContainerTable.getClasseCSS(elemento));
         node.setAttribute('id', EtaContainerTable.criarId(elemento.uuid));
         EtaContainerTable.atualizarAtributoRevisao(elemento, node);
@@ -45212,6 +45212,16 @@ const sublinhado = `
 <rect x="3" y="12.9" class="ql-fill" width="9.9" height="0.8"/>
 </svg>
 `;
+const iconeMarginBottom = `
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+<path class="ql-fill" d="M 13.55 8.55 L 13.55 7.4 1.8 7.4 1.8 8.55 13.55 8.55 M 13.05 2.55 L 13.05 1.4 1.8 1.4 1.8 2.55 13.05 2.55 M 10.55 5.55 L 10.55 4.4 1.8 4.4 1.8 5.55 10.55 5.55 M 10.3 14.65 L 10.3 10.4 1.8 10.4 1.8 14.65 10.3 14.65 M 2.8 11.4 L 9.3 11.4 9.3 13.55 2.8 13.55 2.8 11.4 M 14.6 10.55 L 13.85 9.8 11.3 12.55 13.85 15.2 14.6 14.45 12.8 12.55 14.6 10.55 Z"/>
+</svg>
+`;
+const iconeTextIndent = `
+<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+<path class="ql-fill" d="M 1.65,2.3 0.9,3.05 2.65,4.95 0.9,6.9 1.65,7.65 4.15,4.95 1.65,2.3 M 2.5,12.45 v 1.1 h 11.25 v -1.1 H 2.5 m 11.25,-2.1 V 9.25 H 2.5 v 1.1 h 11.25 m 0,-4.3 H 6.25 V 7.1 h 7.5 V 6.05 m 0,-3.25 h -7.5 v 1.1 h 7.5 z"></path>
+</svg>
+`;
 
 const Inline = Quill.import('blots/inline');
 class EtaBlotConteudoOmissis extends Inline {
@@ -45505,7 +45515,7 @@ class EtaContainerTdEsquerdo extends EtaContainer {
     }
     static create(elemento) {
         const node = super.create();
-        node.setAttribute('contenteditable', 'false');
+        // node.setAttribute('contenteditable', 'false');
         // node.setAttribute('contenteditable', elemento.editavel ? 'true' : 'false');
         node.setAttribute('class', EtaContainerTdEsquerdo.className + ' container__texto--nivel' + elemento.nivel);
         const fator = Number(getComputedStyle(document.documentElement).getPropertyValue('--elemento-padding-factor'));
@@ -46869,7 +46879,15 @@ const exibirDiferencasDialog = (diff) => {
 
     sl-card {
       box-shadow: var(--sl-shadow-x-large) !important;
-      width: 100%;
+      width: 33%;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    @media (max-width: 768px) {
+      sl-card {
+        width: 100%;
+      }
     }
 
     sl-card::part(base){
@@ -47071,6 +47089,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
           --lx-eta-editor-height: 100%;
           --lx-eta-editor-overflow: display;
         }
+
+        lexml-eta-editor .ql-editor {
+          white-space: normal;
+        }
+
         #lx-eta-editor {
           overflow: var(--lx-eta-editor-overflow);
           display: block;
@@ -48533,7 +48556,7 @@ const jaExisteRevisaoUsuarioAtual$1 = (state) => {
 async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const dialogElem = document.createElement('sl-dialog');
     editorTextoRico.appendChild(dialogElem);
-    dialogElem.label = 'Enviar Anexo';
+    dialogElem.label = 'Anexo';
     dialogElem.addEventListener('sl-request-close', (event) => {
         if (event.detail.source === 'overlay') {
             event.preventDefault();
@@ -48720,18 +48743,6 @@ const jaExisteRevisaoUsuarioAtual = (state) => {
 
 const editorTextoRicoCss = $ `
   <style>
-    .ql-snow.ql-toolbar .ql-margin-bottom {
-      background: url('data:image/svg+xml;utf8, <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path class="ql-fill" d="M3.1 13.1Q2.9 13.1 2.75 13.25 2.6 13.4 2.6 13.55 2.6 13.75 2.75 13.9 2.9 14.05 3.1 14.05L12.9 14.05Q13.1 14.05 13.25 13.9 13.4 13.75 13.4 13.55 13.4 13.4 13.25 13.25 13.1 13.1 12.9 13.1L3.1 13.1M13.25 2.2Q13.1 2.05 12.9 2.05L3.1 2.05Q2.9 2.05 2.75 2.2 2.6 2.3 2.6 2.5 2.6 2.7 2.75 2.85 2.9 2.95 3.1 2.95L12.9 2.95Q13.1 2.95 13.25 2.85 13.4 2.7 13.4 2.5 13.4 2.3 13.25 2.2M10.3 5.9Q10.3 5.7 10.2 5.55L8.35 3.7Q8.2 3.55 8 3.55 7.8 3.55 7.7 3.7L5.85 5.55Q5.7 5.7 5.7 5.9 5.7 6.05 5.85 6.2 6 6.35 6.15 6.35 6.35 6.35 6.5 6.2L7.55 5.15 7.55 10.9 6.5 9.85Q6.35 9.75 6.15 9.75 6 9.75 5.85 9.85 5.7 10 5.7 10.2 5.7 10.4 5.85 10.5L7.7 12.35Q7.8 12.5 8 12.5 8.2 12.5 8.35 12.35L10.2 10.5Q10.3 10.4 10.3 10.2 10.3 10 10.2 9.85 10.05 9.75 9.85 9.75 9.65 9.75 9.55 9.85L8.5 10.9 8.5 5.15 9.55 6.2Q9.65 6.35 9.85 6.35 10.05 6.35 10.2 6.2 10.3 6.05 10.3 5.9Z"></path></svg>')
-          no-repeat center,
-        white;
-      background-size: 16px;
-    }
-    .ql-snow.ql-toolbar .ql-text-indent {
-      background: url('data:image/svg+xml;utf8, <svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path class="ql-fill" d="M 1.65,2.3 0.9,3.05 2.65,4.95 0.9,6.9 1.65,7.65 4.15,4.95 1.65,2.3 M 2.5,12.45 v 1.1 h 11.25 v -1.1 H 2.5 m 11.25,-2.1 V 9.25 H 2.5 v 1.1 h 11.25 m 0,-4.3 H 6.25 V 7.1 h 7.5 V 6.05 m 0,-3.25 h -7.5 v 1.1 h 7.5 z"></path></svg>')
-          no-repeat center,
-        white;
-      background-size: 16px;
-    }
     .editor-texto-rico {
       height: 375px;
       font-size: 18px !important;
@@ -48918,12 +48929,19 @@ const editorTextoRicoCss = $ `
       box-shadow: 0 0 10px rgba(135, 206, 235, 0.5); /* Adiciona sombra com tom azul claro */
     }
 
+    .ql-snow .ql-editor img {
+      max-width: 60%;
+    }
+
     @media (max-width: 768px) {
       .mobile-buttons {
         display: inline-block !important;
       }
       #chk-em-revisao-justificativa span {
         display: none;
+      }
+      .ql-snow .ql-editor img {
+        max-width: 100%;
       }
     }
   </style>
@@ -49093,9 +49111,9 @@ const quillTableCss = $ `<style>
     color: #444;
   }
 
-  .ql-picker-label.ql-active .ql-stroke {
+  /* .ql-picker-label.ql-active .ql-stroke {
     stroke: #444 !important;
-  }
+  } */
 
   .ql-picker-item[data-value='remove-table'] {
     border: none !important;
@@ -51085,7 +51103,6 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.modo = '';
         this.onChange = new Observable();
         this.icons = Quill.import('ui/icons');
-        this.MAX_WIDTH_IMAGEM = 400;
         this.labelAnexo = () => {
             var _a;
             const lengthAnexos = (_a = this.anexos) === null || _a === void 0 ? void 0 : _a.length;
@@ -51202,6 +51219,12 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                                     handler: (range, keycontext) => {
                                         return TableModule.keyboardHandler(this.quill, 'copy', range, keycontext);
                                     },
+                                },
+                                // Desabilita autoformatação de listas
+                                // Referência: https://github.com/quilljs/quill/blob/1.3.7/modules/keyboard.js (linha 249)
+                                'list autofill': {
+                                    key: ' ',
+                                    handler: () => true,
                                 },
                             },
                         },
@@ -51413,30 +51436,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         //this.icons['anexo'] = anexo + ;
         this.icons['bold'] = negrito;
         this.icons['underline'] = sublinhado;
-    }
-    limparRedimencionamentoImagens() {
-        const imagens = document.querySelectorAll('#editor-texto-rico-emenda-inner img');
-        if (imagens === null || imagens === void 0 ? void 0 : imagens.length) {
-            imagens.forEach(img => {
-                img.removeAttribute('width');
-                img.removeAttribute('height');
-            });
-        }
-    }
-    redimencionarImagens() {
-        const imagens = document.querySelectorAll('#editor-texto-rico-emenda-inner img');
-        if (imagens === null || imagens === void 0 ? void 0 : imagens.length) {
-            imagens.forEach(img => this.redimencionarImagem(img));
-        }
-    }
-    redimencionarImagem(img) {
-        const imgWidth = img.width;
-        const imgHeight = img.height;
-        if (imgWidth > this.MAX_WIDTH_IMAGEM) {
-            const porcentagem = (imgWidth - this.MAX_WIDTH_IMAGEM) / imgWidth;
-            img.width = imgWidth - imgWidth * porcentagem;
-            img.height = imgHeight - imgHeight * porcentagem;
-        }
+        this.icons['text-indent'] = iconeTextIndent;
+        this.icons['margin-bottom'] = iconeMarginBottom;
     }
     agendarEmissaoEventoOnChange() {
         clearTimeout(this.timerOnChange);
@@ -51488,7 +51489,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     renderBotaoAnexo() {
         return $ `
       <div class="panel-anexo">
-        <button type="button" style="width:auto" title="Enviar anexo" @click=${() => uploadAnexoDialog(this.anexos, this.atualizaAnexo, this)}>
+        <button type="button" style="width:auto" title="Anexo" @click=${() => uploadAnexoDialog(this.anexos, this.atualizaAnexo, this)}>
           <span>
             <svg xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 35 35" data-name="Layer 2" id="Layer_2">
               <path
@@ -57122,7 +57123,7 @@ const quillSnowStyles = $ `
       tab-size: 4;
       -moz-tab-size: 4;
       text-align: left;
-      /* white-space: pre-wrap; */
+      white-space: pre-wrap;
       word-wrap: break-word;
     }
     .ql-editor > * {
@@ -57286,7 +57287,6 @@ const quillSnowStyles = $ `
       content: counter(list-9, decimal) '. ';
     }
     .ql-editor .ql-indent-1:not(.ql-direction-rtl) {
-      text-indent: 6em;
       padding-left: 3em;
     }
     .ql-editor li.ql-indent-1:not(.ql-direction-rtl) {
@@ -58116,7 +58116,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         const emenda = this.montarEmendaBasicaFromProjetoNorma(this.projetoNorma, this.modo);
         const numeroProposicao = emenda.proposicao.numero.replace(/^0+/, '');
-        if (this._lexmlEta) {
+        if (!this.isEmendaTextoLivre()) {
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
             emenda.comandoEmendaTextoLivre.motivo = undefined;
@@ -58124,7 +58124,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         else {
             emenda.comandoEmendaTextoLivre.motivo = this.motivo;
-            this._lexmlEmendaTextoRico.redimencionarImagens();
             emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
             emenda.anexos = this._lexmlEmendaTextoRico.anexos;
         }
@@ -58155,7 +58154,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.modo = modo;
         this.projetoNorma = projetoNorma;
         this.motivo = motivo;
-        if (this.modo !== 'emendaTextoLivre') {
+        if (!this.isEmendaTextoLivre()) {
             this._lexmlEta.setProjetoNorma(modo, projetoNorma, !!emenda);
         }
         if (emenda) {
@@ -58165,13 +58164,17 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             this.resetaEmenda(modo);
         }
         this.limparAlertas();
-        if (this.modo === 'emendaTextoLivre' && !this._lexmlEmendaTextoRico.texto) {
+        if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
             this.showAlertaEmendaTextoLivre();
         }
         this.setUsuario(usuario !== null && usuario !== void 0 ? usuario : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
         if (!((_a = emenda === null || emenda === void 0 ? void 0 : emenda.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
             this.desativarMarcaRevisao();
+        }
+        this._tabsEsquerda.show('lexml-eta');
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+            this._tabsDireita.show('comando');
         }
     }
     stateChanged(state) {
@@ -58196,13 +58199,13 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
     }
     setEmenda(emenda) {
-        if (this._lexmlEta) {
+        if (!this.isEmendaTextoLivre()) {
             this._lexmlEta.setDispositivosERevisoesEmenda(emenda.componentes[0].dispositivos, emenda.revisoes);
         }
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
         this._lexmlJustificativa.setContent(emenda.justificativa);
-        if (this._lexmlEmendaTextoRico) {
+        if (this.isEmendaTextoLivre()) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
             this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
             rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(emenda.componentes[0].dispositivos, emenda.revisoes));
@@ -58220,7 +58223,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return this;
     }
     updateLayoutSplitPanel(forceUpdate = false) {
-        if (this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre') {
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             if (this.sizeMode === 'desktop') {
                 this.slSplitPanel.position = this.splitPanelPosition;
             }
@@ -58288,7 +58291,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
     }
     updated() {
-        if (this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre') {
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             this.slSplitPanel.removeAttribute('disabled');
             this.slSplitPanel.position = this.splitPanelPosition;
         }
@@ -58357,8 +58360,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         if (estilosOriginais.emenda.display === 'none') {
             setTabPanelStyles(emendaTabPanel, estilosOriginais.emenda, true);
         }
-        const alturaToolBarJustificativa = (qlToolbarJustificativa === null || qlToolbarJustificativa === void 0 ? void 0 : qlToolbarJustificativa.clientHeight) + 5;
-        const alturaToolBarEmenda = (qlToolbarEmenda === null || qlToolbarEmenda === void 0 ? void 0 : qlToolbarEmenda.clientHeight) + 5;
+        const alturaToolBarJustificativa = (qlToolbarJustificativa === null || qlToolbarJustificativa === void 0 ? void 0 : qlToolbarJustificativa.clientHeight) + 10;
+        const alturaToolBarEmenda = (qlToolbarEmenda === null || qlToolbarEmenda === void 0 ? void 0 : qlToolbarEmenda.clientHeight) + 10;
         setTabPanelStyles(justificativaTabPanel, estilosOriginais.justificativa);
         setTabPanelStyles(emendaTabPanel, estilosOriginais.emenda);
         this.style.setProperty('--heightJustificativa', `${alturaElemento - alturaToolBarJustificativa}px`);
@@ -58369,7 +58372,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     onChange() {
         var _a;
-        if (this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre') {
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             const comandoEmenda = this._lexmlEta.getComandoEmenda();
             this._lexmlEmendaComando.emenda = comandoEmenda;
             this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
@@ -58386,7 +58389,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
             }
         }
-        else if (this.modo === 'emendaTextoLivre') {
+        else if (this.isEmendaTextoLivre()) {
             if (!this._lexmlEmendaTextoRico.texto) {
                 this.showAlertaEmendaTextoLivre();
             }
@@ -58410,6 +58413,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     mostrarDialogDisclaimerRevisao() {
         mostrarDialogDisclaimerRevisao();
     }
+    isEmendaTextoLivre() {
+        return this.modo && this.modo === 'emendaTextoLivre';
+    }
     render() {
         return $ `
       ${shoelaceLightThemeStyles} ${quillSnowStyles} ${editorStyles}
@@ -58432,7 +58438,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         lexml-emenda-comando {
           font-family: var(--eta-font-serif);
-          display: ${this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre' ? 'block' : 'none'};
+          display: ${this.modo.startsWith('emenda') && !this.isEmendaTextoLivre() ? 'block' : 'none'};
           height: 100%;
         }
         lexml-eta {
@@ -58470,7 +58476,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
 
         sl-split-panel {
-          --divider-width: ${this.modo.startsWith('emenda') && this.modo !== 'emendaTextoLivre' ? '15px' : '0px'};
+          --divider-width: ${this.modo.startsWith('emenda') && !this.isEmendaTextoLivre() ? '15px' : '0px'};
         }
         sl-tab sl-icon {
           margin-right: 5px;
@@ -58498,9 +58504,19 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
               <div class="badge-pulse" id="contadorAvisos">${this.totalAlertas > 0 ? $ ` <sl-badge variant="danger" pill pulse>${this.totalAlertas}</sl-badge> ` : ''}</div>
             </sl-tab>
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
-              ${this.modo && this.modo !== 'emendaTextoLivre'
-            ? $ `<lexml-eta id="lexmlEta" .lexmlEtaConfig=${this.lexmlEmendaConfig} @onchange=${this.onChange}></lexml-eta>`
-            : $ `<editor-texto-rico modo="textoLivre" id="editor-texto-rico-emenda" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>`}
+              <lexml-eta
+                style="display: ${!this.isEmendaTextoLivre() ? 'block' : 'none'}"
+                id="lexmlEta"
+                .lexmlEtaConfig=${this.lexmlEmendaConfig}
+                @onchange=${this.onChange}
+              ></lexml-eta>
+              <editor-texto-rico
+                style="display: ${this.isEmendaTextoLivre() ? 'block' : 'none'}"
+                modo="textoLivre"
+                id="editor-texto-rico-emenda"
+                registroEvento="justificativa"
+                @onchange=${this.onChange}
+              ></editor-texto-rico>
             </sl-tab-panel>
             <sl-tab-panel name="justificativa" class="overflow-hidden">
               <editor-texto-rico modo="justificativa" id="editor-texto-rico-justificativa" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>
