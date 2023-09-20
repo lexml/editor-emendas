@@ -1,9 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { customElement, state, query } from 'lit/decorators.js';
-import { html, LitElement, TemplateResult } from 'lit';
-import { menuStyles } from './app.css';
+import { customElement, query, state } from 'lit/decorators.js';
 import { supported } from 'browser-fs-access';
-import { Ambiente, ambiente } from './edt-ambiente';
+import { LitElement, TemplateResult, html } from 'lit';
+import { menuStyles } from './app.css';
 
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
@@ -19,8 +18,6 @@ export class EdtMenu extends LitElement {
 
   @query('#btn-save-as')
   btnSaveAs: any;
-
-  private textoLivreHabilitado = ambiente !== Ambiente.PRODUCAO;
 
   private emitirEvento(itemMenu: string): void {
     this.dispatchEvent(
@@ -103,15 +100,11 @@ export class EdtMenu extends LitElement {
                 >
                   Onde couber
                 </sl-menu-item>
-                ${this.textoLivreHabilitado
-                  ? html`
-                      <sl-menu-item
-                        @click=${(): void => this.emitirEvento('texto-livre')}
-                      >
-                        Texto Livre
-                      </sl-menu-item>
-                    `
-                  : ''}
+                <sl-menu-item
+                  @click=${(): void => this.emitirEvento('texto-livre')}
+                >
+                  Texto Livre
+                </sl-menu-item>
               </sl-menu>
             </sl-dropdown>
             <sl-button
