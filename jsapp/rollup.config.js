@@ -72,7 +72,11 @@ export default {
         {
           src: ['assets/icons', 'assets/svg', 'assets/jpg', 'assets/img', 'assets/css', 'assets/pdf', 'assets/js-landing-page'],
           dest: '../src/main/resources/static/assets'
-        }
+        },
+        {
+          src: 'quadro-emendas.html',
+          dest: '../src/main/resources/static'
+        },
       ],
       hook: 'closeBundle'
     }),
