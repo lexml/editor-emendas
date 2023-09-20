@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
 			<artifactId>eta-backend-services</artifactId>
-			<version>0.2.7</version>
+			<version>0.2.8</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
@@ -54,7 +54,7 @@
 		<dependency>
 			<groupId>br.gov.lexml</groupId>
 			<artifactId>lexml-jsonix-spring-boot-starter</artifactId>
-			<version>0.1.8</version>
+			<version>0.1.9</version>
 		</dependency>
 	</dependencies>
 
