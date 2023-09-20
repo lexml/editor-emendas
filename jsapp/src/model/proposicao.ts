@@ -9,4 +9,5 @@ export interface Proposicao {
   dataPublicacao?: string;
   dataLimiteRecebimentoEmendas?: string;
   labelPrazoRecebimentoEmendas?: string;
+  labelTramitacao?: string;
 }

@@ -41,6 +41,7 @@ export const pesquisarProposicoes = async (
       dataPublicacao: p.dataPublicacao,
       dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
+      labelTramitacao: p.labelTramitacao,
     }))
     .sort(compareProposicoesDesc);
 };
@@ -70,6 +71,7 @@ export const pesquisarProposicoesEmTramitacao = async (
       dataPublicacao: p.dataPublicacao,
       dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
+      labelTramitacao: p.labelTramitacao,
     }))
     .sort(compareProposicoesDesc);
 };
