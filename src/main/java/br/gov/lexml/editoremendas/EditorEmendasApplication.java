@@ -9,6 +9,7 @@ public class EditorEmendasApplication {
 	
 	public static void main(String[] args) {
 		System.setProperty("java.net.useSystemProxies", "true");
+		System.setProperty("user.timezone", "America/Sao_Paulo");
 		if (SystemUtils.IS_OS_WINDOWS) {
 			System.setProperty("lexml-jsonix.cli", "jsonix-lexml-win.exe");
 		}else if(SystemUtils.IS_OS_MAC) {
