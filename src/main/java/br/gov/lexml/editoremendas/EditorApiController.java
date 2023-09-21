@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,6 +94,11 @@ public class EditorApiController {
     @GetMapping
     public String hello() {
         return "Hello";
+    }
+
+    @GetMapping(path = "/data")
+    public String data() {
+        return new Date().toString();
     }
 
     @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.TEXT_PLAIN_VALUE)
