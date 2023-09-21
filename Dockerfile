@@ -4,12 +4,6 @@ EXPOSE 8080
 ARG uid
 ARG gid
 
-# Configura fuso horário
-ENV TZ America/Sao_Paulo
-RUN echo $TZ > /etc/timezone && \
-    rm /etc/localtime && \
-    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime
-
 RUN mkdir -p /usr/local/editor-emendas && \
     groupadd -g $gid -r editoremendas && \
     useradd -u $uid -r -g editoremendas -d /usr/local/editor-emendas editoremendas && \
