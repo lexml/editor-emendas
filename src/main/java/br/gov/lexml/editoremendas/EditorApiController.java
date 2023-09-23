@@ -102,7 +102,7 @@ public class EditorApiController {
     }
 
     @PostMapping(path = "/emenda/json2pdfFile", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws IOException {
+    public String salvaEmendaEmArquivoTemporario(@RequestBody final EmendaPojo emenda) throws Exception {
     	File f = new File(tempDir, "emenda-" + UUID.randomUUID() + ".pdf");
     	FileOutputStream fos = new FileOutputStream(f);
         pdfGenerator.generate(emenda, fos);
@@ -119,7 +119,7 @@ public class EditorApiController {
     }
     
     @PostMapping(path = "/emenda/json2pdf", produces = MediaType.APPLICATION_PDF_VALUE)
-    public byte[] salvaEmenda(@RequestBody final EmendaPojo emenda) throws IOException {
+    public byte[] salvaEmenda(@RequestBody final EmendaPojo emenda) throws Exception {
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
         pdfGenerator.generate(emenda, os);
         return os.toByteArray();
