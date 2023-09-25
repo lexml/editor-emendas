@@ -22,6 +22,11 @@ const videos: Array<Video> = [
     'Copiar e colar dispositivos existentes - Introdução',
     'tP8zgonhQtk'
   ),
+  new Video(
+    'Copiar e colar dispositivos existentes - 2º tutorial',
+    '2Slqh-Oxhw0'
+  ),
+  new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
 ];
 
 @customElement('edt-modal-ajuda')
