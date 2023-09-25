@@ -24,7 +24,7 @@ const videos: Array<Video> = [
   ),
   new Video(
     'Copiar e colar dispositivos existentes - 2º tutorial',
-    '2Slqh-Oxhw0'
+    'K-w-At7hv_k'
   ),
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
 ];

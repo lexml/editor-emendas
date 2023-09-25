@@ -226,7 +226,7 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   private formatarData = (data = ''): string =>
-    data.split('-').reverse().join('/');
+    data?.length === 10 ? data.split('-').reverse().join('/') : '';
 
   private removerZerosEsquerda(numero: any): string {
     return numero.replace(/^0+/, '');
