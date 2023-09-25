@@ -212,7 +212,7 @@ export class EdtModalNovaEmenda extends LitElement {
                         ${p.idSdlegDocumentoItemDigital
                           ? p.ementa
                           : html`<sl-badge variant="neutral"
-                                >Texto indisponível</sl-badge
+                                >Texto ainda indisponível</sl-badge
                               >
                               ${p.ementa}`}
                       </div>
