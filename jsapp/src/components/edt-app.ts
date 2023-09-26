@@ -232,11 +232,11 @@ export class EdtApp extends LitElement {
         return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
       })
       .then(emenda => {
-        this.lexmlEmenda.inicializarEdicao(
-          this.modo,
-          this.jsonixProposicao,
-          emenda
-        );
+        this.lexmlEmenda.inicializarEdicao({
+          modo: this.modo,
+          projetoNorma: this.jsonixProposicao,
+          emenda,
+        });
         this.updateStateElements(tempFileData.name);
         this.fileHandle = tempFileData.handle;
         this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
@@ -556,12 +556,11 @@ export class EdtApp extends LitElement {
     this.labelTipoEmenda = 'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
 
-    this.lexmlEmenda.inicializarEdicao(
-      this.modo,
-      this.jsonixProposicao,
-      null,
-      this.motivo
-    );
+    this.lexmlEmenda.inicializarEdicao({
+      modo: this.modo,
+      projetoNorma: this.jsonixProposicao,
+      motivo: this.motivo,
+    });
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(
         JSON.stringify(this.lexmlEmenda.getEmenda())
@@ -578,7 +577,10 @@ export class EdtApp extends LitElement {
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
     this.labelTipoEmenda = 'Emenda onde couber';
     setTimeout(() => {
-      this.lexmlEmenda.inicializarEdicao(this.modo, this.jsonixProposicao);
+      this.lexmlEmenda.inicializarEdicao({
+        modo: this.modo,
+        projetoNorma: this.jsonixProposicao,
+      });
       this.atualizarTituloEditor();
       setTimeout(() => {
         this.emendaComAlteracoesSalvas = JSON.parse(
