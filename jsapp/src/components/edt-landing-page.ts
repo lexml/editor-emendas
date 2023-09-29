@@ -752,7 +752,7 @@ export class EdtLandingPage extends LitElement {
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Editar justificativa da emenda
+                        Editar justificação da emenda
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
