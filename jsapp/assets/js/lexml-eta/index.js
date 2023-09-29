@@ -30209,6 +30209,52 @@ SlCard = __decorateClass([
   n$6("sl-card")
 ], SlCard);
 
+const Delta$2 = Quill.import('delta');
+class ModuloAspasCurvas {
+    constructor(quill, options) {
+        this.enabled = true;
+        this.quill = quill;
+        this.options = options;
+        this.quill.root.addEventListener('keydown', (event) => {
+            var _a;
+            const range = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection();
+            const key = event.key;
+            if (!this.enabled || !range || !['"', "'"].includes(key))
+                return;
+            this.tratarAspas(range, key);
+            event.preventDefault();
+        });
+        // O código abaixo é uma outra forma de fazer a mesma coisa.
+        // Se o código abaixo for usado, o código acima (addEventListener e todo o seu conteúdo) deve ser comentado.
+        // this.quill.keyboard.addBinding({ key: 192 }, { shiftKey: true }, (range: any, context: any): boolean => this.tratarAspas(range, '"'));
+        // this.quill.keyboard.addBinding({ key: 192 }, { shiftKey: false }, (range: any, context: any): boolean => this.tratarAspas(range, "'"));
+    }
+    // Imita autoformação de aspas curvas do Word
+    tratarAspas(range, caracter) {
+        var _a, _b, _c, _d, _e, _f;
+        if (!this.enabled)
+            return true;
+        const isAspasDuplas = caracter === '"';
+        const abreAspas = isAspasDuplas ? '“' : '‘';
+        const fechaAspas = isAspasDuplas ? '”' : '’';
+        const texto = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getText().substring(0, range.index);
+        const aspasTransformada = !texto || (texto === null || texto === void 0 ? void 0 : texto.match(/\s$/g)) ? abreAspas : fechaAspas;
+        const format = (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getFormat(range);
+        // Insere o caracter normalmente
+        let delta = new Delta$2().retain(range.index).delete(range.length).insert(caracter, format);
+        (_c = this.quill) === null || _c === void 0 ? void 0 : _c.updateContents(delta, Quill.sources.USER);
+        (_d = this.quill) === null || _d === void 0 ? void 0 : _d.history.cutoff();
+        // Troca por aspas curvas
+        delta = new Delta$2().retain(range.index).delete(1).insert(aspasTransformada, format);
+        (_e = this.quill) === null || _e === void 0 ? void 0 : _e.updateContents(delta, Quill.sources.USER);
+        (_f = this.quill) === null || _f === void 0 ? void 0 : _f.setSelection(range.index + 1, Quill.sources.SILENT);
+        return false;
+    }
+    setEnabled(enabled) {
+        this.enabled = enabled;
+    }
+}
+
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
 
@@ -33136,6 +33182,18 @@ const textoDiffAsHtml = (texto1, texto2, typeDiff) => {
     const buildPartRemoved = (str) => `<del>${str}</del>`; //`<span classs="texto-removido">${str}</span>`;
     const diff = fn(texto1, texto2);
     return diff.map(part => (part.added ? buildPartAdded(part.value) : part.removed ? buildPartRemoved(part.value) : part.value)).join('');
+};
+const substituiEspacosEntreTagsPorNbsp = (texto, tags) => {
+    if (tags) {
+        const regex = new RegExp(`(?<=<(${tags.join('|')})>) +(?=</\\1>)`, 'gi');
+        return texto.replace(regex, texto => texto.replace(/ /g, '&nbsp;'));
+    }
+    else {
+        return texto.replace(/ /g, '&nbsp;');
+    }
+};
+const substituiMultiplosEspacosPorNbsp = (texto) => {
+    return texto.replace(/ +/g, texto => texto.replace(/ /g, '&nbsp;'));
 };
 
 // Tipo string para salvar o nome em vez do índice
@@ -37352,7 +37410,7 @@ const isRevisaoPrincipal = (revisao) => isRevisaoElemento(revisao) && !revisao.i
 const existeRevisaoCriadaPorExclusao = (revisoes = []) => revisoes.some(r => isRevisaoDeExclusao(r));
 var RevisaoJustificativaEnum;
 (function (RevisaoJustificativaEnum) {
-    RevisaoJustificativaEnum["JustificativaAlterada"] = "Justificativa Alterada";
+    RevisaoJustificativaEnum["JustificativaAlterada"] = "Justifica\u00E7\u00E3o Alterada";
 })(RevisaoJustificativaEnum || (RevisaoJustificativaEnum = {}));
 var RevisaoTextoLivreEnum;
 (function (RevisaoTextoLivreEnum) {
@@ -37865,6 +37923,7 @@ const restauraAndBuildEvents = (dispositivo) => {
     else {
         addRestauracao(dispositivo);
     }
+    result.push({ stateType: StateType.ElementoSelecionado, elementos: [createElemento(dispositivo, true)] });
     return result;
 };
 const suprimeAndBuildEvents = (articulacao, dispositivo) => {
@@ -40620,7 +40679,7 @@ const buildContentDispositivo = (el) => {
     else {
         (_e = (_d = (_c = el.value) === null || _c === void 0 ? void 0 : _c.p) === null || _d === void 0 ? void 0 : _d.map((p) => p)) === null || _e === void 0 ? void 0 : _e.map((a) => a.content).forEach((content) => (texto += buildContent$1(content)));
     }
-    return substituiAspasRetasPorCurvas(texto.replace(/b>/gi, 'strong>').replace(/i>/gi, 'em>'));
+    return substituiAspasRetasPorCurvas(texto);
 };
 const substituiAspasRetasPorCurvas = (html) => {
     const div = document.createElement('div');
@@ -41478,11 +41537,11 @@ const getMensagemTipoRevisoes = (state) => {
     const contemRevisoesDispositivos = state.revisoes.filter(e => e.descricao !== RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
     const contemRevisoesJustificativa = state.revisoes.filter(e => e.descricao === RevisaoJustificativaEnum.JustificativaAlterada).length > 0;
     return contemRevisoesDispositivos && contemRevisoesJustificativa
-        ? ' das abas texto e justificativa '
+        ? ' das abas texto e justificação '
         : contemRevisoesDispositivos
             ? ' da aba texto '
             : contemRevisoesJustificativa
-                ? ' da aba justificativa '
+                ? ' da aba justificação '
                 : ' ';
 };
 
@@ -43284,10 +43343,11 @@ class CmdEmdUtil {
         // Verifica alteração integral de caput
         if (isCaput(pai) && pai.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
             if (pai.filhos.find(f => f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL)) {
+                // Não é alteração integral de caput
                 return d;
             }
-            //pai = pai.pai!;
-            return pai.pai;
+            // É alteração integral de caput
+            return CmdEmdUtil.getDispositivoAfetado(pai.pai);
         }
         // O caso de artigos adicionados junto com seu agrupador já foi tratado antes. Ver uso de retiraPrimeirosFilhosAdicionadosAgrupador
         if (isArtigo(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
@@ -46793,10 +46853,22 @@ const exibirDiferencasDialog = (diff) => {
         setTimeout(() => fnDestroy(), 0);
     });
     diff = trataOmissisDiff(diff);
-    const contemRevisao = diff.textoAntesRevisao !== undefined && diff.textoAposRevisao !== undefined;
-    const diferencaModificado = textoDiffAsHtml(diff.textoOriginal, contemRevisao ? diff.textoAposRevisao : diff.textoAtual, 'diffWords');
+    const contemRevisao = !!diff.textoAntesRevisao;
+    let diferencaModificado = textoDiffAsHtml(diff.textoOriginal, diff.textoAtual, 'diffWords');
+    let diferencaSemEspacosDuplicados = diferencaModificado.replace(/\s+/g, ' ');
+    diferencaModificado = substituiEspacosEntreTagsPorNbsp(textoDiffAsHtml(diferencaSemEspacosDuplicados, diferencaModificado, 'diffChars'), ['ins', 'del']);
     const tabModificado = !diff.adicionado && diferencaModificado !== diff.textoOriginal ? `<sl-tab slot="nav" panel="modificado"> Texto original </sl-tab>` : '';
     const tabModificadoRevisao = contemRevisao ? `<sl-tab slot="nav" panel="modificadoRevisao">Texto antes da revisão</sl-tab>` : '';
+    let diferencaEntreTextoAtualETextoAntesRevisao = contemRevisao ? textoDiffAsHtml(diff.textoAntesRevisao, diff.textoAtual, 'diffWords') : undefined;
+    if (contemRevisao) {
+        diferencaSemEspacosDuplicados = diferencaEntreTextoAtualETextoAntesRevisao.replace(/\s+/g, ' ');
+        diferencaEntreTextoAtualETextoAntesRevisao = substituiEspacosEntreTagsPorNbsp(textoDiffAsHtml(diferencaSemEspacosDuplicados, diferencaEntreTextoAtualETextoAntesRevisao, 'diffChars'), ['ins', 'del']);
+    }
+    diff.textoOriginal = substituiMultiplosEspacosPorNbsp(diff.textoOriginal);
+    diff.textoAtual = substituiMultiplosEspacosPorNbsp(diff.textoAtual);
+    if (contemRevisao) {
+        diff.textoAntesRevisao = substituiMultiplosEspacosPorNbsp(diff.textoAntesRevisao);
+    }
     const tabPanelModificado = !diff.adicionado && diferencaModificado !== diff.textoOriginal
         ? `<sl-tab-panel name="modificado">
 
@@ -46804,47 +46876,59 @@ const exibirDiferencasDialog = (diff) => {
           <div slot="header">
             Texto original
           </div>
-          ${diff.textoOriginal}
+          <p class="texto-quill">
+            ${diff.textoOriginal}
+          </p>
         </sl-card>
 
         <sl-card class="card-header texto-alterado">
           <div slot="header">
             Diferença
           </div>
-          ${diferencaModificado}
+          <p class="texto-quill">
+            ${diferencaModificado}
+          </p>
         </sl-card>
 
         <sl-card class="card-header texto-alterado">
           <div slot="header">
           Texto atual
           </div>
-          ${!contemRevisao ? diff.textoAtual : diff.textoAposRevisao}
+          <p class="texto-quill">
+            ${diff.textoAtual}
+          </p>
         </sl-card>
 
       </sl-tab-panel>`
         : '';
-    const tabPanelModificadoRevisao = diff.textoAntesRevisao !== undefined && diff.textoAposRevisao !== undefined
+    const tabPanelModificadoRevisao = contemRevisao
         ? `<sl-tab-panel name="modificadoRevisao">
 
           <sl-card class="card-header texto-alterado">
             <div slot="header">
               Texto antes da revisão
             </div>
-            ${diff.textoAntesRevisao}
+            <p class="texto-quill">
+              ${diff.textoAntesRevisao}
+            </p>
           </sl-card>
 
           <sl-card class="card-header texto-alterado">
             <div slot="header">
               Diferença
             </div>
-            ${textoDiffAsHtml(diff.textoAntesRevisao, diff.textoAposRevisao, 'diffWords')}
+            <p class="texto-quill">
+              ${diferencaEntreTextoAtualETextoAntesRevisao}
+            </p>
           </sl-card>
 
           <sl-card class="card-header texto-alterado">
             <div slot="header">
-              ${diff.textoAposRevisao === diff.textoOriginal ? 'Texto original' : 'Texto após revisão (atual)'}
+              Texto atual
             </div>
-            ${diff.textoAposRevisao}
+            <p class="texto-quill">
+              ${diff.textoAtual}
+            </p>
           </sl-card>
 
         </sl-tab-panel>`
@@ -46862,10 +46946,17 @@ const exibirDiferencasDialog = (diff) => {
 
     .texto-alterado ins {
       background-color: #c6ffc6;
+      text-decoration: none;
     }
 
     .texto-alterado del {
       background-color: #ffc6c6;
+    }
+
+    p .texto-quill {
+      white-space: pre-wrap;
+      text-align: justify;
+      text-indent: 0 !important;
     }
 
     sl-tab-panel::part(base) {
@@ -46931,9 +47022,6 @@ const exibirDiferencasDialog = (diff) => {
 const trataOmissisDiff = (diff) => {
     if (diff.textoAtual.includes('....')) {
         diff.textoAtual = OMISSIS;
-    }
-    if (diff.textoAposRevisao && diff.textoAposRevisao.includes('....')) {
-        diff.textoAposRevisao = OMISSIS;
     }
     return diff;
 };
@@ -47464,6 +47552,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         }
     }
     processarStateEvents(events) {
+        const ultimoEventoElementoSelecionado = events.filter((ev) => ev.stateType === StateType.ElementoSelecionado).slice(-1)[0];
         events === null || events === void 0 ? void 0 : events.forEach((event) => {
             var _a;
             switch (event.stateType) {
@@ -47508,7 +47597,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     break;
                 case StateType.ElementoSelecionado:
                     this.atualizarAtributos(event);
-                    if (events[events.length - 1] === event) {
+                    if (ultimoEventoElementoSelecionado === event) {
                         this.montarMenuContexto(event);
                     }
                     this.atualizarMensagemQuill(event);
@@ -47946,7 +48035,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 diff.textoOriginal = elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL ? diff.textoAtual : diff.textoAntesRevisao;
                 diff.adicionado = true;
             }
-            diff.textoAposRevisao = revisao.elementoAposRevisao.conteudo.texto;
             exibirDiferencasDialog(diff);
         }
         else {
@@ -48931,6 +49019,14 @@ const editorTextoRicoCss = $ `
 
     .ql-snow .ql-editor img {
       max-width: 60%;
+    }
+
+    .editor-texto-rico p.ql-text-indent-0px {
+      text-indent: 0;
+    }
+
+    .editor-texto-rico p.ql-margin-bottom-0px {
+      margin-bottom: 0;
     }
 
     @media (max-width: 768px) {
@@ -50717,7 +50813,7 @@ Table.allowedChildren = [TableRow];
 
 const Container = Quill.import('blots/container');
 const Parchment$2 = Quill.import('parchment');
-const Delta = Quill.import("delta");
+const Delta$1 = Quill.import("delta");
 
 const nodeListToArray = collection => {
   const elementsIndex = [];
@@ -50775,7 +50871,7 @@ class TableModule {
     clipboard.addMatcher('TABLE', function (node, delta) {
       if (isInTable(quill)) {
         emitirEventoTableInTable(quill);
-        return new Delta();
+        return new Delta$1();
       }
 
       const is_pasted_data = node.closest('.ql-editor') === null;
@@ -50828,7 +50924,7 @@ class TableModule {
         node.setAttribute('cell_id', TableTrick.random_id());
       }
 
-      const newDelta = delta.compose(new Delta().retain(delta.length(), {
+      const newDelta = delta.compose(new Delta$1().retain(delta.length(), {
         td: [
           node.getAttribute('table_id'),
           node.getAttribute('row_id'),
@@ -51052,48 +51148,25 @@ const removeElementosTDOcultos = (html = '') => {
     return tempDiv.innerHTML;
 };
 
-//import Parchment from 'parchment';
 const Parchment$1 = Quill.import('parchment');
-class NoIndentAttributor extends Parchment$1.Attributor.Style {
-    constructor(attrName, keyName, options) {
-        super(attrName, keyName, options);
-    }
-    add(node, value) {
-        if (!this.value(node)) {
-            return super.add(node, value);
-        }
-        this.remove(node);
-        return true;
-    }
-}
 const config$1 = {
     scope: Parchment$1.Scope.BLOCK,
     whitelist: ['0px'],
 };
-const NoIndentClass = new NoIndentAttributor('text-indent', 'text-indent', config$1);
+// const NoIndentStyle = new Parchment.Attributor.Style('text-indent', 'text-indent', config);
+const NoIndentClass = new Parchment$1.Attributor.Class('text-indent', 'ql-text-indent', config$1);
 
-//import Parchment from 'parchment';
 const Parchment = Quill.import('parchment');
-class MarginBottomAttributor extends Parchment.Attributor.Style {
-    constructor(attrName, keyName, options) {
-        super(attrName, keyName, options);
-    }
-    add(node, value) {
-        if (!this.value(node)) {
-            return super.add(node, value);
-        }
-        this.remove(node);
-        return true;
-    }
-}
 const config = {
     scope: Parchment.Scope.BLOCK,
     whitelist: ['0px'],
 };
-const MarginBottomClass = new MarginBottomAttributor('margin-bottom', 'margin-bottom', config);
+// const MarginBottomStyle = new Parchment.Attributor.Style('margin-bottom', 'margin-bottom', config);
+const MarginBottomClass = new Parchment.Attributor.Class('margin-bottom', 'ql-margin-bottom', config);
 
 const DefaultKeyboardModule = Quill.import('modules/keyboard');
 const DefaultClipboardModule = Quill.import('modules/clipboard');
+const Delta = Quill.import('delta');
 let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(rootStore)(s) {
     constructor() {
         super();
@@ -51138,11 +51211,12 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                                 redo: this.redo,
                             },
                         },
+                        aspasCurvas: true,
                         table: {
                             cellSelectionOnClick: false,
                         },
                         history: {
-                            delay: 0,
+                            delay: 1000,
                             maxStack: 500,
                             userOnly: true,
                         },
@@ -51153,7 +51227,6 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                                 tab: {
                                     key: 'tab',
                                     handler: (range, keycontext) => {
-                                        const Delta = Quill.import('delta');
                                         const outSideOfTable = TableModule.keyboardHandler(this.quill, 'tab', range, keycontext);
                                         if (outSideOfTable && this.quill) {
                                             //for some reason when you return true as quill says it should hand it to the default like the other bindings... for tab it doesnt.
@@ -51290,7 +51363,6 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             }
             this.texto = texto;
             const textoAjustado = (texto || '')
-                .replace(/indent/g, 'ql-indent')
                 .replace(/align-justify/g, 'ql-align-justify')
                 .replace(/align-center/g, 'ql-align-center')
                 .replace(/align-right/g, 'ql-align-right');
@@ -51322,7 +51394,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer);
             }
             this.atualizaRevisaoIcon();
-            this.desabilitaBtnAceitarRevisoes(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
+            this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
         };
         this.undo = () => {
             var _a, _b;
@@ -51358,12 +51430,12 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 else {
                     contentRevisoes.innerHTML = this.getTitle();
                     iconRevisoes.classList.remove(this.getIdTooltip() + '__ativo');
-                    this.desabilitaBtnAceitarRevisoes(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
+                    this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
                 }
             }
         };
         this.getTitle = () => {
-            return this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificativa' : 'Revisões no texto livre';
+            return this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificação' : 'Revisões no texto livre';
         };
         this.getMensagemRevisoes = () => {
             let revisoes;
@@ -51393,13 +51465,13 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.aceitaRevisoesJustificativa = () => {
             atualizaRevisaoJustificativa(rootStore.getState().elementoReducer, true);
             this.atualizaRevisaoIcon();
-            this.desabilitaBtnAceitarRevisoes(this.getRevisoesJustificativa().length === 0, 'aceita-revisao-justificativa');
+            this.desabilitaBtn(this.getRevisoesJustificativa().length === 0, 'aceita-revisao-justificativa');
             this.atualizaQuantidadeRevisao();
         };
         this.aceitaRevisoesTextoLivre = () => {
             atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer, true);
             this.atualizaRevisaoIcon();
-            this.desabilitaBtnAceitarRevisoes(this.getRevisoesTextoLivre().length === 0, 'aceita-revisao-texto-livre');
+            this.desabilitaBtn(this.getRevisoesTextoLivre().length === 0, 'aceita-revisao-texto-livre');
             this.atualizaQuantidadeRevisao();
         };
         this.getRevisoes = () => {
@@ -51413,13 +51485,15 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             const revisoes = rootStore.getState().elementoReducer.revisoes;
             return revisoes.filter(r => r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado);
         };
-        this.desabilitaBtnAceitarRevisoes = (desabilita, button) => {
+        this.desabilitaBtn = (desabilita, button) => {
             const contadorView = document.getElementById(button);
-            if (desabilita) {
-                contadorView.setAttribute('disabled', desabilita);
-            }
-            else {
-                contadorView.removeAttribute('disabled');
+            if (contadorView) {
+                if (desabilita) {
+                    contadorView.setAttribute('disabled', desabilita);
+                }
+                else {
+                    contadorView.removeAttribute('disabled');
+                }
             }
         };
         this.atualizaQuantidadeRevisao = () => {
@@ -51462,6 +51536,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         var _a;
         if ((_a = state.elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.events) {
             this.atualizaRevisaoIcon();
+            this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
         }
     }
     render() {
@@ -51474,7 +51549,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
 
         <sl-tooltip id="${this.getIdTooltip()}" placement="bottom-end">
           <div slot="content">
-            <div>${this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificativa' : 'Revisões no texto livre'}</div>
+            <div>${this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificação' : 'Revisões no texto livre'}</div>
           </div>
           <sl-icon name="person-check-fill"></sl-icon>
         </sl-tooltip>
@@ -53210,6 +53285,7 @@ class DispositivosWriterCmdEmd {
     getRotuloPais(disp, localizarEmAgrupador) {
         var _a;
         let pai;
+        const dispOrig = disp;
         if (isAgrupador(disp)) {
             return DispositivosWriterCmdEmd.getRotuloPaisAgrupador(disp);
         }
@@ -53229,7 +53305,7 @@ class DispositivosWriterCmdEmd {
                 }
                 break;
             }
-            if (pai && !isDispositivoRaiz(pai) && (!isAgrupador(pai) || (isArtigo(disp) && localizarEmAgrupador))) {
+            if (pai && !isDispositivoRaiz(pai) && (!isAgrupador(pai) || (isArtigo(dispOrig) && localizarEmAgrupador))) {
                 const dispAlteracao = isDispositivoAlteracao(disp);
                 const dispositivoNovoForaDeAlteracao = !dispAlteracao && disp.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO;
                 const dispositivoNovoEmAlteracao = dispAlteracao &&
@@ -58380,7 +58456,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 const alerta = {
                     id: 'alerta-global-justificativa',
                     tipo: 'error',
-                    mensagem: 'A emenda não possui uma justificativa',
+                    mensagem: 'A emenda não possui uma justificação',
                     podeFechar: false,
                 };
                 rootStore.dispatch(adicionarAlerta$1(alerta));
@@ -58497,7 +58573,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         <div slot="start">
           <sl-tab-group id="tabs-esquerda">
             <sl-tab slot="nav" panel="lexml-eta">Texto</sl-tab>
-            <sl-tab slot="nav" panel="justificativa">Justificativa</sl-tab>
+            <sl-tab slot="nav" panel="justificativa">Justificação</sl-tab>
             <sl-tab slot="nav" panel="autoria">Data, Autoria e Impressão</sl-tab>
             <sl-tab slot="nav" panel="avisos">
               Avisos
@@ -59383,6 +59459,9 @@ __decorate([
 SwitchRevisaoComponent = __decorate([
     n$1('lexml-switch-revisao')
 ], SwitchRevisaoComponent);
+
+// ---------------------------------------------------
+Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
 
 export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
