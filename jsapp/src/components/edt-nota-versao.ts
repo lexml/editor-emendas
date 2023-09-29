@@ -58,7 +58,7 @@ export class EdtNotasVersao extends LitElement {
             <li>Criar uma nova emenda a medidas provisórias;</li>
             <li>Salvar a emenda localmente em PDF</li>
             <li>Abrir uma emenda em PDF gerada no editor;</li>
-            <li>Editar a justificativa, com recursos básicos de formatação;</li>
+            <li>Editar a justificação, com recursos básicos de formatação;</li>
             <li>
               Informar outros dados necessários a emenda, como data e autoria;
             </li>
