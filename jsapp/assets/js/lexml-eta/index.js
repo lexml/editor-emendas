@@ -33958,6 +33958,10 @@ const getNomeExtenso = (urn) => {
 };
 const getNomeExtensoComDataExtenso = (urn) => {
     var _a;
+    const atalho = VOCABULARIO.atalhosUrn.find(a => a.urn === urn);
+    if (atalho) {
+        return atalho.nome;
+    }
     const u = retiraFragmento(urn);
     const numero = getNumero(u);
     const tipo = (_a = getTipo$1(u)) === null || _a === void 0 ? void 0 : _a.descricao;
@@ -54496,15 +54500,18 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         super(...arguments);
         this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
-        this.projetoNorma = {};
+        this.urn = '';
         this._timerLoadEmenda = 0;
     }
     createRenderRoot() {
         return this;
     }
-    setProjetoNorma(modo, projetoNorma, preparaAberturaEmenda = false) {
+    inicializarEdicao(modo, urn, projetoNorma, preparaAberturaEmenda = false) {
         this.modo = modo;
-        this.projetoNorma = projetoNorma;
+        this.urn = urn;
+        if (projetoNorma) {
+            this.projetoNorma = projetoNorma;
+        }
         this.loadProjetoNorma(preparaAberturaEmenda);
         document.querySelector('lexml-eta-articulacao')['style'].display = 'block';
     }
@@ -54512,9 +54519,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         if (this.modo !== ClassificacaoDocumento.EMENDA && this.modo !== ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER) {
             return undefined;
         }
-        const urn = this.projetoNorma.value.metadado.identificacao.urn;
         const articulacao = rootStore.getState().elementoReducer.articulacao;
-        return new DispositivosEmendaBuilder(this.modo, urn, articulacao).getDispositivosEmenda();
+        return new DispositivosEmendaBuilder(this.modo, this.urn, articulacao).getDispositivosEmenda();
     }
     setDispositivosERevisoesEmenda(dispositivosEmenda, revisoes) {
         this.revisoes = revisoes;
@@ -54524,9 +54530,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         }
     }
     getComandoEmenda() {
-        const urn = this.projetoNorma.value.metadado.identificacao.urn;
         const articulacao = rootStore.getState().elementoReducer.articulacao;
-        return new ComandoEmendaBuilder(urn, articulacao).getComandoEmenda();
+        return new ComandoEmendaBuilder(this.urn, articulacao).getComandoEmenda();
     }
     getProjetoAtualizado() {
         const out = { ...this.projetoNorma };
@@ -54535,15 +54540,13 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         return out;
     }
     loadProjetoNorma(preparaAberturaEmenda) {
-        var _a, _b, _c;
+        var _a, _b;
         let documento;
-        if (!this.projetoNorma || !this.projetoNorma.value) {
+        if (!this.projetoNorma) {
             this.projetoNorma = DOCUMENTO_PADRAO;
         }
         if (this.modo === ModoEdicaoEmenda.EMENDA_ARTIGO_ONDE_COUBER) {
-            const urn = (_a = getUrn(this.projetoNorma)) !== null && _a !== void 0 ? _a : '';
             documento = buildProjetoNormaFromJsonix(DOCUMENTO_PADRAO, true);
-            documento.urn = urn;
             const artigo = documento.articulacao.artigos[0];
             artigo.rotulo = 'Art.';
             artigo.numero = '1';
@@ -54559,7 +54562,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         else {
             documento = buildProjetoNormaFromJsonix(this.projetoNorma, this.modo === ClassificacaoDocumento.EMENDA);
         }
-        (_c = (_b = document.querySelector('lexml-emenda')) === null || _b === void 0 ? void 0 : _b.querySelector('sl-tab')) === null || _c === void 0 ? void 0 : _c.click();
+        documento.urn = this.urn;
+        (_b = (_a = document.querySelector('lexml-emenda')) === null || _a === void 0 ? void 0 : _a.querySelector('sl-tab')) === null || _b === void 0 ? void 0 : _b.click();
         rootStore.dispatch(openArticulacaoAction(documento.articulacao, this.modo));
     }
     loadEmenda() {
@@ -58110,6 +58114,23 @@ const quillSnowStyles = $ `
   </style>
 `;
 
+/**
+ * Parâmetros de inicialização de edição de documento
+ */
+class LexmlEmendaParametrosEdicao {
+    constructor() {
+        this.modo = 'Emenda';
+        // Identificação da proposição (texto) emendado.
+        // Preenchido automaticamente se for informada a emenda ou o projetoNorma
+        this.urn = '';
+        // Ementa da proposição.
+        // Preenchido automaticamente se for informada a emenda ou o projetoNorma
+        this.ementa = '';
+        // Motivo de uma nova emenda de texto livre
+        // Preenchido automaticamente se for informada a emenda
+        this.motivo = '';
+    }
+}
 let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)(s) {
     constructor() {
         super();
@@ -58119,8 +58140,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.parlamentares = [];
         this.lexmlEmendaConfig = new LexmlEmendaConfig();
         this.modo = ClassificacaoDocumento.EMENDA;
+        this.urn = '';
+        this.ementa = '';
         this.motivo = '';
-        this.projetoNorma = {};
         this.autoria = new Autoria();
         this.desativarMarcaRevisao = () => {
             if (rootStore.getState().elementoReducer.emRevisao) {
@@ -58157,40 +58179,45 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     atualizaListaParlamentares() {
         this.getParlamentares().then(parlamentares => (this.parlamentares = parlamentares));
     }
-    montarColegiadoApreciador(numero, ano) {
+    montarColegiadoApreciador(sigla, numero, ano) {
+        if (sigla.toUpperCase() === 'MPV') {
+            return {
+                siglaCasaLegislativa: 'CN',
+                tipoColegiado: 'Comissão',
+                siglaComissao: `CMMPV ${numero}/${ano}`,
+            };
+        }
+        // Inicialmente registra destino plenário do SF para demais matérias
         return {
-            siglaCasaLegislativa: 'CN',
-            tipoColegiado: 'Comissão',
-            siglaComissao: `CMMPV ${numero}/${ano}`,
+            siglaCasaLegislativa: 'SF',
+            tipoColegiado: 'Plenário',
         };
     }
     montarLocalFromColegiadoApreciador(colegiado) {
         return colegiado.tipoColegiado === 'Comissão' ? 'Sala da comissão' : 'Sala das sessões';
     }
-    montarEmendaBasicaFromProjetoNorma(projetoNorma, modoEdicao) {
-        var _a, _b, _c, _d;
+    montarEmendaBasica() {
         const emenda = new Emenda();
-        emenda.modoEdicao = modoEdicao;
-        const urn = getUrn(this.projetoNorma);
-        emenda.componentes[0].urn = urn;
-        if (urn) {
+        emenda.modoEdicao = this.modo;
+        emenda.componentes[0].urn = this.urn;
+        if (this.urn) {
             emenda.proposicao = {
-                urn,
-                sigla: getSigla(urn),
-                numero: getNumero(urn),
-                ano: getAno(urn),
-                ementa: buildContent$1((_d = (_c = (_b = (_a = projetoNorma === null || projetoNorma === void 0 ? void 0 : projetoNorma.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial) === null || _d === void 0 ? void 0 : _d.ementa.content),
-                identificacaoTexto: 'Texto da MPV',
+                urn: this.urn,
+                sigla: getSigla(this.urn),
+                numero: getNumero(this.urn),
+                ano: getAno(this.urn),
+                ementa: this.ementa,
+                identificacaoTexto: 'Texto inicial',
             };
         }
         return emenda;
     }
     getEmenda() {
         // Para evitar erros de referência nula quando chamado antes da inicialização do componente
-        if (!this.projetoNorma['value']) {
+        if (!this.urn) {
             return new Emenda();
         }
-        const emenda = this.montarEmendaBasicaFromProjetoNorma(this.projetoNorma, this.modo);
+        const emenda = this.montarEmendaBasica();
         const numeroProposicao = emenda.proposicao.numero.replace(/^0+/, '');
         if (!this.isEmendaTextoLivre()) {
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
@@ -58207,10 +58234,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
         emenda.opcoesImpressao = this._lexmlOpcoesImpressao.opcoesImpressao;
-        emenda.colegiadoApreciador = this.montarColegiadoApreciador(numeroProposicao, emenda.proposicao.ano);
+        emenda.colegiadoApreciador = this.montarColegiadoApreciador(emenda.proposicao.sigla, numeroProposicao, emenda.proposicao.ano);
         emenda.epigrafe = new Epigrafe();
         emenda.epigrafe.texto = `EMENDA Nº         - CMMPV ${numeroProposicao}/${emenda.proposicao.ano}`;
-        emenda.epigrafe.complemento = `(à ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
+        const generoProposicao = generoFromLetra(getTipo$1(emenda.proposicao.urn).genero);
+        emenda.epigrafe.complemento = `(${generoProposicao.artigoDefinidoPrecedidoPreposicaoASingular.trim()} ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
         emenda.revisoes = this.getRevisoes();
         return emenda;
@@ -58224,34 +58252,65 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
         return revisoes;
     }
-    inicializarEdicao(modo, projetoNorma, emenda, motivo = '', usuario) {
-        var _a;
+    inicializarEdicao(params) {
+        var _a, _b, _c;
         this._lexmlEmendaComando.emenda = [];
-        this.modo = modo;
-        this.projetoNorma = projetoNorma;
-        this.motivo = motivo;
-        if (!this.isEmendaTextoLivre()) {
-            this._lexmlEta.setProjetoNorma(modo, projetoNorma, !!emenda);
+        this.modo = params.modo;
+        this.projetoNorma = params.projetoNorma;
+        this.inicializaProposicao(params);
+        this.motivo = params.motivo;
+        if (this.isEmendaTextoLivre() && params.emenda) {
+            this.motivo = params.emenda.comandoEmendaTextoLivre.motivo || 'Motivo não informado na emenda';
         }
-        if (emenda) {
-            this.setEmenda(emenda);
+        if (!this.isEmendaTextoLivre()) {
+            this._lexmlEta.inicializarEdicao(this.modo, this.urn, params.projetoNorma, !!params.emenda);
+        }
+        if (params.emenda) {
+            this.setEmenda(params.emenda);
         }
         else {
-            this.resetaEmenda(modo);
+            this.resetaEmenda(this.modo);
         }
         this.limparAlertas();
         if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
             this.showAlertaEmendaTextoLivre();
         }
-        this.setUsuario(usuario !== null && usuario !== void 0 ? usuario : rootStore.getState().elementoReducer.usuario);
+        this.setUsuario((_a = params.usuario) !== null && _a !== void 0 ? _a : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
-        if (!((_a = emenda === null || emenda === void 0 ? void 0 : emenda.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+        if (!((_c = (_b = params.emenda) === null || _b === void 0 ? void 0 : _b.revisoes) === null || _c === void 0 ? void 0 : _c.length)) {
             this.desativarMarcaRevisao();
         }
         this._tabsEsquerda.show('lexml-eta');
         if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             this._tabsDireita.show('comando');
         }
+        this.updateView();
+    }
+    inicializaProposicao(params) {
+        this.urn = params.urn; // Preferência para a URN informada
+        this.ementa = params.ementa; // Preferência para a ementa informada
+        // Se não forem informados, utilizar da Emenda
+        if (params.emenda) {
+            if (!this.urn) {
+                this.urn = params.emenda.proposicao.urn;
+            }
+            if (!this.ementa) {
+                this.ementa = params.emenda.proposicao.ementa;
+            }
+        }
+        // Por último do ProjetoNorma
+        if (this.projetoNorma) {
+            if (!this.urn) {
+                this.urn = getUrn(this.projetoNorma);
+            }
+            if (!this.ementa) {
+                this.ementa = this.getEmentaFromProjetoNorma(this.projetoNorma);
+            }
+        }
+    }
+    getEmentaFromProjetoNorma(projetoNorma) {
+        var _a, _b, _c, _d;
+        return buildContent$1((_d = (_c = (_b = (_a = projetoNorma.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial) === null || _d === void 0 ? void 0 : _d.ementa.content);
     }
     stateChanged(state) {
         var _a, _b, _c, _d, _e, _f;
@@ -58492,6 +58551,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     isEmendaTextoLivre() {
         return this.modo && this.modo === 'emendaTextoLivre';
     }
+    updateView() {
+        this.updateState = new Date();
+    }
     render() {
         return $ `
       ${shoelaceLightThemeStyles} ${quillSnowStyles} ${editorStyles}
@@ -58657,11 +58719,8 @@ __decorate([
     e$3({ type: Object })
 ], LexmlEmendaComponent.prototype, "lexmlEmendaConfig", void 0);
 __decorate([
-    e$3({ type: String })
-], LexmlEmendaComponent.prototype, "modo", void 0);
-__decorate([
-    e$3({ type: String })
-], LexmlEmendaComponent.prototype, "motivo", void 0);
+    t$1()
+], LexmlEmendaComponent.prototype, "updateState", void 0);
 __decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "autoria", void 0);
@@ -59463,5 +59522,5 @@ SwitchRevisaoComponent = __decorate([
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
