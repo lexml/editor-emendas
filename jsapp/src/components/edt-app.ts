@@ -63,6 +63,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-usuario')
   private modalUsuario!: any;
 
+  @query('edt-modal-orientacoes')
+  private modalOrientacoes!: any;
+
   private jsonixProposicao: any = {};
 
   private showEditor = false;
@@ -324,6 +327,10 @@ export class EdtApp extends LitElement {
     this.modalAjuda.show();
   }
 
+  private abrirOrientacoes(): void {
+    this.modalOrientacoes.show();
+  }
+
   private abrirWiki(): void {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
   }
@@ -411,6 +418,7 @@ export class EdtApp extends LitElement {
       this.atualizarTituloEditor();
       // this.resizeObserver();
       this.toggleCarregando();
+      this.checkAndShowOrientation();
     }
   }
 
@@ -514,6 +522,8 @@ export class EdtApp extends LitElement {
       this.salvarPdfComo();
     } else if (ev.detail.itemMenu === 'abrir') {
       this.checkDirtyAndExecuteNextFunction(() => this.abrirEmenda());
+    } else if (ev.detail.itemMenu === 'orientacoes') {
+      this.abrirOrientacoes();
     } else if (ev.detail.itemMenu === 'videos') {
       this.abrirVideos();
     } else if (ev.detail.itemMenu === 'wiki') {
@@ -652,6 +662,16 @@ export class EdtApp extends LitElement {
   private atualizarUsuario(usuario: Usuario): void {
     this.usuario = usuario;
     this.lexmlEmenda.setUsuario(usuario);
+  }
+
+  private checkAndShowOrientation(): void {
+    // Verificar se a orientação já foi exibida ou se o usuário optou por não vê-la novamente
+    const orientationShown = localStorage.getItem('wizardOrientacoes');
+
+    if (!orientationShown) {
+      this.modalOrientacoes.step = 1;
+      this.modalOrientacoes.show();
+    }
   }
 
   private renderEditorEmenda(): TemplateResult {
@@ -794,6 +814,8 @@ export class EdtApp extends LitElement {
         @atualizar-usuario=${(ev: CustomEvent): any =>
           this.atualizarUsuario(ev.detail.usuario)}
       ></edt-modal-usuario>
+
+      <edt-modal-orientacoes></edt-modal-orientacoes>
     `;
   }
 
