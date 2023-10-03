@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { customElement, property, query, state } from 'lit/decorators.js';
 import { LitElement, html, css, TemplateResult } from 'lit';
-// import { SlSwitch } from '@shoelace-style/shoelace';
 
 @customElement('edt-modal-orientacoes')
 export class EdtModalOrientacoes extends LitElement {
