@@ -124,9 +124,6 @@ export class EdtMenu extends LitElement {
           Ajuda
         </sl-button>
         <sl-menu>
-          <sl-menu-item @click=${(): void => this.emitirEvento('orientacoes')}>
-            Orientações iniciais
-          </sl-menu-item>
           <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>
             Vídeos tutoriais
           </sl-menu-item>
