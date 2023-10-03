@@ -120,7 +120,7 @@ export class EdtModalOrientacoes extends LitElement {
     const noShowAgain = localStorage.getItem('wizardOrientacoes');
     const noShowAgainSwitch = this.shadowRoot?.querySelector(
       '#noShowAgain'
-    ) as SlSwitch;
+    ) as any;
     if (noShowAgain && noShowAgainSwitch) {
       noShowAgainSwitch.checked = true;
     }
