@@ -157,7 +157,6 @@ export class EdtModalOrientacoes extends LitElement {
   }
 
   private emitirEvento(nomeEvento: string): void {
-    this.slDialog.hide();
     this.dispatchEvent(new CustomEvent(nomeEvento, {}));
   }
 

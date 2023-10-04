@@ -66,6 +66,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-orientacoes')
   private modalOrientacoes!: any;
 
+  @query('edt-modal-sufixos')
+  private modalSufixos!: any;
+
   private jsonixProposicao: any = {};
 
   private showEditor = false;
@@ -333,6 +336,13 @@ export class EdtApp extends LitElement {
     this.modalOrientacoes.show();
   }
 
+  private checkAndShowSufixos(): void {
+    const orientationShown = localStorage.getItem('naoMostrarExplicacaoSufixo');
+    if (!orientationShown) {
+      this.modalSufixos.show();
+    }
+  }
+
   private abrirWiki(): void {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
   }
@@ -421,6 +431,7 @@ export class EdtApp extends LitElement {
       // this.resizeObserver();
       this.toggleCarregando();
       this.checkAndShowOrientation();
+      this.checkAndShowSufixos();
     }
   }
 
@@ -821,6 +832,7 @@ export class EdtApp extends LitElement {
 
       <edt-modal-orientacoes @open-modal-videos=${() => this.abrirVideos()}>
       </edt-modal-orientacoes>
+      <edt-modal-sufixos></edt-modal-sufixos>
     `;
   }
 

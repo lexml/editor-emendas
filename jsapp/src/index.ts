@@ -16,5 +16,6 @@ import './components/edt-modal-confirmacao-salvar';
 import './components/edt-modal-ajuda';
 import './components/edt-modal-usuario';
 import './components/edt-modal-orientacoes';
+import './components/edt-modal-sufixos';
 
 export { EdtApp } from './components/edt-app';
