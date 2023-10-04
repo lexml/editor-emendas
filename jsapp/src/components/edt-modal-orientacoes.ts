@@ -7,6 +7,12 @@ export class EdtModalOrientacoes extends LitElement {
   @property({ type: Number }) private step = 1;
   @query('sl-dialog') private slDialog!: any;
 
+  @query('edt-modal-ajuda')
+  private modalAjuda!: any;
+
+  @query('edt-app')
+  private edtApp!: any;
+
   private stepsData = [
     { step: 1, title: 'Elementos do Editor de Emendas' },
     { step: 2, title: 'Cabeçalho' },
@@ -152,12 +158,7 @@ export class EdtModalOrientacoes extends LitElement {
 
   private emitirEvento(nomeEvento: string): void {
     this.slDialog.hide();
-    this.dispatchEvent(
-      new CustomEvent(nomeEvento, {
-        composed: true,
-        bubbles: true,
-      })
-    );
+    this.dispatchEvent(new CustomEvent(nomeEvento, {}));
   }
 
   render(): TemplateResult {
@@ -434,7 +435,7 @@ export class EdtModalOrientacoes extends LitElement {
                 </p>
                 <sl-button
                   variant="primary"
-                  @click=${(): void => this.emitirEvento('videos')}
+                  @click=${(): void => this.emitirEvento('open-modal-videos')}
                 >
                   Acessar os vídeos tutoriais
                 </sl-button>
@@ -443,7 +444,7 @@ export class EdtModalOrientacoes extends LitElement {
                 <a
                   href="#"
                   id="video-tutoriais"
-                  @click=${(): void => this.emitirEvento('videos')}
+                  @click=${(): void => this.emitirEvento('open-modal-videos')}
                 >
                   <img
                     class="image"

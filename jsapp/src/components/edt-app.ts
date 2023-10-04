@@ -324,7 +324,9 @@ export class EdtApp extends LitElement {
   }
 
   private abrirVideos(): void {
-    this.modalAjuda.show();
+    if (this.modalAjuda !== null) {
+      this.modalAjuda.show();
+    }
   }
 
   private abrirOrientacoes(): void {
@@ -502,7 +504,7 @@ export class EdtApp extends LitElement {
     this.nextFunctionAfterConfirm = undefined;
   }
 
-  private onItemMenuSelecionado(ev: CustomEvent): void {
+  public onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaPadrao());
     } else if (ev.detail.itemMenu === 'visualizar') {
@@ -817,7 +819,8 @@ export class EdtApp extends LitElement {
           this.atualizarUsuario(ev.detail.usuario)}
       ></edt-modal-usuario>
 
-      <edt-modal-orientacoes></edt-modal-orientacoes>
+      <edt-modal-orientacoes @open-modal-videos=${() => this.abrirVideos()}>
+      </edt-modal-orientacoes>
     `;
   }
 
