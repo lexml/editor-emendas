@@ -713,15 +713,20 @@ export class EdtApp extends LitElement {
               ${this.proposicao.nomeProposicao}
             </sl-tag>
 
-            <!-- <sl-tag
-              class="detalhe-emenda--prazo"
-              variant="primary"
-              size="small"
-              title="Prazo de apresentação da emenda - Tramitação"
-              pill
-            >
-              01/09/2023 - 9º dia
-            </sl-tag> -->
+            <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
+              <div slot="content">
+                <div><b>Prazo de emenda:</b> 01/09/2023 (encerrado)</div>
+                <div><b>Tramitação:</b> 9º dia</div>
+              </div>
+              <sl-tag
+                class="detalhe-emenda--prazo"
+                variant="primary"
+                size="small"
+                title=""
+                pill
+                ><sl-icon name="alarm"></sl-icon>
+              </sl-tag>
+            </sl-tooltip>
 
             ${this.modo === 'emendaArtigoOndeCouber'
               ? html`<sl-tag variant="primary" size="small" pill

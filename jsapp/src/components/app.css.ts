@@ -72,6 +72,15 @@ export const appStyles = html`
       box-sizing: border-box;
     }
 
+    .detalhe-emenda--prazo::part(base) {
+      padding: 6px;
+    }
+
+    .detalhe-emenda--prazo sl-icon {
+      margin-top: 9px;
+      font-size: 14px;
+    }
+
     .detalhe-emenda--ementa {
       display: block;
       width: 100%;
