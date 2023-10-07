@@ -434,10 +434,8 @@ export class EdtApp extends LitElement {
       );
     } finally {
       this.atualizarTituloEditor();
-      // this.resizeObserver();
       this.toggleCarregando();
-      this.checkAndShowOrientation();
-      this.checkAndShowSufixos();
+      this.checkAndShowOrientacoes();
     }
   }
 
@@ -685,8 +683,7 @@ export class EdtApp extends LitElement {
     this.lexmlEmenda.setUsuario(usuario);
   }
 
-  private checkAndShowOrientation(): void {
-    // Verificar se a orientação já foi exibida ou se o usuário optou por não vê-la novamente
+  private checkAndShowOrientacoes(): void {
     const orientationShown = localStorage.getItem('wizardOrientacoes');
 
     if (!orientationShown) {
