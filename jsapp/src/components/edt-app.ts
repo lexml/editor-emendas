@@ -343,6 +343,12 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private showModalSufixos(): void {
+    if (this.modalSufixos !== null) {
+      this.modalSufixos.show();
+    }
+  }
+
   private abrirWiki(): void {
     window.open('https://github.com/lexml/editor-emendas/wiki/Ajuda');
   }
@@ -799,6 +805,7 @@ export class EdtApp extends LitElement {
           modo=${this.modo}
           @onchange=${this.onChange}
           @onrevisao=${this.onRevisao}
+          @onmodalsufixos=${() => this.showModalSufixos()}
         ></lexml-emenda>
       </div>
 
