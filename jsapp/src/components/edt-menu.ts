@@ -3,6 +3,7 @@ import { customElement, query, state } from 'lit/decorators.js';
 import { supported } from 'browser-fs-access';
 import { LitElement, TemplateResult, html } from 'lit';
 import { menuStyles } from './app.css';
+import { Ambiente, ambiente } from './edt-ambiente';
 
 @customElement('edt-menu')
 export class EdtMenu extends LitElement {
@@ -124,7 +125,12 @@ export class EdtMenu extends LitElement {
           Ajuda
         </sl-button>
         <sl-menu>
-          <sl-menu-item @click=${(): void => this.emitirEvento('orientacoes')}>
+          <sl-menu-item
+            @click=${(): void => this.emitirEvento('orientacoes')}
+            style="display: ${ambiente !== Ambiente.DESENVOLVIMENTO
+              ? 'none'
+              : 'block'};"
+          >
             Orientações iniciais
           </sl-menu-item>
           <sl-menu-item @click=${(): void => this.emitirEvento('videos')}>

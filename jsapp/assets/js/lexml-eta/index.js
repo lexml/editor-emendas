@@ -33940,6 +33940,18 @@ const converteDataFormatoBrasileiroParaUrn = (data) => {
     const dataRegex = data.match(/^(0[1-9]|[12][0-9]|3[01])[-/](0[1-9]|1[012])[-/](\d{4})$/);
     return dataRegex ? `${dataRegex[3]}-${dataRegex[2]}-${dataRegex[1]}` : '';
 };
+const buildUrn = (autoridade, tipo, numero, data) => {
+    const dataPadrao = /\d{4}[-]/.test(data) || /^\d{4}$/.test(data) ? data : converteDataFormatoBrasileiroParaUrn(data);
+    return `urn:lex:br:${autoridade}:${tipo}:${dataPadrao};${numero}`;
+};
+// Para inicialização de edição de emenda sem texto lexml
+const buildFakeUrn = (sigla, numero, ano) => {
+    const fake = VOCABULARIO.fakeUrns.find(f => f.sigla === sigla.toUpperCase());
+    if (fake) {
+        return buildUrn(fake.urnAutoridade, fake.urnTipoDocumento, numero, ano);
+    }
+    throw `Sigla '${sigla}' não encontrada no vocabulário para montagem da urn.`;
+};
 const validaUrn = (urn) => {
     var _a, _b;
     const autoridade = (_a = getAutoridade(urn)) === null || _a === void 0 ? void 0 : _a.urn;
@@ -40493,6 +40505,31 @@ const validaElemento = (state, action) => {
 
 let isEmendamento = false;
 let ultimoDispositivoCriado;
+// Workaround para o problema de textos que possuam tags <b> ou <i> contendo <a> no meio
+// O Quill faz um tratamento para que as tags <b> e <i> fiquem dentro da tag <a>
+// Nesse caso, é necessário fazer esse ajuste antecipadamente para que o editor não trate a transformação como uma alteração
+const ajustarTextosParaQuill = (projetoNorma) => {
+    if (window.process.env.testMode)
+        return;
+    const fnAjustaFormatoQuill = (texto, container, quill) => {
+        const regexMatchTagsBoldOuItalicContendoTagAnchorDentro = /<(b|i)>(?:(?!(<\/\1>)).)*<a[^>]*>.*<\/a>.*<\/\1>/gi;
+        if (texto === null || texto === void 0 ? void 0 : texto.match(regexMatchTagsBoldOuItalicContendoTagAnchorDentro)) {
+            quill.setContents(quill.clipboard.convert(texto));
+            return container.querySelector('.ql-editor p').innerHTML;
+        }
+        return texto;
+    };
+    const tempContainer = document.createElement('div');
+    const tempQuill = new Quill(tempContainer, {});
+    if (projetoNorma.ementa) {
+        projetoNorma.ementa.texto = fnAjustaFormatoQuill(projetoNorma.ementa.texto, tempContainer, tempQuill);
+    }
+    if (projetoNorma.articulacao) {
+        getDispositivoAndFilhosAsLista(projetoNorma.articulacao).forEach(d => {
+            d.texto = fnAjustaFormatoQuill(d.texto, tempContainer, tempQuill);
+        });
+    }
+};
 const buildProjetoNormaFromJsonix = (documentoLexml, emendamento = false) => {
     var _a, _b;
     isEmendamento = emendamento;
@@ -40512,6 +40549,7 @@ const buildProjetoNormaFromJsonix = (documentoLexml, emendamento = false) => {
             projetoNorma.ementa.pai = projetoNorma.articulacao;
         }
     }
+    ajustarTextosParaQuill(projetoNorma);
     return projetoNorma;
 };
 const retiraCaracteresDesnecessarios = (texto) => {
@@ -40889,7 +40927,16 @@ const montarListaDispositivosExistentes = (articulacao, articulacaoColada, refer
     }
     const idsColados = getDispositivoAndFilhosAsLista(articulacaoColada)
         .filter(d => d.tipo !== 'Articulacao')
-        .map(d => d.id);
+        .map(d => d.id)
+        .reduce((acc, cur) => {
+        if (cur) {
+            acc.push(cur);
+            if (cur.endsWith('_par1')) {
+                acc.push(cur.replace('_par1', '_par1u'));
+            }
+        }
+        return acc;
+    }, []);
     return getDispositivoAndFilhosAsLista(articulacao).filter(d => isOriginal(d) && idsColados.includes(d.id));
 };
 const montarListaDispositivosNovos = (articulacao, articulacaoColada, referencia) => {
@@ -46727,7 +46774,6 @@ const editarNotaAlteracaoDialog = (elemento, quill, store) => {
         const content = document.createRange().createContextualFragment(`
     <sl-radio-group fieldset label="Selecione o tipo de nota de alteração:">
       <sl-radio class="nota" id="nota-nr" value="NR">Nova redação '(NR)'</sl-radio>
-      <sl-radio class="nota" id="nota-ac" value="AC">Acréscimo '(AC)'</sl-radio>
       <sl-radio class="nota" id="nota-vazia" value="">Sem nota de alteração</sl-radio>
     </sl-radio-group>
     <sl-button slot="footer" variant="default">Cancelar</sl-button>
@@ -46735,10 +46781,10 @@ const editarNotaAlteracaoDialog = (elemento, quill, store) => {
     `);
         const opcoes = {
             NR: content.querySelector('#nota-nr'),
-            AC: content.querySelector('#nota-ac'),
             VZ: content.querySelector('#nota-vazia'),
         };
-        opcoes[elemento.notaAlteracao || 'VZ'].checked = true;
+        const notaAlteracao = elemento.notaAlteracao === 'AC' ? undefined : elemento.notaAlteracao;
+        opcoes[notaAlteracao || 'VZ'].checked = true;
         const botoes = content.querySelectorAll('sl-button');
         const cancelar = botoes[0];
         const ok = botoes[1];
@@ -47495,19 +47541,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         rootStore.dispatch(removerElementoSemTextoAction.execute(elemento, key));
     }
     removerElemento() {
-        var _a, _b;
+        var _a, _b, _c;
         const linha = this.quill.linhaAtual;
-        const mensagem = `Você realmente deseja remover o dispositivo ${(_a = linha.blotRotulo) === null || _a === void 0 ? void 0 : _a.rotulo}?`;
-        const elementoLinhaAnterior = (_b = this.quill.linhaAtual.prev) === null || _b === void 0 ? void 0 : _b.elemento;
-        this.confirmar(mensagem, ['Sim', 'Não'], (event) => {
-            var _a, _b;
-            const choice = event.detail.closeResult;
-            if (choice === 'Sim') {
-                const elemento = this.criarElemento((_a = linha.uuid) !== null && _a !== void 0 ? _a : 0, linha.uuid2, linha.lexmlId, (_b = linha.tipo) !== null && _b !== void 0 ? _b : '', '', linha.numero, linha.hierarquia);
-                rootStore.dispatch(removerElementoAction.execute(elemento, elementoLinhaAnterior));
-            }
-            this.quill.focus();
-        });
+        const elementoLinhaAnterior = (_a = this.quill.linhaAtual.prev) === null || _a === void 0 ? void 0 : _a.elemento;
+        const elemento = this.criarElemento((_b = linha.uuid) !== null && _b !== void 0 ? _b : 0, linha.uuid2, linha.lexmlId, (_c = linha.tipo) !== null && _c !== void 0 ? _c : '', '', linha.numero, linha.hierarquia);
+        rootStore.dispatch(removerElementoAction.execute(elemento, elementoLinhaAnterior));
     }
     moverElemento(ev) {
         const linha = this.quill.linhaAtual;
@@ -58120,10 +58158,6 @@ const quillSnowStyles = $ `
 class LexmlEmendaParametrosEdicao {
     constructor() {
         this.modo = 'Emenda';
-        // Identificação da proposição (texto) emendado.
-        // Preenchido automaticamente se for informada a emenda ou o projetoNorma
-        this.urn = '';
-        // Ementa da proposição.
         // Preenchido automaticamente se for informada a emenda ou o projetoNorma
         this.ementa = '';
         // Motivo de uma nova emenda de texto livre
@@ -58236,7 +58270,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.opcoesImpressao = this._lexmlOpcoesImpressao.opcoesImpressao;
         emenda.colegiadoApreciador = this.montarColegiadoApreciador(emenda.proposicao.sigla, numeroProposicao, emenda.proposicao.ano);
         emenda.epigrafe = new Epigrafe();
-        emenda.epigrafe.texto = `EMENDA Nº         - CMMPV ${numeroProposicao}/${emenda.proposicao.ano}`;
+        emenda.epigrafe.texto = 'EMENDA Nº         ';
+        if (emenda.colegiadoApreciador.siglaComissao) {
+            emenda.epigrafe.texto += `- ${emenda.colegiadoApreciador.siglaComissao}`;
+        }
         const generoProposicao = generoFromLetra(getTipo$1(emenda.proposicao.urn).genero);
         emenda.epigrafe.complemento = `(${generoProposicao.artigoDefinidoPrecedidoPreposicaoASingular.trim()} ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
@@ -58287,8 +58324,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.updateView();
     }
     inicializaProposicao(params) {
-        this.urn = params.urn; // Preferência para a URN informada
-        this.ementa = params.ementa; // Preferência para a ementa informada
+        if (params.proposicao) {
+            // Preferência para a proposição informada
+            this.urn = buildFakeUrn(params.proposicao.sigla, params.proposicao.numero, params.proposicao.ano);
+            this.ementa = params.proposicao.ementa; // Preferência para a ementa informada
+        }
         // Se não forem informados, utilizar da Emenda
         if (params.emenda) {
             if (!this.urn) {
