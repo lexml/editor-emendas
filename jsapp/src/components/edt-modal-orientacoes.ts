@@ -256,7 +256,7 @@ export class EdtModalOrientacoes extends LitElement {
                     elaborar a justificativa da sua emenda.
                   </li>
                   <li>
-                    <strong>Meta dados:</strong> Informações auxiliares sobre a
+                    <strong>Metadados:</strong> Informações auxiliares sobre a
                     emenda, como data e autoria.
                   </li>
                   <li>
