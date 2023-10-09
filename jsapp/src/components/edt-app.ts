@@ -66,6 +66,9 @@ export class EdtApp extends LitElement {
   @query('edt-modal-orientacoes')
   private modalOrientacoes!: any;
 
+  @query('edt-modal-sufixos')
+  private modalSufixos!: any;
+
   private jsonixProposicao: any = {};
 
   private showEditor = false;
@@ -324,11 +327,20 @@ export class EdtApp extends LitElement {
   }
 
   private abrirVideos(): void {
-    this.modalAjuda.show();
+    if (this.modalAjuda !== null) {
+      this.modalAjuda.show();
+    }
   }
 
   private abrirOrientacoes(): void {
     this.modalOrientacoes.show();
+  }
+
+  private checkAndShowSufixos(): void {
+    const orientationShown = localStorage.getItem('naoMostrarExplicacaoSufixo');
+    if (!orientationShown) {
+      this.modalSufixos.show();
+    }
   }
 
   private abrirWiki(): void {
@@ -416,9 +428,8 @@ export class EdtApp extends LitElement {
       );
     } finally {
       this.atualizarTituloEditor();
-      // this.resizeObserver();
       this.toggleCarregando();
-      this.checkAndShowOrientation();
+      this.checkAndShowOrientacoes();
     }
   }
 
@@ -502,7 +513,7 @@ export class EdtApp extends LitElement {
     this.nextFunctionAfterConfirm = undefined;
   }
 
-  private onItemMenuSelecionado(ev: CustomEvent): void {
+  public onItemMenuSelecionado(ev: CustomEvent): void {
     if (ev.detail.itemMenu === 'nova') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaPadrao());
     } else if (ev.detail.itemMenu === 'visualizar') {
@@ -666,8 +677,7 @@ export class EdtApp extends LitElement {
     this.lexmlEmenda.setUsuario(usuario);
   }
 
-  private checkAndShowOrientation(): void {
-    // Verificar se a orientação já foi exibida ou se o usuário optou por não vê-la novamente
+  private checkAndShowOrientacoes(): void {
     const orientationShown = localStorage.getItem('wizardOrientacoes');
 
     if (!orientationShown) {
@@ -700,15 +710,20 @@ export class EdtApp extends LitElement {
               ${this.proposicao.nomeProposicao}
             </sl-tag>
 
-            <!-- <sl-tag
-              class="detalhe-emenda--prazo"
-              variant="primary"
-              size="small"
-              title="Prazo de apresentação da emenda - Tramitação"
-              pill
-            >
-              01/09/2023 - 9º dia
-            </sl-tag> -->
+            <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
+              <div slot="content">
+                <div><b>Prazo de emenda:</b> 01/09/2023 (encerrado)</div>
+                <div><b>Tramitação:</b> 9º dia</div>
+              </div>
+              <sl-tag
+                class="detalhe-emenda--prazo"
+                variant="primary"
+                size="small"
+                title=""
+                pill
+                ><sl-icon name="alarm"></sl-icon>
+              </sl-tag>
+            </sl-tooltip>
 
             ${this.modo === 'emendaArtigoOndeCouber'
               ? html`<sl-tag variant="primary" size="small" pill
@@ -817,7 +832,9 @@ export class EdtApp extends LitElement {
           this.atualizarUsuario(ev.detail.usuario)}
       ></edt-modal-usuario>
 
-      <edt-modal-orientacoes></edt-modal-orientacoes>
+      <edt-modal-orientacoes @open-modal-videos=${() => this.abrirVideos()}>
+      </edt-modal-orientacoes>
+      <edt-modal-sufixos></edt-modal-sufixos>
     `;
   }
 
