@@ -21,6 +21,7 @@ import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
 import { Usuario } from '../model/usuario';
+import { Ambiente, ambiente } from './edt-ambiente';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -125,19 +126,26 @@ export class EdtApp extends LitElement {
     const ano = params.get('ano');
 
     if (sigla && numero && ano) {
-      const proposicoes = await pesquisarProposicoes(
+      const proposicao = await this.buscarProposicao(
         sigla,
         numero,
         Number(ano)
       );
-
-      if (proposicoes?.length) {
-        const proposicao = proposicoes[0];
+      if (proposicao) {
         this.proposicao = proposicao;
         this.criarNovaEmendaPadrao(proposicao);
       }
     }
     this.limparParametros();
+  }
+
+  private async buscarProposicao(
+    sigla: string,
+    numero: string,
+    ano: number
+  ): Promise<Proposicao | undefined> {
+    const proposicoes = await pesquisarProposicoes(sigla, numero, ano);
+    return proposicoes?.length ? proposicoes[0] : undefined;
   }
 
   createRenderRoot(): LitElement {
@@ -237,7 +245,12 @@ export class EdtApp extends LitElement {
         this.modo = emenda.modoEdicao;
         return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
       })
-      .then(emenda => {
+      .then(async emenda => {
+        const { sigla, numero, ano } = emenda.proposicao;
+        this.proposicao =
+          (await this.buscarProposicao(sigla, numero, Number(ano))) ??
+          this.proposicao;
+        this.proposicao.ementa = emenda.proposicao.ementa;
         this.lexmlEmenda.inicializarEdicao({
           modo: this.modo,
           projetoNorma: this.jsonixProposicao,
@@ -398,6 +411,7 @@ export class EdtApp extends LitElement {
       );
       const urn = getUrn(this.jsonixProposicao);
       this.proposicao = {
+        ...this.proposicao,
         urn,
         sigla, //sigla: getSigla(urn),
         numero, //numero: getNumero(urn),
@@ -571,6 +585,7 @@ export class EdtApp extends LitElement {
     modo: string,
     motivo = ''
   ): Promise<void> {
+    this.proposicao = proposicao;
     this.modo = modo;
     this.motivo = motivo;
     this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
@@ -678,6 +693,8 @@ export class EdtApp extends LitElement {
   }
 
   private checkAndShowOrientacoes(): void {
+    if (ambiente !== Ambiente.DESENVOLVIMENTO) return;
+
     const orientationShown = localStorage.getItem('wizardOrientacoes');
 
     if (!orientationShown) {
@@ -686,6 +703,22 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private getDataPrazoEmenda(proposicao: Proposicao): string | undefined {
+    return proposicao?.dataLimiteRecebimentoEmendas
+      ?.split('-')
+      .reverse()
+      .join('/');
+  }
+  private getTextoComplementarPrazoEmenda(
+    proposicao: Proposicao
+  ): string | undefined {
+    if (!proposicao) return undefined;
+    if (proposicao.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)) {
+      return proposicao.labelPrazoRecebimentoEmendas?.substring(11);
+    } else {
+      return proposicao.labelPrazoRecebimentoEmendas;
+    }
+  }
   private renderEditorEmenda(): TemplateResult {
     return html`
       ${appStyles}
@@ -712,8 +745,17 @@ export class EdtApp extends LitElement {
 
             <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
               <div slot="content">
-                <div><b>Prazo de emenda:</b> 01/09/2023 (encerrado)</div>
-                <div><b>Tramitação:</b> 9º dia</div>
+                <div>
+                  <b>Prazo de emenda:</b> ${this.getDataPrazoEmenda(
+                    this.proposicao
+                  ) +
+                  ' (' +
+                  this.getTextoComplementarPrazoEmenda(this.proposicao) +
+                  ')'}
+                </div>
+                <div>
+                  <b>Tramitação:</b> ${this.proposicao.labelTramitacao ?? ''}
+                </div>
               </div>
               <sl-tag
                 class="detalhe-emenda--prazo"
@@ -767,12 +809,22 @@ export class EdtApp extends LitElement {
           >
             ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
             <br /><br />
-            <!-- <label>Prazo para apresentar emenda:</label>
-            01/09/2023
-            <sl-badge title="01/01/2023" variant="neutral">4 dias</sl-badge>
+            <label>Prazo para apresentar emenda:</label>
+            ${this.getDataPrazoEmenda(this.proposicao)}
+            <sl-badge
+              title="${this.getDataPrazoEmenda(this.proposicao)}"
+              variant="neutral"
+              >${this.getTextoComplementarPrazoEmenda(
+                this.proposicao
+              )}</sl-badge
+            >
             <br /><br />
             <label>Tramitação:</label>
-            <sl-badge variant="neutral" title="9º dia">9º dia</sl-badge> -->
+            <sl-badge
+              variant="neutral"
+              title="${this.proposicao?.labelTramitacao}"
+              >${this.proposicao?.labelTramitacao}</sl-badge
+            >
             <br /><br />
             <sl-button
               href="#"
