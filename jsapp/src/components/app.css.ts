@@ -837,6 +837,20 @@ export const ajudaStyles = html`
       left: 0;
       width: 100%;
       height: 100%;
+      z-index: 1; /* This ensures the iframe stays on top */
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px 15px;
+      border: none;
+      cursor: pointer;
+      z-index: 2; /* This will place the button above the iframe */
     }
   </style>
 `;
