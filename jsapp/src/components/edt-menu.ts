@@ -139,6 +139,11 @@ export class EdtMenu extends LitElement {
           <sl-menu-item @click=${(): void => this.emitirEvento('wiki')}>
             Wiki do projeto
           </sl-menu-item>
+          <sl-menu-item
+            @click=${(): void => this.emitirEvento('emendaSemTexto')}
+          >
+            Emenda sem texto
+          </sl-menu-item>
         </sl-menu>
       </sl-dropdown>
     `;
