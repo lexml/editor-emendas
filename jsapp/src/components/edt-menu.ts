@@ -140,7 +140,7 @@ export class EdtMenu extends LitElement {
             Wiki do projeto
           </sl-menu-item>
           <sl-menu-item @click=${(): void => this.emitirEvento('sufixos')}>
-            Sufixos
+            Sufixos de posicionamento
           </sl-menu-item>
         </sl-menu>
       </sl-dropdown>
