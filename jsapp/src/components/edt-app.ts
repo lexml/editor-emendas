@@ -619,6 +619,10 @@ export class EdtApp extends LitElement {
         };
 
         this.proposicao = params.proposicao;
+
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          proposicaoSelecionada
+        );
         params.motivo = 'Medida provisória sem articulação';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
@@ -667,6 +671,18 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
+  private getNomeProposicaoFormatado(proposicao: Proposicao): any {
+    const nome =
+      proposicao.sigla +
+      ' ' +
+      (/[\d]+/.test(proposicao.numero!)
+        ? +proposicao.numero!
+        : proposicao.numero) +
+      '/' +
+      proposicao.ano;
+    return nome;
+  }
+
   private criarNovaEmendaArtigoOndeCouber(
     proposicaoSelecionada?: Proposicao
   ): void {
@@ -691,6 +707,10 @@ export class EdtApp extends LitElement {
         };
 
         this.proposicao = params.proposicao;
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          proposicaoSelecionada
+        );
+
         params.motivo = 'Motivo emenda onde couber';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
