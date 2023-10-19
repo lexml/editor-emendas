@@ -14,6 +14,10 @@ export class EdtModalEmendaSemTexto extends LitElement {
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap; /* Quebra de linha no mobile ou quando o espaço for insuficiente */
+      float: right;
+    }
+    .btn {
+      padding: 5px;
     }
   `;
 
@@ -59,18 +63,21 @@ export class EdtModalEmendaSemTexto extends LitElement {
 
         <div slot="footer" class="footer-container">
           <sl-button
+            class="btn"
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}
           >
             Onde couber
           </sl-button>
           <sl-button
+            class="btn"
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-texto-livre')}
           >
             Texto livre
           </sl-button>
           <sl-button
+            class="btn"
             variant="default"
             @click=${(): void => this.slDialog.hide()}
           >
