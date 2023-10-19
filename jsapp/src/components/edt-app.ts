@@ -608,9 +608,9 @@ export class EdtApp extends LitElement {
       if (proposicaoSelecionada) {
         const params = new LexmlEmendaParametrosEdicao();
         params.modo = this.modo;
-        this.tituloEmenda =
-          'Emenda ' +
-          (proposicaoSelecionada.nomeProposicao ?? '').replace('/', ' ');
+        // this.tituloEmenda =
+        //   'Emenda ' +
+        //   (proposicaoSelecionada.nomeProposicao ?? '').replace('/', ' ');
         params.proposicao = {
           sigla: proposicaoSelecionada.sigla!,
           numero: proposicaoSelecionada.numero!,
@@ -623,6 +623,9 @@ export class EdtApp extends LitElement {
         this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
           proposicaoSelecionada
         );
+
+        this.tituloEmenda =
+          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
         params.motivo = 'Medida provisória sem articulação';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
@@ -695,10 +698,6 @@ export class EdtApp extends LitElement {
         const params = new LexmlEmendaParametrosEdicao();
         params.modo = this.modo;
 
-        this.tituloEmenda =
-          'Emenda ' +
-          (proposicaoSelecionada.nomeProposicao ?? '').replace('/', ' ');
-
         params.proposicao = {
           sigla: proposicaoSelecionada.sigla!,
           numero: proposicaoSelecionada.numero!,
@@ -710,6 +709,9 @@ export class EdtApp extends LitElement {
         this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
           proposicaoSelecionada
         );
+
+        this.tituloEmenda =
+          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
 
         params.motivo = 'Motivo emenda onde couber';
         this.showEditor = true;
