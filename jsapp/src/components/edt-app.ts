@@ -247,13 +247,27 @@ export class EdtApp extends LitElement {
       })
       .then(emenda => {
         this.modo = emenda.modoEdicao;
-        return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
+
+        if (
+          this.modo !== 'emendaArtigoOndeCouber' &&
+          this.modo !== 'emendaTextoLivre'
+        ) {
+          return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
+        } else {
+          return this.buildProposicaoMPSemArticulacao(emenda.proposicao).then(
+            () => emenda
+          );
+        }
       })
       .then(async emenda => {
         const { sigla, numero, ano } = emenda.proposicao;
         this.proposicao =
           (await this.buscarProposicao(sigla, numero, Number(ano))) ??
           this.proposicao;
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          this.proposicao
+        );
+        this.labelTipoEmenda = this.getTipoEmenda(this.modo);
         this.proposicao.ementa = emenda.proposicao.ementa;
         this.lexmlEmenda.inicializarEdicao({
           modo: this.modo,
@@ -280,6 +294,25 @@ export class EdtApp extends LitElement {
       .finally(() => {
         this.toggleCarregando(false);
       });
+  }
+
+  private async buildProposicaoMPSemArticulacao(
+    proposicao: any
+  ): Promise<void> {
+    this.proposicao = {
+      sigla: proposicao.sigla!,
+      numero: proposicao.numero!,
+      ano: proposicao.ano!,
+      ementa: proposicao.ementa!,
+    };
+    this.proposicao.nomeProposicao =
+      this.getNomeProposicaoFormatado(proposicao);
+
+    this.tituloEmenda =
+      'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+    //this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
+    this.showEditor = true;
+    this.atualizarTituloEditor();
   }
 
   private async salvarPdf(salvarComo = false): Promise<void> {
@@ -646,6 +679,19 @@ export class EdtApp extends LitElement {
     }, 0);
   }
 
+  private getTipoEmenda(modo: string): string {
+    switch (modo) {
+      case 'emendaArtigoOndeCouber':
+        return 'Emenda onde couber';
+      case 'emenda':
+        return 'Emenda padrão';
+      case 'emendaTextoLivre':
+        return 'Emenda texto livre';
+    }
+
+    return '';
+  }
+
   private async criarNovaEmenda(
     proposicao: Proposicao,
     modo: string,
@@ -655,7 +701,7 @@ export class EdtApp extends LitElement {
     this.modo = modo;
     this.motivo = motivo;
     this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
-    this.labelTipoEmenda = 'Emenda padrão';
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
 
     this.lexmlEmenda.inicializarEdicao({
@@ -679,11 +725,15 @@ export class EdtApp extends LitElement {
       proposicao.sigla +
       ' ' +
       (/[\d]+/.test(proposicao.numero!)
-        ? +proposicao.numero!
-        : proposicao.numero) +
+        ? +this.removerZerosEsquerda(proposicao.numero)!
+        : this.removerZerosEsquerda(proposicao.numero)) +
       '/' +
       proposicao.ano;
     return nome;
+  }
+
+  private removerZerosEsquerda(numero: any): string {
+    return numero.replace(/^0+/, '');
   }
 
   private criarNovaEmendaArtigoOndeCouber(
@@ -691,7 +741,7 @@ export class EdtApp extends LitElement {
   ): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
-    this.labelTipoEmenda = 'Emenda onde couber';
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda onde couber';
 
     setTimeout(() => {
       if (proposicaoSelecionada) {
