@@ -604,10 +604,16 @@ export class EdtApp extends LitElement {
       this.abrirWiki();
     } else if (ev.detail.itemMenu === 'quadroEmendas') {
       this.abrirQuadroDeEmendas();
+    } else if (ev.detail.itemMenu === 'sufixos') {
+      this.abreModalSufixos();
     }
     // else if (ev.detail.itemMenu === 'emendaSemTexto') {
     //   this.showModalEmendaSemTexto();
     // }
+  }
+
+  private abreModalSufixos(): void {
+    this.lexmlEmenda.openModalSufixos();
   }
 
   private onBotaoNotasVersaoSelecionado(ev: CustomEvent): void {

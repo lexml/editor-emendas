@@ -33196,6 +33196,624 @@ const substituiMultiplosEspacosPorNbsp = (texto) => {
     return texto.replace(/ +/g, texto => texto.replace(/ /g, '&nbsp;'));
 };
 
+/**
+ * Utilitário para montar uma tag usando o pattern composite. Essa classe foi retirada do livro
+ * Refactoring to Patterns
+ */
+class TagNode {
+    constructor(nome) {
+        this.nome = nome;
+        this.valores = new Array();
+        this.atributos = new StringBuilder();
+    }
+    toString() {
+        if (!this.valores.length) {
+            return '<' + this.nome + this.atributos + '/>';
+        }
+        const resultado = new StringBuilder('<' + this.nome + this.atributos + '>');
+        this.valores.forEach(valor => {
+            resultado.append(valor);
+        });
+        resultado.append('</' + this.nome + '>');
+        return resultado.toString();
+    }
+    add(valor) {
+        if (valor) {
+            this.valores.push(valor);
+        }
+        return this;
+    }
+    addAtributo(atributo, valor) {
+        this.atributos.append(' ');
+        this.atributos.append(atributo);
+        if (valor) {
+            this.atributos.append('="');
+            this.atributos.append(valor);
+            this.atributos.append('"');
+        }
+        return this;
+    }
+}
+
+class DispositivoComparator {
+    static compare(d1, d2) {
+        if (!d1 || !d2) {
+            throw new Error('Tentativa de comparação de dispositivo nulo.');
+        }
+        if (!d1.pai) {
+            return -1;
+        }
+        if (!d2.pai) {
+            return 1;
+        }
+        const i1 = DispositivoComparator.getIndices(d1);
+        const i2 = DispositivoComparator.getIndices(d2);
+        return DispositivoComparator.comparaIndices(i1, i2);
+    }
+    static getIndices(d) {
+        const indices = [];
+        // Considera alteração como filha do caput
+        let pai = this.getPaiParaComparacao(d);
+        while (pai) {
+            indices.push(this.getIndexDoFilho(pai, d));
+            d = pai;
+            pai = this.getPaiParaComparacao(d);
+        }
+        indices.reverse();
+        return indices;
+    }
+    // Considera alteração em artigo como filha do caput
+    static getPaiParaComparacao(d) {
+        if (!d.pai) {
+            return undefined;
+        }
+        if (isArtigo(d.pai) && isArticulacaoAlteracao(d)) {
+            return d.pai.caput;
+        }
+        return d.pai;
+    }
+    static getIndexDoFilho(pai, d) {
+        if (isCaput(d)) {
+            return 0;
+        }
+        if (isParagrafo(d) || (isOmissis(d) && isArtigo(pai))) {
+            // Após o caput
+            return pai.filhos.indexOf(d) + 1;
+        }
+        if (isArticulacaoAlteracao(d)) {
+            // Antes dos filhos
+            return -1;
+        }
+        return pai.filhos.indexOf(d);
+    }
+    static comparaIndices(indices1, indices2) {
+        let ret = 0;
+        const size1 = indices1.length;
+        const size2 = indices2.length;
+        for (let i = 0; i < size1 && i < size2 && ret === 0; i++) {
+            ret = indices1[i] - indices2[i];
+        }
+        if (ret === 0) {
+            ret = size1 - size2;
+        }
+        return ret;
+    }
+}
+
+class DispositivoEmendaUtil {
+    static getAlteracao(dispositivo) {
+        let d = dispositivo;
+        if (d.tipo === TipoDispositivo.alteracao.tipo) {
+            return d;
+        }
+        if (!isDispositivoAlteracao(d)) {
+            return undefined;
+        }
+        while (d && d.tipo !== TipoDispositivo.alteracao.tipo) {
+            d = d.pai;
+        }
+        return d;
+    }
+    static existeNaNormaAlterada(dispositivo) {
+        return dispositivo.situacao.existeNaNormaAlterada;
+    }
+}
+
+class CmdEmdUtil {
+    static getDispositivosNaoOriginais(articulacao) {
+        var _a, _b;
+        const ret = [];
+        if (((_b = (_a = articulacao.projetoNorma) === null || _a === void 0 ? void 0 : _a.ementa) === null || _b === void 0 ? void 0 : _b.situacao.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
+            ret.push(articulacao.projetoNorma.ementa);
+        }
+        percorreHierarquiaDispositivos(articulacao, d => {
+            if (d.pai && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+                ret.push(d);
+            }
+        });
+        return ret;
+    }
+    static getDispositivosAdicionados(articulacao) {
+        const ret = [];
+        percorreHierarquiaDispositivos(articulacao, d => {
+            if (d.pai && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+                ret.push(d);
+            }
+        });
+        return ret;
+    }
+    static getDispositivosComando(dispositivosEmenda) {
+        const dispositivos = new Array();
+        for (const d of dispositivosEmenda) {
+            if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL || isDispositivoAlteracao(d) || isArticulacaoAlteracao(d)) {
+                continue;
+            }
+            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetado(d);
+            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
+                dispositivos.push(dispositivoAfetado);
+            }
+        }
+        return dispositivos;
+    }
+    static getDispositivoAfetado(d) {
+        const pai = d.pai;
+        if (isDispositivoRaiz(pai)) {
+            return d;
+        }
+        // Verifica alteração integral de caput
+        if (isCaput(pai) && pai.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            if (pai.filhos.find(f => f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL)) {
+                // Não é alteração integral de caput
+                return d;
+            }
+            // É alteração integral de caput
+            return CmdEmdUtil.getDispositivoAfetado(pai.pai);
+        }
+        // O caso de artigos adicionados junto com seu agrupador já foi tratado antes. Ver uso de retiraPrimeirosFilhosAdicionadosAgrupador
+        if (isArtigo(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return d;
+        }
+        // Se o pai for uma alteração integral
+        if (CmdEmdUtil.isAlteracaoIntegral(pai)) {
+            // Chama recursivamente para o pai
+            return CmdEmdUtil.getDispositivoAfetado(pai);
+        }
+        return d;
+    }
+    // Retira da lista de dispositivos os primeiros artigos e agrupadores adicionados, filhos de um agrupador adicionado.
+    // Considera que os dispositivos estejam ordenados
+    static retiraPrimeirosFilhosAdicionadosAgrupador(dispositivos) {
+        const primeiro = dispositivos[0];
+        if (isDispositivoAlteracao(primeiro) || primeiro.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return dispositivos;
+        }
+        if (!dispositivos.find(d => isAgrupadorNaoArticulacao(d))) {
+            return dispositivos;
+        }
+        const ret = [];
+        let filhosAdicionadosComAgrupador = [];
+        dispositivos.forEach(d => {
+            if (filhosAdicionadosComAgrupador.indexOf(d) < 0) {
+                ret.push(d);
+                if (isAgrupadorNaoArticulacao(d)) {
+                    filhosAdicionadosComAgrupador = this.listaFilhosAdicionadosComAgrupador(d);
+                }
+            }
+        });
+        return ret;
+    }
+    static listaFilhosAdicionadosComAgrupador(d) {
+        const ret = [];
+        buscaNaHierarquiaDispositivos(d, f => {
+            if (f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || isCaput(f) || isArticulacaoAlteracao(f)) {
+                ret.push(f);
+                return false;
+            }
+            return true;
+        });
+        return ret;
+    }
+    static getDispositivoAfetadoEmAlteracao(d) {
+        if (isOmissis(d)) {
+            if (CmdEmdUtil.isOmissisAdjacenteADispositivoDeEmenda(d)) {
+                return undefined;
+            }
+        }
+        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && CmdEmdUtil.isTextoOmitido(d)) {
+            return undefined;
+        }
+        const pai = isCaput(d.pai) ? d.pai.pai : d.pai;
+        // Se o pai for uma alteração integral
+        if (CmdEmdUtil.isAlteracaoIntegralEmAlteracao(pai)) {
+            // Chama recursivamente para o pai
+            return CmdEmdUtil.getDispositivoAfetadoEmAlteracao(pai);
+        }
+        return d;
+    }
+    // Considero texto omitido do Artigo se o seu caput tiver o texto omitido.
+    static isTextoOmitido(d) {
+        var _a;
+        return isOmissis(d) || d.texto.startsWith(TEXTO_OMISSIS) || (isAgrupador(d) && !!((_a = d.caput) === null || _a === void 0 ? void 0 : _a.texto.startsWith(TEXTO_OMISSIS)));
+    }
+    static getDescricaoSituacaoParaComandoEmenda(d) {
+        // Trata dispositivo já existente na norma adicionado em bloco de alteração como dispositivo modificado
+        return d.isDispositivoAlteracao && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && DispositivoEmendaUtil.existeNaNormaAlterada(d) && !isOmissis(d)
+            ? DescricaoSituacao.DISPOSITIVO_MODIFICADO
+            : d.situacao.descricaoSituacao;
+    }
+    static isMesmaSituacaoParaComandoEmenda(d1, d2) {
+        return this.getDescricaoSituacaoParaComandoEmenda(d1) === this.getDescricaoSituacaoParaComandoEmenda(d2);
+    }
+    static isAlteracaoIntegral(d) {
+        const descricaoSituacao = this.getDescricaoSituacaoParaComandoEmenda(d);
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return false;
+        }
+        if (isDispositivoAlteracao(d) && isAgrupadorNaoArticulacao(d) && descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return false;
+        }
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return true;
+        }
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return !isAgrupadorNaoArticulacao(d);
+        }
+        if (!d.filhos.length) {
+            if (isArtigo(d)) {
+                return descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL;
+            }
+            return true;
+        }
+        for (const filho of d.filhos) {
+            if (!CmdEmdUtil.isAlteracaoIntegral(filho)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    static isAlteracaoIntegralEmAlteracao(d) {
+        if (isArticulacaoAlteracao(d)) {
+            return false;
+        }
+        if (isAgrupadorNaoArticulacao(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return false;
+        }
+        return ((d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && !CmdEmdUtil.isTextoOmitido(d)) ||
+            d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO);
+    }
+    static getArvoreDispositivos(dispositivos) {
+        const mapa = new Map();
+        if (!dispositivos.length) {
+            return mapa;
+        }
+        dispositivos.forEach(dispositivo => {
+            this.atualizaMapa(dispositivo, mapa);
+        });
+        return mapa;
+    }
+    static atualizaMapa(dispositivo, mapa) {
+        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
+        let mapaAtual = mapa;
+        hierarquia.forEach(dispositivoAtual => {
+            const mapaFilho = mapaAtual.get(dispositivoAtual);
+            if (mapaFilho) {
+                mapaAtual = mapaFilho;
+            }
+            else {
+                const novoMapa = new Map();
+                mapaAtual.set(dispositivoAtual, novoMapa);
+                mapaAtual = novoMapa;
+            }
+        });
+    }
+    static getHierarquiaDispositivosDeUmDispositivo(dispositivo) {
+        const hierarquia = new Array();
+        hierarquia.push(dispositivo);
+        let pai = dispositivo.pai;
+        while (pai && !isDispositivoRaiz(pai) && !isAgrupadorNaoArticulacao(pai)) {
+            hierarquia.push(pai);
+            pai = pai.pai;
+        }
+        hierarquia.reverse();
+        return hierarquia;
+    }
+    static getArvoreDispositivosDeAlteracaoDeNorma(dispositivos) {
+        const mapa = new Map();
+        if (!dispositivos.length) {
+            return mapa;
+        }
+        for (const dispositivo of dispositivos) {
+            this.atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa);
+        }
+        return mapa;
+    }
+    static atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa) {
+        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
+        let mapaAtual = mapa;
+        for (const dispositivoAtual of hierarquia) {
+            if (!isDispositivoAlteracao(dispositivoAtual) || isArticulacaoAlteracao(dispositivoAtual)) {
+                continue;
+            }
+            if (mapaAtual.has(dispositivoAtual)) {
+                mapaAtual = mapaAtual.get(dispositivoAtual);
+            }
+            else {
+                const novoMapa = new Map();
+                mapaAtual.set(dispositivoAtual, novoMapa);
+                mapaAtual = novoMapa;
+            }
+        }
+        mapa = mapaAtual;
+    }
+    // public static List<Dispositivo> filtraDispositivosModificados(final List<Dispositivo> dispositivos) {
+    //     List<Dispositivo> ret = new ArrayList<Dispositivo>();
+    //     // No caso de dispositivo modificado pode ocorrer o caso de alteração integral de artigo,
+    //     // onde o próprio artigo não está marcado como modificado.
+    //     for (Dispositivo d : dispositivos) {
+    //         if (d.isSituacao(DispositivoModificado.class) || d.isSituacao(DispositivoOriginal.class)
+    //             && CmdEmdUtil.isAlteracaoIntegral(d)) {
+    //             ret.add(d);
+    //         }
+    //     }
+    //     return ret;
+    // }
+    static isSequenciasPlural(sequencias) {
+        const qtdSequencias = sequencias.length;
+        if (qtdSequencias === 0) {
+            return false;
+        }
+        return qtdSequencias > 1 || CmdEmdUtil.isSequenciaPlural(sequencias[0]);
+    }
+    static isSequenciaPlural(sequencia) {
+        const qtdRanges = sequencia.getQuantidadeRanges();
+        if (qtdRanges === 0) {
+            return false;
+        }
+        return qtdRanges > 1 || sequencia.getPrimeiroRange().getQuantidadeDispositivos() > 1;
+    }
+    static getProximoAgrupador(disp) {
+        let ret = disp;
+        do {
+            ret = getDispositivoPosterior(ret);
+        } while (ret && !isAgrupador(ret));
+        return ret;
+    }
+    static getDispositivoIrmaoPosterior(dispositivo) {
+        if (isArtigo(dispositivo) || isAgrupador(dispositivo)) {
+            return this.getArtigoPosterior(dispositivo);
+        }
+        if (!this.isUltimoDispositivoDoMesmoTipo(dispositivo)) {
+            const pai = dispositivo.pai;
+            const index = pai.filhos.indexOf(dispositivo) + 1;
+            return pai.filhos[index];
+        }
+        return undefined;
+    }
+    static getArtigoPosterior(dispositivo) {
+        const pai = dispositivo.pai;
+        if (pai.filhos.length) {
+            const iFilho = pai.filhos.indexOf(dispositivo);
+            for (let i = iFilho + 1; i < pai.filhos.length; i++) {
+                const d = pai.filhos[i];
+                if (isArtigo(d)) {
+                    return d;
+                }
+                else if (isAgrupador(d)) {
+                    const atual = this.buscaProximoArtigo(d);
+                    if (atual) {
+                        return atual;
+                    }
+                }
+            }
+            if (pai.pai) {
+                return this.getArtigoPosterior(pai);
+            }
+        }
+        return undefined;
+    }
+    static buscaProximoArtigo(dispositivo) {
+        const filhos = dispositivo.filhos;
+        for (const d of filhos) {
+            if (isArtigo(d)) {
+                return d;
+            }
+            if (isAgrupador(d)) {
+                return this.buscaProximoArtigo(d);
+            }
+        }
+        return undefined;
+    }
+    static isUltimoDispositivoDoMesmoTipo(dispositivo) {
+        if (!dispositivo.pai) {
+            return true;
+        }
+        const pai = dispositivo.pai;
+        const index = pai.filhos.indexOf(dispositivo);
+        if (pai.filhos.length === index + 1) {
+            return true;
+        }
+        if (pai.filhos[index + 1].tipo === dispositivo.tipo) {
+            return false;
+        }
+        return true;
+    }
+    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
+    static getFilhosEstiloLexML(d) {
+        return getFilhosEstiloLexML(d);
+    }
+    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
+    static getDispositivoAnteriorDireto(d) {
+        return getDispositivoAnteriorDireto(d);
+    }
+    static getDispositivoPosteriorDireto(d) {
+        // primeiro o primeiro filho ou o primeiro irmão do pai (recursivamente)
+        const filhos = this.getFilhosEstiloLexML(d);
+        if (filhos.length) {
+            return filhos[0];
+        }
+        else {
+            return this.getProximoIrmaoRecursivo(d);
+        }
+    }
+    static getProximoIrmaoRecursivo(d) {
+        if (!d)
+            return;
+        const irmao = getDispositivoPosterior(d);
+        if (irmao) {
+            return irmao;
+        }
+        else {
+            const pai = d.pai;
+            return pai ? undefined : this.getProximoIrmaoRecursivo(pai);
+        }
+    }
+    // /**
+    //  * Retorna rótulo do dispositivo gerado pelo numerador. Não confia no rótulo informado pelo
+    //  * dispositivo original.
+    //  */
+    // public static String getRotulo(final Dispositivo d) {
+    //     return d.getNumeradorDispositivo().getRotulo(d);
+    // }
+    static getRotuloPais(disp) {
+        const sb = new StringBuilder();
+        let pai;
+        while (disp && !isArtigo(disp)) {
+            pai = disp.pai;
+            sb.append(pai.pronomePossessivoSingular);
+            sb.append(pai.getNumeracaoComRotuloParaComandoEmenda(disp));
+            disp = pai;
+        }
+        return sb.toString();
+    }
+    static getDispositivosNaAlteracaoParaComando(alteracao) {
+        const dispositivosAlterados = new Array();
+        percorreHierarquiaDispositivos(alteracao, d => {
+            if (d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+                dispositivosAlterados.push(d);
+            }
+        });
+        const dispositivos = new Array();
+        dispositivosAlterados.forEach(d => {
+            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetadoEmAlteracao(d);
+            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
+                dispositivos.push(dispositivoAfetado);
+            }
+        });
+        dispositivos.sort(DispositivoComparator.compare);
+        return dispositivos;
+    }
+    static isOmissisAdjacenteADispositivoDeEmenda(d) {
+        if (!isOmissis(d)) {
+            return false;
+        }
+        let anterior = CmdEmdUtil.getDispositivoAnteriorDireto(d);
+        if (isCaput(anterior)) {
+            anterior = anterior.pai;
+        }
+        if (anterior && anterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return true;
+        }
+        const posterior = CmdEmdUtil.getDispositivoPosteriorDireto(d);
+        if (posterior && posterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return true;
+        }
+        return false;
+    }
+    static isMesmoTipoParaComandoEmenda(d1, d2) {
+        if (d1.tipo !== d2.tipo) {
+            return false;
+        }
+        if (isArtigo(d1) && CmdEmdUtil.isAlteracaoIntegral(d1) !== CmdEmdUtil.isAlteracaoIntegral(d2)) {
+            return false;
+        }
+        return true;
+    }
+    static getTextoDoDispositivoOuOmissis(d, alteracaoNormaVigente = false) {
+        if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || isCaput(d)) {
+            return ' ' + CmdEmdUtil.trataTextoParaCitacao(d, alteracaoNormaVigente);
+        }
+        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return isOmissis(d) ? ' (Suprimir omissis)' : ' (Suprimir)';
+        }
+        else {
+            return ' ' + new TagNode('Omissis');
+        }
+    }
+    static trataTextoParaCitacao(d, alteracaoNormaVigente = false) {
+        var _a;
+        let texto = isArtigo(d) ? d.caput.texto : (_a = d.texto) !== null && _a !== void 0 ? _a : '';
+        if (texto.includes(TEXTO_OMISSIS)) {
+            texto = texto.replace(TEXTO_OMISSIS, new TagNode('Omissis').toString());
+        }
+        if (alteracaoNormaVigente) {
+            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '');
+        }
+        else {
+            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '’$1 ');
+        }
+        return texto
+            .trim()
+            .replace(/\s{2,}/g, ' ')
+            .replace(/^<p>\s?/i, '')
+            .replace(/\s?<\/p>$/i, '')
+            .replace(/<\/?a.*?>/gi, '')
+            .replace(/\s([\\.,:?!])/g, '$1');
+    }
+    static isFechaAspas(d) {
+        return isUltimaAlteracao(d);
+    }
+    // Considera que dispositivosAdicionadosProposicao é uma lista de dispositivos adicionados à proposição
+    // e que não contém dispositivos adicionados em bloco de alteração.
+    // Podem ser utilizados apenas os dispositivos raiz em um grupo de dispositivos adicionados.
+    static verificaNecessidadeRenumeracaoRedacaoFinal(dispositivosAdicionadosProposicao) {
+        for (const d of dispositivosAdicionadosProposicao) {
+            if (CmdEmdUtil.implicaEmRenumeracaoRedacaoFinal(d)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    // Testa características do dispositivo (considerado fora de bloco de alteração) que implicam
+    // em necessidade de renumeração na redação final.
+    static implicaEmRenumeracaoRedacaoFinal(d) {
+        // rótulo 0 (zero) ou possui sufixo de encaixe (-A, -B...)
+        if (d.rotulo && (d.numero === '0' || /.*(?:-\d).*/i.test(d.rotulo))) {
+            return true;
+        }
+        // adjacente a parágrafo ou artigo único
+        if (isArtigo(d) || isParagrafo(d)) {
+            // Se o dispositivo tiver sido adicionado antes do único cairá no caso anterior de rótulo com 0 (zero)
+            // Não é possível testar pelo rótulo porque o parágrafo único está sendo renumerado.
+            if (irmaosMesmoTipo(d).filter(i => i.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL).length === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    static normalizaCabecalhoComandoEmenda(texto) {
+        return removeEspacosDuplicados(texto.replace(/caput/g, '<i>caput</i>'));
+    }
+    /*
+    Dados dois agrupadores adicionados, verifica se são sequenciais e não existe artigo ou agrupador não adicionado entre eles.
+    */
+    static verificaAgrupadoresAdicionadosEmSequencia(a1, a2) {
+        if (!isAgrupadorNaoArticulacao(a1) && !isAgrupadorNaoArticulacao(a2)) {
+            return false;
+        }
+        const filhoNaoAdicionado = this.getFilhoNaoAdicionadoDeAgrupadorAdicionado(a1);
+        return !filhoNaoAdicionado && getIrmaoPosteriorIndependenteDeTipo(a1) === a2;
+    }
+    /*
+    Dado um agrupador adicionado retorna o primeiro artigo ou agrupador em sua hierarquia que não seja adicionado.
+    Retorna undefined se todos forem adicionados.
+    */
+    static getFilhoNaoAdicionadoDeAgrupadorAdicionado(agrupador) {
+        return buscaNaHierarquiaDispositivos(agrupador, f => {
+            return (isArtigo(f) || isAgrupadorNaoArticulacao(f)) && f.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO ? f : undefined;
+        });
+    }
+}
+
 // Tipo string para salvar o nome em vez do índice
 var TipoMensagem;
 (function (TipoMensagem) {
@@ -33461,6 +34079,18 @@ const validaTextoDispositivo = (dispositivo) => {
         !isSeguidoDeOmissis(dispositivo)) {
         addMensagem(mensagens, TipoMensagem.ERROR, `Último dispositivo de uma sequência deveria terminar com ${converteIndicadorParaTexto(dispositivo.INDICADOR_FIM_SEQUENCIA)}.`);
     }
+    if (!isDispositivoAlteracao(dispositivo) &&
+        dispositivo.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO &&
+        dispositivo.situacao.tipoEmenda !== ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER &&
+        dispositivo.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+        const dispositivos = [];
+        dispositivos.push(dispositivo);
+        if (CmdEmdUtil.verificaNecessidadeRenumeracaoRedacaoFinal(dispositivos)) {
+            if (localStorage.getItem('naoMostrarExplicacaoSufixo') === null) {
+                addMensagem(mensagens, TipoMensagem.WARNING, `Como interpretar sufixos (-1, -2,...)?`, undefined, 'onmodalsufixos');
+            }
+        }
+    }
     return [...new Set(mensagens)];
 };
 const isSeguidoDeOmissis = (dispositivo) => {
@@ -33470,11 +34100,11 @@ const isSeguidoDeOmissis = (dispositivo) => {
     }
     return false;
 };
-const addMensagem = (mensagens, tipo, descricao, fix) => {
+const addMensagem = (mensagens, tipo, descricao, fix, nomeEvento = '') => {
     const existe = mensagens.filter(m => m.descricao === descricao).length > 0;
     if (!existe) {
         if (fix === undefined) {
-            mensagens.push({ tipo, descricao });
+            mensagens.push({ tipo, descricao, nomeEvento });
         }
         else {
             mensagens.push({ tipo, descricao, fix });
@@ -41419,8 +42049,7 @@ const buscarDispositivoByIdTratandoParagrafoUnico = (articulacao, id) => {
         return d;
     }
     else {
-        const idSemConsiderarAlteracaoEmNorma = id.split('alt')[0];
-        if (idSemConsiderarAlteracaoEmNorma.split('_').includes('par1')) {
+        if (id.endsWith('par1') || id.split('_').includes('par1')) {
             return buscaDispositivoById(articulacao, id.replace('_par1_', '_par1u_').replace(/par1$/, 'par1u'));
         }
         else {
@@ -43227,624 +43856,6 @@ const adicionarAgrupadorArtigoDialog = (elemento, quill, store) => {
     dialogElem.show();
 };
 
-/**
- * Utilitário para montar uma tag usando o pattern composite. Essa classe foi retirada do livro
- * Refactoring to Patterns
- */
-class TagNode {
-    constructor(nome) {
-        this.nome = nome;
-        this.valores = new Array();
-        this.atributos = new StringBuilder();
-    }
-    toString() {
-        if (!this.valores.length) {
-            return '<' + this.nome + this.atributos + '/>';
-        }
-        const resultado = new StringBuilder('<' + this.nome + this.atributos + '>');
-        this.valores.forEach(valor => {
-            resultado.append(valor);
-        });
-        resultado.append('</' + this.nome + '>');
-        return resultado.toString();
-    }
-    add(valor) {
-        if (valor) {
-            this.valores.push(valor);
-        }
-        return this;
-    }
-    addAtributo(atributo, valor) {
-        this.atributos.append(' ');
-        this.atributos.append(atributo);
-        if (valor) {
-            this.atributos.append('="');
-            this.atributos.append(valor);
-            this.atributos.append('"');
-        }
-        return this;
-    }
-}
-
-class DispositivoComparator {
-    static compare(d1, d2) {
-        if (!d1 || !d2) {
-            throw new Error('Tentativa de comparação de dispositivo nulo.');
-        }
-        if (!d1.pai) {
-            return -1;
-        }
-        if (!d2.pai) {
-            return 1;
-        }
-        const i1 = DispositivoComparator.getIndices(d1);
-        const i2 = DispositivoComparator.getIndices(d2);
-        return DispositivoComparator.comparaIndices(i1, i2);
-    }
-    static getIndices(d) {
-        const indices = [];
-        // Considera alteração como filha do caput
-        let pai = this.getPaiParaComparacao(d);
-        while (pai) {
-            indices.push(this.getIndexDoFilho(pai, d));
-            d = pai;
-            pai = this.getPaiParaComparacao(d);
-        }
-        indices.reverse();
-        return indices;
-    }
-    // Considera alteração em artigo como filha do caput
-    static getPaiParaComparacao(d) {
-        if (!d.pai) {
-            return undefined;
-        }
-        if (isArtigo(d.pai) && isArticulacaoAlteracao(d)) {
-            return d.pai.caput;
-        }
-        return d.pai;
-    }
-    static getIndexDoFilho(pai, d) {
-        if (isCaput(d)) {
-            return 0;
-        }
-        if (isParagrafo(d) || (isOmissis(d) && isArtigo(pai))) {
-            // Após o caput
-            return pai.filhos.indexOf(d) + 1;
-        }
-        if (isArticulacaoAlteracao(d)) {
-            // Antes dos filhos
-            return -1;
-        }
-        return pai.filhos.indexOf(d);
-    }
-    static comparaIndices(indices1, indices2) {
-        let ret = 0;
-        const size1 = indices1.length;
-        const size2 = indices2.length;
-        for (let i = 0; i < size1 && i < size2 && ret === 0; i++) {
-            ret = indices1[i] - indices2[i];
-        }
-        if (ret === 0) {
-            ret = size1 - size2;
-        }
-        return ret;
-    }
-}
-
-class DispositivoEmendaUtil {
-    static getAlteracao(dispositivo) {
-        let d = dispositivo;
-        if (d.tipo === TipoDispositivo.alteracao.tipo) {
-            return d;
-        }
-        if (!isDispositivoAlteracao(d)) {
-            return undefined;
-        }
-        while (d && d.tipo !== TipoDispositivo.alteracao.tipo) {
-            d = d.pai;
-        }
-        return d;
-    }
-    static existeNaNormaAlterada(dispositivo) {
-        return dispositivo.situacao.existeNaNormaAlterada;
-    }
-}
-
-class CmdEmdUtil {
-    static getDispositivosNaoOriginais(articulacao) {
-        var _a, _b;
-        const ret = [];
-        if (((_b = (_a = articulacao.projetoNorma) === null || _a === void 0 ? void 0 : _a.ementa) === null || _b === void 0 ? void 0 : _b.situacao.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
-            ret.push(articulacao.projetoNorma.ementa);
-        }
-        percorreHierarquiaDispositivos(articulacao, d => {
-            if (d.pai && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-                ret.push(d);
-            }
-        });
-        return ret;
-    }
-    static getDispositivosAdicionados(articulacao) {
-        const ret = [];
-        percorreHierarquiaDispositivos(articulacao, d => {
-            if (d.pai && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-                ret.push(d);
-            }
-        });
-        return ret;
-    }
-    static getDispositivosComando(dispositivosEmenda) {
-        const dispositivos = new Array();
-        for (const d of dispositivosEmenda) {
-            if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL || isDispositivoAlteracao(d) || isArticulacaoAlteracao(d)) {
-                continue;
-            }
-            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetado(d);
-            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
-                dispositivos.push(dispositivoAfetado);
-            }
-        }
-        return dispositivos;
-    }
-    static getDispositivoAfetado(d) {
-        const pai = d.pai;
-        if (isDispositivoRaiz(pai)) {
-            return d;
-        }
-        // Verifica alteração integral de caput
-        if (isCaput(pai) && pai.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            if (pai.filhos.find(f => f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL)) {
-                // Não é alteração integral de caput
-                return d;
-            }
-            // É alteração integral de caput
-            return CmdEmdUtil.getDispositivoAfetado(pai.pai);
-        }
-        // O caso de artigos adicionados junto com seu agrupador já foi tratado antes. Ver uso de retiraPrimeirosFilhosAdicionadosAgrupador
-        if (isArtigo(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return d;
-        }
-        // Se o pai for uma alteração integral
-        if (CmdEmdUtil.isAlteracaoIntegral(pai)) {
-            // Chama recursivamente para o pai
-            return CmdEmdUtil.getDispositivoAfetado(pai);
-        }
-        return d;
-    }
-    // Retira da lista de dispositivos os primeiros artigos e agrupadores adicionados, filhos de um agrupador adicionado.
-    // Considera que os dispositivos estejam ordenados
-    static retiraPrimeirosFilhosAdicionadosAgrupador(dispositivos) {
-        const primeiro = dispositivos[0];
-        if (isDispositivoAlteracao(primeiro) || primeiro.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return dispositivos;
-        }
-        if (!dispositivos.find(d => isAgrupadorNaoArticulacao(d))) {
-            return dispositivos;
-        }
-        const ret = [];
-        let filhosAdicionadosComAgrupador = [];
-        dispositivos.forEach(d => {
-            if (filhosAdicionadosComAgrupador.indexOf(d) < 0) {
-                ret.push(d);
-                if (isAgrupadorNaoArticulacao(d)) {
-                    filhosAdicionadosComAgrupador = this.listaFilhosAdicionadosComAgrupador(d);
-                }
-            }
-        });
-        return ret;
-    }
-    static listaFilhosAdicionadosComAgrupador(d) {
-        const ret = [];
-        buscaNaHierarquiaDispositivos(d, f => {
-            if (f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || isCaput(f) || isArticulacaoAlteracao(f)) {
-                ret.push(f);
-                return false;
-            }
-            return true;
-        });
-        return ret;
-    }
-    static getDispositivoAfetadoEmAlteracao(d) {
-        if (isOmissis(d)) {
-            if (CmdEmdUtil.isOmissisAdjacenteADispositivoDeEmenda(d)) {
-                return undefined;
-            }
-        }
-        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && CmdEmdUtil.isTextoOmitido(d)) {
-            return undefined;
-        }
-        const pai = isCaput(d.pai) ? d.pai.pai : d.pai;
-        // Se o pai for uma alteração integral
-        if (CmdEmdUtil.isAlteracaoIntegralEmAlteracao(pai)) {
-            // Chama recursivamente para o pai
-            return CmdEmdUtil.getDispositivoAfetadoEmAlteracao(pai);
-        }
-        return d;
-    }
-    // Considero texto omitido do Artigo se o seu caput tiver o texto omitido.
-    static isTextoOmitido(d) {
-        var _a;
-        return isOmissis(d) || d.texto.startsWith(TEXTO_OMISSIS) || (isAgrupador(d) && !!((_a = d.caput) === null || _a === void 0 ? void 0 : _a.texto.startsWith(TEXTO_OMISSIS)));
-    }
-    static getDescricaoSituacaoParaComandoEmenda(d) {
-        // Trata dispositivo já existente na norma adicionado em bloco de alteração como dispositivo modificado
-        return d.isDispositivoAlteracao && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && DispositivoEmendaUtil.existeNaNormaAlterada(d) && !isOmissis(d)
-            ? DescricaoSituacao.DISPOSITIVO_MODIFICADO
-            : d.situacao.descricaoSituacao;
-    }
-    static isMesmaSituacaoParaComandoEmenda(d1, d2) {
-        return this.getDescricaoSituacaoParaComandoEmenda(d1) === this.getDescricaoSituacaoParaComandoEmenda(d2);
-    }
-    static isAlteracaoIntegral(d) {
-        const descricaoSituacao = this.getDescricaoSituacaoParaComandoEmenda(d);
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return false;
-        }
-        if (isDispositivoAlteracao(d) && isAgrupadorNaoArticulacao(d) && descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return false;
-        }
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return true;
-        }
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return !isAgrupadorNaoArticulacao(d);
-        }
-        if (!d.filhos.length) {
-            if (isArtigo(d)) {
-                return descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL;
-            }
-            return true;
-        }
-        for (const filho of d.filhos) {
-            if (!CmdEmdUtil.isAlteracaoIntegral(filho)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    static isAlteracaoIntegralEmAlteracao(d) {
-        if (isArticulacaoAlteracao(d)) {
-            return false;
-        }
-        if (isAgrupadorNaoArticulacao(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return false;
-        }
-        return ((d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && !CmdEmdUtil.isTextoOmitido(d)) ||
-            d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO);
-    }
-    static getArvoreDispositivos(dispositivos) {
-        const mapa = new Map();
-        if (!dispositivos.length) {
-            return mapa;
-        }
-        dispositivos.forEach(dispositivo => {
-            this.atualizaMapa(dispositivo, mapa);
-        });
-        return mapa;
-    }
-    static atualizaMapa(dispositivo, mapa) {
-        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
-        let mapaAtual = mapa;
-        hierarquia.forEach(dispositivoAtual => {
-            const mapaFilho = mapaAtual.get(dispositivoAtual);
-            if (mapaFilho) {
-                mapaAtual = mapaFilho;
-            }
-            else {
-                const novoMapa = new Map();
-                mapaAtual.set(dispositivoAtual, novoMapa);
-                mapaAtual = novoMapa;
-            }
-        });
-    }
-    static getHierarquiaDispositivosDeUmDispositivo(dispositivo) {
-        const hierarquia = new Array();
-        hierarquia.push(dispositivo);
-        let pai = dispositivo.pai;
-        while (pai && !isDispositivoRaiz(pai) && !isAgrupadorNaoArticulacao(pai)) {
-            hierarquia.push(pai);
-            pai = pai.pai;
-        }
-        hierarquia.reverse();
-        return hierarquia;
-    }
-    static getArvoreDispositivosDeAlteracaoDeNorma(dispositivos) {
-        const mapa = new Map();
-        if (!dispositivos.length) {
-            return mapa;
-        }
-        for (const dispositivo of dispositivos) {
-            this.atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa);
-        }
-        return mapa;
-    }
-    static atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa) {
-        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
-        let mapaAtual = mapa;
-        for (const dispositivoAtual of hierarquia) {
-            if (!isDispositivoAlteracao(dispositivoAtual) || isArticulacaoAlteracao(dispositivoAtual)) {
-                continue;
-            }
-            if (mapaAtual.has(dispositivoAtual)) {
-                mapaAtual = mapaAtual.get(dispositivoAtual);
-            }
-            else {
-                const novoMapa = new Map();
-                mapaAtual.set(dispositivoAtual, novoMapa);
-                mapaAtual = novoMapa;
-            }
-        }
-        mapa = mapaAtual;
-    }
-    // public static List<Dispositivo> filtraDispositivosModificados(final List<Dispositivo> dispositivos) {
-    //     List<Dispositivo> ret = new ArrayList<Dispositivo>();
-    //     // No caso de dispositivo modificado pode ocorrer o caso de alteração integral de artigo,
-    //     // onde o próprio artigo não está marcado como modificado.
-    //     for (Dispositivo d : dispositivos) {
-    //         if (d.isSituacao(DispositivoModificado.class) || d.isSituacao(DispositivoOriginal.class)
-    //             && CmdEmdUtil.isAlteracaoIntegral(d)) {
-    //             ret.add(d);
-    //         }
-    //     }
-    //     return ret;
-    // }
-    static isSequenciasPlural(sequencias) {
-        const qtdSequencias = sequencias.length;
-        if (qtdSequencias === 0) {
-            return false;
-        }
-        return qtdSequencias > 1 || CmdEmdUtil.isSequenciaPlural(sequencias[0]);
-    }
-    static isSequenciaPlural(sequencia) {
-        const qtdRanges = sequencia.getQuantidadeRanges();
-        if (qtdRanges === 0) {
-            return false;
-        }
-        return qtdRanges > 1 || sequencia.getPrimeiroRange().getQuantidadeDispositivos() > 1;
-    }
-    static getProximoAgrupador(disp) {
-        let ret = disp;
-        do {
-            ret = getDispositivoPosterior(ret);
-        } while (ret && !isAgrupador(ret));
-        return ret;
-    }
-    static getDispositivoIrmaoPosterior(dispositivo) {
-        if (isArtigo(dispositivo) || isAgrupador(dispositivo)) {
-            return this.getArtigoPosterior(dispositivo);
-        }
-        if (!this.isUltimoDispositivoDoMesmoTipo(dispositivo)) {
-            const pai = dispositivo.pai;
-            const index = pai.filhos.indexOf(dispositivo) + 1;
-            return pai.filhos[index];
-        }
-        return undefined;
-    }
-    static getArtigoPosterior(dispositivo) {
-        const pai = dispositivo.pai;
-        if (pai.filhos.length) {
-            const iFilho = pai.filhos.indexOf(dispositivo);
-            for (let i = iFilho + 1; i < pai.filhos.length; i++) {
-                const d = pai.filhos[i];
-                if (isArtigo(d)) {
-                    return d;
-                }
-                else if (isAgrupador(d)) {
-                    const atual = this.buscaProximoArtigo(d);
-                    if (atual) {
-                        return atual;
-                    }
-                }
-            }
-            if (pai.pai) {
-                return this.getArtigoPosterior(pai);
-            }
-        }
-        return undefined;
-    }
-    static buscaProximoArtigo(dispositivo) {
-        const filhos = dispositivo.filhos;
-        for (const d of filhos) {
-            if (isArtigo(d)) {
-                return d;
-            }
-            if (isAgrupador(d)) {
-                return this.buscaProximoArtigo(d);
-            }
-        }
-        return undefined;
-    }
-    static isUltimoDispositivoDoMesmoTipo(dispositivo) {
-        if (!dispositivo.pai) {
-            return true;
-        }
-        const pai = dispositivo.pai;
-        const index = pai.filhos.indexOf(dispositivo);
-        if (pai.filhos.length === index + 1) {
-            return true;
-        }
-        if (pai.filhos[index + 1].tipo === dispositivo.tipo) {
-            return false;
-        }
-        return true;
-    }
-    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
-    static getFilhosEstiloLexML(d) {
-        return getFilhosEstiloLexML(d);
-    }
-    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
-    static getDispositivoAnteriorDireto(d) {
-        return getDispositivoAnteriorDireto(d);
-    }
-    static getDispositivoPosteriorDireto(d) {
-        // primeiro o primeiro filho ou o primeiro irmão do pai (recursivamente)
-        const filhos = this.getFilhosEstiloLexML(d);
-        if (filhos.length) {
-            return filhos[0];
-        }
-        else {
-            return this.getProximoIrmaoRecursivo(d);
-        }
-    }
-    static getProximoIrmaoRecursivo(d) {
-        if (!d)
-            return;
-        const irmao = getDispositivoPosterior(d);
-        if (irmao) {
-            return irmao;
-        }
-        else {
-            const pai = d.pai;
-            return pai ? undefined : this.getProximoIrmaoRecursivo(pai);
-        }
-    }
-    // /**
-    //  * Retorna rótulo do dispositivo gerado pelo numerador. Não confia no rótulo informado pelo
-    //  * dispositivo original.
-    //  */
-    // public static String getRotulo(final Dispositivo d) {
-    //     return d.getNumeradorDispositivo().getRotulo(d);
-    // }
-    static getRotuloPais(disp) {
-        const sb = new StringBuilder();
-        let pai;
-        while (disp && !isArtigo(disp)) {
-            pai = disp.pai;
-            sb.append(pai.pronomePossessivoSingular);
-            sb.append(pai.getNumeracaoComRotuloParaComandoEmenda(disp));
-            disp = pai;
-        }
-        return sb.toString();
-    }
-    static getDispositivosNaAlteracaoParaComando(alteracao) {
-        const dispositivosAlterados = new Array();
-        percorreHierarquiaDispositivos(alteracao, d => {
-            if (d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-                dispositivosAlterados.push(d);
-            }
-        });
-        const dispositivos = new Array();
-        dispositivosAlterados.forEach(d => {
-            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetadoEmAlteracao(d);
-            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
-                dispositivos.push(dispositivoAfetado);
-            }
-        });
-        dispositivos.sort(DispositivoComparator.compare);
-        return dispositivos;
-    }
-    static isOmissisAdjacenteADispositivoDeEmenda(d) {
-        if (!isOmissis(d)) {
-            return false;
-        }
-        let anterior = CmdEmdUtil.getDispositivoAnteriorDireto(d);
-        if (isCaput(anterior)) {
-            anterior = anterior.pai;
-        }
-        if (anterior && anterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return true;
-        }
-        const posterior = CmdEmdUtil.getDispositivoPosteriorDireto(d);
-        if (posterior && posterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return true;
-        }
-        return false;
-    }
-    static isMesmoTipoParaComandoEmenda(d1, d2) {
-        if (d1.tipo !== d2.tipo) {
-            return false;
-        }
-        if (isArtigo(d1) && CmdEmdUtil.isAlteracaoIntegral(d1) !== CmdEmdUtil.isAlteracaoIntegral(d2)) {
-            return false;
-        }
-        return true;
-    }
-    static getTextoDoDispositivoOuOmissis(d, alteracaoNormaVigente = false) {
-        if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || isCaput(d)) {
-            return ' ' + CmdEmdUtil.trataTextoParaCitacao(d, alteracaoNormaVigente);
-        }
-        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return isOmissis(d) ? ' (Suprimir omissis)' : ' (Suprimir)';
-        }
-        else {
-            return ' ' + new TagNode('Omissis');
-        }
-    }
-    static trataTextoParaCitacao(d, alteracaoNormaVigente = false) {
-        var _a;
-        let texto = isArtigo(d) ? d.caput.texto : (_a = d.texto) !== null && _a !== void 0 ? _a : '';
-        if (texto.includes(TEXTO_OMISSIS)) {
-            texto = texto.replace(TEXTO_OMISSIS, new TagNode('Omissis').toString());
-        }
-        if (alteracaoNormaVigente) {
-            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '');
-        }
-        else {
-            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '’$1 ');
-        }
-        return texto
-            .trim()
-            .replace(/\s{2,}/g, ' ')
-            .replace(/^<p>\s?/i, '')
-            .replace(/\s?<\/p>$/i, '')
-            .replace(/<\/?a.*?>/gi, '')
-            .replace(/\s([\\.,:?!])/g, '$1');
-    }
-    static isFechaAspas(d) {
-        return isUltimaAlteracao(d);
-    }
-    // Considera que dispositivosAdicionadosProposicao é uma lista de dispositivos adicionados à proposição
-    // e que não contém dispositivos adicionados em bloco de alteração.
-    // Podem ser utilizados apenas os dispositivos raiz em um grupo de dispositivos adicionados.
-    static verificaNecessidadeRenumeracaoRedacaoFinal(dispositivosAdicionadosProposicao) {
-        for (const d of dispositivosAdicionadosProposicao) {
-            if (CmdEmdUtil.implicaEmRenumeracaoRedacaoFinal(d)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    // Testa características do dispositivo (considerado fora de bloco de alteração) que implicam
-    // em necessidade de renumeração na redação final.
-    static implicaEmRenumeracaoRedacaoFinal(d) {
-        // rótulo 0 (zero) ou possui sufixo de encaixe (-A, -B...)
-        if (d.rotulo && (d.numero === '0' || /.*(?:-\d).*/i.test(d.rotulo))) {
-            return true;
-        }
-        // adjacente a parágrafo ou artigo único
-        if (isArtigo(d) || isParagrafo(d)) {
-            // Se o dispositivo tiver sido adicionado antes do único cairá no caso anterior de rótulo com 0 (zero)
-            // Não é possível testar pelo rótulo porque o parágrafo único está sendo renumerado.
-            if (irmaosMesmoTipo(d).filter(i => i.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL).length === 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-    static normalizaCabecalhoComandoEmenda(texto) {
-        return removeEspacosDuplicados(texto.replace(/caput/g, '<i>caput</i>'));
-    }
-    /*
-    Dados dois agrupadores adicionados, verifica se são sequenciais e não existe artigo ou agrupador não adicionado entre eles.
-    */
-    static verificaAgrupadoresAdicionadosEmSequencia(a1, a2) {
-        if (!isAgrupadorNaoArticulacao(a1) && !isAgrupadorNaoArticulacao(a2)) {
-            return false;
-        }
-        const filhoNaoAdicionado = this.getFilhoNaoAdicionadoDeAgrupadorAdicionado(a1);
-        return !filhoNaoAdicionado && getIrmaoPosteriorIndependenteDeTipo(a1) === a2;
-    }
-    /*
-    Dado um agrupador adicionado retorna o primeiro artigo ou agrupador em sua hierarquia que não seja adicionado.
-    Retorna undefined se todos forem adicionados.
-    */
-    static getFilhoNaoAdicionadoDeAgrupadorAdicionado(agrupador) {
-        return buscaNaHierarquiaDispositivos(agrupador, f => {
-            return (isArtigo(f) || isAgrupadorNaoArticulacao(f)) && f.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO ? f : undefined;
-        });
-    }
-}
-
 class Referencia {
 }
 class Elemento extends Referencia {
@@ -45357,6 +45368,9 @@ class EtaBlotMensagem extends EtaBlot {
     static create(mensagem) {
         const node = super.create();
         let classe = '';
+        if (mensagem.nomeEvento !== '') {
+            node.setAttribute('id', mensagem.nomeEvento);
+        }
         if (mensagem.tipo === TipoMensagem.INFO) {
             classe = 'mensagem--info';
         }
@@ -45372,6 +45386,10 @@ class EtaBlotMensagem extends EtaBlot {
         if (mensagem.fix) {
             node.innerHTML += `. <span class="mensagem__fix">Corrigir agora.</span>`;
             node.onclick = () => node.dispatchEvent(new CustomEvent('mensagem', { bubbles: true, cancelable: true, detail: { mensagem } }));
+        }
+        if (mensagem.nomeEvento && mensagem.nomeEvento !== '') {
+            node.innerHTML += `. <span class="mensagem__fix">Saiba mais</span>`;
+            node.onclick = () => node.dispatchEvent(new CustomEvent(mensagem.nomeEvento, { bubbles: true, cancelable: true, detail: { mensagem } }));
         }
         return node;
     }
@@ -45717,7 +45735,6 @@ class EtaQuill extends Quill {
         this._processandoMudancaLinha = false;
         this.undoRedoEstrutura = new Observable();
         this.elementoSelecionado = new Observable();
-        this.aspasAberta = false;
         this.customClickHandler = (ev) => {
             try {
                 let blot = EtaQuill.find(ev.target);
@@ -45741,7 +45758,6 @@ class EtaQuill extends Quill {
             this._mudouDeLinha = this.verificarMudouLinha(range, oldRange);
             if (this._mudouDeLinha) {
                 this.observableSelectionChange.notify(linhaAtualAux);
-                this.aspasAberta = false;
                 this.limparHistory();
             }
         };
@@ -46034,10 +46050,10 @@ class EtaQuill extends Quill {
             if (texto.indexOf('"') > -1) {
                 for (let i = 0; i < texto.length; i++) {
                     if (texto[i] === '"') {
+                        const novaAspas = i === 0 || texto[i - 1].match(/\s/) ? '“' : '”';
                         posicaoTexto += i;
                         this.deleteText(posicaoTexto, 1, Quill.sources.SILENT);
-                        this.insertText(posicaoTexto, this.aspasAberta ? '”' : '“', Quill.sources.SILENT);
-                        this.aspasAberta = !this.aspasAberta;
+                        this.insertText(posicaoTexto, novaAspas, Quill.sources.SILENT);
                         posicaoTexto = index;
                     }
                 }
@@ -46167,7 +46183,15 @@ class EtaQuillUtil {
         const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
         if (elemento.mensagens && elemento.mensagens.length > 0) {
             elemento.mensagens.forEach((mensagem) => {
-                new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                if (!mensagem.nomeEvento || mensagem.nomeEvento === '') {
+                    new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                }
+                else {
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (mensagem.nomeEvento && mensagem.nomeEvento !== '' && !avisoJaExiste) {
+                        new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                    }
+                }
             });
         }
         new EtaBlotEspaco().insertInto(etaTdEspaco);
@@ -46218,7 +46242,9 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
         this.placeholder = '';
         this.label = '';
         this.items = [];
+        this.disabled = false;
         this.opened = false;
+        this.async = true;
         this.maxSuggestions = 10;
         this.onSearch = (value) => console.log('Texto da pesquisa', value);
         this.onSelect = (value) => console.log('Item selecionado:', value);
@@ -46229,11 +46255,16 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
         this._mouseEnter = false;
         this._search = () => {
             const { value } = this.contentElement;
-            clearTimeout(this._timer);
-            if (value.length >= 5) {
-                this._timer = setTimeout(() => {
-                    this.onSearch(value);
-                }, this._interval);
+            if (this.async) {
+                clearTimeout(this._timer);
+                if (value.length >= 5 || !this.async) {
+                    this._timer = setTimeout(() => {
+                        this.onSearch(value);
+                    }, this.async ? this._interval : 0);
+                }
+            }
+            else {
+                this.onSearch(value);
             }
         };
     }
@@ -46289,6 +46320,7 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
           placeholder=${this.placeholder}
           .value=${((_a = this.value) === null || _a === void 0 ? void 0 : _a.description) || ''}
           @change=${e => this._handleChange(e.target.value)}
+          ?disabled=${this.disabled}
         ></sl-input>
       </slot>
       <div class="suggest-container">
@@ -46479,7 +46511,13 @@ __decorate([
 ], AutocompleteAsync.prototype, "items", void 0);
 __decorate([
     e$3({ type: Boolean, reflect: true })
+], AutocompleteAsync.prototype, "disabled", void 0);
+__decorate([
+    e$3({ type: Boolean, reflect: true })
 ], AutocompleteAsync.prototype, "opened", void 0);
+__decorate([
+    e$3({ type: Boolean, reflect: true })
+], AutocompleteAsync.prototype, "async", void 0);
 __decorate([
     e$3({ type: Number })
 ], AutocompleteAsync.prototype, "maxSuggestions", void 0);
@@ -47319,6 +47357,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <lexml-ajuda-modal></lexml-ajuda-modal>
       <lexml-emenda-comando-modal></lexml-emenda-comando-modal>
       <lexml-atalhos-modal></lexml-atalhos-modal>
+      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
     renderBotoesParaTratarTodasRevisoes() {
@@ -47334,6 +47373,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     }
     showAjudaModal() {
         this.ajudaModal.show();
+    }
+    showModalSufixos() {
+        if (this.sufixosModal !== null) {
+            this.sufixosModal.show();
+        }
     }
     showAtalhosModal() {
         this.atalhosModal.show();
@@ -47900,7 +47944,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     linha.children.tail.remove();
                 }
                 if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
-                    EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (this.isMensagemSufixos(elemento)) {
+                        if (avisoJaExiste === null) {
+                            EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                        }
+                    }
+                    else {
+                        EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    }
                 }
             }
         });
@@ -47960,10 +48012,21 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     linha.children.tail.remove();
                 }
                 if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
-                    EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (this.isMensagemSufixos(elemento)) {
+                        if (avisoJaExiste === null) {
+                            EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                        }
+                    }
+                    else {
+                        EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    }
                 }
             }
         });
+    }
+    isMensagemSufixos(elemento) {
+        return elemento.mensagens && elemento.mensagens.length === 1 && elemento.mensagens[0].nomeEvento === 'onmodalsufixos';
     }
     montarMenuContexto(event) {
         var _a, _b;
@@ -48059,7 +48122,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             event.stopImmediatePropagation();
             this.exibirDiferencas(event.detail.elemento);
         });
+        editorHtml.addEventListener('onmodalsufixos', (event) => {
+            event.stopImmediatePropagation();
+            this.exibirModalSufixos();
+        });
         this.configListenersEta();
+    }
+    exibirModalSufixos() {
+        //exibirSufixosDialog(this.quill);
+        this.showModalSufixos();
     }
     exibirDiferencas(elemento) {
         var _a;
@@ -48457,6 +48528,9 @@ __decorate([
 __decorate([
     i$1('lexml-ajuda-modal')
 ], EditorComponent.prototype, "ajudaModal", void 0);
+__decorate([
+    i$1('lexml-sufixos-modal')
+], EditorComponent.prototype, "sufixosModal", void 0);
 __decorate([
     i$1('lexml-atalhos-modal')
 ], EditorComponent.prototype, "atalhosModal", void 0);
@@ -49376,12 +49450,12 @@ class ContainBlot extends Container$3 {
     return super.create(value);
   }
 
-  formats(domNode) {
-    if (domNode) {
-      return domNode.tagName;
-    }
-    return this.domNode.tagName;
-  }
+  // formats(domNode) {
+  //   if (domNode) {
+  //     return domNode.tagName;
+  //   }
+  //   return this.domNode.tagName;
+  // }
 }
 
 ContainBlot.blotName = 'contain';
@@ -50035,8 +50109,8 @@ class TableTrick {
       blot = blot.parent;
     }
     blot.insertBefore(table, top_branch);
-    TableHistory.register('insert', { node: table.domNode, nextNode: top_branch.domNode });
-    TableHistory.add(quill);
+    // TableHistory.register('insert', { node: table.domNode, nextNode: top_branch.domNode });
+    // TableHistory.add(quill);
   }
 
   static removeTable(quill) {
@@ -50629,7 +50703,11 @@ class TableTrick {
               // Table history entry
               TableHistory.undo(quill, entry.id);
               return false;
-            }
+            } else if (entry.undo?.ops.some(op => op.attributes?.td === null)) {
+              // Ajusta histórico: operação de undo possui um item com atributo td=null que mantém uma célula vazia
+              const index = entry.undo.ops.findIndex(op => op.attributes?.td === null);
+              entry.undo.ops.splice(index, 1);
+          }
             // Classic history entry
           }
           return true;
@@ -55234,6 +55312,218 @@ AutoriaComponent = __decorate([
     n$1('lexml-autoria')
 ], AutoriaComponent);
 
+let DestinoComponent = class DestinoComponent extends s {
+    constructor() {
+        super(...arguments);
+        this._comissoesAutocomplete = [];
+        this.comissaoSelecionada = '';
+        this.isMPV = false;
+        this.isPlenario = false;
+        this.tipoColegiadoPlenario = false;
+        this._comissoesOptions = [];
+    }
+    set proposicao(value) {
+        // this._autocomplete.value = '';
+        this._proposicao = value;
+        this.isMPV = false;
+        if (this._proposicao.sigla === 'MPV') {
+            this._colegiadoApreciador.siglaCasaLegislativa = 'CN';
+            this._colegiadoApreciador.tipoColegiado = 'Comissão';
+            this._colegiadoApreciador.siglaComissao = `CMMPV ${this._proposicao.numero}/${this._proposicao.ano}`;
+            this._autocomplete.value = `${this._colegiadoApreciador.siglaComissao} - COMISSÃO MISTA DA MEDIDA PROVISÓRIA N° ${this._proposicao.numero}, DE ${this._proposicao.ano}`;
+            this.isMPV = true;
+        }
+        this.requestUpdate();
+    }
+    get proposicao() {
+        return this._proposicao;
+    }
+    set comissoes(value) {
+        this.isPlenario = false;
+        if (!this._comissoes || this._comissoes.length === 0) {
+            this._comissoes = value ? value : [];
+            this._comissoesOptions = this.comissoes.map(comissao => new Option(comissao.sigla, `${comissao.sigla} - ${comissao.nome}`));
+            this.requestUpdate();
+        }
+        if (typeof value === 'undefined') {
+            this.isPlenario = true;
+        }
+    }
+    get comissoes() {
+        return this._comissoes;
+    }
+    set colegiadoApreciador(value) {
+        this._colegiadoApreciador = value ? value : new ColegiadoApreciador();
+        this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário' ? true : false;
+        if (this._colegiadoApreciador.siglaComissao) {
+            const option = this._comissoesOptions.find(op => op.value === this._colegiadoApreciador.siglaComissao) || new Option('', '');
+            this._autocomplete.value = option.description || this._colegiadoApreciador.siglaComissao;
+        }
+        else {
+            this._autocomplete.value = '';
+        }
+        this.requestUpdate();
+    }
+    get colegiadoApreciador() {
+        return this._colegiadoApreciador;
+    }
+    render() {
+        var _a, _b, _c, _d;
+        return $ `
+      <style>
+        .lexml-destino {
+          display: block;
+          font-size: 1em;
+          max-width: 700px;
+        }
+        sl-radio-group::part(base) {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 10px;
+          background-color: var(--sl-color-gray-100);
+          box-shadow: var(--sl-shadow-x-large);
+          flex-wrap: wrap;
+          padding: 20px 20px;
+        }
+        sl-radio-group::part(label) {
+          background-color: var(--sl-color-gray-200);
+          font-weight: bold;
+          border-radius: 5px;
+          border: 1px solid var(--sl-color-gray-300);
+          padding: 2px 5px;
+          box-shadow: var(--sl-shadow-small);
+        }
+        sl-radio-group > sl-radio:first-child {
+          display: inline-flex;
+          padding: 0 20px 0 0;
+        }
+        sl-input::part(form-control) {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        sl-input::part(base) {
+          max-width: 190px;
+        }
+        @media (max-width: 480px) {
+          sl-input::part(base) {
+            max-width: 150px;
+          }
+        }
+
+        sl-radio-group::part(base) {
+          box-shadow: none;
+        }
+      </style>
+      <sl-radio-group label="Destino" fieldset class="lexml-destino">
+        <div>
+          <sl-radio-group id="tipoColegiado">
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.clickTipoColegiado('Plenário')}
+              ?checked=${((_a = this._colegiadoApreciador) === null || _a === void 0 ? void 0 : _a.tipoColegiado) === 'Plenário'}
+              value="Plenário"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Plenário</sl-radio
+            >
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.clickTipoColegiado('Comissão')}
+              ?checked=${((_b = this._colegiadoApreciador) === null || _b === void 0 ? void 0 : _b.tipoColegiado) === 'Comissão'}
+              value="Comissão"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Comissão</sl-radio
+            >
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.clickTipoColegiado('Plenário via Comissão')}
+              ?checked=${((_c = this._colegiadoApreciador) === null || _c === void 0 ? void 0 : _c.tipoColegiado) === 'Plenário via Comissão'}
+              value="Plenário via Comissão"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Plenário via Comissão</sl-radio
+            >
+          </sl-radio-group>
+        </div>
+        <div style="width:100%;margin-top:10px">
+          <autocomplete-async
+            id="auto-complete-async"
+            label="Comissão"
+            .async=${false}
+            ?readonly=${this.isMPV || this.isPlenario}
+            placeholder="ex: Comissão"
+            .items=${this._comissoesAutocomplete}
+            .onSearch=${value => this._filtroComissao(value)}
+            .onSelect=${value => this._selecionarComissao(value)}
+            @blur=${this._blurAutoComplete}
+            ?disabled=${this.isMPV || this.isPlenario || this.tipoColegiadoPlenario || !((_d = this.comissoes) === null || _d === void 0 ? void 0 : _d.length)}
+          ></autocomplete-async>
+        </div>
+      </sl-radio-group>
+    `;
+    }
+    clickTipoColegiado(value) {
+        if (!this.isMPV && !this.isPlenario) {
+            this._colegiadoApreciador.tipoColegiado = value;
+            this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário' ? true : false;
+            this.requestUpdate();
+        }
+    }
+    _selecionarComissao(item) {
+        this._colegiadoApreciador.siglaComissao = item.value;
+    }
+    _filtroComissao(query) {
+        const regex = new RegExp(query, 'i');
+        this._comissoesAutocomplete = this._comissoesOptions.filter(comissao => comissao.description.match(regex));
+    }
+    _blurAutoComplete() {
+        var _a;
+        if (!((_a = this.comissoes) === null || _a === void 0 ? void 0 : _a.length))
+            return;
+        setTimeout(() => {
+            var _a;
+            const comissao = (_a = this._autocomplete.value) !== null && _a !== void 0 ? _a : '';
+            const comissaoSelecionada = this._comissoesOptions.find(comissaoOp => comissao === comissaoOp.description);
+            if (!comissaoSelecionada) {
+                this._autocomplete.value = '';
+                this.comissaoSelecionada = '';
+            }
+        }, 200);
+    }
+    emitirEventoOnChange(origemEvento) {
+        this.dispatchEvent(new CustomEvent('onchange', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                origemEvento,
+            },
+        }));
+    }
+};
+__decorate([
+    i$1('#auto-complete-async')
+], DestinoComponent.prototype, "_autocomplete", void 0);
+__decorate([
+    t$1()
+], DestinoComponent.prototype, "_comissoesAutocomplete", void 0);
+__decorate([
+    t$1()
+], DestinoComponent.prototype, "comissaoSelecionada", void 0);
+__decorate([
+    e$3({ type: RefProposicaoEmendada })
+], DestinoComponent.prototype, "proposicao", null);
+__decorate([
+    e$3({ type: Array, state: true })
+], DestinoComponent.prototype, "comissoes", null);
+__decorate([
+    e$3({ type: Object, state: true })
+], DestinoComponent.prototype, "colegiadoApreciador", null);
+DestinoComponent = __decorate([
+    n$1('lexml-destino')
+], DestinoComponent);
+
 let LexmlAutocomplete = class LexmlAutocomplete extends s {
     constructor() {
         super(...arguments);
@@ -55289,7 +55579,7 @@ let LexmlAutocomplete = class LexmlAutocomplete extends s {
       </style>
       <slot id="dropdown-input">
         <!-- <input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="Parlamentar" .value=${this.value || ''} /> -->
-        <sl-input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="Parlamentar" size="small" .value=${this.value || ''}></sl-input>
+        <sl-input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="" size="small" .value=${this.value || ''}></sl-input>
       </slot>
       <div class="suggest-container">
         <ul id="suggestions" ?hidden=${!this.opened} @mouseenter=${this._handleItemMouseEnter} @mouseleave=${this._handleItemMouseLeave}>
@@ -58172,11 +58462,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.totalAlertas = 0;
         this.exibirAjuda = true;
         this.parlamentares = [];
+        this.comissoes = [];
         this.lexmlEmendaConfig = new LexmlEmendaConfig();
         this.modo = ClassificacaoDocumento.EMENDA;
         this.urn = '';
         this.ementa = '';
         this.motivo = '';
+        this.parlamentaresCarregados = false;
+        this.comissoesCarregadas = false;
         this.autoria = new Autoria();
         this.desativarMarcaRevisao = () => {
             if (rootStore.getState().elementoReducer.emRevisao) {
@@ -58208,10 +58501,48 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             console.log('Erro inesperado ao carregar lista de parlamentares');
             console.log(err);
         }
+        finally {
+            this.parlamentaresCarregados = true;
+            // this.habilitarBotoes();
+        }
         return Promise.resolve([]);
     }
+    async getComissoes() {
+        try {
+            if (!this.lexmlEmendaConfig.urlComissoes) {
+                return Promise.resolve(undefined);
+            }
+            const _response = await fetch(this.lexmlEmendaConfig.urlComissoes);
+            const _comissoes = await _response.json();
+            return _comissoes.map(c => ({
+                siglaCasaLegislativa: c.siglaCasaLegislativa,
+                sigla: c.sigla,
+                nome: c.nome,
+            }));
+        }
+        catch (err) {
+            console.log('Erro inesperado ao carregar lista de comissões');
+            console.log(err);
+        }
+        finally {
+            this.comissoesCarregadas = true;
+            // this.habilitarBotoes();
+        }
+        return Promise.resolve([]);
+    }
+    // private habilitarBotoes(): void {
+    //   const botoes = document.querySelectorAll('.lexml-eta-main-header input[type=button]');
+    //   if (this.parlamentaresCarregados && this.comissoesCarregadas) {
+    //     botoes.forEach(btn => ((btn as HTMLInputElement).disabled = false));
+    //   } else {
+    //     botoes.forEach(btn => ((btn as HTMLInputElement).disabled = true));
+    //   }
+    // }
     atualizaListaParlamentares() {
         this.getParlamentares().then(parlamentares => (this.parlamentares = parlamentares));
+    }
+    atualizaListaComissoes() {
+        this.getComissoes().then(comissoes => (this.comissoes = comissoes));
     }
     montarColegiadoApreciador(sigla, numero, ano) {
         if (sigla.toUpperCase() === 'MPV') {
@@ -58234,17 +58565,21 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         const emenda = new Emenda();
         emenda.modoEdicao = this.modo;
         emenda.componentes[0].urn = this.urn;
-        if (this.urn) {
-            emenda.proposicao = {
-                urn: this.urn,
-                sigla: getSigla(this.urn),
-                numero: getNumero(this.urn),
-                ano: getAno(this.urn),
-                ementa: this.ementa,
+        emenda.proposicao = this.montarProposicaoPorUrn(this.urn, this.ementa);
+        return emenda;
+    }
+    montarProposicaoPorUrn(urn, ementa) {
+        if (urn) {
+            return {
+                urn: urn,
+                sigla: getSigla(urn),
+                numero: getNumero(urn),
+                ano: getAno(urn),
+                ementa: ementa,
                 identificacaoTexto: 'Texto inicial',
             };
         }
-        return emenda;
+        return new RefProposicaoEmendada();
     }
     getEmenda() {
         // Para evitar erros de referência nula quando chamado antes da inicialização do componente
@@ -58268,10 +58603,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
         emenda.opcoesImpressao = this._lexmlOpcoesImpressao.opcoesImpressao;
-        emenda.colegiadoApreciador = this.montarColegiadoApreciador(emenda.proposicao.sigla, numeroProposicao, emenda.proposicao.ano);
+        emenda.colegiadoApreciador = this._lexmlDestino.colegiadoApreciador;
         emenda.epigrafe = new Epigrafe();
         emenda.epigrafe.texto = 'EMENDA Nº         ';
-        if (emenda.colegiadoApreciador.siglaComissao) {
+        if (emenda.colegiadoApreciador.tipoColegiado !== 'Plenário' && emenda.colegiadoApreciador.siglaComissao) {
             emenda.epigrafe.texto += `- ${emenda.colegiadoApreciador.siglaComissao}`;
         }
         const generoProposicao = generoFromLetra(getTipo$1(emenda.proposicao.urn).genero);
@@ -58288,6 +58623,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             re.elementoAntesRevisao && removeAtributosDoElemento(re.elementoAntesRevisao);
         });
         return revisoes;
+    }
+    openModalSufixos() {
+        if (this.sufixosModal !== null) {
+            this.sufixosModal.show();
+        }
     }
     inicializarEdicao(params) {
         var _a, _b, _c;
@@ -58306,7 +58646,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             this.setEmenda(params.emenda);
         }
         else {
-            this.resetaEmenda(this.modo);
+            this.resetaEmenda(params);
         }
         this.limparAlertas();
         if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
@@ -58324,6 +58664,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.updateView();
     }
     inicializaProposicao(params) {
+        this.urn = '';
+        this.ementa = '';
         if (params.proposicao) {
             // Preferência para a proposição informada
             this.urn = buildFakeUrn(params.proposicao.sigla, params.proposicao.numero, params.proposicao.ano);
@@ -58379,6 +58721,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
+        this._lexmlDestino.colegiadoApreciador = emenda.colegiadoApreciador;
+        this._lexmlDestino.proposicao = emenda.proposicao;
         this._lexmlJustificativa.setContent(emenda.justificativa);
         if (this.isEmendaTextoLivre()) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
@@ -58387,12 +58731,33 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         this._lexmlData.data = emenda.data;
     }
-    resetaEmenda(modoEdicao = ModoEdicaoEmenda.EMENDA) {
+    resetaEmenda(params) {
         const emenda = new Emenda();
-        emenda.modoEdicao = modoEdicao;
+        emenda.modoEdicao = params.modo;
+        emenda.proposicao = this.montarProposicaoPorUrn(this.urn, params.ementa);
+        emenda.autoria = this.montarAutoriaPadrao(params);
+        emenda.opcoesImpressao = this.montarOpcoesImpressaoPadrao(params);
         this._lexmlEmendaComando.emenda = {};
         this.setEmenda(emenda);
         rootStore.dispatch(limparRevisaoAction.execute());
+    }
+    montarAutoriaPadrao(params) {
+        const autoria = new Autoria();
+        const autoriaPadrao = params.autoriaPadrao;
+        const parlamentarAutor = this.parlamentares.find(par => par.identificacao === (autoriaPadrao === null || autoriaPadrao === void 0 ? void 0 : autoriaPadrao.identificacao) && par.siglaCasaLegislativa === (autoriaPadrao === null || autoriaPadrao === void 0 ? void 0 : autoriaPadrao.siglaCasaLegislativa));
+        if (parlamentarAutor) {
+            autoria.parlamentares = [parlamentarAutor];
+        }
+        return autoria;
+    }
+    montarOpcoesImpressaoPadrao(params) {
+        const opcoesImpressao = new OpcoesImpressao();
+        if (params.opcoesImpressaoPadrao) {
+            opcoesImpressao.imprimirBrasao = params.opcoesImpressaoPadrao.imprimirBrasao;
+            opcoesImpressao.textoCabecalho = params.opcoesImpressaoPadrao.textoCabecalho;
+            opcoesImpressao.tamanhoFonte = params.opcoesImpressaoPadrao.tamanhoFonte;
+        }
+        return opcoesImpressao;
     }
     createRenderRoot() {
         return this;
@@ -58429,8 +58794,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     firstUpdated() {
         var _a, _b, _c;
-        setTimeout(() => this.atualizaListaParlamentares(), 5000);
+        // this.habilitarBotoes();
+        setTimeout(() => this.atualizaListaParlamentares(), 0);
+        setTimeout(() => this.atualizaListaComissoes(), 0);
         (_a = this._tabsEsquerda) === null || _a === void 0 ? void 0 : _a.addEventListener('sl-tab-show', (event) => {
+            var _a;
             const tabName = event.detail.name;
             if (tabName === 'avisos') {
                 const badge = event.target.querySelector('sl-badge');
@@ -58440,6 +58808,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
             else if (tabName === 'autoria') {
                 this.parlamentares.length === 0 && this.atualizaListaParlamentares();
+                ((_a = this.comissoes) === null || _a === void 0 ? void 0 : _a.length) === 0 && this.atualizaListaComissoes();
             }
         });
         this.slSplitPanel.addEventListener('sl-reposition', () => {
@@ -58676,7 +59045,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           <sl-tab-group id="tabs-esquerda">
             <sl-tab slot="nav" panel="lexml-eta">Texto</sl-tab>
             <sl-tab slot="nav" panel="justificativa">Justificação</sl-tab>
-            <sl-tab slot="nav" panel="autoria">Data, Autoria e Impressão</sl-tab>
+            <sl-tab slot="nav" panel="autoria">Destino, Data, Autoria e Impressão</sl-tab>
             <sl-tab slot="nav" panel="avisos">
               Avisos
               <div class="badge-pulse" id="contadorAvisos">${this.totalAlertas > 0 ? $ ` <sl-badge variant="danger" pill pulse>${this.totalAlertas}</sl-badge> ` : ''}</div>
@@ -58701,6 +59070,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             </sl-tab-panel>
             <sl-tab-panel name="autoria" class="overflow-hidden">
               <div class="tab-autoria__container">
+                <lexml-destino .comissoes=${this.comissoes}></lexml-destino>
+                <br />
                 <lexml-data></lexml-data>
                 <br />
                 <lexml-autoria .parlamentares=${this.parlamentares}></lexml-autoria>
@@ -58740,6 +59111,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           </sl-tab-group>
         </div>
       </sl-split-panel>
+      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
 };
@@ -58755,6 +59127,9 @@ __decorate([
 __decorate([
     e$3({ type: Array })
 ], LexmlEmendaComponent.prototype, "parlamentares", void 0);
+__decorate([
+    e$3({ type: Array })
+], LexmlEmendaComponent.prototype, "comissoes", void 0);
 __decorate([
     e$3({ type: Object })
 ], LexmlEmendaComponent.prototype, "lexmlEmendaConfig", void 0);
@@ -58773,6 +59148,9 @@ __decorate([
 __decorate([
     i$1('#editor-texto-rico-justificativa')
 ], LexmlEmendaComponent.prototype, "_lexmlJustificativa", void 0);
+__decorate([
+    i$1('lexml-destino')
+], LexmlEmendaComponent.prototype, "_lexmlDestino", void 0);
 __decorate([
     i$1('lexml-autoria')
 ], LexmlEmendaComponent.prototype, "_lexmlAutoria", void 0);
@@ -58797,6 +59175,9 @@ __decorate([
 __decorate([
     i$1('sl-split-panel')
 ], LexmlEmendaComponent.prototype, "slSplitPanel", void 0);
+__decorate([
+    i$1('lexml-sufixos-modal')
+], LexmlEmendaComponent.prototype, "sufixosModal", void 0);
 LexmlEmendaComponent = __decorate([
     n$1('lexml-emenda')
 ], LexmlEmendaComponent);
@@ -59239,6 +59620,76 @@ AjudaModalComponent = __decorate([
     n$1('lexml-ajuda-modal')
 ], AjudaModalComponent);
 
+let SufixosModalComponent = class SufixosModalComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.step = 1;
+    }
+    show() {
+        var _a;
+        const noShowAgain = localStorage.getItem('naoMostrarExplicacaoSufixo');
+        const noShowAgainSwitch = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('#noShowAgain');
+        if (noShowAgain && noShowAgainSwitch) {
+            noShowAgainSwitch.checked = true;
+        }
+        this.slDialog.show();
+    }
+    handleSwitchChange(event) {
+        const isChecked = event.target.checked;
+        if (isChecked) {
+            localStorage.setItem('naoMostrarExplicacaoSufixo', 'true');
+        }
+        else {
+            localStorage.removeItem('naoMostrarExplicacaoSufixo');
+        }
+    }
+    render() {
+        return $ `
+      <sl-dialog>
+        <span slot="label">Sufixos de posicionamento</span>
+
+        <div>
+          <p>Os sufixos, como -1, -2 e assim por diante, são usados para orientar o posicionamento na redação final. Eles não indicam uma numeração definitiva.</p>
+          <p>Os dispositivos propostos e adjacentes deverão ser devidamente renumerados no momento da consolidação das emendas ao texto da proposição pela Redação Final.</p>
+        </div>
+
+        <div slot="footer" class="footer-container">
+          <sl-switch id="noShowAgain" @sl-change=${this.handleSwitchChange}> Não mostrar novamente </sl-switch>
+
+          <sl-button variant="default" @click=${() => this.slDialog.hide()}> Fechar </sl-button>
+        </div>
+      </sl-dialog>
+    `;
+    }
+};
+SufixosModalComponent.styles = r$2 `
+    .footer-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap; /* Quebra de linha no mobile ou quando o espaço for insuficiente */
+    }
+
+    .footer-container sl-switch {
+      order: 1; /* Garante que o switch sempre venha primeiro */
+      margin-right: auto; /* Empurra qualquer conteúdo à sua direita para o canto mais distante */
+    }
+
+    .footer-container sl-button {
+      order: 2; /* Garante que o botão sempre venha depois do switch */
+      margin-left: auto; /* Empurra qualquer conteúdo à sua esquerda para o canto mais distante */
+    }
+  `;
+__decorate([
+    e$3({ type: Number })
+], SufixosModalComponent.prototype, "step", void 0);
+__decorate([
+    i$1('sl-dialog')
+], SufixosModalComponent.prototype, "slDialog", void 0);
+SufixosModalComponent = __decorate([
+    n$1('lexml-sufixos-modal')
+], SufixosModalComponent);
+
 let ComandoEmendaModalComponent = class ComandoEmendaModalComponent extends s {
     atualizarComandoEmenda(comandoEmenda) {
         this.lexmlComandoEmenda.emenda = comandoEmenda;
@@ -59562,5 +60013,5 @@ SwitchRevisaoComponent = __decorate([
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
