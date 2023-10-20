@@ -119,6 +119,10 @@ export class EdtModalOrientacoes extends LitElement {
         order: 1;
       }
     }
+
+    .wizard-step li {
+      margin-bottom: 10px;
+    }
   `;
 
   public show(): void {
@@ -173,24 +177,25 @@ export class EdtModalOrientacoes extends LitElement {
             <div class="row">
               <div class="col" id="col1">
                 <p>
-                  Bem-vindo ao nosso editor! Projetamos esta área para facilitar
-                  suas edições e tornar todo o processo mais intuitivo. Vamos
-                  dar uma olhada rápida em suas áreas principais:
+                  Bem-vindo(a) ao nosso editor! Projetamos essas orientações
+                  iniciais para tornar o processo de edição mais intuitivo.
+                  Vamos dar uma olhada rápida nas principais áreas do editor:
                 </p>
 
                 <ol>
                   <li>
                     <strong>Cabeçalho:</strong> Aqui você encontrará o Número e
-                    ano da MPV, o Status da emenda e seus detalhes de usuário.
+                    ano da MPV, o sinalizador que indica se a emenda não foi
+                    salva e o nome do usuário.
                   </li>
                   <li>
-                    <strong>Editor:</strong> Esse é o coração do sistema,
+                    <strong>Editor:</strong> Esse é a principal área do editor,
                     contendo abas como Texto e Justificativa, onde você fará a
                     maior parte de suas edições.
                   </li>
                   <li>
                     <strong>Informações da Emenda:</strong> Um painel com
-                    comandos da emenda, ajudas e atalhos para facilitar sua
+                    comandos da emenda, dicas e atalhos para facilitar sua
                     experiência.
                   </li>
                   <li>
@@ -221,8 +226,15 @@ export class EdtModalOrientacoes extends LitElement {
                     rápida da Medida Provisória que você está editando.
                   </li>
                   <li>
-                    <strong>Status da emenda:</strong> Um sinalizador do estágio
-                    atual da sua emenda.
+                    <strong>Sinalizador de arquivo não salvo:</strong>
+                    Indica quando a emenda tem alterações que não foram salvas.
+                    <br />
+                    <img
+                      class="image"
+                      style="margin-top: 5px;"
+                      src="/assets/jpg/orientacoes-2-1.jpg"
+                      alt="Sinalizador de arquivo não salvo"
+                    />
                   </li>
                   <li>
                     <strong>Menu e Usuário:</strong> Acessos rápidos para opções
@@ -246,28 +258,37 @@ export class EdtModalOrientacoes extends LitElement {
                   Ná <strong>área de edição</strong>, você encontrará abas
                   distintas para diferentes propósitos:
                 </p>
-                <ul>
+                <ol>
                   <li>
                     <strong>Texto:</strong> A principal área de edição, equipada
                     com ferramentas e um editor visual.
                   </li>
                   <li>
-                    <strong>Justificativa:</strong> Um espaço dedicado para
+                    <strong>Justificação:</strong> Um espaço dedicado para
                     elaborar a justificativa da sua emenda.
                   </li>
                   <li>
-                    <strong>Metadados:</strong> Informações auxiliares sobre a
-                    emenda, como data e autoria.
+                    <strong>Destino, Data, Autoria e Impressão:</strong>
+                    Informações adicionais da emenda.
+                  </li>
+                  <li>
+                    <strong>Avisos:</strong> Área com alertas de erros nas
+                    alterações realizadas.
                   </li>
                   <li>
                     <strong>Menu de contexto:</strong> Opções de acordo com o
                     tipo de dispositivo.
                   </li>
                   <li>
+                    <strong>Marcas de revisão:</strong> Opção para
+                    ativar/desativar o modo de revisão. (Só aparecerá quando
+                    existirem revisões na emenda)
+                  </li>
+                  <li>
                     <strong>Ações de revisão:</strong> Botões para ações
                     relacionadas com as marcas de revisão.
                   </li>
-                </ul>
+                </ol>
               </div>
               <div class="col" id="col2">
                 <img
@@ -292,8 +313,12 @@ export class EdtModalOrientacoes extends LitElement {
                     sobre ações sugeridas para a emenda.
                   </li>
                   <li>
-                    <strong>Ajuda e Atalhos:</strong> Suporte e teclas de atalho
-                    para acelerar sua edição.
+                    <strong>Dicas:</strong> Sugestões do que você pode fazer com
+                    o dispositivo selecionado.
+                  </li>
+                  <li>
+                    <strong>Atalhos:</strong> Teclas de atalho para acelerar sua
+                    edição.
                   </li>
                 </ul>
               </div>
@@ -327,42 +352,23 @@ export class EdtModalOrientacoes extends LitElement {
             <p>
               Estamos sempre trabalhando para melhorar e expandir as capacidades
               do editor. No entanto, existem algumas ações que, no momento, não
-              são suportadas. Pedimos sua compreensão e paciência enquanto
-              trabalhamos para integrar estas funcionalidades. Aqui está o que
-              você deve saber:
+              são suportadas. Aqui está um exemplo:
             </p>
             <ul>
-              <li>
-                <strong>Elaborar emendas a anexos:</strong> Esta função estará
-                disponível em breve.
-              </li>
-              <li>
-                <strong>Emenda substitutiva global:</strong> Estamos trabalhando
-                nisso. Em breve!
-              </li>
-              <li>
-                <strong
-                  >Alteração de normas que não seguem a LC nº 95/98:</strong
-                >
-                Planejamos adicionar esta funcionalidade em breve.
-              </li>
-              <li>
-                <strong>Enviar emenda ao sistema de protocolo:</strong> Previsto
-                para uma atualização futura.
-              </li>
+              <li><strong>Emenda substitutiva global:</strong> Em breve!</li>
             </ul>
             <p>
-              Agradecemos sua compreensão e esperamos atender a todas as suas
-              necessidades em futuras atualizações!
+              Agradecemos sua compreensão e esperamos atender suas necessidades
+              em futuras atualizações!
             </p>
           </div>
           <div class="wizard-step ${this.step === 7 ? 'active' : ''}">
             <div class="row">
               <div class="col" id="col1">
                 <p>
-                  Além das emendas padrões, nosso editor fornece alternativas
-                  específicas para situações mais particulares. Entenda a
-                  aplicação de cada uma:
+                  Além das emendas padrão, que são aquelas feitas diretamente
+                  sobre o texto original da MPV, nosso editor fornece
+                  alternativas para outras situações, tais como:
                 </p>
 
                 <ol>
@@ -380,12 +386,11 @@ export class EdtModalOrientacoes extends LitElement {
                   <li>
                     <strong>Emenda de texto livre:</strong>
                     <p>
-                      Essa opção é destinada a situações em que as emendas
-                      padrões não se aplicam ou não são suficientes. A emenda de
-                      texto livre deve ser utilizada apenas quando não for
-                      possível fazer a emenda no formato padrão do editor ou
-                      como emenda de dispositivo "onde couber". Ao optar por uma
-                      emenda de texto livre, é essencial especificar o motivo:
+                      A emenda de texto livre deve ser utilizada apenas quando
+                      não for possível fazer a emenda no formato padrão do
+                      editor ou como emenda de dispositivo "onde couber". Ao
+                      optar por uma emenda de texto livre, é essencial
+                      especificar o motivo:
                     </p>
                     <ul>
                       <li>Emendamento ou adição de pena, penalidade etc.</li>
