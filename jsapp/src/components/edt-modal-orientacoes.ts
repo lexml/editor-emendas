@@ -265,7 +265,7 @@ export class EdtModalOrientacoes extends LitElement {
                   </li>
                   <li>
                     <strong>Justificação:</strong> Um espaço dedicado para
-                    elaborar a justificativa da sua emenda.
+                    elaborar a justificação da sua emenda.
                   </li>
                   <li>
                     <strong>Destino, Data, Autoria e Impressão:</strong>
@@ -276,8 +276,8 @@ export class EdtModalOrientacoes extends LitElement {
                     alterações realizadas.
                   </li>
                   <li>
-                    <strong>Menu de contexto:</strong> Opções de acordo com o
-                    tipo de dispositivo.
+                    <strong>Menu de contexto:</strong> Ações que podem ser
+                    realizadas a partir do dispositivo selecionado.
                   </li>
                   <li>
                     <strong>Marcas de revisão:</strong> Opção para
