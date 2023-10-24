@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { customElement, query } from 'lit/decorators.js';
+import { customElement, query, state } from 'lit/decorators.js';
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { Proposicao } from '../model/proposicao';
 
 @customElement('edt-modal-emenda-sem-texto')
 export class EdtModalEmendaSemTexto extends LitElement {
   @query('sl-dialog') private slDialog!: any;
+
+  @state()
   private proposicaoSelecionada?: Proposicao;
 
   static styles = css`
@@ -41,13 +43,17 @@ export class EdtModalEmendaSemTexto extends LitElement {
   }
 
   render(): TemplateResult {
+    const { sigla, numero, ano } = this.proposicaoSelecionada || {};
     return html`
       <sl-dialog>
-        <span slot="label">Texto indisponível para emenda padrão</span>
+        <span slot="label"
+          >${`${sigla} ${numero?.replace(/^0*/, '')}/${ano}`} - Texto
+          indisponível para emenda padrão</span
+        >
 
         <div>
           <p>
-            O sistema não possui o texto desta proposição preparado para
+            O sistema ainda não possui o texto desta proposição preparado para
             emendamento no formato padrão do editor.
           </p>
           <p>
@@ -67,14 +73,14 @@ export class EdtModalEmendaSemTexto extends LitElement {
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}
           >
-            Onde couber
+            Criar emenda "Onde couber"
           </sl-button>
           <sl-button
             class="btn"
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-texto-livre')}
           >
-            Texto livre
+            Criar emenda "Texto livre"
           </sl-button>
           <sl-button
             class="btn"
