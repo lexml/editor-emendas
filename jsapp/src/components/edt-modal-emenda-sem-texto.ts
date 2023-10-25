@@ -13,13 +13,19 @@ export class EdtModalEmendaSemTexto extends LitElement {
   static styles = css`
     .footer-container {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      justify-content: flex-end;
+      align-items: stretch;
       flex-wrap: wrap; /* Quebra de linha no mobile ou quando o espaço for insuficiente */
-      float: right;
     }
     .btn {
       padding: 5px;
+    }
+    sl-dialog {
+      --width: 640px;
+    }
+
+    sl-dialog::part(body) {
+      padding: 0 var(--body-spacing);
     }
   `;
 
@@ -77,7 +83,7 @@ export class EdtModalEmendaSemTexto extends LitElement {
           </sl-button>
           <sl-button
             class="btn"
-            variant="primary"
+            variant="secondary"
             @click=${(): void => this.emitirEvento('cria-texto-livre')}
           >
             Criar emenda "Texto livre"
