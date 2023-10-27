@@ -30396,6 +30396,8 @@ class LexmlEmendaConfig {
     constructor() {
         this.urlConsultaParlamentares = 'api/parlamentares';
         this.urlAutocomplete = 'api/autocomplete-norma';
+        this.tamanhoMaximoAnexo = 5120; //5MB
+        this.tamanhoMaximoImagem = 2048; //2MB
     }
 }
 
@@ -48760,6 +48762,7 @@ const jaExisteRevisaoUsuarioAtual$1 = (state) => {
 async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const dialogElem = document.createElement('sl-dialog');
     editorTextoRico.appendChild(dialogElem);
+    //tamanhoMaximoAnexo = editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo;
     dialogElem.label = 'Anexo';
     dialogElem.addEventListener('sl-request-close', (event) => {
         if (event.detail.source === 'overlay') {
@@ -48798,11 +48801,15 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     <br/>
     <br/>
     <input id="input-upload" type="file" accept="application/pdf" size="small"></input>
+    <br/>
+    <label class="tipoErrado" style="color: red;" hidden="true" id="tipoErrado">Esse arquivo não é um PDF</label>
+    <br/>
+    <label class="tamanhoMaximoAtingido" style="color: red;" hidden="true" id="tamanhoMaximoAtingido">Ultrapassou o tamanho máximo permitido (${Math.trunc(editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo / 1024)}MB)</label>
   </div>
   <br/>
   <div id="form" class="input-validation-required"></div>
   <br/>
-  <sl-button class="controls" slot="footer" variant="primary">Confirmar</sl-button>
+  <sl-button id="btnConfirmarAnexo" class="controls" slot="footer" variant="primary">Confirmar</sl-button>
   <sl-button class="controls" slot="footer" variant="default">Cancelar</sl-button>
   `);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -48855,7 +48862,7 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const confirmar = botoes[0];
     const fechar = botoes[1];
     inputUpload.oninput = () => {
-        addAnexo();
+        addAnexo(editorTextoRico);
     };
     confirmar.onclick = () => {
         atualizaAnexo(anexos);
@@ -48878,14 +48885,50 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
             },
         }));
     };
-    const addAnexo = async () => {
+    const addAnexo = async (editorTextoRico) => {
+        var _a, _b;
         if (inputUpload === null || inputUpload === void 0 ? void 0 : inputUpload.files) {
             const file = inputUpload.files[0];
-            const anexo = await convertAnexo(file);
-            anexos.push(anexo);
-            inputUpload.files = null;
-            conteudoDinamico();
+            const listaRestricoes = restricoes(file, editorTextoRico);
+            if (listaRestricoes.length === 0) {
+                const anexo = await convertAnexo(file);
+                anexos.push(anexo);
+                inputUpload.files = null;
+                conteudoDinamico();
+                (_a = document.getElementById('btnConfirmarAnexo')) === null || _a === void 0 ? void 0 : _a.removeAttribute('disabled');
+            }
+            else {
+                (_b = document.getElementById('btnConfirmarAnexo')) === null || _b === void 0 ? void 0 : _b.setAttribute('disabled', 'true');
+                listaRestricoes.forEach(restricao => {
+                    var _a;
+                    (_a = document.getElementById(restricao)) === null || _a === void 0 ? void 0 : _a.removeAttribute('hidden');
+                });
+                listaRestricoesCompleta.forEach(restricaoCompleta => {
+                    var _a;
+                    if (!listaRestricoes.includes(restricaoCompleta)) {
+                        (_a = document.getElementById(restricaoCompleta)) === null || _a === void 0 ? void 0 : _a.setAttribute('hidden', 'true');
+                    }
+                });
+            }
         }
+    };
+    const listaRestricoesCompleta = ['tamanhoMaximoAtingido', 'tipoErrado'];
+    const restricoes = (file, editorTextoRico) => {
+        const restricoes = [];
+        if (file) {
+            const size = Math.round(file.size / 1024);
+            if (size > editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo) {
+                restricoes.push('tamanhoMaximoAtingido');
+            }
+            if (file.type !== 'application/pdf') {
+                restricoes.push('tipoErrado');
+            }
+            if (restricoes.length > 0) {
+                restricoes.push('restricao');
+            }
+        }
+        //const retorno = file && file.type === 'application/pdf' && size <= 4096;
+        return restricoes;
     };
     const convertAnexo = (file) => {
         return new Promise((resolve, reject) => {
@@ -49079,6 +49122,14 @@ const editorTextoRicoCss = $ `
       content: 'Remover coluna';
     }
 
+    .ql-picker-item[data-value='change-width-col-modal']::after {
+      content: 'Alterar a largura da coluna';
+    }
+
+    .ql-picker-item[data-value='change-width-table-modal']::after {
+      content: 'Alterar a largura da tabela';
+    }
+
     .ql-picker-item[data-value='append-row']::after {
       content: 'Inserir linha';
     }
@@ -49173,6 +49224,8 @@ const quillTableCss = $ `<style>
     table-layout: fixed;
     overflow: hidden;
     white-space: nowrap;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .ql-editor table td {
@@ -49964,7 +50017,7 @@ class TableSelection {
     if (isInTable && !quill.table.isInTable) {
       // enable
       quill.table.isInTable = true;
-      TableToolbar.enable(quill, ['append-row*', 'append-col*', 'remove-cell', 'remove-row', 'remove-col', 'remove-table']);
+      TableToolbar.enable(quill, ['append-row*', 'append-col*', 'remove-cell', 'remove-row', 'remove-col', 'change-width-col-modal', 'change-width-table-modal', 'remove-table']);
     }
   }
 
@@ -50064,6 +50117,28 @@ class TableTrick {
     return blot; // return TD or NULL
   }
 
+  static find_td_node(quill) {
+    let td = TableTrick.find_td(quill);
+    if(td) {
+      return td.domNode;
+    }
+  }
+
+  static find_table(quill) {
+    const td = TableTrick.find_td(quill);
+    if (td) {
+      return td.parent.parent;
+    }
+  }
+
+  static find_table_node(quill) {
+    const table = TableTrick.find_table(quill);
+    if (table) {
+      return table.domNode;
+    }
+  }
+
+
   static getQuill(el) {
     // Get Quill instance from node/element or blot
     let quill = null;
@@ -50131,6 +50206,20 @@ class TableTrick {
       TableHistory.register('remove', { node: table.domNode, nextNode: table.next ? table.next.domNode : null, parentNode: table.parent.domNode });
       TableHistory.add(quill);
       table.remove();
+    }
+  }
+
+
+  static changeWidthTable(quill, width) {
+    const widthValue = width + '%';
+    const styleValue = `width:${widthValue}`;
+    const table = TableTrick.find_table(quill);
+
+    if (table) {
+      const tableNode = table.domNode;
+      TableHistory.register('propertyChange',{ node: tableNode, property: 'style', oldValue: tableNode.style, newValue: styleValue });
+      tableNode.setAttribute('style', styleValue);
+      TableHistory.add(quill);
     }
   }
 
@@ -50350,6 +50439,42 @@ class TableTrick {
         });
       }
       TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableHistory.add(quill);
+    }
+  }
+
+  static changeWidthCol(quill, width) {
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let table, colIndex, colsToRemove;
+    if (coords) {
+      // if we have a selection, remove all selected columns
+      const _table = TableSelection.selectionStartElement.closest('table');
+      table = Parchment$5.find(_table);
+      colIndex = coords.minX;
+      colsToRemove = coords.maxX - coords.minX + 1;
+    } else {
+      // otherwise, remove only the column of current cell
+      colsToRemove = 1;
+      const currentCell = TableTrick.find_td(quill);
+      if (currentCell) {
+        table = currentCell.parent.parent;
+        colIndex = Array.prototype.indexOf.call(currentCell.parent.domNode.children, currentCell.domNode);
+      }
+    }
+
+    if (table && typeof colIndex === 'number' && typeof colsToRemove === 'number') {
+      const widthValue = width + '%';
+      // Remove all TDs with the colIndex and repeat it colsToRemove times if there are multiple columns to delete
+      for (let i = 0; i < colsToRemove; i++) {
+        table.children.forEach(function (tr) {
+          const td = tr.domNode.children[colIndex];
+          if (td) {
+            TableHistory.register('propertyChange', { node: td, property: 'width', oldValue: td.width, newValue: widthValue });
+            td.setAttribute('width', widthValue);
+          }
+        });
+      }
       TableHistory.add(quill);
     }
   }
@@ -50979,12 +51104,9 @@ class TableModule {
     quill.on('selection-change', (range, oldRange) => TableSelection.selectionChange(quill, range, oldRange));
 
     const toolbar = quill.getModule('toolbar');
+
     toolbar.addHandler('table', function (value) {
-      if (isInsertTable(value) && isInTable(quill)) {
-        emitirEventoTableInTable(quill);
-        return false;
-      }
-      return TableTrick.table_handler(value, quill);
+      TableModule.configToolbar(quill, value);
     });
 
     const clipboard = quill.getModule('clipboard');
@@ -51071,6 +51193,15 @@ class TableModule {
     }
     return tableOptions;
   }
+
+  static configToolbar(quill, value) {
+    if (isInsertTable(value) && isInTable(quill)) {
+      emitirEventoTableInTable(quill);
+      return false;
+    }
+    return TableTrick.table_handler(value, quill);
+  }
+
 
   static removeNodeChildren(node) {
     while (node.firstChild) {
@@ -51293,6 +51424,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.texto = '';
         this.anexos = [];
         this.registroEvento = '';
+        this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
         this.onChange = new Observable();
         this.icons = Quill.import('ui/icons');
@@ -51329,6 +51461,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                             handlers: {
                                 undo: this.undo,
                                 redo: this.redo,
+                                image: this.imageHandler,
                             },
                         },
                         aspasCurvas: true,
@@ -51431,7 +51564,70 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 this.elTableManagerButton = this.querySelectorAll('span.ql-table')[1];
                 (_a = this.quill) === null || _a === void 0 ? void 0 : _a.on('text-change', this.updateTexto);
                 (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('selection-change', this.onSelectionChange);
+                this.alterarLarguraColunaModal.callback = this.alterarLarguraDaColuna;
+                this.alterarLarguraTabelaModal.callback = this.alterarLarguraDaTabela;
+                const toolbar = this.quill.getModule('toolbar');
+                toolbar.addHandler('table', (value) => {
+                    var _a, _b;
+                    TableModule.configToolbar(this.quill, value);
+                    if (value === 'change-width-col-modal') {
+                        this.lastSelecion = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection();
+                        const td = TableTrick.find_td_node(this.quill);
+                        this.showAlterarLarguraColunaModal(td.width);
+                    }
+                    else if (value === 'change-width-table-modal') {
+                        this.lastSelecion = (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection();
+                        const table = TableTrick.find_table_node(this.quill);
+                        this.showAlterarLarguraTabelaModal(table.width);
+                    }
+                });
             }
+        };
+        this.imageHandler = () => {
+            let fileInput = this.querySelector('input.ql-image[type=file]');
+            if (fileInput === null) {
+                fileInput = document.createElement('input');
+                fileInput.setAttribute('type', 'file');
+                fileInput.setAttribute('hidden', 'true');
+                fileInput.setAttribute('accept', 'image/png, image/gif, image/jpeg, image/bmp, image/x-icon');
+                fileInput.classList.add('ql-image');
+                fileInput.addEventListener('change', () => {
+                    if (fileInput.files !== null && fileInput.files[0] !== null) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            if (this.tamanhoPermitido(e)) {
+                                const range = this.quill.getSelection(true);
+                                this.quill.updateContents(new Delta().retain(range.index).delete(range.length).insert({ image: e.target.result }), Quill.sources.USER);
+                                fileInput.value = '';
+                                fileInput.remove();
+                            }
+                            else {
+                                this.alertar(`Essa imagem ultrapassa o tamanho máximo permitido (${Math.trunc(this.lexmlEtaConfig.tamanhoMaximoImagem / 1024)}MB)`);
+                                fileInput.remove();
+                            }
+                        };
+                        reader.readAsDataURL(fileInput.files[0]);
+                    }
+                });
+                this.appendChild(fileInput);
+            }
+            fileInput.click();
+        };
+        this.tamanhoPermitido = (e) => {
+            const size = Math.round(e.loaded / 1024);
+            return size < this.lexmlEtaConfig.tamanhoMaximoImagem;
+        };
+        this.alterarLarguraDaColuna = (valor) => {
+            this.quill.setSelection(this.lastSelecion);
+            TableTrick.changeWidthCol(this.quill, valor);
+            this.updateApenasTexto();
+            this.hideAlterarLarguraColunaModal();
+        };
+        this.alterarLarguraDaTabela = (valor) => {
+            this.quill.setSelection(this.lastSelecion);
+            TableTrick.changeWidthTable(this.quill, valor);
+            this.updateApenasTexto();
+            this.hideAlterarLarguraTabelaModal();
         };
         this.onSelectionChange = (range) => {
             setTimeout(() => {
@@ -51489,6 +51685,11 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             this.quill.history.clear(); // Não remover: isso é um workaround para o bug que ocorre ao limpar conteúdo depois de alguma inserção de tabela
             this.quill.setContents(this.quill.clipboard.convert(textoAjustado), 'silent');
             setTimeout(() => this.quill.history.clear(), 100); // A linha anterior gera um history, então é necessário limpar novamente.
+        };
+        this.updateApenasTexto = () => {
+            var _a;
+            const texto = this.ajustaHtml((_a = this.quill) === null || _a === void 0 ? void 0 : _a.root.innerHTML);
+            this.texto = texto === '<p><br></p>' ? '' : texto;
         };
         this.updateTexto = () => {
             var _a, _b;
@@ -51633,6 +51834,18 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.icons['text-indent'] = iconeTextIndent;
         this.icons['margin-bottom'] = iconeMarginBottom;
     }
+    showAlterarLarguraColunaModal(width) {
+        this.alterarLarguraColunaModal.show(width);
+    }
+    hideAlterarLarguraColunaModal() {
+        this.alterarLarguraColunaModal.hide();
+    }
+    showAlterarLarguraTabelaModal(width) {
+        this.alterarLarguraTabelaModal.show(width);
+    }
+    hideAlterarLarguraTabelaModal() {
+        this.alterarLarguraTabelaModal.hide();
+    }
     agendarEmissaoEventoOnChange() {
         clearTimeout(this.timerOnChange);
         this.timerOnChange = setTimeout(() => {
@@ -51679,6 +51892,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         </sl-button>
       </div>
       <div id="${this.id}-inner" class="editor-texto-rico" @onTableInTable=${this.onTableInTable}></div>
+      <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-tabela-modal" tipo="tabela"></lexml-alterar-largura-tabela-coluna-modal>
+      <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-coluna-modal" tipo="coluna"></lexml-alterar-largura-tabela-coluna-modal>
     `;
     }
     renderBotaoAnexo() {
@@ -51731,8 +51946,17 @@ __decorate([
     e$3({ type: String, attribute: 'registro-evento' })
 ], EditorTextoRicoComponent.prototype, "registroEvento", void 0);
 __decorate([
+    e$3({ type: Object })
+], EditorTextoRicoComponent.prototype, "lexmlEtaConfig", void 0);
+__decorate([
     e$3({ type: String })
 ], EditorTextoRicoComponent.prototype, "modo", void 0);
+__decorate([
+    i$1('#lexml-alterar-largura-coluna-modal')
+], EditorTextoRicoComponent.prototype, "alterarLarguraColunaModal", void 0);
+__decorate([
+    i$1('#lexml-alterar-largura-tabela-modal')
+], EditorTextoRicoComponent.prototype, "alterarLarguraTabelaModal", void 0);
 EditorTextoRicoComponent = __decorate([
     n$1('editor-texto-rico')
 ], EditorTextoRicoComponent);
@@ -51754,6 +51978,8 @@ const toolbarOptions = [
         {
             table: [
                 // 'insert',
+                // 'change-width-col-modal',
+                // 'change-width-table-modal',
                 'append-row-above',
                 'append-row-below',
                 'append-col-before',
@@ -51770,6 +51996,77 @@ const toolbarOptions = [
     ],
     ['image'],
 ];
+
+let AlterarLarguraTabelaColunaModalComponent = class AlterarLarguraTabelaColunaModalComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.valorLargura = '';
+        this.tipo = '';
+    }
+    show(width) {
+        this.valorLargura = width ? width.replace('%', '') : '';
+        this.slAlert.hide();
+        this.slDialog.show();
+    }
+    hide() {
+        this.slDialog.hide();
+    }
+    alterarLargura() {
+        const width = parseInt(this.valorLargura);
+        if (isNaN(width) || width < 1 || width > 100) {
+            this.slAlert.show();
+        }
+        else if (this.callback) {
+            this.callback(width);
+            this.hide();
+        }
+    }
+    render() {
+        return $ `
+      <style>
+        :host {
+          font-family: var(--sl-font-sans);
+        }
+        sl-input::part(base) {
+          width: 150px;
+        }
+        sl-alert {
+          margin-top: 20px;
+        }
+      </style>
+      <sl-dialog label="Alterar a largura da ${this.tipo}">
+        <label>Informe o percentual da largura da ${this.tipo}</label>
+        <sl-input type="number" value=${this.valorLargura} width="30px" @input=${e => (this.valorLargura = e.target.value)}>
+          <sl-icon name="percent" slot="suffix"></sl-icon>
+        </sl-input>
+        <sl-alert variant="warning" closable class="alert-closable">
+          <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+          Informe uma valor numérico de 1 a 100.
+        </sl-alert>
+        <sl-button slot="footer" @click=${() => this.alterarLargura()}>Alterar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
+      </sl-dialog>
+    `;
+    }
+};
+__decorate([
+    i$1('sl-dialog')
+], AlterarLarguraTabelaColunaModalComponent.prototype, "slDialog", void 0);
+__decorate([
+    i$1('sl-alert')
+], AlterarLarguraTabelaColunaModalComponent.prototype, "slAlert", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "valorLargura", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "tipo", void 0);
+__decorate([
+    e$3({ type: Function })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "callback", void 0);
+AlterarLarguraTabelaColunaModalComponent = __decorate([
+    n$1('lexml-alterar-largura-tabela-coluna-modal')
+], AlterarLarguraTabelaColunaModalComponent);
 
 // Foi utilizado TemplateResult porque o articulacao.component.ts não usa ShadowDom
 const shoelaceLightThemeStyles = $ `
@@ -52261,6 +52558,7 @@ var ModoEdicaoEmenda;
     ModoEdicaoEmenda["EMENDA"] = "emenda";
     ModoEdicaoEmenda["EMENDA_ARTIGO_ONDE_COUBER"] = "emendaArtigoOndeCouber";
     ModoEdicaoEmenda["EMENDA_TEXTO_LIVRE"] = "emendaTextoLivre";
+    ModoEdicaoEmenda["EMENDA_SUBSTITUICAO_TERMO"] = "emendaSubstituicaoTermo";
 })(ModoEdicaoEmenda || (ModoEdicaoEmenda = {}));
 // Dados da proposição ----------------------------
 class RefProposicaoEmendada {
@@ -52364,6 +52662,15 @@ class OpcoesImpressao {
         this.textoCabecalho = '';
         this.reduzirEspacoEntreLinhas = false;
         this.tamanhoFonte = 14;
+    }
+}
+class SubstituicaoTermo {
+    constructor() {
+        this.tipo = 'Expressão';
+        this.termo = '';
+        this.novoTermo = '';
+        this.flexaoGenero = false;
+        this.flexaoNumero = false;
     }
 }
 
@@ -54101,14 +54408,48 @@ class CmdEmdDispPrj {
     }
 }
 
-class ComandoEmendaBuilder {
-    constructor(urn, articulacao) {
+class CmdEmdSubstituicaoTermo {
+    constructor(substituicaoTermo, urn) {
+        this.substituicaoTermo = substituicaoTermo;
         this.urn = urn;
-        this.articulacao = articulacao;
+    }
+    getComplementoFlexoes(flexaoGenero, flexaoNumero) {
+        const flexoes = [];
+        flexaoGenero && flexoes.push('gênero');
+        flexaoNumero && flexoes.push('número');
+        return flexoes.length ? `, fazendo-se as flexões de ${flexoes.join(' e ')} necessárias` : '';
+    }
+    getTexto() {
+        const { tipo, termo, novoTermo, flexaoGenero, flexaoNumero } = this.substituicaoTermo;
+        const refProjeto = getRefGenericaProjeto(this.urn);
+        return `Substitua-se n${refProjeto.genero.artigoDefinido} ${refProjeto.nome} a/o ${tipo.toLowerCase()} “${termo}” por “${novoTermo}”${this.getComplementoFlexoes(flexaoGenero, flexaoNumero)}.`;
+    }
+}
+
+const isInstanceOfSubstituicaoTermo = (payload = {}) => 'termo' in payload;
+class ComandoEmendaBuilder {
+    constructor(urn, payload) {
+        this.urn = urn;
+        this.payload = payload;
     }
     getComandoEmenda() {
+        if (isInstanceOfSubstituicaoTermo(this.payload)) {
+            return this.getComandoEmendaSubstituicaoTermo();
+        }
+        else {
+            return this.getComandoEmendaArticulacao();
+        }
+    }
+    getComandoEmendaSubstituicaoTermo() {
         const ret = new ComandoEmenda();
-        const dispositivosEmenda = CmdEmdUtil.getDispositivosNaoOriginais(this.articulacao);
+        const cmdEmdSubstituicaoTermo = new CmdEmdSubstituicaoTermo(this.payload, this.urn);
+        ret.comandos.push(new ItemComandoEmenda(cmdEmdSubstituicaoTermo.getTexto(), ''));
+        return ret;
+    }
+    getComandoEmendaArticulacao() {
+        const articulacao = this.payload;
+        const ret = new ComandoEmenda();
+        const dispositivosEmenda = CmdEmdUtil.getDispositivosNaoOriginais(articulacao);
         const list = this.getDispositivosRepresentativosDeCadaComando(dispositivosEmenda);
         list.sort(DispositivoComparator.compare);
         if (!list.length) {
@@ -54129,7 +54470,7 @@ class ComandoEmendaBuilder {
             else {
                 const cmd = new CmdEmdDispPrj(dispositivosEmenda);
                 cabecalho = cmd.getTexto(refProjeto);
-                const cit = new CitacaoComandoDispPrj(this.articulacao);
+                const cit = new CitacaoComandoDispPrj(articulacao);
                 citacao = cit.getTexto();
                 complemento = this.getTextoComplementoDispProposicao(dispositivosEmenda);
             }
@@ -55371,12 +55712,29 @@ let DestinoComponent = class DestinoComponent extends s {
         var _a, _b, _c, _d;
         return $ `
       <style>
-        .lexml-destino {
-          display: block;
-          font-size: 1em;
-          max-width: 700px;
+        fieldset {
+          display: flex;
+          flex-direction: column;
+          gap: 1em;
+          background-color: var(--sl-color-gray-100);
+          box-shadow: var(--sl-shadow-x-large);
+          flex-wrap: wrap;
+          padding: 20px 20px;
+          border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
+          border-radius: var(--sl-border-radius-medium);
+          max-width: 655px;
         }
-        sl-radio-group::part(base) {
+
+        legend {
+          background-color: var(--sl-color-gray-200);
+          font-weight: bold;
+          border-radius: 5px;
+          border: 1px solid var(--sl-color-gray-300);
+          padding: 2px 5px;
+          box-shadow: var(--sl-shadow-small);
+        }
+
+        /* sl-radio-group::part(base) {
           display: flex;
           flex-direction: row;
           align-items: center;
@@ -55416,14 +55774,16 @@ let DestinoComponent = class DestinoComponent extends s {
 
         sl-radio-group::part(base) {
           box-shadow: none;
-        }
+        } */
       </style>
-      <sl-radio-group label="Destino" fieldset class="lexml-destino">
+      <fieldset class="lexml-destino">
+        <legend>Destino</legend>
         <div>
           <sl-radio-group id="tipoColegiado">
             <sl-radio
               name="tipoColegiado"
-              @click=${() => this.clickTipoColegiado('Plenário')}
+              @click=${() => this.updateTipoColegiado('Plenário')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Plenário'); }}
               ?checked=${((_a = this._colegiadoApreciador) === null || _a === void 0 ? void 0 : _a.tipoColegiado) === 'Plenário'}
               value="Plenário"
               ?disabled=${this.isMPV || this.isPlenario}
@@ -55431,7 +55791,8 @@ let DestinoComponent = class DestinoComponent extends s {
             >
             <sl-radio
               name="tipoColegiado"
-              @click=${() => this.clickTipoColegiado('Comissão')}
+              @click=${() => this.updateTipoColegiado('Comissão')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Comissão'); }}
               ?checked=${((_b = this._colegiadoApreciador) === null || _b === void 0 ? void 0 : _b.tipoColegiado) === 'Comissão'}
               value="Comissão"
               ?disabled=${this.isMPV || this.isPlenario}
@@ -55439,7 +55800,8 @@ let DestinoComponent = class DestinoComponent extends s {
             >
             <sl-radio
               name="tipoColegiado"
-              @click=${() => this.clickTipoColegiado('Plenário via Comissão')}
+              @click=${() => this.updateTipoColegiado('Plenário via Comissão')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Plenário via Comissão'); }}
               ?checked=${((_c = this._colegiadoApreciador) === null || _c === void 0 ? void 0 : _c.tipoColegiado) === 'Plenário via Comissão'}
               value="Plenário via Comissão"
               ?disabled=${this.isMPV || this.isPlenario}
@@ -55461,13 +55823,13 @@ let DestinoComponent = class DestinoComponent extends s {
             ?disabled=${this.isMPV || this.isPlenario || this.tipoColegiadoPlenario || !((_d = this.comissoes) === null || _d === void 0 ? void 0 : _d.length)}
           ></autocomplete-async>
         </div>
-      </sl-radio-group>
+      </fieldset>
     `;
     }
-    clickTipoColegiado(value) {
+    updateTipoColegiado(value) {
         if (!this.isMPV && !this.isPlenario) {
             this._colegiadoApreciador.tipoColegiado = value;
-            this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário' ? true : false;
+            this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário';
             this.requestUpdate();
         }
     }
@@ -58588,16 +58950,20 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         const emenda = this.montarEmendaBasica();
         const numeroProposicao = emenda.proposicao.numero.replace(/^0+/, '');
-        if (!this.isEmendaTextoLivre()) {
+        if (this.isEmendaSubstituicaoTermo()) {
+            emenda.substituicaoTermo = this._substituicaoTermo.getSubstituicaoTermo();
+            emenda.comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
+        }
+        else if (this.isEmendaTextoLivre()) {
+            emenda.comandoEmendaTextoLivre.motivo = this.motivo;
+            emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
+            emenda.anexos = this._lexmlEmendaTextoRico.anexos;
+        }
+        else {
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
             emenda.comandoEmendaTextoLivre.motivo = undefined;
             emenda.comandoEmendaTextoLivre.texto = undefined;
-        }
-        else {
-            emenda.comandoEmendaTextoLivre.motivo = this.motivo;
-            emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
-            emenda.anexos = this._lexmlEmendaTextoRico.anexos;
         }
         emenda.justificativa = this._lexmlJustificativa.texto;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
@@ -58716,7 +59082,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
     }
     setEmenda(emenda) {
-        if (!this.isEmendaTextoLivre()) {
+        if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
             this._lexmlEta.setDispositivosERevisoesEmenda(emenda.componentes[0].dispositivos, emenda.revisoes);
         }
         this._lexmlAutoria.autoria = emenda.autoria;
@@ -58728,6 +59094,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
             this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
             rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(emenda.componentes[0].dispositivos, emenda.revisoes));
+        }
+        else if (this.isEmendaSubstituicaoTermo()) {
+            this._substituicaoTermo.setSubstituicaoTermo(emenda.substituicaoTermo || new SubstituicaoTermo());
         }
         this._lexmlData.data = emenda.data;
     }
@@ -58916,7 +59285,20 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     onChange() {
         var _a;
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+        if (this.isEmendaSubstituicaoTermo()) {
+            const comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
+            this._lexmlEmendaComando.emenda = comandoEmenda;
+            this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
+        }
+        else if (this.isEmendaTextoLivre()) {
+            if (!this._lexmlEmendaTextoRico.texto) {
+                this.showAlertaEmendaTextoLivre();
+            }
+            else {
+                rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
+            }
+        }
+        else if (this.modo.startsWith('emenda')) {
             const comandoEmenda = this._lexmlEta.getComandoEmenda();
             this._lexmlEmendaComando.emenda = comandoEmenda;
             this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
@@ -58931,14 +59313,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
             else {
                 rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
-            }
-        }
-        else if (this.isEmendaTextoLivre()) {
-            if (!this._lexmlEmendaTextoRico.texto) {
-                this.showAlertaEmendaTextoLivre();
-            }
-            else {
-                rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
             }
         }
     }
@@ -58959,6 +59333,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     isEmendaTextoLivre() {
         return this.modo && this.modo === 'emendaTextoLivre';
+    }
+    isEmendaSubstituicaoTermo() {
+        return this.modo === 'emendaSubstituicaoTermo';
     }
     updateView() {
         this.updateState = new Date();
@@ -59052,7 +59429,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             </sl-tab>
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
               <lexml-eta
-                style="display: ${!this.isEmendaTextoLivre() ? 'block' : 'none'}"
+                style="display: ${!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo() ? 'block' : 'none'}"
                 id="lexmlEta"
                 .lexmlEtaConfig=${this.lexmlEmendaConfig}
                 @onchange=${this.onChange}
@@ -59064,9 +59441,16 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 registroEvento="justificativa"
                 @onchange=${this.onChange}
               ></editor-texto-rico>
+              <lexml-substituicao-termo style="display: ${this.isEmendaSubstituicaoTermo() ? 'block' : 'none'}" @onchange=${this.onChange}></lexml-substituicao-termo>
             </sl-tab-panel>
             <sl-tab-panel name="justificativa" class="overflow-hidden">
-              <editor-texto-rico modo="justificativa" id="editor-texto-rico-justificativa" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>
+              <editor-texto-rico
+                .lexmlEtaConfig=${this.lexmlEmendaConfig}
+                modo="justificativa"
+                id="editor-texto-rico-justificativa"
+                registroEvento="justificativa"
+                @onchange=${this.onChange}
+              ></editor-texto-rico>
             </sl-tab-panel>
             <sl-tab-panel name="autoria" class="overflow-hidden">
               <div class="tab-autoria__container">
@@ -59139,6 +59523,9 @@ __decorate([
 __decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "autoria", void 0);
+__decorate([
+    i$1('lexml-substituicao-termo')
+], LexmlEmendaComponent.prototype, "_substituicaoTermo", void 0);
 __decorate([
     i$1('lexml-eta')
 ], LexmlEmendaComponent.prototype, "_lexmlEta", void 0);
@@ -59649,7 +60036,10 @@ let SufixosModalComponent = class SufixosModalComponent extends s {
         <span slot="label">Sufixos de posicionamento</span>
 
         <div>
-          <p>Os sufixos, como -1, -2 e assim por diante, são usados para orientar o posicionamento na redação final. Eles não indicam uma numeração definitiva.</p>
+          <p>
+            Os sufixos na numeração de dispositivos, como -1, -2 e assim por diante, são usados para orientar o posicionamento na redação final. Eles não indicam uma numeração
+            definitiva.
+          </p>
           <p>Os dispositivos propostos e adjacentes deverão ser devidamente renumerados no momento da consolidação das emendas ao texto da proposição pela Redação Final.</p>
         </div>
 
@@ -60010,8 +60400,141 @@ SwitchRevisaoComponent = __decorate([
     n$1('lexml-switch-revisao')
 ], SwitchRevisaoComponent);
 
+let SubstituicaoTermoComponent = class SubstituicaoTermoComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.timerEmitirEventoOnChange = 0;
+    }
+    onDadosAlterados(evt) {
+        const el = evt === null || evt === void 0 ? void 0 : evt.target;
+        el === this.elTermoASerSubstituido && this.elAlertaTermoASerSubstituido.style.setProperty('visibility', el.value ? 'hidden' : 'unset');
+        el === this.elNovoTermo && this.elAlertaNovoTermo.style.setProperty('visibility', el.value ? 'hidden' : 'unset');
+        this.agendarEmissaoEventoOnChange();
+    }
+    agendarEmissaoEventoOnChange(origemEvento = 'substituicao-termo') {
+        clearInterval(this.timerEmitirEventoOnChange);
+        this.timerEmitirEventoOnChange = window.setTimeout(() => this.emitirEventoOnChange(origemEvento), 500);
+    }
+    emitirEventoOnChange(origemEvento) {
+        this.dispatchEvent(new CustomEvent('onchange', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                origemEvento,
+            },
+        }));
+    }
+    getComandoEmenda(urn) {
+        return new ComandoEmendaBuilder(urn, this.getSubstituicaoTermo()).getComandoEmenda();
+    }
+    getSubstituicaoTermo() {
+        var _a;
+        const ret = new SubstituicaoTermo();
+        ret.tipo = ((_a = this.elTipoSubstituicaoTermo.querySelector('sl-radio[checked]')) === null || _a === void 0 ? void 0 : _a.value) || 'Expressão';
+        ret.termo = this.elTermoASerSubstituido.value || '(termo a ser substituído)';
+        ret.novoTermo = this.elNovoTermo.value || '(novo termo)';
+        ret.flexaoGenero = this.elFlexaoGenero.checked;
+        ret.flexaoNumero = this.elFlexaoNumero.checked;
+        return ret;
+    }
+    setSubstituicaoTermo(substituicaoTermo) {
+        var _a, _b;
+        this.elTermoASerSubstituido.value = substituicaoTermo.tipo;
+        this.elTermoASerSubstituido.value = substituicaoTermo.termo;
+        this.elNovoTermo.value = substituicaoTermo.novoTermo;
+        this.elFlexaoGenero.checked = substituicaoTermo.flexaoGenero;
+        this.elFlexaoNumero.checked = substituicaoTermo.flexaoNumero;
+        (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector(`sl-radio[value="${substituicaoTermo.tipo}"]`)) === null || _b === void 0 ? void 0 : _b.click();
+    }
+    render() {
+        return $ `
+      <fieldset @input=${this.onDadosAlterados}>
+        <legend>Substituição de termo em todo o texto</legend>
+        <sl-radio-group id="tipoSubstituicaoTermo" value="Expressão" @sl-change=${this.onDadosAlterados}>
+          <sl-radio value="Expressão">Expressão</sl-radio>
+          <sl-radio value="Palavra">Palavra</sl-radio>
+          <sl-radio value="Número">Número</sl-radio>
+        </sl-radio-group>
+        <div>
+          <sl-input id="termoASerSubstituido" type="text" required label="Termo a ser substituído: *"></sl-input>
+          <span id="alertaTermoASerSubstituido" class="alerta">Este campo deve ser preenchido</span>
+        </div>
+        <div>
+          <sl-input id="novoTermo" type="text" required label="Novo termo: *"></sl-input>
+          <span id="alertaNovoTermo" class="alerta">Este campo deve ser preenchido</span>
+        </div>
+        <div>
+          <span>Propor fazer flexões de:</span>
+          <sl-checkbox id="flexaoGenero">Gênero</sl-checkbox>
+          <sl-checkbox id="flexaoNumero">Número</sl-checkbox>
+        </div>
+      </fieldset>
+    `;
+    }
+};
+SubstituicaoTermoComponent.styles = r$2 `
+    span.alerta {
+      color: red;
+    }
+
+    fieldset {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      background-color: var(--sl-color-gray-100);
+      box-shadow: var(--sl-shadow-x-large);
+      flex-wrap: wrap;
+      padding: 20px 20px;
+      margin: 10px;
+      border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
+      border-radius: var(--sl-border-radius-medium);
+    }
+
+    legend {
+      background-color: var(--sl-color-gray-200);
+      font-weight: bold;
+      border-radius: 5px;
+      border: 1px solid var(--sl-color-gray-300);
+      padding: 2px 5px;
+      box-shadow: var(--sl-shadow-small);
+    }
+
+    sl-radio-group::part(base) {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+    #flexaoGenero {
+      margin-left: 20px;
+    }
+  `;
+__decorate([
+    i$1('#tipoSubstituicaoTermo')
+], SubstituicaoTermoComponent.prototype, "elTipoSubstituicaoTermo", void 0);
+__decorate([
+    i$1('#termoASerSubstituido')
+], SubstituicaoTermoComponent.prototype, "elTermoASerSubstituido", void 0);
+__decorate([
+    i$1('#novoTermo')
+], SubstituicaoTermoComponent.prototype, "elNovoTermo", void 0);
+__decorate([
+    i$1('#alertaTermoASerSubstituido')
+], SubstituicaoTermoComponent.prototype, "elAlertaTermoASerSubstituido", void 0);
+__decorate([
+    i$1('#alertaNovoTermo')
+], SubstituicaoTermoComponent.prototype, "elAlertaNovoTermo", void 0);
+__decorate([
+    i$1('#flexaoGenero')
+], SubstituicaoTermoComponent.prototype, "elFlexaoGenero", void 0);
+__decorate([
+    i$1('#flexaoNumero')
+], SubstituicaoTermoComponent.prototype, "elFlexaoNumero", void 0);
+SubstituicaoTermoComponent = __decorate([
+    n$1('lexml-substituicao-termo')
+], SubstituicaoTermoComponent);
+
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, AlterarLarguraTabelaColunaModalComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SubstituicaoTermoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
