@@ -22,6 +22,7 @@ import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
 import { Usuario } from '../model/usuario';
 import { Ambiente, ambiente } from './edt-ambiente';
+import { LexmlEmendaParametrosEdicao } from '../model/lexml/parametros';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -69,6 +70,9 @@ export class EdtApp extends LitElement {
 
   @query('edt-modal-sufixos')
   private modalSufixos!: any;
+
+  @query('edt-modal-emenda-sem-texto')
+  private modalEmendaSemTexto!: any;
 
   private jsonixProposicao: any = {};
 
@@ -243,13 +247,27 @@ export class EdtApp extends LitElement {
       })
       .then(emenda => {
         this.modo = emenda.modoEdicao;
-        return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
+
+        if (
+          this.modo !== 'emendaArtigoOndeCouber' &&
+          this.modo !== 'emendaTextoLivre'
+        ) {
+          return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
+        } else {
+          return this.buildProposicaoMPSemArticulacao(emenda.proposicao).then(
+            () => emenda
+          );
+        }
       })
       .then(async emenda => {
         const { sigla, numero, ano } = emenda.proposicao;
         this.proposicao =
           (await this.buscarProposicao(sigla, numero, Number(ano))) ??
           this.proposicao;
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          this.proposicao
+        );
+        this.labelTipoEmenda = this.getTipoEmenda(this.modo);
         this.proposicao.ementa = emenda.proposicao.ementa;
         this.lexmlEmenda.inicializarEdicao({
           modo: this.modo,
@@ -276,6 +294,25 @@ export class EdtApp extends LitElement {
       .finally(() => {
         this.toggleCarregando(false);
       });
+  }
+
+  private async buildProposicaoMPSemArticulacao(
+    proposicao: any
+  ): Promise<void> {
+    this.proposicao = {
+      sigla: proposicao.sigla!,
+      numero: proposicao.numero!,
+      ano: proposicao.ano!,
+      ementa: proposicao.ementa!,
+    };
+    this.proposicao.nomeProposicao =
+      this.getNomeProposicaoFormatado(proposicao);
+
+    this.tituloEmenda =
+      'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+    //this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
+    this.showEditor = true;
+    this.atualizarTituloEditor();
   }
 
   private async salvarPdf(salvarComo = false): Promise<void> {
@@ -359,6 +396,12 @@ export class EdtApp extends LitElement {
   private showModalSufixos(): void {
     if (this.modalSufixos !== null) {
       this.modalSufixos.show();
+    }
+  }
+
+  private showModalEmendaSemTexto(proposicaoSelecionada: Proposicao): void {
+    if (this.modalEmendaSemTexto !== null) {
+      this.modalEmendaSemTexto.show(proposicaoSelecionada);
     }
   }
 
@@ -564,6 +607,9 @@ export class EdtApp extends LitElement {
     } else if (ev.detail.itemMenu === 'sufixos') {
       this.abreModalSufixos();
     }
+    // else if (ev.detail.itemMenu === 'emendaSemTexto') {
+    //   this.showModalEmendaSemTexto();
+    // }
   }
 
   private abreModalSufixos(): void {
@@ -592,6 +638,66 @@ export class EdtApp extends LitElement {
     sendEmailMotivoEmendaTextoLivre(motivo);
   }
 
+  private async criarNovaEmendaTextoLivreSemTexto(
+    proposicaoSelecionada?: Proposicao
+  ): Promise<void> {
+    this.modo = 'emendaTextoLivre';
+
+    setTimeout(() => {
+      if (proposicaoSelecionada) {
+        const params = new LexmlEmendaParametrosEdicao();
+        params.modo = this.modo;
+        // this.tituloEmenda =
+        //   'Emenda ' +
+        //   (proposicaoSelecionada.nomeProposicao ?? '').replace('/', ' ');
+        params.proposicao = {
+          sigla: proposicaoSelecionada.sigla!,
+          numero: proposicaoSelecionada.numero!,
+          ano: proposicaoSelecionada.ano!,
+          ementa: proposicaoSelecionada.ementa!,
+        };
+
+        this.proposicao = params.proposicao;
+
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          proposicaoSelecionada
+        );
+
+        this.tituloEmenda =
+          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+        params.motivo = 'Medida provisória sem articulação';
+        this.showEditor = true;
+        this.lexmlEmenda.inicializarEdicao(params);
+        sendEmailMotivoEmendaTextoLivre(params.motivo);
+        //this.lexmlEmenda.style.display = 'block';
+
+        this.atualizarTituloEditor();
+        setTimeout(() => {
+          this.emendaComAlteracoesSalvas = JSON.parse(
+            JSON.stringify(this.lexmlEmenda.getEmenda())
+          );
+          this.isDirty = false;
+          this.isOpenFile = false;
+          this.wasSaved = false;
+          this.updateStateElements();
+        }, 0);
+      }
+    }, 0);
+  }
+
+  private getTipoEmenda(modo: string): string {
+    switch (modo) {
+      case 'emendaArtigoOndeCouber':
+        return 'Emenda onde couber';
+      case 'emenda':
+        return 'Emenda padrão';
+      case 'emendaTextoLivre':
+        return 'Emenda texto livre';
+    }
+
+    return '';
+  }
+
   private async criarNovaEmenda(
     proposicao: Proposicao,
     modo: string,
@@ -601,7 +707,7 @@ export class EdtApp extends LitElement {
     this.modo = modo;
     this.motivo = motivo;
     this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
-    this.labelTipoEmenda = 'Emenda padrão';
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
 
     this.lexmlEmenda.inicializarEdicao({
@@ -620,15 +726,59 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
-  private criarNovaEmendaArtigoOndeCouber(): void {
+  private getNomeProposicaoFormatado(proposicao: Proposicao): any {
+    const nome =
+      proposicao.sigla +
+      ' ' +
+      (/[\d]+/.test(proposicao.numero!)
+        ? +this.removerZerosEsquerda(proposicao.numero)!
+        : this.removerZerosEsquerda(proposicao.numero)) +
+      '/' +
+      proposicao.ano;
+    return nome;
+  }
+
+  private removerZerosEsquerda(numero: any): string {
+    return numero.replace(/^0+/, '');
+  }
+
+  private criarNovaEmendaArtigoOndeCouber(
+    proposicaoSelecionada?: Proposicao
+  ): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
-    this.labelTipoEmenda = 'Emenda onde couber';
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda onde couber';
+
     setTimeout(() => {
-      this.lexmlEmenda.inicializarEdicao({
-        modo: this.modo,
-        projetoNorma: this.jsonixProposicao,
-      });
+      if (proposicaoSelecionada) {
+        const params = new LexmlEmendaParametrosEdicao();
+        params.modo = this.modo;
+
+        params.proposicao = {
+          sigla: proposicaoSelecionada.sigla!,
+          numero: proposicaoSelecionada.numero!,
+          ano: proposicaoSelecionada.ano!,
+          ementa: proposicaoSelecionada.ementa!,
+        };
+
+        this.proposicao = params.proposicao;
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          proposicaoSelecionada
+        );
+
+        this.tituloEmenda =
+          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+
+        params.motivo = 'Motivo emenda onde couber';
+        this.showEditor = true;
+        this.lexmlEmenda.inicializarEdicao(params);
+        //this.lexmlEmenda.style.display = 'block';
+      } else {
+        this.lexmlEmenda.inicializarEdicao({
+          modo: this.modo,
+          projetoNorma: this.jsonixProposicao,
+        });
+      }
       this.atualizarTituloEditor();
       setTimeout(() => {
         this.emendaComAlteracoesSalvas = JSON.parse(
@@ -671,8 +821,10 @@ export class EdtApp extends LitElement {
 
   private updateStateElements(tituloEmenda?: string): void {
     setTimeout(() => {
-      this.edtMenu.btnSave.disabled = !this.isDirty;
-      this.edtMenu.btnSaveAs.disabled = !this.wasSaved && !this.isOpenFile;
+      if (this.edtMenu.btnSave !== null) {
+        this.edtMenu.btnSave.disabled = !this.isDirty;
+        this.edtMenu.btnSaveAs.disabled = !this.wasSaved && !this.isOpenFile;
+      }
       this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
     }, 0);
   }
@@ -867,6 +1019,8 @@ export class EdtApp extends LitElement {
       <edt-modal-nova-emenda
         @nova-emenda-padrao=${(ev: CustomEvent): any =>
           this.criarNovaEmendaPadrao(ev.detail.proposicao)}
+        @abrir-modal-emenda-sem-texto=${(ev: CustomEvent): any =>
+          this.showModalEmendaSemTexto(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
 
@@ -900,6 +1054,17 @@ export class EdtApp extends LitElement {
       <edt-modal-orientacoes @open-modal-videos=${() => this.abrirVideos()}>
       </edt-modal-orientacoes>
       <edt-modal-sufixos></edt-modal-sufixos>
+      <edt-modal-emenda-sem-texto
+        @cria-artigo-onde-couber=${(ev: CustomEvent): any =>
+          this.criarNovaEmendaArtigoOndeCouber({
+            ...ev.detail.proposicaoSelecionada,
+          })}
+        @cria-texto-livre=${(ev: CustomEvent): any =>
+          this.criarNovaEmendaTextoLivreSemTexto({
+            ...ev.detail.proposicaoSelecionada,
+          })}
+      >
+      </edt-modal-emenda-sem-texto>
     `;
   }
 

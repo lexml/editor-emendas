@@ -41,6 +41,9 @@ export class EdtModalNovaEmenda extends LitElement {
   @queryAll('tr.proposicao')
   private trProposicoes!: HTMLElement[];
 
+  // @query('edt-modal-emenda-sem-texto')
+  // private modalEmendaSemTexto!: any;
+
   public show(): void {
     this.numero = '';
     (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value =
@@ -48,6 +51,12 @@ export class EdtModalNovaEmenda extends LitElement {
     this.pesquisar();
     this.slDialog.show();
   }
+
+  // private showModalEmendaSemTexto(): void {
+  //   if(this.modalEmendaSemTexto !== null){
+  //     this.modalEmendaSemTexto.show();
+  //   }
+  // }
 
   private toggleApenasEmTramitacao(): void {
     this.apenasEmTramitacao = !this.apenasEmTramitacao;
@@ -95,13 +104,38 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   private emitirEvento(): void {
-    this.dispatchEvent(
-      new CustomEvent('nova-emenda-padrao', {
-        detail: { proposicao: this.proposicaoSelecionada },
-        composed: true,
-        bubbles: true,
-      })
-    );
+    if (
+      this.proposicaoSelecionada &&
+      !this.proposicaoSelecionada!.idSdlegDocumentoItemDigital
+    ) {
+      this.slDialog.hide();
+      //this.showModalEmendaSemTexto();
+      const itemMenu = 'emendaSemTexto';
+      // this.dispatchEvent(
+      //   new CustomEvent('item-selecionado', {
+      //     detail: { itemMenu },
+      //     composed: true,
+      //     bubbles: true,
+      //   })
+      // );
+      this.dispatchEvent(
+        new CustomEvent('abrir-modal-emenda-sem-texto', {
+          detail: { proposicao: this.proposicaoSelecionada },
+          composed: true,
+          bubbles: true,
+        })
+      );
+    } else {
+      this.dispatchEvent(
+        new CustomEvent('nova-emenda-padrao', {
+          detail: { proposicao: this.proposicaoSelecionada },
+          composed: true,
+          bubbles: true,
+        })
+      );
+      this.slDialog.hide();
+    }
+
     this.slDialog.hide();
   }
 
@@ -166,7 +200,6 @@ export class EdtModalNovaEmenda extends LitElement {
                       this.selecionarProposicao(p, evt)}
                     @dblclick=${(evt: Event): any =>
                       this.duploCliqueProposicao(p, evt)}
-                    disabled=${p.idSdlegDocumentoItemDigital ? false : true}
                   >
                     <td class="col-center">
                       ${p.sigla +
