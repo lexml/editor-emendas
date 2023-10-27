@@ -547,6 +547,11 @@ export class EdtApp extends LitElement {
     this.modalOndeCouber.show();
   }
 
+  private novaEmendaSubstituicaoTermo(): void {
+    this.fileHandle = undefined;
+    this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
+  }
+
   private novaEmendaTextoLivre(): void {
     this.fileHandle = undefined;
     this.modalTextoLivre.show();
@@ -586,6 +591,10 @@ export class EdtApp extends LitElement {
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
+    } else if (ev.detail.itemMenu === 'substituicao-termo') {
+      this.checkDirtyAndExecuteNextFunction(() =>
+        this.novaEmendaSubstituicaoTermo()
+      );
     } else if (ev.detail.itemMenu === 'texto-livre') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaTextoLivre());
     } else if (ev.detail.itemMenu === 'download') {

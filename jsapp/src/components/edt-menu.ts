@@ -102,6 +102,11 @@ export class EdtMenu extends LitElement {
                   Onde couber
                 </sl-menu-item>
                 <sl-menu-item
+                  @click=${(): void => this.emitirEvento('substituicao-termo')}
+                >
+                  Substituição de termo
+                </sl-menu-item>
+                <sl-menu-item
                   @click=${(): void => this.emitirEvento('texto-livre')}
                 >
                   Texto Livre
