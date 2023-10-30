@@ -21,7 +21,6 @@ import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
 import { Usuario } from '../model/usuario';
-import { Ambiente, ambiente } from './edt-ambiente';
 import { LexmlEmendaParametrosEdicao } from '../model/lexml/parametros';
 
 @customElement('edt-app')
@@ -866,8 +865,6 @@ export class EdtApp extends LitElement {
   }
 
   private checkAndShowOrientacoes(): void {
-    if (ambiente !== Ambiente.DESENVOLVIMENTO) return;
-
     const orientationShown = localStorage.getItem('wizardOrientacoes');
 
     if (!orientationShown) {
