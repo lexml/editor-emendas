@@ -35821,10 +35821,18 @@ function HierarquiaArtigo(Base) {
         }
         renumeraFilhos() {
             if (!podeRenumerarFilhosAutomaticamente(this)) {
+                this.ajustaRotuloParagrafoUnicoSeNecessario();
                 return;
             }
             this.renumeraIncisos();
             this.renumeraParagrafos();
+        }
+        ajustaRotuloParagrafoUnicoSeNecessario() {
+            const nParagrafos = this.paragrafos.filter(p => !isOmissis(p)).length;
+            const paragrafoUnico = this.paragrafos.filter(p => !isOmissis(p)).find(p => { var _a; return (_a = p.id) === null || _a === void 0 ? void 0 : _a.endsWith('par1u'); });
+            if (paragrafoUnico) {
+                paragrafoUnico.rotulo = nParagrafos === 1 ? 'Parágrafo único.' : '§ 1º';
+            }
         }
     };
 }
@@ -38536,6 +38544,9 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
 };
 const getPaiQuePodeReceberFilhoDoTipo = (dispositivo, tipoFilho, dispositivosPermitidos) => {
     var _a;
+    if (!dispositivo) {
+        return undefined;
+    }
     return ((_a = dispositivo.tiposPermitidosFilhos) === null || _a === void 0 ? void 0 : _a.includes(tipoFilho))
         ? dispositivosPermitidos.length === 0 || dispositivosPermitidos.includes(dispositivo)
             ? dispositivo
@@ -40268,10 +40279,12 @@ const removeElemento = (state, action) => {
             const dispositivos = getDispositivoAndFilhosAsLista(dispositivo.pai).filter(isAgrupador);
             const agrupadorAntes = dispositivos[dispositivos.indexOf(dispositivo) - 1] || {};
             const agrupadorDepois = dispositivos[dispositivos.indexOf(dispositivo) + 1] || {};
-            return retornaEstadoAtualComMensagem(state, {
-                tipo: TipoMensagem.ERROR,
-                descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
-            });
+            if (agrupadorAntes.tipo !== agrupadorDepois.tipo && !getPaiQuePodeReceberFilhoDoTipo(dispositivo.pai, agrupadorDepois.tipo, [])) {
+                return retornaEstadoAtualComMensagem(state, {
+                    tipo: TipoMensagem.ERROR,
+                    descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
+                });
+            }
         }
     }
     if (!isAcaoPermitida(dispositivo, RemoverElemento)) {
@@ -48839,7 +48852,11 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
         wpUpload.hidden = anexos.length ? true : false;
         anexos.forEach(a => (htmlConteudo += `<span class="anexo-item">
                             <sl-icon name="paperclip"></sl-icon>
-                            <span>${a.nomeArquivo}</span>
+                            <a download="${a.nomeArquivo}" href="data:application/pdf;base64,${a.base64}">
+                              <span>
+                                ${a.nomeArquivo}
+                              </span>
+                            </a>
                             <!--
                             <sl-button class="btn-preview-anexo" size="small" title="Visualizar o anexo em uma nova janela" nomeArquivo="${a.nomeArquivo}">
                               <sl-icon name="eye"></sl-icon>
