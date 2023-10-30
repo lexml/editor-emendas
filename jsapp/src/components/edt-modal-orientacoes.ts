@@ -376,10 +376,19 @@ export class EdtModalOrientacoes extends LitElement {
                     <strong>"Onde couber":</strong>
                     <p>
                       Esse tipo de emenda permite propor alterações sem
-                      especificar a localização exata na MPV. No entanto,
-                      orienta-se o uso preferencial de emendas padrão, com
-                      posicionamento dos novos dispositivos propostos, em vez de
-                      emendas de dispositivos "onde couber".
+                      especificar a localização exata na medida provisória. No
+                      entanto, orienta-se o uso preferencial de emendas padrão,
+                      com posicionamento dos novos dispositivos propostos, em
+                      vez de emendas de dispositivos "onde couber".
+                    </p>
+                  </li>
+
+                  <li>
+                    <strong>Substituição de termo:</strong>
+                    <p>
+                      A emenda de substituição de termo deve ser utilizada para
+                      substituir todas as ocorrências de uma expressão
+                      encontrada no texto original da medida provisória.
                     </p>
                   </li>
 
