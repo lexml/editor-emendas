@@ -207,7 +207,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-1.jpg"
+                  src="./assets/jpg/orientacoes-1.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -232,7 +232,7 @@ export class EdtModalOrientacoes extends LitElement {
                     <img
                       class="image"
                       style="margin-top: 5px;"
-                      src="/assets/jpg/orientacoes-2-1.jpg"
+                      src="./assets/jpg/orientacoes-2-1.jpg"
                       alt="Sinalizador de arquivo não salvo"
                     />
                   </li>
@@ -245,7 +245,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-2.jpg"
+                  src="./assets/jpg/orientacoes-2.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -293,7 +293,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-3.jpg"
+                  src="./assets/jpg/orientacoes-3.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -325,7 +325,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-4.jpg"
+                  src="./assets/jpg/orientacoes-4.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -342,7 +342,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-5.jpg"
+                  src="./assets/jpg/orientacoes-5.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -423,7 +423,7 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col2">
                 <img
                   class="image"
-                  src="/assets/jpg/orientacoes-7.jpg"
+                  src="./assets/jpg/orientacoes-7.jpg"
                   alt="Elementos da interface do editor de emendas"
                 />
               </div>
@@ -452,7 +452,7 @@ export class EdtModalOrientacoes extends LitElement {
                 >
                   <img
                     class="image"
-                    src="/assets/jpg/orientacoes-8.jpg"
+                    src="./assets/jpg/orientacoes-8.jpg"
                     alt="Imagem de uma mão segurando um celular com o editor de emendas aberto"
                   />
                 </a>
