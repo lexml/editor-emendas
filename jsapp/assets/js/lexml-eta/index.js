@@ -60462,6 +60462,7 @@ let SubstituicaoTermoComponent = class SubstituicaoTermoComponent extends s {
         this.elFlexaoGenero.checked = substituicaoTermo.flexaoGenero;
         this.elFlexaoNumero.checked = substituicaoTermo.flexaoNumero;
         (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector(`sl-radio[value="${substituicaoTermo.tipo}"]`)) === null || _b === void 0 ? void 0 : _b.click();
+        this.agendarEmissaoEventoOnChange();
     }
     render() {
         return $ `
