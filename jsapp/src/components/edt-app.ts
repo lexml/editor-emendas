@@ -804,7 +804,13 @@ export class EdtApp extends LitElement {
     this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda onde couber';
 
     setTimeout(() => {
-      if (proposicaoSelecionada) {
+      if (
+        proposicaoSelecionada &&
+        proposicaoSelecionada.sigla &&
+        proposicaoSelecionada.numero &&
+        proposicaoSelecionada.ano &&
+        proposicaoSelecionada.ementa
+      ) {
         const params = new LexmlEmendaParametrosEdicao();
         params.modo = this.modo;
 
