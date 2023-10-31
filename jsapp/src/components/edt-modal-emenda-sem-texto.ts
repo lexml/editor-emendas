@@ -79,14 +79,21 @@ export class EdtModalEmendaSemTexto extends LitElement {
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}
           >
-            Criar emenda "Onde couber"
+            Onde couber
           </sl-button>
           <sl-button
             class="btn"
             variant="secondary"
             @click=${(): void => this.emitirEvento('cria-texto-livre')}
           >
-            Criar emenda "Texto livre"
+            Texto livre
+          </sl-button>
+          <sl-button
+            class="btn"
+            variant="secondary"
+            @click=${(): void => this.emitirEvento('cria-substituicao-termo')}
+          >
+            Substituição de Termo
           </sl-button>
           <sl-button
             class="btn"
