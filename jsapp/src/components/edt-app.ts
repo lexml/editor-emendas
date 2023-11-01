@@ -249,7 +249,8 @@ export class EdtApp extends LitElement {
 
         if (
           this.modo !== 'emendaArtigoOndeCouber' &&
-          this.modo !== 'emendaTextoLivre'
+          this.modo !== 'emendaTextoLivre' &&
+          this.modo !== 'emendaSubstituicaoTermo'
         ) {
           return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
         } else {
@@ -548,7 +549,16 @@ export class EdtApp extends LitElement {
 
   private novaEmendaSubstituicaoTermo(): void {
     this.fileHandle = undefined;
-    this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
+
+    if (this.emendaSemTexto()) {
+      this.criarNovaEmendaSubstituicaoTermoSemTexto(this.proposicao);
+    } else {
+      this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
+    }
+  }
+
+  private emendaSemTexto(): boolean {
+    return this.proposicao.idSdlegDocumentoItemDigital === null;
   }
 
   private novaEmendaTextoLivre(): void {
@@ -652,7 +662,13 @@ export class EdtApp extends LitElement {
     this.modo = 'emendaTextoLivre';
 
     setTimeout(() => {
-      if (proposicaoSelecionada) {
+      if (
+        proposicaoSelecionada &&
+        proposicaoSelecionada.sigla &&
+        proposicaoSelecionada.numero &&
+        proposicaoSelecionada.ano &&
+        proposicaoSelecionada.ementa
+      ) {
         const params = new LexmlEmendaParametrosEdicao();
         params.modo = this.modo;
         // this.tituloEmenda =
@@ -693,6 +709,55 @@ export class EdtApp extends LitElement {
     }, 0);
   }
 
+  private async criarNovaEmendaSubstituicaoTermoSemTexto(
+    proposicaoSelecionada?: Proposicao
+  ): Promise<void> {
+    this.modo = 'emendaSubstituicaoTermo';
+
+    setTimeout(() => {
+      if (
+        proposicaoSelecionada &&
+        proposicaoSelecionada.sigla &&
+        proposicaoSelecionada.numero &&
+        proposicaoSelecionada.ano &&
+        proposicaoSelecionada.ementa
+      ) {
+        const params = new LexmlEmendaParametrosEdicao();
+        params.modo = this.modo;
+        params.proposicao = {
+          sigla: proposicaoSelecionada.sigla!,
+          numero: proposicaoSelecionada.numero!,
+          ano: proposicaoSelecionada.ano!,
+          ementa: proposicaoSelecionada.ementa!,
+        };
+
+        this.proposicao = params.proposicao;
+
+        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
+          proposicaoSelecionada
+        );
+
+        this.tituloEmenda =
+          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+        params.motivo =
+          'Medida provisória de substituição de termo sem articulação';
+        this.showEditor = true;
+        this.lexmlEmenda.inicializarEdicao(params);
+        //this.lexmlEmenda.style.display = 'block';
+
+        this.atualizarTituloEditor();
+        setTimeout(() => {
+          this.emendaComAlteracoesSalvas = JSON.parse(
+            JSON.stringify(this.lexmlEmenda.getEmenda())
+          );
+          this.isDirty = false;
+          this.isOpenFile = false;
+          this.wasSaved = false;
+          this.updateStateElements();
+        }, 0);
+      }
+    }, 0);
+  }
   private getTipoEmenda(modo: string): string {
     switch (modo) {
       case 'emendaArtigoOndeCouber':
@@ -701,6 +766,8 @@ export class EdtApp extends LitElement {
         return 'Emenda padrão';
       case 'emendaTextoLivre':
         return 'Emenda texto livre';
+      case 'emendaSubstituicaoTermo':
+        return 'Emenda substituição de termo';
     }
 
     return '';
@@ -758,7 +825,13 @@ export class EdtApp extends LitElement {
     this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda onde couber';
 
     setTimeout(() => {
-      if (proposicaoSelecionada) {
+      if (
+        proposicaoSelecionada &&
+        proposicaoSelecionada.sigla &&
+        proposicaoSelecionada.numero &&
+        proposicaoSelecionada.ano &&
+        proposicaoSelecionada.ementa
+      ) {
         const params = new LexmlEmendaParametrosEdicao();
         params.modo = this.modo;
 
@@ -1067,6 +1140,10 @@ export class EdtApp extends LitElement {
           })}
         @cria-texto-livre=${(ev: CustomEvent): any =>
           this.criarNovaEmendaTextoLivreSemTexto({
+            ...ev.detail.proposicaoSelecionada,
+          })}
+        @cria-substituicao-termo=${(ev: CustomEvent): any =>
+          this.criarNovaEmendaSubstituicaoTermoSemTexto({
             ...ev.detail.proposicaoSelecionada,
           })}
       >

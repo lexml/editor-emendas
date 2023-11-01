@@ -47702,6 +47702,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                         this.montarMenuContexto(event);
                     }
                     this.atualizarMensagemQuill(event);
+                    this.marcarLinhaCursorCorrente();
                     break;
                 case StateType.ElementoMarcado:
                     setTimeout(() => this.marcarLinha(event), 100);
@@ -47748,6 +47749,16 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             // TODO: Implementar lógica do atributo eventosFiltrados, sem repetir os itens
             this.eventosOnChange.push(...eventosFiltrados);
             this.agendarEmissaoEventoOnChange('stateEvents', eventosFiltrados);
+        }
+    }
+    /**
+     * Força a seleção do dispositivo que está com o cursor
+     */
+    marcarLinhaCursorCorrente() {
+        const range = this.quill.getSelection();
+        if (range) {
+            const linhaCursor = this.quill.getLine(range.index - 1)[0].linha;
+            this.quill.atualizarLinhaCorrente(linhaCursor);
         }
     }
     processaRevisoesAceitas(events, event) {
@@ -55016,7 +55027,7 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
     loadProjetoNorma(preparaAberturaEmenda) {
         var _a, _b;
         let documento;
-        if (!this.projetoNorma) {
+        if (!this.projetoNorma || !this.projetoNorma.value) {
             this.projetoNorma = DOCUMENTO_PADRAO;
         }
         if (this.modo === ModoEdicaoEmenda.EMENDA_ARTIGO_ONDE_COUBER) {
@@ -59022,7 +59033,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         if (this.isEmendaTextoLivre() && params.emenda) {
             this.motivo = params.emenda.comandoEmendaTextoLivre.motivo || 'Motivo não informado na emenda';
         }
-        if (!this.isEmendaTextoLivre()) {
+        if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
             this._lexmlEta.inicializarEdicao(this.modo, this.urn, params.projetoNorma, !!params.emenda);
         }
         if (params.emenda) {
@@ -60463,6 +60474,12 @@ let SubstituicaoTermoComponent = class SubstituicaoTermoComponent extends s {
         this.elFlexaoNumero.checked = substituicaoTermo.flexaoNumero;
         (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector(`sl-radio[value="${substituicaoTermo.tipo}"]`)) === null || _b === void 0 ? void 0 : _b.click();
         this.agendarEmissaoEventoOnChange();
+        if (this.elTermoASerSubstituido.value !== '') {
+            this.elAlertaTermoASerSubstituido.style.setProperty('visibility', 'hidden');
+        }
+        if (this.elNovoTermo.value !== '') {
+            this.elAlertaNovoTermo.style.setProperty('visibility', 'hidden');
+        }
     }
     render() {
         return $ `

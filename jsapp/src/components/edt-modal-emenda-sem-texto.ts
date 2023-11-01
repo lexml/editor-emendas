@@ -63,15 +63,11 @@ export class EdtModalEmendaSemTexto extends LitElement {
             emendamento no formato padrão do editor.
           </p>
           <p>
-            Você deseja criar uma emenda de dispositivo onde couber ou no
-            formato de texto livre?
+            Você deseja criar uma emenda de dispositivo "onde couber", uma
+            emenda de substituição de termo ou uma emenda no formato de texto
+            livre?
           </p>
         </div>
-
-        <!-- <sl-radio-group id="rdgTipoEmenda" name="tipoEmenda">
-          <sl-radio class="tipo-emenda" id="ondeCouber" value="1" checked>Onde Couber</sl-radio>
-          <sl-radio class="tipo-emenda" id="textoLivre" value="2" >Texto Livre</sl-radio>
-        </sl-radio-group>           -->
 
         <div slot="footer" class="footer-container">
           <sl-button
@@ -79,14 +75,21 @@ export class EdtModalEmendaSemTexto extends LitElement {
             variant="primary"
             @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}
           >
-            Criar emenda "Onde couber"
+            Onde couber
+          </sl-button>
+          <sl-button
+            class="btn"
+            variant="secondary"
+            @click=${(): void => this.emitirEvento('cria-substituicao-termo')}
+          >
+            Substituição de Termo
           </sl-button>
           <sl-button
             class="btn"
             variant="secondary"
             @click=${(): void => this.emitirEvento('cria-texto-livre')}
           >
-            Criar emenda "Texto livre"
+            Texto livre
           </sl-button>
           <sl-button
             class="btn"
