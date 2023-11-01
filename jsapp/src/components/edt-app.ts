@@ -558,7 +558,10 @@ export class EdtApp extends LitElement {
   }
 
   private emendaSemTexto(): boolean {
-    return this.proposicao.idSdlegDocumentoItemDigital === null;
+    return (
+      this.proposicao.idSdlegDocumentoItemDigital === undefined ||
+      this.proposicao.idSdlegDocumentoItemDigital === null
+    );
   }
 
   private novaEmendaTextoLivre(): void {
