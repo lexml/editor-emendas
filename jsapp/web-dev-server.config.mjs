@@ -13,7 +13,7 @@ export default /** @type {import('@web/dev-server').DevServerConfig} */ ({
     exportConditions: ['browser', 'development'],
   },
 
-  port: 8001,
+  port: 8000,
   middleware: [
     // proxy('/api/', {
     //   target: 'http://localhost:8080/editor-emendas',
