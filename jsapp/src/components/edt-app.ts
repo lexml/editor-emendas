@@ -655,7 +655,11 @@ export class EdtApp extends LitElement {
     proposicao: Proposicao,
     motivo: string
   ): Promise<void> {
-    this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
+    if (this.emendaSemTexto()) {
+      this.criarNovaEmendaTextoLivreSemTexto(proposicao);
+    } else {
+      this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
+    }
     sendEmailMotivoEmendaTextoLivre(motivo);
   }
 
