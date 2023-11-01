@@ -549,7 +549,16 @@ export class EdtApp extends LitElement {
 
   private novaEmendaSubstituicaoTermo(): void {
     this.fileHandle = undefined;
-    this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
+
+    if (this.emendaSemTexto()) {
+      this.criarNovaEmendaSubstituicaoTermoSemTexto(this.proposicao);
+    } else {
+      this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
+    }
+  }
+
+  private emendaSemTexto(): boolean {
+    return this.proposicao.idSdlegDocumentoItemDigital === null;
   }
 
   private novaEmendaTextoLivre(): void {
