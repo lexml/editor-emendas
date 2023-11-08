@@ -36,12 +36,13 @@ export const pesquisarProposicoes = async (
       numero: p.numero,
       ano: p.ano,
       ementa: p.ementa,
-      nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
+      nomeProposicao: p.descricaoIdentificacao,
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
       dataPublicacao: p.dataPublicacao,
       dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
       labelTramitacao: p.labelTramitacao,
+      codMateriaMigradaMATE: p.codMateriaMigradaMATE,
     }))
     .sort(compareProposicoesDesc);
 };
@@ -66,12 +67,13 @@ export const pesquisarProposicoesEmTramitacao = async (
       numero: p.numero,
       ano: p.ano,
       ementa: p.ementa,
-      nomeProposicao: p.sigla + ' ' + p.numero + '/' + p.ano,
+      nomeProposicao: p.descricaoIdentificacao,
       idSdlegDocumentoItemDigital: p.idSdlegDocumentoItemDigital,
       dataPublicacao: p.dataPublicacao,
       dataLimiteRecebimentoEmendas: p.dataLimiteRecebimentoEmendas,
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
       labelTramitacao: p.labelTramitacao,
+      codMateriaMigradaMATE: p.codMateriaMigradaMATE,
     }))
     .sort(compareProposicoesDesc);
 };
