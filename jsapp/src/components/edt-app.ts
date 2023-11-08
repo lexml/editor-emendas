@@ -927,6 +927,21 @@ export class EdtApp extends LitElement {
       dataUltimaModificacao: null,
     };
 
+    /**
+      Trata inconsistências no retorno da emenda do backend inserindo vários espaços nessa variável "texto" erroneamente,
+      que acaba indicando alterações na emenda que de fato não existem
+     */
+    if (
+      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto === '    ' ||
+      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto === '  '
+    ) {
+      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = '';
+    }
+
+    if (emenda.comandoEmendaTextoLivre.texto === '  ') {
+      emenda.comandoEmendaTextoLivre.texto = '';
+    }
+
     // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
     const _isDirty =
       JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
