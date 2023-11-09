@@ -22,6 +22,7 @@ import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
 import { Usuario } from '../model/usuario';
 import { LexmlEmendaParametrosEdicao } from '../model/lexml/parametros';
+import { objetosIguais } from '../utils/objeto-util';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -927,24 +928,13 @@ export class EdtApp extends LitElement {
       dataUltimaModificacao: null,
     };
 
-    /**
-      Trata inconsistências no retorno da emenda do backend inserindo vários espaços nessa variável "texto" erroneamente,
-      que acaba indicando alterações na emenda que de fato não existem
-     */
-    if (
-      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto === '    ' ||
-      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto === '  '
-    ) {
-      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = '';
-    }
+    emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto =
+      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
+    emenda.comandoEmendaTextoLivre.texto =
+      emenda.comandoEmendaTextoLivre.texto.trim();
 
-    if (emenda.comandoEmendaTextoLivre.texto === '  ') {
-      emenda.comandoEmendaTextoLivre.texto = '';
-    }
-
-    // return JSON.stringify(emendaOriginal) !== JSON.stringify(emenda)
-    const _isDirty =
-      JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
+    const _isDirty = !objetosIguais(emendaComAlteracoesSalvas, emenda);
+    //JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
 
     return _isDirty;
   }
