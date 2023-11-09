@@ -201,13 +201,7 @@ export class EdtModalNovaEmenda extends LitElement {
                     @dblclick=${(evt: Event): any =>
                       this.duploCliqueProposicao(p, evt)}
                   >
-                    <td class="col-center">
-                      ${p.sigla +
-                      ' ' +
-                      this.removerZerosEsquerda(p.numero) +
-                      '/' +
-                      p.ano}
-                    </td>
+                    <td class="col-center">${p.nomeProposicao}</td>
                     <td class="col-center">
                       ${p.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)
                         ? html`${p.labelPrazoRecebimentoEmendas.substring(
@@ -260,10 +254,6 @@ export class EdtModalNovaEmenda extends LitElement {
 
   private formatarData = (data = ''): string =>
     data?.length === 10 ? data.split('-').reverse().join('/') : '';
-
-  private removerZerosEsquerda(numero: any): string {
-    return numero.replace(/^0+/, '');
-  }
 
   render(): TemplateResult {
     return html`
@@ -333,16 +323,7 @@ export class EdtModalNovaEmenda extends LitElement {
           <br />
           <div class="ementa">
             <label for="ementa"
-              >Ementa
-              ${this.proposicaoSelecionada?.sigla
-                ? this.proposicaoSelecionada?.sigla +
-                  ' ' +
-                  this.removerZerosEsquerda(
-                    this.proposicaoSelecionada?.numero
-                  ) +
-                  '/' +
-                  this.proposicaoSelecionada?.ano
-                : ''}</label
+              >Ementa ${this.proposicaoSelecionada?.nomeProposicao ?? ''}</label
             >
             <textarea id="ementa" cols="40" rows="3" disabled>
               ${this.proposicaoSelecionada?.ementa ?? ''}</textarea

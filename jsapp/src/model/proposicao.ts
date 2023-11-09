@@ -10,4 +10,5 @@ export interface Proposicao {
   dataLimiteRecebimentoEmendas?: string;
   labelPrazoRecebimentoEmendas?: string;
   labelTramitacao?: string;
+  codMateriaMigradaMATE?: string;
 }

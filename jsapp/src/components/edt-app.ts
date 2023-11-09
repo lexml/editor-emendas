@@ -265,9 +265,6 @@ export class EdtApp extends LitElement {
         this.proposicao =
           (await this.buscarProposicao(sigla, numero, Number(ano))) ??
           this.proposicao;
-        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
-          this.proposicao
-        );
         this.labelTipoEmenda = this.getTipoEmenda(this.modo);
         this.proposicao.ementa = emenda.proposicao.ementa;
         this.lexmlEmenda.inicializarEdicao({
@@ -300,14 +297,12 @@ export class EdtApp extends LitElement {
   private async buildProposicaoMPSemArticulacao(
     proposicao: any
   ): Promise<void> {
-    this.proposicao = {
-      sigla: proposicao.sigla!,
-      numero: proposicao.numero!,
-      ano: proposicao.ano!,
-      ementa: proposicao.ementa!,
-    };
-    this.proposicao.nomeProposicao =
-      this.getNomeProposicaoFormatado(proposicao);
+    this.proposicao =
+      (await this.buscarProposicao(
+        proposicao.sigla,
+        proposicao.numero,
+        Number(proposicao.ano)
+      )) ?? this.proposicao;
 
     this.tituloEmenda =
       'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
@@ -424,6 +419,15 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private abrirPaginaMP(): void {
+    if (this.proposicao) {
+      window.open(
+        `https://www.congressonacional.leg.br/materias/medidas-provisorias/-/mpv/${this
+          .proposicao.codMateriaMigradaMATE!}`
+      );
+    }
+  }
+
   // Emite notificação de erro como toast
   public emitirAlerta = function (
     message: string,
@@ -471,14 +475,6 @@ export class EdtApp extends LitElement {
             ?.ementa.content
         ),
       };
-      this.proposicao.nomeProposicao =
-        this.proposicao.sigla +
-        ' ' +
-        (/[\d]+/.test(this.proposicao.numero!)
-          ? +this.proposicao.numero!
-          : this.proposicao.numero) +
-        '/' +
-        this.proposicao.ano;
 
       this.tituloEmenda =
         'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
@@ -689,11 +685,7 @@ export class EdtApp extends LitElement {
           ementa: proposicaoSelecionada.ementa!,
         };
 
-        this.proposicao = params.proposicao;
-
-        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
-          proposicaoSelecionada
-        );
+        this.proposicao = { ...proposicaoSelecionada };
 
         this.tituloEmenda =
           'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
@@ -739,16 +731,10 @@ export class EdtApp extends LitElement {
           ementa: proposicaoSelecionada.ementa!,
         };
 
-        this.proposicao = params.proposicao;
-
-        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
-          proposicaoSelecionada
-        );
+        this.proposicao = { ...proposicaoSelecionada };
 
         this.tituloEmenda =
           'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
-        params.motivo =
-          'Medida provisória de substituição de termo sem articulação';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
         //this.lexmlEmenda.style.display = 'block';
@@ -809,22 +795,6 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
-  private getNomeProposicaoFormatado(proposicao: Proposicao): any {
-    const nome =
-      proposicao.sigla +
-      ' ' +
-      (/[\d]+/.test(proposicao.numero!)
-        ? +this.removerZerosEsquerda(proposicao.numero)!
-        : this.removerZerosEsquerda(proposicao.numero)) +
-      '/' +
-      proposicao.ano;
-    return nome;
-  }
-
-  private removerZerosEsquerda(numero: any): string {
-    return numero.replace(/^0+/, '');
-  }
-
   private criarNovaEmendaArtigoOndeCouber(
     proposicaoSelecionada?: Proposicao
   ): void {
@@ -850,15 +820,11 @@ export class EdtApp extends LitElement {
           ementa: proposicaoSelecionada.ementa!,
         };
 
-        this.proposicao = params.proposicao;
-        this.proposicao.nomeProposicao = this.getNomeProposicaoFormatado(
-          proposicaoSelecionada
-        );
+        this.proposicao = { ...proposicaoSelecionada };
 
         this.tituloEmenda =
           'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
 
-        params.motivo = 'Motivo emenda onde couber';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
         //this.lexmlEmenda.style.display = 'block';
@@ -1058,46 +1024,7 @@ export class EdtApp extends LitElement {
               style="display: none"
             ></sl-input>
           </div>
-          <sl-dialog
-            label="${this.proposicao.nomeProposicao} - Ementa"
-            class="dialog-emenda"
-          >
-            ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
-            <br /><br />
-            <label>Prazo para apresentar emenda:</label>
-            ${this.getDataPrazoEmenda(this.proposicao)}
-            <sl-badge
-              title="${this.getDataPrazoEmenda(this.proposicao)}"
-              variant="neutral"
-              >${this.getTextoComplementarPrazoEmenda(
-                this.proposicao
-              )}</sl-badge
-            >
-            <br /><br />
-            <label>Tramitação:</label>
-            <sl-badge
-              variant="neutral"
-              title="${this.proposicao?.labelTramitacao}"
-              >${this.proposicao?.labelTramitacao}</sl-badge
-            >
-            <br /><br />
-            <sl-button
-              href="#"
-              variant="primary"
-              outline
-              @click=${(): void => this.abrirQuadroDeEmendas()}
-            >
-              <sl-icon slot="prefix" size="small" name="table"></sl-icon>
-              Acessar quadro de emendas
-            </sl-button>
-            <sl-button
-              slot="footer"
-              autofocus
-              onclick="document.querySelector('.dialog-emenda').hide()"
-              variant="primary"
-              >Fechar
-            </sl-button>
-          </sl-dialog>
+          ${this.renderDialogProposicao()}
         </div>
         <lexml-emenda
           modo=${this.modo}
@@ -1160,6 +1087,56 @@ export class EdtApp extends LitElement {
           })}
       >
       </edt-modal-emenda-sem-texto>
+    `;
+  }
+
+  renderDialogProposicao(): TemplateResult {
+    return html`
+      <sl-dialog
+        label="${this.proposicao.nomeProposicao} - Ementa"
+        class="dialog-emenda"
+      >
+        ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
+        <br /><br />
+        <label>Prazo para apresentar emenda:</label>
+        ${this.getDataPrazoEmenda(this.proposicao)}
+        <sl-badge
+          title="${this.getDataPrazoEmenda(this.proposicao)}"
+          variant="neutral"
+          >${this.getTextoComplementarPrazoEmenda(this.proposicao)}</sl-badge
+        >
+        <br /><br />
+        <label>Tramitação:</label>
+        <sl-badge variant="neutral" title="${this.proposicao?.labelTramitacao}"
+          >${this.proposicao?.labelTramitacao}</sl-badge
+        >
+        <br /><br />
+        <sl-button
+          href=""
+          variant="primary"
+          outline
+          @click=${(): void => this.abrirQuadroDeEmendas()}
+        >
+          <sl-icon slot="prefix" size="small" name="table"></sl-icon>
+          Acessar quadro de emendas
+        </sl-button>
+        <sl-button
+          href=""
+          variant="primary"
+          outline
+          @click=${(): void => this.abrirPaginaMP()}
+        >
+          <sl-icon slot="prefix" size="small" name="table"></sl-icon>
+          Acessar página da MP
+        </sl-button>
+        <sl-button
+          slot="footer"
+          autofocus
+          onclick="document.querySelector('.dialog-emenda').hide()"
+          variant="primary"
+          >Fechar
+        </sl-button>
+      </sl-dialog>
     `;
   }
 
