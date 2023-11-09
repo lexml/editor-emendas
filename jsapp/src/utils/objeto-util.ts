@@ -31,9 +31,6 @@ export const objetosIguais = (obj1: any, obj2: any): boolean => {
 
   // Itera sobre as chaves e compara os valores
   for (const key of keys1) {
-    if (key === 'cabecalho') {
-      console.log('achou');
-    }
     // Se o valor for um objeto, chama recursivamente a função de comparação
     if (typeof obj1[key] === 'object' && typeof obj2[key] === 'object') {
       if (!objetosIguais(obj1[key], obj2[key])) {
