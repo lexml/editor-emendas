@@ -27,6 +27,7 @@ const videos: Array<Video> = [
     'K-w-At7hv_k'
   ),
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
+  new Video('Marcas de revisão', '4zmICnwq3HQ'),
 ];
 
 @customElement('edt-modal-ajuda')
@@ -106,7 +107,7 @@ export class EdtModalAjuda extends LitElement {
           tabindex="-1"
           src="https://www.youtube.com/embed/${video.codigo}?enablejsapi=1&version=3&playerapiid=ytplayer"
           frameborder="0"
-          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         ></iframe>
         <button class="fullscreen-btn" data-video-index="${index}">
           Ver em tela cheia
