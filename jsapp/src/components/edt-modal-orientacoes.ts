@@ -133,7 +133,7 @@ export class EdtModalOrientacoes extends LitElement {
     if (noShowAgain && noShowAgainSwitch) {
       noShowAgainSwitch.checked = true;
     }
-    this.slDialog.step = 1;
+    this.step = 1;
     this.slDialog.show();
   }
 
@@ -184,7 +184,7 @@ export class EdtModalOrientacoes extends LitElement {
 
                 <ol>
                   <li>
-                    <strong>Cabeçalho:</strong> Aqui você encontrará o Número e
+                    <strong>Cabeçalho:</strong> Aqui você encontrará o número e
                     ano da MPV, o sinalizador que indica se a emenda não foi
                     salva e o nome do usuário.
                   </li>
@@ -194,13 +194,12 @@ export class EdtModalOrientacoes extends LitElement {
                     maior parte de suas edições.
                   </li>
                   <li>
-                    <strong>Informações da Emenda:</strong> Um painel com
-                    comandos da emenda, dicas e atalhos para facilitar sua
-                    experiência.
+                    <strong>Emenda:</strong> Um painel com comandos da emenda,
+                    dicas e atalhos para facilitar sua experiência.
                   </li>
                   <li>
-                    <strong>Rodapé:</strong> Mantenha-se informado com a versão
-                    atual do aplicativo.
+                    <strong>Rodapé:</strong> Mantenha-se informado sobre a
+                    versão atual do aplicativo.
                   </li>
                 </ol>
               </div>
@@ -220,14 +219,14 @@ export class EdtModalOrientacoes extends LitElement {
                   O <strong>Cabeçalho</strong> serve como sua primeira
                   orientação no editor. Nele, você encontrará:
                 </p>
-                <ul>
+                <ol>
                   <li>
                     <strong>Número e ano da MPV:</strong> Uma identificação
                     rápida da Medida Provisória que você está editando.
                   </li>
                   <li>
                     <strong>Sinalizador de arquivo não salvo:</strong>
-                    Indica quando a emenda tem alterações que não foram salvas.
+                    Aparece quando a emenda tem alterações que não foram salvas.
                     <br />
                     <img
                       class="image"
@@ -237,10 +236,18 @@ export class EdtModalOrientacoes extends LitElement {
                     />
                   </li>
                   <li>
-                    <strong>Menu e Usuário:</strong> Acessos rápidos para opções
-                    adicionais e informações do usuário.
+                    <strong>Usuário:</strong> Botão para informar usuário e
+                    sigla.
                   </li>
-                </ul>
+                  <li>
+                    <strong>Menu:</strong> Opções para acessar ferramentas
+                    adicionais de edição e visualização.
+                  </li>
+                  <li>
+                    <strong>Detalhes da MPV:</strong> Número/ano, prazo de
+                    emendamento, ementa e acesso aos detalhes da MPV.
+                  </li>
+                </ol>
               </div>
               <div class="col" id="col2">
                 <img
@@ -255,8 +262,8 @@ export class EdtModalOrientacoes extends LitElement {
             <div class="row">
               <div class="col" id="col1">
                 <p>
-                  Ná <strong>área de edição</strong>, você encontrará abas
-                  distintas para diferentes propósitos:
+                  No <strong>editor</strong>, você encontrará abas distintas
+                  para diferentes propósitos:
                 </p>
                 <ol>
                   <li>
@@ -272,8 +279,8 @@ export class EdtModalOrientacoes extends LitElement {
                     Informações adicionais da emenda.
                   </li>
                   <li>
-                    <strong>Avisos:</strong> Área com alertas de erros nas
-                    alterações realizadas.
+                    <strong>Avisos:</strong> Área com alertas de erros, omissões
+                    ou sugestões referentes à emenda em elaboração.
                   </li>
                   <li>
                     <strong>Menu de contexto:</strong> Ações que podem ser
@@ -281,7 +288,7 @@ export class EdtModalOrientacoes extends LitElement {
                   </li>
                   <li>
                     <strong>Marcas de revisão:</strong> Opção para
-                    ativar/desativar o modo de revisão. (Só aparecerá quando
+                    ativar/desativar o modo de revisão. (só aparecerá quando
                     existirem revisões na emenda)
                   </li>
                   <li>
@@ -303,17 +310,17 @@ export class EdtModalOrientacoes extends LitElement {
             <div class="row">
               <div class="col" id="col1">
                 <p>
-                  À direita, o painel de
-                  <strong>Informações da Emenda</strong> lhe oferece detalhes e
-                  funcionalidades adicionais:
+                  À direita, a área de informações da
+                  <strong>Emenda</strong> oferece detalhes e funcionalidades
+                  adicionais:
                 </p>
                 <ul>
                   <li>
-                    <strong>Comando da emenda:</strong> Indicações precisas
-                    sobre ações sugeridas para a emenda.
+                    <strong>Comando da emenda:</strong> Conteúdo da emenda em
+                    elaboração, com avisos e sugestões de melhorias.
                   </li>
                   <li>
-                    <strong>Dicas:</strong> Sugestões do que você pode fazer com
+                    <strong>Dicas:</strong> Sugestões de ações disponíveis para
                     o dispositivo selecionado.
                   </li>
                   <li>
