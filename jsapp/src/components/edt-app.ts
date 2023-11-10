@@ -598,6 +598,10 @@ export class EdtApp extends LitElement {
       this.modalVisualizarPdf.emenda = this.lexmlEmenda.getEmenda();
       this.modalVisualizarPdf.show();
       this.toggleCarregando();
+    } else if (ev.detail.itemMenu === 'padrao') {
+      this.checkDirtyAndExecuteNextFunction(() =>
+        this.criarNovaEmendaPadrao(this.proposicao)
+      );
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
     } else if (ev.detail.itemMenu === 'substituicao-termo') {
@@ -1160,6 +1164,7 @@ export class EdtApp extends LitElement {
       ></edt-cabecalho>
       <edt-menu
         .proposicao=${this.proposicao}
+        .modo=${this.modo}
         @item-selecionado=${this.onItemMenuSelecionado}
       ></edt-menu>
       <main class="${this.showEditor ? 'no-scroll' : ''}">

@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { customElement, query, state } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { supported } from 'browser-fs-access';
 import { LitElement, TemplateResult, html } from 'lit';
 import { menuStyles } from './app.css';
@@ -9,6 +9,9 @@ export class EdtMenu extends LitElement {
   createRenderRoot(): LitElement {
     return this;
   }
+
+  @property({ type: String })
+  modo = '';
 
   @state()
   private proposicao: any = {};
@@ -96,17 +99,38 @@ export class EdtMenu extends LitElement {
               </sl-button>
               <sl-menu>
                 <sl-menu-item
-                  @click=${(): void => this.emitirEvento('onde-couber')}
+                  type="checkbox"
+                  ?checked=${this.modo === 'emenda'}
+                  ?disabled=${!this.proposicao.idSdlegDocumentoItemDigital}
+                  @click=${(): any =>
+                    this.modo !== 'emenda' && this.emitirEvento('padrao')}
+                >
+                  Padrão
+                </sl-menu-item>
+                <sl-menu-item
+                  type="checkbox"
+                  ?checked=${this.modo === 'emendaArtigoOndeCouber'}
+                  @click=${(): any =>
+                    this.modo !== 'emendaArtigoOndeCouber' &&
+                    this.emitirEvento('onde-couber')}
                 >
                   Onde couber
                 </sl-menu-item>
                 <sl-menu-item
-                  @click=${(): void => this.emitirEvento('substituicao-termo')}
+                  type="checkbox"
+                  ?checked=${this.modo === 'emendaSubstituicaoTermo'}
+                  @click=${(): any =>
+                    this.modo !== 'emendaSubstituicaoTermo' &&
+                    this.emitirEvento('substituicao-termo')}
                 >
                   Substituição de termo
                 </sl-menu-item>
                 <sl-menu-item
-                  @click=${(): void => this.emitirEvento('texto-livre')}
+                  type="checkbox"
+                  ?checked=${this.modo === 'emendaTextoLivre'}
+                  @click=${(): any =>
+                    this.modo !== 'emendaTextoLivre' &&
+                    this.emitirEvento('texto-livre')}
                 >
                   Texto Livre
                 </sl-menu-item>
