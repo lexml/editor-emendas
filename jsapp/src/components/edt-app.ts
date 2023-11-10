@@ -1128,7 +1128,11 @@ export class EdtApp extends LitElement {
           outline
           @click=${(): void => this.abrirPaginaMP()}
         >
-          <sl-icon slot="prefix" size="small" name="table"></sl-icon>
+          <sl-icon
+            slot="prefix"
+            size="small"
+            name="box-arrow-up-right"
+          ></sl-icon>
           Acessar página da MP
         </sl-button>
         <sl-button
