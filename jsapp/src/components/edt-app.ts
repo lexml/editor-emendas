@@ -624,6 +624,8 @@ export class EdtApp extends LitElement {
       this.abrirQuadroDeEmendas();
     } else if (ev.detail.itemMenu === 'sufixos') {
       this.abreModalSufixos();
+    } else if (ev.detail.itemMenu === 'paginaMP') {
+      this.abrirPaginaMP();
     }
     // else if (ev.detail.itemMenu === 'emendaSemTexto') {
     //   this.showModalEmendaSemTexto();
