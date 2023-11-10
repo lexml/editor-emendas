@@ -114,7 +114,7 @@ export class EdtMenu extends LitElement {
             </sl-dropdown>
             <sl-dropdown>
               <sl-button
-                title="Outros tipos de emenda"
+                title="Acessar recursos externos"
                 size="small"
                 slot="trigger"
                 caret
