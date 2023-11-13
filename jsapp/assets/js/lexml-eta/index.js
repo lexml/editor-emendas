@@ -34072,11 +34072,10 @@ const validaTextoDispositivo = (dispositivo) => {
         isDispositivoDeArtigo(dispositivo) &&
         !isParagrafo(dispositivo) &&
         !isOmissis(dispositivo) &&
-        dispositivo.pai.filhos.filter(d => isOmissis(d)).length === 0 &&
         !hasFilhoGenerico(dispositivo.pai) &&
         (!hasFilhos(dispositivo) || isTodosFilhosTipoEnumeracaoSuprimidos(dispositivo)) &&
         !hasIndicativoFinalSequencia(dispositivo) &&
-        !isUltimaAlteracao(dispositivo) &&
+        //isUltimaAlteracao(dispositivo) &&
         isUltimaEnumeracao(dispositivo) &&
         !isSeguidoDeOmissis(dispositivo)) {
         addMensagem(mensagens, TipoMensagem.ERROR, `Último dispositivo de uma sequência deveria terminar com ${converteIndicadorParaTexto(dispositivo.INDICADOR_FIM_SEQUENCIA)}.`);
@@ -39328,6 +39327,12 @@ const aplicaAlteracoesEmenda = (state, action) => {
     });
     if (retorno.emRevisao) {
         retorno.ui.events.push({ stateType: StateType.RevisaoAtivada });
+    }
+    if (state.articulacao) {
+        const d = getDispositivoAndFilhosAsLista(state.articulacao).find(d => !isArticulacao(d) && (isAdicionado(d) || isSuprimido(d) || isModificado(d)));
+        if (d) {
+            retorno.ui.events.push({ stateType: StateType.ElementoMarcado, elementos: [createElemento(d)] });
+        }
     }
     return retorno;
 };
@@ -47702,7 +47707,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                         this.montarMenuContexto(event);
                     }
                     this.atualizarMensagemQuill(event);
-                    this.marcarLinhaCursorCorrente();
                     break;
                 case StateType.ElementoMarcado:
                     setTimeout(() => this.marcarLinha(event), 100);
@@ -47749,16 +47753,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             // TODO: Implementar lógica do atributo eventosFiltrados, sem repetir os itens
             this.eventosOnChange.push(...eventosFiltrados);
             this.agendarEmissaoEventoOnChange('stateEvents', eventosFiltrados);
-        }
-    }
-    /**
-     * Força a seleção do dispositivo que está com o cursor
-     */
-    marcarLinhaCursorCorrente() {
-        const range = this.quill.getSelection();
-        if (range) {
-            const linhaCursor = this.quill.getLine(range.index - 1)[0].linha;
-            this.quill.atualizarLinhaCorrente(linhaCursor);
         }
     }
     processaRevisoesAceitas(events, event) {
@@ -52006,8 +52000,8 @@ const toolbarOptions = [
         {
             table: [
                 // 'insert',
-                // 'change-width-col-modal',
-                // 'change-width-table-modal',
+                'change-width-col-modal',
+                'change-width-table-modal',
                 'append-row-above',
                 'append-row-below',
                 'append-col-before',
@@ -52567,18 +52561,18 @@ class Emenda {
         // Metadados específicos de sistemas
         this.metadados = {};
         this.proposicao = new RefProposicaoEmendada();
-        this.colegiadoApreciador = new ColegiadoApreciador();
         this.epigrafe = new Epigrafe();
         this.componentes = [new ComponenteEmendado()];
-        this.comandoEmenda = new ComandoEmenda();
         this.comandoEmendaTextoLivre = new ComandoEmendaTextoLivre();
+        this.comandoEmenda = new ComandoEmenda();
+        this.anexos = [];
         this.justificativa = '';
         this.local = '';
         this.data = new Date().toISOString().replace(/T.*/, ''); // formato “YYYY-MM-DD”
         this.autoria = new Autoria();
         this.opcoesImpressao = new OpcoesImpressao();
-        this.anexos = [];
         this.revisoes = [];
+        this.colegiadoApreciador = new ColegiadoApreciador();
     }
 }
 var ModoEdicaoEmenda;
@@ -54601,14 +54595,15 @@ class DispositivosEmendaBuilder {
                     const caput = d.caput;
                     dm.tipo = this.getTipoDispositivoParaEmenda(caput);
                     dm.id = caput.id;
+                    dm.rotulo = d.rotulo;
                     dm.texto = this.trataTexto(caput.texto);
                 }
                 else {
                     dm.tipo = this.getTipoDispositivoParaEmenda(d);
                     dm.id = d.id;
+                    dm.rotulo = d.rotulo;
                     dm.texto = this.trataTexto(d.texto);
                 }
-                dm.rotulo = d.rotulo;
                 if (d.isDispositivoAlteracao) {
                     this.preencheAtributosAlteracao(d, dm);
                 }
@@ -58988,10 +58983,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             emenda.anexos = this._lexmlEmendaTextoRico.anexos;
         }
         else {
+            emenda.comandoEmendaTextoLivre.motivo = undefined;
+            emenda.comandoEmendaTextoLivre.texto = '  ';
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
-            emenda.comandoEmendaTextoLivre.motivo = undefined;
-            emenda.comandoEmendaTextoLivre.texto = undefined;
         }
         emenda.justificativa = this._lexmlJustificativa.texto;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
@@ -60219,7 +60214,7 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
 
       <sl-radio-group label="Opções de impressão" fieldset class="lexml-opcoes-impressao">
         <div>
-          <input type="checkbox" id="chk-imprimir-brasao" ?checked=${(_a = this._opcoesImpressao) === null || _a === void 0 ? void 0 : _a.imprimirBrasao} @input=${(ev) => this._atualizarImprimirBrasao(ev)} />
+          <sl-checkbox id="chk-imprimir-brasao" ?checked=${(_a = this._opcoesImpressao) === null || _a === void 0 ? void 0 : _a.imprimirBrasao} @input=${(ev) => this._atualizarImprimirBrasao(ev)}></sl-checkbox>
           <label for="chk-imprimir-brasao">Imprimir brasão</label>
         </div>
         <sl-input
@@ -60238,12 +60233,11 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
           </sl-select>
         </div>
         <div>
-          <input
-            type="checkbox"
+          <sl-checkbox
             id="chk-reduzir-espaco"
             ?checked=${(_d = this._opcoesImpressao) === null || _d === void 0 ? void 0 : _d.reduzirEspacoEntreLinhas}
-            @input=${(ev) => this._atualizarReduzirEspacoEntreLinhas(ev)}
-          />
+            @click=${(ev) => this._atualizarReduzirEspacoEntreLinhas(ev)}
+          ></sl-checkbox>
           <label for="chk-reduzir-espaco">Reduzir espaço entre linhas</label>
         </div>
       </sl-radio-group>
@@ -60251,16 +60245,20 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
     }
     _atualizarTextoCabecalho(ev) {
         this._opcoesImpressao.textoCabecalho = ev.target.value;
+        this.requestUpdate();
     }
     _atualizarImprimirBrasao(ev) {
         this._opcoesImpressao.imprimirBrasao = ev.target.checked;
+        this.requestUpdate();
     }
     _atualizarTamanhoFonte(ev) {
         const valorFonte = parseInt(ev.target.value);
         this._opcoesImpressao.tamanhoFonte = valorFonte;
+        this.requestUpdate();
     }
     _atualizarReduzirEspacoEntreLinhas(ev) {
         this._opcoesImpressao.reduzirEspacoEntreLinhas = ev.target.checked;
+        this.requestUpdate();
     }
     agendarEmissaoEventoOnChange(origemEvento) {
         clearInterval(this.timerEmitirEventoOnChange);
@@ -60285,19 +60283,10 @@ OpcoesImpressaoComponent.styles = r$2 `
     }
   `;
 __decorate([
-    i$1('#chk-imprimir-brasao')
-], OpcoesImpressaoComponent.prototype, "imprimirBrasao", void 0);
-__decorate([
-    i$1('#input-cabecalho')
-], OpcoesImpressaoComponent.prototype, "textoCabecalho", void 0);
-__decorate([
-    i$1('#chk-reduzir-espaco')
-], OpcoesImpressaoComponent.prototype, "reduzirEspacoEntreLinhas", void 0);
-__decorate([
     i$1('#select-tamanho-fonte')
 ], OpcoesImpressaoComponent.prototype, "tamanhoFonte", void 0);
 __decorate([
-    e$3({ type: Object })
+    e$3({ type: Object, state: true })
 ], OpcoesImpressaoComponent.prototype, "opcoesImpressao", null);
 OpcoesImpressaoComponent = __decorate([
     n$1('lexml-opcoes-impressao')
