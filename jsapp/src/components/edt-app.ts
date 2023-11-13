@@ -333,12 +333,6 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private showModalSufixos(): void {
-    if (this.modalSufixos !== null) {
-      this.modalSufixos.show();
-    }
-  }
-
   private showModalEmendaSemTexto(proposicaoSelecionada: Proposicao): void {
     if (this.modalEmendaSemTexto !== null) {
       this.modalEmendaSemTexto.show(proposicaoSelecionada);
@@ -885,7 +879,7 @@ export class EdtApp extends LitElement {
           modo=${this.modo}
           @onchange=${this.onChange}
           @onrevisao=${this.onRevisao}
-          @onmodalsufixos=${(): void => this.showModalSufixos()}
+          @onexibirsufixos=${(): void => this.abreModalSufixos()}
         ></lexml-emenda>
       </div>
 
