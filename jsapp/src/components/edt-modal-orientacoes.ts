@@ -16,8 +16,8 @@ export class EdtModalOrientacoes extends LitElement {
   private stepsData = [
     { step: 1, title: 'Elementos do Editor de Emendas' },
     { step: 2, title: 'Cabeçalho' },
-    { step: 3, title: 'Área de edição' },
-    { step: 4, title: 'Painel de informações' },
+    { step: 3, title: 'Editor' },
+    { step: 4, title: 'Emenda' },
     { step: 5, title: 'Rodapé' },
     { step: 6, title: 'Funcionalidades não suportadas' },
     { step: 7, title: 'Outros tipos de emenda' },
