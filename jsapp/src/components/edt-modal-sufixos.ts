@@ -28,9 +28,7 @@ export class EdtModalSufixos extends LitElement {
 
   public show(): void {
     const noShowAgain = localStorage.getItem('naoMostrarExplicacaoSufixo');
-    const noShowAgainSwitch = this.shadowRoot?.querySelector(
-      '#noShowAgain'
-    ) as any;
+    const noShowAgainSwitch = this.shadowRoot?.querySelector('#noShowAgain') as any;
     if (noShowAgain && noShowAgainSwitch) {
       noShowAgainSwitch.checked = true;
     }
@@ -53,28 +51,19 @@ export class EdtModalSufixos extends LitElement {
 
         <div>
           <p>
-            Os sufixos, como -0, -1, -2 e assim por diante, são usados para
-            orientar o posicionamento na redação final. Eles não indicam uma
-            numeração definitiva.
+            Os sufixos, como -0, -1, -2 e assim por diante, são usados para orientar o posicionamento na redação final. Eles não indicam uma numeração
+            definitiva.
           </p>
           <p>
-            Os dispositivos propostos e adjacentes deverão ser devidamente
-            renumerados no momento da consolidação das emendas ao texto da
-            proposição pela Redação Final.
+            Os dispositivos propostos e adjacentes deverão ser devidamente renumerados no momento da consolidação das emendas ao texto da proposição
+            pela Redação Final.
           </p>
         </div>
 
         <div slot="footer" class="footer-container">
-          <sl-switch id="noShowAgain" @sl-change=${this.handleSwitchChange}>
-            Não mostrar novamente
-          </sl-switch>
+          <sl-switch id="noShowAgain" @sl-change=${this.handleSwitchChange}> Não mostrar novamente </sl-switch>
 
-          <sl-button
-            variant="default"
-            @click=${(): void => this.slDialog.hide()}
-          >
-            Fechar
-          </sl-button>
+          <sl-button variant="default" @click=${(): void => this.slDialog.hide()}> Fechar </sl-button>
         </div>
       </sl-dialog>
     `;

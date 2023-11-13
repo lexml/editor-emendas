@@ -1,6 +1,4 @@
-const isNullOrUndefined = (obj: any): boolean => {
-  return obj === undefined || obj === null;
-};
+const isNullOrUndefined = (obj: any): boolean => obj === undefined || obj === null;
 
 export const objetosIguais = (obj1: any, obj2: any): boolean => {
   if (isNullOrUndefined(obj1) && isNullOrUndefined(obj2)) {
@@ -31,10 +29,8 @@ export const objetosIguais = (obj1: any, obj2: any): boolean => {
       if (!objetosIguais(obj1[key], obj2[key])) {
         return false;
       }
-    } else {
-      if (obj1[key] !== obj2[key]) {
-        return false;
-      }
+    } else if (obj1[key] !== obj2[key]) {
+      return false;
     }
   }
 

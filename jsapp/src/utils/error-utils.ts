@@ -34,15 +34,8 @@ class SimpleError {
 
 export const errorToBeIgnored = new SimpleError('IGNORAR', undefined, true);
 
-export function errorInPromise(
-  msg: string,
-  err?: any,
-  alertFunction?: (msg: string) => void
-): SimpleError {
-  const simpleErr =
-    err instanceof SimpleError
-      ? (err as SimpleError)
-      : new SimpleError(msg, err);
+export function errorInPromise(msg: string, err?: any, alertFunction?: (msg: string) => void): SimpleError {
+  const simpleErr = err instanceof SimpleError ? (err as SimpleError) : new SimpleError(msg, err);
 
   if (alertFunction && !simpleErr.ignore) {
     console.log(simpleErr.msg);
@@ -55,35 +48,21 @@ export function errorInPromise(
   return simpleErr;
 }
 
-export async function getHttpError(
-  response: Response,
-  defaultMessage?: string,
-  alertFunction?: (msg: string) => void
-): Promise<SimpleError> {
+export async function getHttpError(response: Response, defaultMessage?: string, alertFunction?: (msg: string) => void): Promise<SimpleError> {
   return response.text().then(text => {
     if (response.status === 400) {
       return Promise.resolve(errorInPromise(text, text, alertFunction));
-    } else if (response.status === 503) {
-      return Promise.resolve(
-        errorInPromise(
-          'Ocorreu uma falha na conexão com o servidor.',
-          text,
-          alertFunction
-        )
-      );
     }
-    return Promise.resolve(
-      errorInPromise(defaultMessage || text, text, alertFunction)
-    );
+    if (response.status === 503) {
+      return Promise.resolve(errorInPromise('Ocorreu uma falha na conexão com o servidor.', text, alertFunction));
+    }
+    return Promise.resolve(errorInPromise(defaultMessage || text, text, alertFunction));
   });
 }
 
 export function isUserAbortException(err: any): boolean {
   if (err instanceof DOMException) {
-    return (
-      /cancel|abort|showSaveFilePicker|showOpenFilePicker/.test(err.message) ||
-      err.name === 'NotAllowedError'
-    );
+    return /cancel|abort|showSaveFilePicker|showOpenFilePicker/.test(err.message) || err.name === 'NotAllowedError';
   }
   return false;
 }

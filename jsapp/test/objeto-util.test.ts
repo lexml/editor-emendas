@@ -1,11 +1,6 @@
 import { expect } from '@open-wc/testing';
 import { objetosIguais } from '../src/utils/objeto-util.js';
-import {
-  EMENDA_BACKEND,
-  EMENDA_BACKEND2,
-  EMENDA_BACKEND3,
-  EMENDA_PDF,
-} from './emenda-objeto.js';
+import { EMENDA_BACKEND, EMENDA_BACKEND2, EMENDA_BACKEND3, EMENDA_PDF } from './emenda-objeto.js';
 
 describe('Testando objetosIguais', () => {
   it('Deve retornar true para objetos iguais', () => {

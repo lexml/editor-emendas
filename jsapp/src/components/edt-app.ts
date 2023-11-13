@@ -1,22 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
 import { fileOpen, fileSave, FileWithHandle } from 'browser-fs-access';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 
 import { Proposicao } from '../model/proposicao';
-import {
-  errorInPromise,
-  errorToBeIgnored,
-  getHttpError,
-  isUserAbortException,
-} from '../utils/error-utils';
-import { buildContent, getUrn } from './../model/lexml/jsonixUtil';
-import {
-  getProposicaoJsonix,
-  pesquisarProposicoes,
-  sendEmailMotivoEmendaTextoLivre,
-} from './../servicos/proposicoes';
+import { errorInPromise, errorToBeIgnored, getHttpError, isUserAbortException } from '../utils/error-utils';
+import { buildContent, getUrn } from '../model/lexml/jsonixUtil';
+import { getProposicaoJsonix, pesquisarProposicoes, sendEmailMotivoEmendaTextoLivre } from '../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
@@ -27,6 +17,7 @@ import { objetosIguais } from '../utils/objeto-util';
 @customElement('edt-app')
 export class EdtApp extends LitElement {
   private tituloEmenda = '';
+
   private labelTipoEmenda = '';
 
   @state()
@@ -120,7 +111,7 @@ export class EdtApp extends LitElement {
   }
 
   private limparParametros(): void {
-    const url = location.protocol + '//' + location.host + location.pathname;
+    const url = `${location.protocol}//${location.host}${location.pathname}`;
     window.history.replaceState({}, document.title, url);
   }
 
@@ -130,11 +121,7 @@ export class EdtApp extends LitElement {
     const ano = params.get('ano');
 
     if (sigla && numero && ano) {
-      const proposicao = await this.buscarProposicao(
-        sigla,
-        numero,
-        Number(ano)
-      );
+      const proposicao = await this.buscarProposicao(sigla, numero, Number(ano));
       if (proposicao) {
         this.proposicao = proposicao;
         this.criarNovaEmendaPadrao(proposicao);
@@ -143,11 +130,7 @@ export class EdtApp extends LitElement {
     this.limparParametros();
   }
 
-  private async buscarProposicao(
-    sigla: string,
-    numero: string,
-    ano: number
-  ): Promise<Proposicao | undefined> {
+  private async buscarProposicao(sigla: string, numero: string, ano: number): Promise<Proposicao | undefined> {
     const proposicoes = await pesquisarProposicoes(sigla, numero, ano);
     return proposicoes?.length ? proposicoes[0] : undefined;
   }
@@ -158,9 +141,7 @@ export class EdtApp extends LitElement {
 
   public toggleCarregando(mostrarCarregando?: boolean): void {
     if (mostrarCarregando === undefined) {
-      mostrarCarregando = document
-        .querySelector('.overlay-carregando')!
-        .classList.contains('hidden');
+      mostrarCarregando = document.querySelector('.overlay-carregando')!.classList.contains('hidden');
     }
     if (mostrarCarregando) {
       document.querySelector('.overlay-carregando')!.classList.remove('hidden');
@@ -211,9 +192,7 @@ export class EdtApp extends LitElement {
         if (isUserAbortException(err)) {
           return Promise.reject(errorToBeIgnored);
         }
-        return Promise.reject(
-          errorInPromise('Ocorreu uma falha na abertura do arquivo.', err)
-        );
+        return Promise.reject(errorInPromise('Ocorreu uma falha na abertura do arquivo.', err));
       })
       .then((fileData: FileWithHandle) => {
         tempFileData = fileData;
@@ -228,43 +207,24 @@ export class EdtApp extends LitElement {
           },
         });
       })
-      .catch(err => {
-        return Promise.reject(
-          errorInPromise(
-            'Falha na conexão com servidor. Por favor, tente mais tarde.',
-            err
-          )
-        );
-      })
+      .catch(err => Promise.reject(errorInPromise('Falha na conexão com servidor. Por favor, tente mais tarde.', err)))
       .then(response => {
         if (response.ok) {
           return response.json();
         }
-        return getHttpError(
-          response,
-          'Ocorreu um erro inesperado na abertura da emenda.'
-        ).then(err => Promise.reject(err));
+        return getHttpError(response, 'Ocorreu um erro inesperado na abertura da emenda.').then(err => Promise.reject(err));
       })
       .then(emenda => {
         this.modo = emenda.modoEdicao;
 
-        if (
-          this.modo !== 'emendaArtigoOndeCouber' &&
-          this.modo !== 'emendaTextoLivre' &&
-          this.modo !== 'emendaSubstituicaoTermo'
-        ) {
+        if (this.modo !== 'emendaArtigoOndeCouber' && this.modo !== 'emendaTextoLivre' && this.modo !== 'emendaSubstituicaoTermo') {
           return this.loadTextoProposicao(emenda.proposicao).then(() => emenda);
-        } else {
-          return this.buildProposicaoMPSemArticulacao(emenda.proposicao).then(
-            () => emenda
-          );
         }
+        return this.buildProposicaoMPSemArticulacao(emenda.proposicao).then(() => emenda);
       })
       .then(async emenda => {
         const { sigla, numero, ano } = emenda.proposicao;
-        this.proposicao =
-          (await this.buscarProposicao(sigla, numero, Number(ano))) ??
-          this.proposicao;
+        this.proposicao = (await this.buscarProposicao(sigla, numero, Number(ano))) ?? this.proposicao;
         this.labelTipoEmenda = this.getTipoEmenda(this.modo);
         this.proposicao.ementa = emenda.proposicao.ementa;
         this.lexmlEmenda.inicializarEdicao({
@@ -275,38 +235,26 @@ export class EdtApp extends LitElement {
         this.updateStateElements(tempFileData.name);
         this.fileHandle = tempFileData.handle;
         this.tituloEmenda = this.removeExtensoesPadrao(tempFileData.name);
-        //this.emendaComAlteracoesSalvas = undefined;
+        // this.emendaComAlteracoesSalvas = undefined;
         this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
         this.isDirty = false;
         this.isOpenFile = true;
       })
       .catch(err => {
-        errorInPromise(
-          'Ocorreu um erro inesperado na abertura da emenda.',
-          err,
-          msg => {
-            this.emitirAlerta(msg, 'danger');
-          }
-        );
+        errorInPromise('Ocorreu um erro inesperado na abertura da emenda.', err, msg => {
+          this.emitirAlerta(msg, 'danger');
+        });
       })
       .finally(() => {
         this.toggleCarregando(false);
       });
   }
 
-  private async buildProposicaoMPSemArticulacao(
-    proposicao: any
-  ): Promise<void> {
-    this.proposicao =
-      (await this.buscarProposicao(
-        proposicao.sigla,
-        proposicao.numero,
-        Number(proposicao.ano)
-      )) ?? this.proposicao;
+  private async buildProposicaoMPSemArticulacao(proposicao: any): Promise<void> {
+    this.proposicao = (await this.buscarProposicao(proposicao.sigla, proposicao.numero, Number(proposicao.ano))) ?? this.proposicao;
 
-    this.tituloEmenda =
-      'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
-    //this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
+    this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
+    // this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
     this.showEditor = true;
     this.atualizarTituloEditor();
   }
@@ -328,10 +276,7 @@ export class EdtApp extends LitElement {
           if (response.ok) {
             return response.blob();
           }
-          return getHttpError(
-            response,
-            'Ocorreu um erro ao salvar o arquivo.'
-          ).then(err => Promise.reject(err));
+          return getHttpError(response, 'Ocorreu um erro ao salvar o arquivo.').then(err => Promise.reject(err));
         })
         .then(content => {
           const options = {
@@ -343,9 +288,8 @@ export class EdtApp extends LitElement {
 
           if (salvarComo) {
             return fileSave(content, options, null, true);
-          } else {
-            return fileSave(content, options, this.fileHandle, true);
           }
+          return fileSave(content, options, this.fileHandle, true);
         })
         .then(fileHandle => {
           this.fileHandle = fileHandle;
@@ -407,39 +351,22 @@ export class EdtApp extends LitElement {
 
   private abrirQuadroDeEmendas(): void {
     if (this.proposicao) {
-      window.open(
-        'quadro-emendas.html?sigla=' +
-          this.proposicao.sigla +
-          '&numero=' +
-          this.proposicao.numero +
-          '&ano=' +
-          this.proposicao.ano +
-          '&exibir=quadro'
-      );
+      window.open(`quadro-emendas.html?sigla=${this.proposicao.sigla}&numero=${this.proposicao.numero}&ano=${this.proposicao.ano}&exibir=quadro`);
     }
   }
 
   private abrirPaginaMP(): void {
     if (this.proposicao) {
-      window.open(
-        `https://www.congressonacional.leg.br/materias/medidas-provisorias/-/mpv/${this
-          .proposicao.codMateriaMigradaMATE!}`
-      );
+      window.open(`https://www.congressonacional.leg.br/materias/medidas-provisorias/-/mpv/${this.proposicao.codMateriaMigradaMATE!}`);
     }
   }
 
   // Emite notificação de erro como toast
-  public emitirAlerta = function (
-    message: string,
-    variant: string,
-    icon = 'info-circle',
-    duration = 3000,
-    closable = true
-  ): Promise<void> {
+  public emitirAlerta = function (message: string, variant: string, icon = 'info-circle', duration = 3000, closable = true): Promise<void> {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
       closable,
-      duration: duration,
+      duration,
       innerHTML: `
         <sl-icon name="${icon}" style="font-size:28px" slot="icon"></sl-icon>
         ${message}
@@ -458,34 +385,23 @@ export class EdtApp extends LitElement {
     this.toggleCarregando();
     try {
       const { sigla, numero, ano } = proposicao;
-      this.jsonixProposicao = await getProposicaoJsonix(
-        sigla!,
-        numero!,
-        Number(ano)
-      );
+      this.jsonixProposicao = await getProposicaoJsonix(sigla!, numero!, Number(ano));
       const urn = getUrn(this.jsonixProposicao);
       this.proposicao = {
         ...this.proposicao,
         urn,
-        sigla, //sigla: getSigla(urn),
-        numero, //numero: getNumero(urn),
-        ano, //ano: getAno(urn),
-        ementa: buildContent(
-          this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial
-            ?.ementa.content
-        ),
+        sigla, // sigla: getSigla(urn),
+        numero, // numero: getNumero(urn),
+        ano, // ano: getAno(urn),
+        ementa: buildContent(this.jsonixProposicao?.value?.projetoNorma?.norma?.parteInicial?.ementa.content),
       };
 
-      this.tituloEmenda =
-        'Emenda ' + (this.proposicao.nomeProposicao ?? '').replace('/', ' ');
+      this.tituloEmenda = `Emenda ${(this.proposicao.nomeProposicao ?? '').replace('/', ' ')}`;
       this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
       this.showEditor = true;
     } catch (err) {
       console.log(err);
-      this.emitirAlerta(
-        'Não se trata de um PDF gerado pelo Editor de Emendas',
-        'primary'
-      );
+      this.emitirAlerta('Não se trata de um PDF gerado pelo Editor de Emendas', 'primary');
     } finally {
       this.atualizarTituloEditor();
       this.toggleCarregando();
@@ -500,19 +416,17 @@ export class EdtApp extends LitElement {
   private atualizarTituloEditor(tituloEmenda = ''): void {
     if (tituloEmenda) {
       this.tituloEmenda = this.removeExtensoesPadrao(tituloEmenda);
-      document.title = this.tituloEmenda + ' - Editor de Emendas';
+      document.title = `${this.tituloEmenda} - Editor de Emendas`;
     }
 
     const titulo = document.querySelector('#titulo');
 
     if (titulo) {
-      titulo.innerHTML =
-        'Editor de Emendas - <span>' +
-        this.tituloEmenda +
-        '</span>' +
-        (this.isDirty
+      titulo.innerHTML = `Editor de Emendas - <span>${this.tituloEmenda}</span>${
+        this.isDirty
           ? ' <span class="emenda-status emenda-status--dirty" aria-label="As alterações não foram salvas" title="As alterações não foram salvas"></span>'
-          : '');
+          : ''
+      }`;
     }
   }
 
@@ -555,10 +469,7 @@ export class EdtApp extends LitElement {
   }
 
   private emendaSemTexto(): boolean {
-    return (
-      this.proposicao.idSdlegDocumentoItemDigital === undefined ||
-      this.proposicao.idSdlegDocumentoItemDigital === null
-    );
+    return this.proposicao.idSdlegDocumentoItemDigital === undefined || this.proposicao.idSdlegDocumentoItemDigital === null;
   }
 
   private novaEmendaTextoLivre(): void {
@@ -571,6 +482,7 @@ export class EdtApp extends LitElement {
   }
 
   private nextFunctionAfterConfirm?: any;
+
   private checkDirtyAndExecuteNextFunction(nextFunction: any): void {
     if (this.isDirty) {
       this.modalConfirmacaoSalvar.show();
@@ -599,15 +511,11 @@ export class EdtApp extends LitElement {
       this.modalVisualizarPdf.show();
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'padrao') {
-      this.checkDirtyAndExecuteNextFunction(() =>
-        this.criarNovaEmendaPadrao(this.proposicao)
-      );
+      this.checkDirtyAndExecuteNextFunction(() => this.criarNovaEmendaPadrao(this.proposicao));
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
     } else if (ev.detail.itemMenu === 'substituicao-termo') {
-      this.checkDirtyAndExecuteNextFunction(() =>
-        this.novaEmendaSubstituicaoTermo()
-      );
+      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaSubstituicaoTermo());
     } else if (ev.detail.itemMenu === 'texto-livre') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaTextoLivre());
     } else if (ev.detail.itemMenu === 'download') {
@@ -654,10 +562,7 @@ export class EdtApp extends LitElement {
     this.criarNovaEmenda(proposicao, 'emenda');
   }
 
-  private async criarNovaEmendaTextoLivre(
-    proposicao: Proposicao,
-    motivo: string
-  ): Promise<void> {
+  private async criarNovaEmendaTextoLivre(proposicao: Proposicao, motivo: string): Promise<void> {
     if (this.emendaSemTexto()) {
       this.criarNovaEmendaTextoLivreSemTexto(proposicao);
     } else {
@@ -666,9 +571,7 @@ export class EdtApp extends LitElement {
     sendEmailMotivoEmendaTextoLivre(motivo);
   }
 
-  private async criarNovaEmendaTextoLivreSemTexto(
-    proposicaoSelecionada?: Proposicao
-  ): Promise<void> {
+  private async criarNovaEmendaTextoLivreSemTexto(proposicaoSelecionada?: Proposicao): Promise<void> {
     this.modo = 'emendaTextoLivre';
 
     setTimeout(() => {
@@ -693,19 +596,16 @@ export class EdtApp extends LitElement {
 
         this.proposicao = { ...proposicaoSelecionada };
 
-        this.tituloEmenda =
-          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
         params.motivo = 'Medida provisória sem articulação';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
         sendEmailMotivoEmendaTextoLivre(params.motivo);
-        //this.lexmlEmenda.style.display = 'block';
+        // this.lexmlEmenda.style.display = 'block';
 
         this.atualizarTituloEditor();
         setTimeout(() => {
-          this.emendaComAlteracoesSalvas = JSON.parse(
-            JSON.stringify(this.lexmlEmenda.getEmenda())
-          );
+          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
           this.isDirty = false;
           this.isOpenFile = false;
           this.wasSaved = false;
@@ -715,9 +615,7 @@ export class EdtApp extends LitElement {
     }, 0);
   }
 
-  private async criarNovaEmendaSubstituicaoTermoSemTexto(
-    proposicaoSelecionada?: Proposicao
-  ): Promise<void> {
+  private async criarNovaEmendaSubstituicaoTermoSemTexto(proposicaoSelecionada?: Proposicao): Promise<void> {
     this.modo = 'emendaSubstituicaoTermo';
 
     setTimeout(() => {
@@ -739,17 +637,14 @@ export class EdtApp extends LitElement {
 
         this.proposicao = { ...proposicaoSelecionada };
 
-        this.tituloEmenda =
-          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
-        //this.lexmlEmenda.style.display = 'block';
+        // this.lexmlEmenda.style.display = 'block';
 
         this.atualizarTituloEditor();
         setTimeout(() => {
-          this.emendaComAlteracoesSalvas = JSON.parse(
-            JSON.stringify(this.lexmlEmenda.getEmenda())
-          );
+          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
           this.isDirty = false;
           this.isOpenFile = false;
           this.wasSaved = false;
@@ -758,6 +653,7 @@ export class EdtApp extends LitElement {
       }
     }, 0);
   }
+
   private getTipoEmenda(modo: string): string {
     switch (modo) {
       case 'emendaArtigoOndeCouber':
@@ -773,16 +669,12 @@ export class EdtApp extends LitElement {
     return '';
   }
 
-  private async criarNovaEmenda(
-    proposicao: Proposicao,
-    modo: string,
-    motivo = ''
-  ): Promise<void> {
+  private async criarNovaEmenda(proposicao: Proposicao, modo: string, motivo = ''): Promise<void> {
     this.proposicao = proposicao;
     this.modo = modo;
     this.motivo = motivo;
-    this.tituloEmenda = 'Emenda ' + proposicao.nomeProposicao;
-    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda padrão';
+    this.tituloEmenda = `Emenda ${proposicao.nomeProposicao}`;
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); // 'Emenda padrão';
     await this.loadTextoProposicao(proposicao);
 
     this.lexmlEmenda.inicializarEdicao({
@@ -791,9 +683,7 @@ export class EdtApp extends LitElement {
       motivo: this.motivo,
     });
     setTimeout(() => {
-      this.emendaComAlteracoesSalvas = JSON.parse(
-        JSON.stringify(this.lexmlEmenda.getEmenda())
-      );
+      this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
       this.isDirty = false;
       this.isOpenFile = false;
       this.wasSaved = false;
@@ -801,12 +691,10 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
-  private criarNovaEmendaArtigoOndeCouber(
-    proposicaoSelecionada?: Proposicao
-  ): void {
+  private criarNovaEmendaArtigoOndeCouber(proposicaoSelecionada?: Proposicao): void {
     this.modo = 'emendaArtigoOndeCouber';
-    this.tituloEmenda = 'Emenda ' + this.proposicao.nomeProposicao;
-    this.labelTipoEmenda = this.getTipoEmenda(this.modo); //'Emenda onde couber';
+    this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao}`;
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo); // 'Emenda onde couber';
 
     setTimeout(() => {
       if (
@@ -828,12 +716,11 @@ export class EdtApp extends LitElement {
 
         this.proposicao = { ...proposicaoSelecionada };
 
-        this.tituloEmenda =
-          'Emenda ' + this.proposicao.nomeProposicao!.replace('/', ' ');
+        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
 
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
-        //this.lexmlEmenda.style.display = 'block';
+        // this.lexmlEmenda.style.display = 'block';
       } else {
         this.lexmlEmenda.inicializarEdicao({
           modo: this.modo,
@@ -842,9 +729,7 @@ export class EdtApp extends LitElement {
       }
       this.atualizarTituloEditor();
       setTimeout(() => {
-        this.emendaComAlteracoesSalvas = JSON.parse(
-          JSON.stringify(this.lexmlEmenda.getEmenda())
-        );
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
         this.isDirty = false;
         this.isOpenFile = false;
         this.wasSaved = false;
@@ -900,13 +785,11 @@ export class EdtApp extends LitElement {
       dataUltimaModificacao: null,
     };
 
-    emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto =
-      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
-    emenda.comandoEmendaTextoLivre.texto =
-      emenda.comandoEmendaTextoLivre.texto.trim();
+    emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
+    emenda.comandoEmendaTextoLivre.texto = emenda.comandoEmendaTextoLivre.texto.trim();
 
     const _isDirty = !objetosIguais(emendaComAlteracoesSalvas, emenda);
-    //JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
+    // JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
 
     return _isDirty;
   }
@@ -931,28 +814,21 @@ export class EdtApp extends LitElement {
   }
 
   private getDataPrazoEmenda(proposicao: Proposicao): string | undefined {
-    return proposicao?.dataLimiteRecebimentoEmendas
-      ?.split('-')
-      .reverse()
-      .join('/');
+    return proposicao?.dataLimiteRecebimentoEmendas?.split('-').reverse().join('/');
   }
-  private getTextoComplementarPrazoEmenda(
-    proposicao: Proposicao
-  ): string | undefined {
+
+  private getTextoComplementarPrazoEmenda(proposicao: Proposicao): string | undefined {
     if (!proposicao) return undefined;
     if (proposicao.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)) {
       return proposicao.labelPrazoRecebimentoEmendas?.substring(11);
-    } else {
-      return proposicao.labelPrazoRecebimentoEmendas;
     }
+    return proposicao.labelPrazoRecebimentoEmendas;
   }
+
   private renderEditorEmenda(): TemplateResult {
     return html`
       ${appStyles}
-      <div
-        class="editor-emendas"
-        style=${this.showEditor ? '' : 'display: none;'}
-      >
+      <div class="editor-emendas" style=${this.showEditor ? '' : 'display: none;'}>
         <div class="detalhe-emenda">
           <a
             href="#"
@@ -961,48 +837,21 @@ export class EdtApp extends LitElement {
             aria-label="Expandir ementa"
             title="Expandir ementa"
           >
-            <sl-tag
-              class="detalhe-emenda--nome-proposicao"
-              variant="primary"
-              size="small"
-              pill
-            >
-              ${this.proposicao.nomeProposicao}
-            </sl-tag>
+            <sl-tag class="detalhe-emenda--nome-proposicao" variant="primary" size="small" pill> ${this.proposicao.nomeProposicao} </sl-tag>
 
             <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
               <div slot="content">
                 <div>
-                  <b>Prazo de emenda:</b> ${this.getDataPrazoEmenda(
-                    this.proposicao
-                  ) +
-                  ' (' +
-                  this.getTextoComplementarPrazoEmenda(this.proposicao) +
-                  ')'}
+                  <b>Prazo de emenda:</b> ${`${this.getDataPrazoEmenda(this.proposicao)} (${this.getTextoComplementarPrazoEmenda(this.proposicao)})`}
                 </div>
-                <div>
-                  <b>Tramitação:</b> ${this.proposicao.labelTramitacao ?? ''}
-                </div>
+                <div><b>Tramitação:</b> ${this.proposicao.labelTramitacao ?? ''}</div>
               </div>
-              <sl-tag
-                class="detalhe-emenda--prazo"
-                variant="primary"
-                size="small"
-                title=""
-                pill
-                ><sl-icon name="alarm"></sl-icon>
-              </sl-tag>
+              <sl-tag class="detalhe-emenda--prazo" variant="primary" size="small" title="" pill><sl-icon name="alarm"></sl-icon> </sl-tag>
             </sl-tooltip>
 
-            ${this.modo === 'emendaArtigoOndeCouber'
-              ? html`<sl-tag variant="primary" size="small" pill
-                  >${this.labelTipoEmenda}</sl-tag
-                >`
-              : ''}
+            ${this.modo === 'emendaArtigoOndeCouber' ? html`<sl-tag variant="primary" size="small" pill>${this.labelTipoEmenda}</sl-tag>` : ''}
 
-            <span class="detalhe-emenda--ementa">
-              ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
-            </span>
+            <span class="detalhe-emenda--ementa"> ${this.getEmentaSemTags(this.proposicao.ementa ?? '')} </span>
             <span aria-label="Expandir ementa" title="Expandir ementa">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1036,47 +885,32 @@ export class EdtApp extends LitElement {
           modo=${this.modo}
           @onchange=${this.onChange}
           @onrevisao=${this.onRevisao}
-          @onmodalsufixos=${() => this.showModalSufixos()}
+          @onmodalsufixos=${(): void => this.showModalSufixos()}
         ></lexml-emenda>
       </div>
 
       <edt-modal-nova-emenda
-        @nova-emenda-padrao=${(ev: CustomEvent): any =>
-          this.criarNovaEmendaPadrao(ev.detail.proposicao)}
-        @abrir-modal-emenda-sem-texto=${(ev: CustomEvent): any =>
-          this.showModalEmendaSemTexto(ev.detail.proposicao)}
+        @nova-emenda-padrao=${(ev: CustomEvent): any => this.criarNovaEmendaPadrao(ev.detail.proposicao)}
+        @abrir-modal-emenda-sem-texto=${(ev: CustomEvent): any => this.showModalEmendaSemTexto(ev.detail.proposicao)}
       >
       </edt-modal-nova-emenda>
 
-      <edt-modal-visualizar-pdf
-        tituloEmenda=${this.tituloEmenda}
-      ></edt-modal-visualizar-pdf>
+      <edt-modal-visualizar-pdf tituloEmenda=${this.tituloEmenda}></edt-modal-visualizar-pdf>
 
       <edt-modal-onde-couber
-        @nova-emenda-padrao=${(): any =>
-          this.criarNovaEmendaPadrao({ ...this.proposicao })}
+        @nova-emenda-padrao=${(): any => this.criarNovaEmendaPadrao({ ...this.proposicao })}
         @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
       ></edt-modal-onde-couber>
 
       <edt-modal-texto-livre
-        @nova-emenda-texto-livre=${(ev: CustomEvent): any =>
-          this.criarNovaEmendaTextoLivre(
-            { ...this.proposicao },
-            ev.detail.motivo
-          )}
+        @nova-emenda-texto-livre=${(ev: CustomEvent): any => this.criarNovaEmendaTextoLivre({ ...this.proposicao }, ev.detail.motivo)}
       ></edt-modal-texto-livre>
 
-      <edt-modal-confirmacao-salvar
-        @confirm-result=${this.processarResultadoConfirmacao}
-      ></edt-modal-confirmacao-salvar>
+      <edt-modal-confirmacao-salvar @confirm-result=${this.processarResultadoConfirmacao}></edt-modal-confirmacao-salvar>
 
-      <edt-modal-usuario
-        @atualizar-usuario=${(ev: CustomEvent): any =>
-          this.atualizarUsuario(ev.detail.usuario)}
-      ></edt-modal-usuario>
+      <edt-modal-usuario @atualizar-usuario=${(ev: CustomEvent): any => this.atualizarUsuario(ev.detail.usuario)}></edt-modal-usuario>
 
-      <edt-modal-orientacoes @open-modal-videos=${() => this.abrirVideos()}>
-      </edt-modal-orientacoes>
+      <edt-modal-orientacoes @open-modal-videos=${(): void => this.abrirVideos()}> </edt-modal-orientacoes>
       <edt-modal-sufixos></edt-modal-sufixos>
       <edt-modal-emenda-sem-texto
         @cria-artigo-onde-couber=${(ev: CustomEvent): any =>
@@ -1098,54 +932,27 @@ export class EdtApp extends LitElement {
 
   renderDialogProposicao(): TemplateResult {
     return html`
-      <sl-dialog
-        label="${this.proposicao.nomeProposicao} - Ementa"
-        class="dialog-emenda"
-      >
+      <sl-dialog label="${this.proposicao.nomeProposicao} - Ementa" class="dialog-emenda">
         ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
         <br /><br />
         <label>Prazo para apresentar emenda:</label>
         ${this.getDataPrazoEmenda(this.proposicao)}
-        <sl-badge
-          title="${this.getDataPrazoEmenda(this.proposicao)}"
-          variant="neutral"
+        <sl-badge title="${this.getDataPrazoEmenda(this.proposicao) ?? ''}" variant="neutral"
           >${this.getTextoComplementarPrazoEmenda(this.proposicao)}</sl-badge
         >
         <br /><br />
         <label>Tramitação:</label>
-        <sl-badge variant="neutral" title="${this.proposicao?.labelTramitacao}"
-          >${this.proposicao?.labelTramitacao}</sl-badge
-        >
+        <sl-badge variant="neutral" title="${this.proposicao?.labelTramitacao ?? ''}">${this.proposicao?.labelTramitacao}</sl-badge>
         <br /><br />
-        <sl-button
-          href=""
-          variant="primary"
-          outline
-          @click=${(): void => this.abrirQuadroDeEmendas()}
-        >
+        <sl-button href="" variant="primary" outline @click=${(): void => this.abrirQuadroDeEmendas()}>
           <sl-icon slot="prefix" size="small" name="table"></sl-icon>
           Acessar quadro de emendas
         </sl-button>
-        <sl-button
-          href=""
-          variant="primary"
-          outline
-          @click=${(): void => this.abrirPaginaMP()}
-        >
-          <sl-icon
-            slot="prefix"
-            size="small"
-            name="box-arrow-up-right"
-          ></sl-icon>
+        <sl-button href="" variant="primary" outline @click=${(): void => this.abrirPaginaMP()}>
+          <sl-icon slot="prefix" size="small" name="box-arrow-up-right"></sl-icon>
           Acessar página da MP
         </sl-button>
-        <sl-button
-          slot="footer"
-          autofocus
-          onclick="document.querySelector('.dialog-emenda').hide()"
-          variant="primary"
-          >Fechar
-        </sl-button>
+        <sl-button slot="footer" autofocus onclick="document.querySelector('.dialog-emenda').hide()" variant="primary">Fechar </sl-button>
       </sl-dialog>
     `;
   }
@@ -1158,22 +965,11 @@ export class EdtApp extends LitElement {
       document.body.classList.remove('no-scroll');
     }
     return html`
-      <edt-cabecalho
-        .usuario=${this.usuario}
-        @informar-usuario=${this.informarUsuario}
-      ></edt-cabecalho>
-      <edt-menu
-        .proposicao=${this.proposicao}
-        .modo=${this.modo}
-        @item-selecionado=${this.onItemMenuSelecionado}
-      ></edt-menu>
+      <edt-cabecalho .usuario=${this.usuario} @informar-usuario=${this.informarUsuario}></edt-cabecalho>
+      <edt-menu .proposicao=${this.proposicao} .modo=${this.modo} @item-selecionado=${this.onItemMenuSelecionado}></edt-menu>
       <main class="${this.showEditor ? 'no-scroll' : ''}">
         ${!this.showEditor
-          ? html` <edt-landing-page
-              versao="${this.versao}"
-              @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}
-            >
-            </edt-landing-page>`
+          ? html` <edt-landing-page versao="${this.versao}" @botao-selecionado=${this.onBotaoNotasVersaoSelecionado}> </edt-landing-page>`
           : ''}
         ${this.renderEditorEmenda()}
         <edt-modal-ajuda></edt-modal-ajuda>

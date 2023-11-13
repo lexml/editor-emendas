@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { customElement, query, state } from 'lit/decorators.js';
 import { LitElement, html, css, TemplateResult } from 'lit';
 import { Proposicao } from '../model/proposicao';
@@ -52,52 +51,22 @@ export class EdtModalEmendaSemTexto extends LitElement {
     const { sigla, numero, ano } = this.proposicaoSelecionada || {};
     return html`
       <sl-dialog>
-        <span slot="label"
-          >${`${sigla} ${numero?.replace(/^0*/, '')}/${ano}`} - Texto
-          indisponível para emenda padrão</span
-        >
+        <span slot="label">${`${sigla} ${numero?.replace(/^0*/, '')}/${ano}`} - Texto indisponível para emenda padrão</span>
 
         <div>
+          <p>O sistema ainda não possui o texto desta proposição preparado para emendamento no formato padrão do editor.</p>
           <p>
-            O sistema ainda não possui o texto desta proposição preparado para
-            emendamento no formato padrão do editor.
-          </p>
-          <p>
-            Você deseja criar uma emenda de dispositivo "onde couber", uma
-            emenda de substituição de termo ou uma emenda no formato de texto
-            livre?
+            Você deseja criar uma emenda de dispositivo "onde couber", uma emenda de substituição de termo ou uma emenda no formato de texto livre?
           </p>
         </div>
 
         <div slot="footer" class="footer-container">
-          <sl-button
-            class="btn"
-            variant="primary"
-            @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}
-          >
-            Onde couber
-          </sl-button>
-          <sl-button
-            class="btn"
-            variant="secondary"
-            @click=${(): void => this.emitirEvento('cria-substituicao-termo')}
-          >
+          <sl-button class="btn" variant="primary" @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}> Onde couber </sl-button>
+          <sl-button class="btn" variant="secondary" @click=${(): void => this.emitirEvento('cria-substituicao-termo')}>
             Substituição de Termo
           </sl-button>
-          <sl-button
-            class="btn"
-            variant="secondary"
-            @click=${(): void => this.emitirEvento('cria-texto-livre')}
-          >
-            Texto livre
-          </sl-button>
-          <sl-button
-            class="btn"
-            variant="default"
-            @click=${(): void => this.slDialog.hide()}
-          >
-            Fechar
-          </sl-button>
+          <sl-button class="btn" variant="secondary" @click=${(): void => this.emitirEvento('cria-texto-livre')}> Texto livre </sl-button>
+          <sl-button class="btn" variant="default" @click=${(): void => this.slDialog.hide()}> Fechar </sl-button>
         </div>
       </sl-dialog>
     `;

@@ -1,4 +1,5 @@
 import { html } from 'lit';
+
 export const appStyles = html`
   <style>
     :host {
@@ -89,11 +90,7 @@ export const appStyles = html`
       padding-right: 30px;
       -ms-overflow-style: none; /* IE and Edge */
       scrollbar-width: none; /* Firefox */
-      -webkit-mask-image: linear-gradient(
-        90deg,
-        rgba(0, 0, 0, 1) 90%,
-        rgba(0, 0, 0, 0) 100%
-      );
+      -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0) 100%);
     }
 
     .detalhe-emenda--ementa::-webkit-scrollbar {
@@ -687,26 +684,13 @@ export const ondeCouberStyles = html`
 
 export const landingPageStyles = html`
   <!-- Bootstrap Icons-->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css" />
   <!-- Google fonts-->
-  <link
-    href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700"
-    rel="stylesheet"
-  />
-  <link
-    href="https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic"
-    rel="stylesheet"
-    type="text/css"
-  />
+  <link href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
   <!-- SimpleLightbox plugin CSS-->
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css" rel="stylesheet" />
   <style>
     :root {
       --edt-opacity-overlay: 0.3;

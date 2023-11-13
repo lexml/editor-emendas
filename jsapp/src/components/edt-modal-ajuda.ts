@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { customElement, query, state } from 'lit/decorators.js';
 import { LitElement, html, TemplateResult } from 'lit';
 import { ajudaStyles } from './app.css';
@@ -18,14 +17,8 @@ const videos: Array<Video> = [
   new Video('Dispositivos subordinados', 'LXHlHaMvV-0'),
   new Video('Dispositivo à norma', 'M8KZ_3zr28c'),
   new Video('Dispositivo da norma vigente', 'NOyXN08NG_M'),
-  new Video(
-    'Copiar e colar dispositivos existentes - Introdução',
-    'tP8zgonhQtk'
-  ),
-  new Video(
-    'Copiar e colar dispositivos existentes - 2º tutorial',
-    'K-w-At7hv_k'
-  ),
+  new Video('Copiar e colar dispositivos existentes - Introdução', 'tP8zgonhQtk'),
+  new Video('Copiar e colar dispositivos existentes - 2º tutorial', 'K-w-At7hv_k'),
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
   new Video('Marcas de revisão', '4zmICnwq3HQ'),
 ];
@@ -55,20 +48,18 @@ export class EdtModalAjuda extends LitElement {
 
     this.detailsGroup.addEventListener('sl-show', (e: CustomEvent) => {
       if (e.target) {
-        [...this.detailsGroup.querySelectorAll('sl-details')].forEach(
-          (details, i) => {
-            details.open = e.target === details;
-            if (details.open) {
-              this.selecionado = i;
-            }
+        [...this.detailsGroup.querySelectorAll('sl-details')].forEach((details, i) => {
+          details.open = e.target === details;
+          if (details.open) {
+            this.selecionado = i;
           }
-        );
+        });
       }
     });
 
     this.shadowRoot?.addEventListener('click', (e: Event) => {
       if ((e.target as HTMLElement).classList.contains('fullscreen-btn')) {
-        const videoIndex = (e.target as HTMLElement).dataset.videoIndex;
+        const { videoIndex } = (e.target as HTMLElement).dataset;
         if (videoIndex !== undefined) {
           const index = parseInt(videoIndex);
           this.toggleFullscreen(index);
@@ -109,9 +100,7 @@ export class EdtModalAjuda extends LitElement {
           frameborder="0"
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         ></iframe>
-        <button class="fullscreen-btn" data-video-index="${index}">
-          Ver em tela cheia
-        </button>
+        <button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button>
       </div>
     `;
   }
@@ -119,11 +108,7 @@ export class EdtModalAjuda extends LitElement {
   private tabPanelVideoTemplate(video: Video, i: number): any {
     return html`
       <sl-tab-panel name="video${i}">
-        ${this.selecionado === i
-          ? html`
-              <div class="video-container">${this.videoTemplate(video, i)}</div>
-            `
-          : ``}
+        ${this.selecionado === i ? html` <div class="video-container">${this.videoTemplate(video, i)}</div> ` : ``}
       </sl-tab-panel>
     `;
   }
@@ -131,10 +116,7 @@ export class EdtModalAjuda extends LitElement {
   tabGroupTemplate(): any {
     return html`
       <sl-tab-group placement="start">
-        ${videos.map(
-          (v, i) =>
-            html`<sl-tab slot="nav" panel="video${i}">${v.titulo}</sl-tab>`
-        )}
+        ${videos.map((v, i) => html`<sl-tab slot="nav" panel="video${i}">${v.titulo}</sl-tab>`)}
         ${videos.map((v, i) => this.tabPanelVideoTemplate(v, i))}
       </sl-tab-group>
     `;
@@ -142,11 +124,7 @@ export class EdtModalAjuda extends LitElement {
 
   private detailsVideoTemplate(video: Video, i: number): any {
     return html`
-      <sl-details
-        summary="${video.titulo}"
-        name="video${i}"
-        .open=${this.selecionado === i}
-      >
+      <sl-details summary="${video.titulo}" name="video${i}" .open=${this.selecionado === i}>
         ${this.selecionado === i ? this.videoTemplate(video, i) : ``}
       </sl-details>
     `;
@@ -161,11 +139,7 @@ export class EdtModalAjuda extends LitElement {
         <!-- Desktop e tablet -->
         ${this.visivel ? this.tabGroupTemplate() : html``}
         <!-- Celular -->
-        <div class="details-group">
-          ${this.visivel
-            ? videos.map((v, i) => this.detailsVideoTemplate(v, i))
-            : html``}
-        </div>
+        <div class="details-group">${this.visivel ? videos.map((v, i) => this.detailsVideoTemplate(v, i)) : html``}</div>
         <sl-button
           slot="footer"
           variant="primary"
