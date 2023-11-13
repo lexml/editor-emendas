@@ -58976,6 +58976,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         if (this.isEmendaSubstituicaoTermo()) {
             emenda.substituicaoTermo = this._substituicaoTermo.getSubstituicaoTermo();
             emenda.comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
+            emenda.comandoEmendaTextoLivre.texto = '';
         }
         else if (this.isEmendaTextoLivre()) {
             emenda.comandoEmendaTextoLivre.motivo = this.motivo;
@@ -58983,8 +58984,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             emenda.anexos = this._lexmlEmendaTextoRico.anexos;
         }
         else {
-            emenda.comandoEmendaTextoLivre.motivo = undefined;
-            emenda.comandoEmendaTextoLivre.texto = '  ';
+            emenda.comandoEmendaTextoLivre.texto = '';
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
         }
