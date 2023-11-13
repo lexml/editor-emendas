@@ -1,9 +1,8 @@
 import { LitElement, html, TemplateResult } from 'lit';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { customElement, property, query } from 'lit/decorators.js';
+import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
 import { usuarioStyles } from './app.css';
 import { Usuario } from '../model/usuario';
-import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
 
 @customElement('edt-modal-usuario')
 export class EdtModalUsuario extends LitElement {
@@ -58,9 +57,7 @@ export class EdtModalUsuario extends LitElement {
             id="nomeUsuario"
             label="Nome"
             autofocus
-            @sl-input=${(ev: Event): any =>
-              (this.btnSalvar.disabled = !(ev.target as HTMLInputElement)
-                .value)}
+            @sl-input=${(ev: Event): any => (this.btnSalvar.disabled = !(ev.target as HTMLInputElement).value)}
             required
           ></sl-input>
         </div>
@@ -69,20 +66,9 @@ export class EdtModalUsuario extends LitElement {
           <sl-input id="siglaUsuario" label="Sigla (opcional)"></sl-input>
         </div>
 
-        <sl-button
-          id="btnSalvar"
-          slot="footer"
-          variant="primary"
-          @click=${(): void => this.emitirEvento('atualizar-usuario')}
-          >Salvar</sl-button
-        >
+        <sl-button id="btnSalvar" slot="footer" variant="primary" @click=${(): void => this.emitirEvento('atualizar-usuario')}>Salvar</sl-button>
 
-        <sl-button
-          slot="footer"
-          variant="default"
-          @click=${(): void => this.slDialog.hide()}
-          >Cancelar</sl-button
-        >
+        <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Cancelar</sl-button>
       </sl-dialog>
     `;
   }

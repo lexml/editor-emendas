@@ -8,22 +8,14 @@ export const downloadBase64 = (b64Data: string, fileName = 'teste'): void => {
   document.body.removeChild(a);
 };
 
-export const blobToBase64 = (
-  blob: any
-): Promise<string | ArrayBuffer | null> => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  return new Promise((resolve, _) => {
+export const blobToBase64 = (blob: any): Promise<string | ArrayBuffer | null> =>
+  new Promise(resolve => {
     const reader = new FileReader();
     reader.onloadend = (): any => resolve(reader.result);
     reader.readAsDataURL(blob);
   });
-};
 
-export const base64ToBlob = (
-  b64Data: string,
-  contentType: string,
-  sliceSize = 512
-): any => {
+export const base64ToBlob = (b64Data: string, contentType: string, sliceSize = 512): any => {
   const base64 = b64Data.startsWith('data:') ? b64Data.split(',')[1] : b64Data;
   const byteCharacters = window.atob(base64);
   const byteArrays = [];

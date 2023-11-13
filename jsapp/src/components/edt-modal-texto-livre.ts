@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, query, queryAll } from 'lit/decorators.js';
 import { ondeCouberStyles } from './app.css';
@@ -30,6 +29,7 @@ export class EdtModalTextoLivre extends LitElement {
   ];
 
   private idMotivo = 0;
+
   private descMotivo = '';
 
   @query('#desc-motivo')
@@ -70,7 +70,7 @@ export class EdtModalTextoLivre extends LitElement {
     }
 
     if (this.idMotivo === 9) {
-      return motivo.desc + ' ' + this.descMotivo;
+      return `${motivo.desc} ${this.descMotivo}`;
     }
     return motivo.desc;
   }
@@ -104,19 +104,12 @@ export class EdtModalTextoLivre extends LitElement {
       ${ondeCouberStyles}
       <sl-dialog label=${tituloModal}>
         <p>
-          A emenda de texto livre deve ser utilizada apenas quando não for
-          possível fazer a emenda no formato padrão do editor ou como emenda de
+          A emenda de texto livre deve ser utilizada apenas quando não for possível fazer a emenda no formato padrão do editor ou como emenda de
           dispositivo onde couber.
         </p>
         <p>Selecione o motivo da opção pela emenda de texto livre:</p>
-        <sl-radio-group
-          id="radioMotivo"
-          label="Selecione um motivo"
-          @click=${(e: any) => (this.idMotivo = parseInt(e.target.value))}
-        >
-          ${this.motivos.map(
-            m => html`<sl-radio value=${m.id}>${m.desc}</sl-radio>`
-          )}
+        <sl-radio-group id="radioMotivo" label="Selecione um motivo" @click=${(e: any): any => (this.idMotivo = parseInt(e.target.value))}>
+          ${this.motivos.map(m => html`<sl-radio value=${m.id}>${m.desc}</sl-radio>`)}
         </sl-radio-group>
         <br />
         <sl-input
@@ -125,8 +118,7 @@ export class EdtModalTextoLivre extends LitElement {
           size="small"
           clearable
           .value=${this.descMotivo}
-          @sl-input=${(ev: Event): any =>
-            (this.descMotivo = (ev.target as HTMLInputElement).value)}
+          @sl-input=${(ev: Event): any => (this.descMotivo = (ev.target as HTMLInputElement).value)}
         ></sl-input>
         <br />
 
@@ -135,15 +127,8 @@ export class EdtModalTextoLivre extends LitElement {
           <strong>Revise os dados informados.</strong>
         </sl-alert>
 
-        <sl-button slot="footer" variant="default" @click=${this.continuar}
-          >Continuar</sl-button
-        >
-        <sl-button
-          slot="footer"
-          variant="primary"
-          @click=${(): void => this.slDialog.hide()}
-          >Cancelar</sl-button
-        >
+        <sl-button slot="footer" variant="default" @click=${this.continuar}>Continuar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${(): void => this.slDialog.hide()}>Cancelar</sl-button>
       </sl-dialog>
     `;
   }

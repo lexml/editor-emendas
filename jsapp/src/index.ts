@@ -15,5 +15,8 @@ import './components/edt-modal-texto-livre';
 import './components/edt-modal-confirmacao-salvar';
 import './components/edt-modal-ajuda';
 import './components/edt-modal-usuario';
+import './components/edt-modal-orientacoes';
+import './components/edt-modal-sufixos';
+import './components/edt-modal-emenda-sem-texto';
 
 export { EdtApp } from './components/edt-app';

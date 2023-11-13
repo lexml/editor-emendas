@@ -30396,6 +30396,8 @@ class LexmlEmendaConfig {
     constructor() {
         this.urlConsultaParlamentares = 'api/parlamentares';
         this.urlAutocomplete = 'api/autocomplete-norma';
+        this.tamanhoMaximoAnexo = 5120; //5MB
+        this.tamanhoMaximoImagem = 2048; //2MB
     }
 }
 
@@ -33196,6 +33198,624 @@ const substituiMultiplosEspacosPorNbsp = (texto) => {
     return texto.replace(/ +/g, texto => texto.replace(/ /g, '&nbsp;'));
 };
 
+/**
+ * Utilitário para montar uma tag usando o pattern composite. Essa classe foi retirada do livro
+ * Refactoring to Patterns
+ */
+class TagNode {
+    constructor(nome) {
+        this.nome = nome;
+        this.valores = new Array();
+        this.atributos = new StringBuilder();
+    }
+    toString() {
+        if (!this.valores.length) {
+            return '<' + this.nome + this.atributos + '/>';
+        }
+        const resultado = new StringBuilder('<' + this.nome + this.atributos + '>');
+        this.valores.forEach(valor => {
+            resultado.append(valor);
+        });
+        resultado.append('</' + this.nome + '>');
+        return resultado.toString();
+    }
+    add(valor) {
+        if (valor) {
+            this.valores.push(valor);
+        }
+        return this;
+    }
+    addAtributo(atributo, valor) {
+        this.atributos.append(' ');
+        this.atributos.append(atributo);
+        if (valor) {
+            this.atributos.append('="');
+            this.atributos.append(valor);
+            this.atributos.append('"');
+        }
+        return this;
+    }
+}
+
+class DispositivoComparator {
+    static compare(d1, d2) {
+        if (!d1 || !d2) {
+            throw new Error('Tentativa de comparação de dispositivo nulo.');
+        }
+        if (!d1.pai) {
+            return -1;
+        }
+        if (!d2.pai) {
+            return 1;
+        }
+        const i1 = DispositivoComparator.getIndices(d1);
+        const i2 = DispositivoComparator.getIndices(d2);
+        return DispositivoComparator.comparaIndices(i1, i2);
+    }
+    static getIndices(d) {
+        const indices = [];
+        // Considera alteração como filha do caput
+        let pai = this.getPaiParaComparacao(d);
+        while (pai) {
+            indices.push(this.getIndexDoFilho(pai, d));
+            d = pai;
+            pai = this.getPaiParaComparacao(d);
+        }
+        indices.reverse();
+        return indices;
+    }
+    // Considera alteração em artigo como filha do caput
+    static getPaiParaComparacao(d) {
+        if (!d.pai) {
+            return undefined;
+        }
+        if (isArtigo(d.pai) && isArticulacaoAlteracao(d)) {
+            return d.pai.caput;
+        }
+        return d.pai;
+    }
+    static getIndexDoFilho(pai, d) {
+        if (isCaput(d)) {
+            return 0;
+        }
+        if (isParagrafo(d) || (isOmissis(d) && isArtigo(pai))) {
+            // Após o caput
+            return pai.filhos.indexOf(d) + 1;
+        }
+        if (isArticulacaoAlteracao(d)) {
+            // Antes dos filhos
+            return -1;
+        }
+        return pai.filhos.indexOf(d);
+    }
+    static comparaIndices(indices1, indices2) {
+        let ret = 0;
+        const size1 = indices1.length;
+        const size2 = indices2.length;
+        for (let i = 0; i < size1 && i < size2 && ret === 0; i++) {
+            ret = indices1[i] - indices2[i];
+        }
+        if (ret === 0) {
+            ret = size1 - size2;
+        }
+        return ret;
+    }
+}
+
+class DispositivoEmendaUtil {
+    static getAlteracao(dispositivo) {
+        let d = dispositivo;
+        if (d.tipo === TipoDispositivo.alteracao.tipo) {
+            return d;
+        }
+        if (!isDispositivoAlteracao(d)) {
+            return undefined;
+        }
+        while (d && d.tipo !== TipoDispositivo.alteracao.tipo) {
+            d = d.pai;
+        }
+        return d;
+    }
+    static existeNaNormaAlterada(dispositivo) {
+        return dispositivo.situacao.existeNaNormaAlterada;
+    }
+}
+
+class CmdEmdUtil {
+    static getDispositivosNaoOriginais(articulacao) {
+        var _a, _b;
+        const ret = [];
+        if (((_b = (_a = articulacao.projetoNorma) === null || _a === void 0 ? void 0 : _a.ementa) === null || _b === void 0 ? void 0 : _b.situacao.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
+            ret.push(articulacao.projetoNorma.ementa);
+        }
+        percorreHierarquiaDispositivos(articulacao, d => {
+            if (d.pai && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+                ret.push(d);
+            }
+        });
+        return ret;
+    }
+    static getDispositivosAdicionados(articulacao) {
+        const ret = [];
+        percorreHierarquiaDispositivos(articulacao, d => {
+            if (d.pai && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+                ret.push(d);
+            }
+        });
+        return ret;
+    }
+    static getDispositivosComando(dispositivosEmenda) {
+        const dispositivos = new Array();
+        for (const d of dispositivosEmenda) {
+            if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL || isDispositivoAlteracao(d) || isArticulacaoAlteracao(d)) {
+                continue;
+            }
+            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetado(d);
+            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
+                dispositivos.push(dispositivoAfetado);
+            }
+        }
+        return dispositivos;
+    }
+    static getDispositivoAfetado(d) {
+        const pai = d.pai;
+        if (isDispositivoRaiz(pai)) {
+            return d;
+        }
+        // Verifica alteração integral de caput
+        if (isCaput(pai) && pai.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            if (pai.filhos.find(f => f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL)) {
+                // Não é alteração integral de caput
+                return d;
+            }
+            // É alteração integral de caput
+            return CmdEmdUtil.getDispositivoAfetado(pai.pai);
+        }
+        // O caso de artigos adicionados junto com seu agrupador já foi tratado antes. Ver uso de retiraPrimeirosFilhosAdicionadosAgrupador
+        if (isArtigo(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return d;
+        }
+        // Se o pai for uma alteração integral
+        if (CmdEmdUtil.isAlteracaoIntegral(pai)) {
+            // Chama recursivamente para o pai
+            return CmdEmdUtil.getDispositivoAfetado(pai);
+        }
+        return d;
+    }
+    // Retira da lista de dispositivos os primeiros artigos e agrupadores adicionados, filhos de um agrupador adicionado.
+    // Considera que os dispositivos estejam ordenados
+    static retiraPrimeirosFilhosAdicionadosAgrupador(dispositivos) {
+        const primeiro = dispositivos[0];
+        if (isDispositivoAlteracao(primeiro) || primeiro.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return dispositivos;
+        }
+        if (!dispositivos.find(d => isAgrupadorNaoArticulacao(d))) {
+            return dispositivos;
+        }
+        const ret = [];
+        let filhosAdicionadosComAgrupador = [];
+        dispositivos.forEach(d => {
+            if (filhosAdicionadosComAgrupador.indexOf(d) < 0) {
+                ret.push(d);
+                if (isAgrupadorNaoArticulacao(d)) {
+                    filhosAdicionadosComAgrupador = this.listaFilhosAdicionadosComAgrupador(d);
+                }
+            }
+        });
+        return ret;
+    }
+    static listaFilhosAdicionadosComAgrupador(d) {
+        const ret = [];
+        buscaNaHierarquiaDispositivos(d, f => {
+            if (f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || isCaput(f) || isArticulacaoAlteracao(f)) {
+                ret.push(f);
+                return false;
+            }
+            return true;
+        });
+        return ret;
+    }
+    static getDispositivoAfetadoEmAlteracao(d) {
+        if (isOmissis(d)) {
+            if (CmdEmdUtil.isOmissisAdjacenteADispositivoDeEmenda(d)) {
+                return undefined;
+            }
+        }
+        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && CmdEmdUtil.isTextoOmitido(d)) {
+            return undefined;
+        }
+        const pai = isCaput(d.pai) ? d.pai.pai : d.pai;
+        // Se o pai for uma alteração integral
+        if (CmdEmdUtil.isAlteracaoIntegralEmAlteracao(pai)) {
+            // Chama recursivamente para o pai
+            return CmdEmdUtil.getDispositivoAfetadoEmAlteracao(pai);
+        }
+        return d;
+    }
+    // Considero texto omitido do Artigo se o seu caput tiver o texto omitido.
+    static isTextoOmitido(d) {
+        var _a;
+        return isOmissis(d) || d.texto.startsWith(TEXTO_OMISSIS) || (isAgrupador(d) && !!((_a = d.caput) === null || _a === void 0 ? void 0 : _a.texto.startsWith(TEXTO_OMISSIS)));
+    }
+    static getDescricaoSituacaoParaComandoEmenda(d) {
+        // Trata dispositivo já existente na norma adicionado em bloco de alteração como dispositivo modificado
+        return d.isDispositivoAlteracao && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && DispositivoEmendaUtil.existeNaNormaAlterada(d) && !isOmissis(d)
+            ? DescricaoSituacao.DISPOSITIVO_MODIFICADO
+            : d.situacao.descricaoSituacao;
+    }
+    static isMesmaSituacaoParaComandoEmenda(d1, d2) {
+        return this.getDescricaoSituacaoParaComandoEmenda(d1) === this.getDescricaoSituacaoParaComandoEmenda(d2);
+    }
+    static isAlteracaoIntegral(d) {
+        const descricaoSituacao = this.getDescricaoSituacaoParaComandoEmenda(d);
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return false;
+        }
+        if (isDispositivoAlteracao(d) && isAgrupadorNaoArticulacao(d) && descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return false;
+        }
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return true;
+        }
+        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            return !isAgrupadorNaoArticulacao(d);
+        }
+        if (!d.filhos.length) {
+            if (isArtigo(d)) {
+                return descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL;
+            }
+            return true;
+        }
+        for (const filho of d.filhos) {
+            if (!CmdEmdUtil.isAlteracaoIntegral(filho)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    static isAlteracaoIntegralEmAlteracao(d) {
+        if (isArticulacaoAlteracao(d)) {
+            return false;
+        }
+        if (isAgrupadorNaoArticulacao(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return false;
+        }
+        return ((d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && !CmdEmdUtil.isTextoOmitido(d)) ||
+            d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO);
+    }
+    static getArvoreDispositivos(dispositivos) {
+        const mapa = new Map();
+        if (!dispositivos.length) {
+            return mapa;
+        }
+        dispositivos.forEach(dispositivo => {
+            this.atualizaMapa(dispositivo, mapa);
+        });
+        return mapa;
+    }
+    static atualizaMapa(dispositivo, mapa) {
+        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
+        let mapaAtual = mapa;
+        hierarquia.forEach(dispositivoAtual => {
+            const mapaFilho = mapaAtual.get(dispositivoAtual);
+            if (mapaFilho) {
+                mapaAtual = mapaFilho;
+            }
+            else {
+                const novoMapa = new Map();
+                mapaAtual.set(dispositivoAtual, novoMapa);
+                mapaAtual = novoMapa;
+            }
+        });
+    }
+    static getHierarquiaDispositivosDeUmDispositivo(dispositivo) {
+        const hierarquia = new Array();
+        hierarquia.push(dispositivo);
+        let pai = dispositivo.pai;
+        while (pai && !isDispositivoRaiz(pai) && !isAgrupadorNaoArticulacao(pai)) {
+            hierarquia.push(pai);
+            pai = pai.pai;
+        }
+        hierarquia.reverse();
+        return hierarquia;
+    }
+    static getArvoreDispositivosDeAlteracaoDeNorma(dispositivos) {
+        const mapa = new Map();
+        if (!dispositivos.length) {
+            return mapa;
+        }
+        for (const dispositivo of dispositivos) {
+            this.atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa);
+        }
+        return mapa;
+    }
+    static atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa) {
+        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
+        let mapaAtual = mapa;
+        for (const dispositivoAtual of hierarquia) {
+            if (!isDispositivoAlteracao(dispositivoAtual) || isArticulacaoAlteracao(dispositivoAtual)) {
+                continue;
+            }
+            if (mapaAtual.has(dispositivoAtual)) {
+                mapaAtual = mapaAtual.get(dispositivoAtual);
+            }
+            else {
+                const novoMapa = new Map();
+                mapaAtual.set(dispositivoAtual, novoMapa);
+                mapaAtual = novoMapa;
+            }
+        }
+        mapa = mapaAtual;
+    }
+    // public static List<Dispositivo> filtraDispositivosModificados(final List<Dispositivo> dispositivos) {
+    //     List<Dispositivo> ret = new ArrayList<Dispositivo>();
+    //     // No caso de dispositivo modificado pode ocorrer o caso de alteração integral de artigo,
+    //     // onde o próprio artigo não está marcado como modificado.
+    //     for (Dispositivo d : dispositivos) {
+    //         if (d.isSituacao(DispositivoModificado.class) || d.isSituacao(DispositivoOriginal.class)
+    //             && CmdEmdUtil.isAlteracaoIntegral(d)) {
+    //             ret.add(d);
+    //         }
+    //     }
+    //     return ret;
+    // }
+    static isSequenciasPlural(sequencias) {
+        const qtdSequencias = sequencias.length;
+        if (qtdSequencias === 0) {
+            return false;
+        }
+        return qtdSequencias > 1 || CmdEmdUtil.isSequenciaPlural(sequencias[0]);
+    }
+    static isSequenciaPlural(sequencia) {
+        const qtdRanges = sequencia.getQuantidadeRanges();
+        if (qtdRanges === 0) {
+            return false;
+        }
+        return qtdRanges > 1 || sequencia.getPrimeiroRange().getQuantidadeDispositivos() > 1;
+    }
+    static getProximoAgrupador(disp) {
+        let ret = disp;
+        do {
+            ret = getDispositivoPosterior(ret);
+        } while (ret && !isAgrupador(ret));
+        return ret;
+    }
+    static getDispositivoIrmaoPosterior(dispositivo) {
+        if (isArtigo(dispositivo) || isAgrupador(dispositivo)) {
+            return this.getArtigoPosterior(dispositivo);
+        }
+        if (!this.isUltimoDispositivoDoMesmoTipo(dispositivo)) {
+            const pai = dispositivo.pai;
+            const index = pai.filhos.indexOf(dispositivo) + 1;
+            return pai.filhos[index];
+        }
+        return undefined;
+    }
+    static getArtigoPosterior(dispositivo) {
+        const pai = dispositivo.pai;
+        if (pai.filhos.length) {
+            const iFilho = pai.filhos.indexOf(dispositivo);
+            for (let i = iFilho + 1; i < pai.filhos.length; i++) {
+                const d = pai.filhos[i];
+                if (isArtigo(d)) {
+                    return d;
+                }
+                else if (isAgrupador(d)) {
+                    const atual = this.buscaProximoArtigo(d);
+                    if (atual) {
+                        return atual;
+                    }
+                }
+            }
+            if (pai.pai) {
+                return this.getArtigoPosterior(pai);
+            }
+        }
+        return undefined;
+    }
+    static buscaProximoArtigo(dispositivo) {
+        const filhos = dispositivo.filhos;
+        for (const d of filhos) {
+            if (isArtigo(d)) {
+                return d;
+            }
+            if (isAgrupador(d)) {
+                return this.buscaProximoArtigo(d);
+            }
+        }
+        return undefined;
+    }
+    static isUltimoDispositivoDoMesmoTipo(dispositivo) {
+        if (!dispositivo.pai) {
+            return true;
+        }
+        const pai = dispositivo.pai;
+        const index = pai.filhos.indexOf(dispositivo);
+        if (pai.filhos.length === index + 1) {
+            return true;
+        }
+        if (pai.filhos[index + 1].tipo === dispositivo.tipo) {
+            return false;
+        }
+        return true;
+    }
+    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
+    static getFilhosEstiloLexML(d) {
+        return getFilhosEstiloLexML(d);
+    }
+    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
+    static getDispositivoAnteriorDireto(d) {
+        return getDispositivoAnteriorDireto(d);
+    }
+    static getDispositivoPosteriorDireto(d) {
+        // primeiro o primeiro filho ou o primeiro irmão do pai (recursivamente)
+        const filhos = this.getFilhosEstiloLexML(d);
+        if (filhos.length) {
+            return filhos[0];
+        }
+        else {
+            return this.getProximoIrmaoRecursivo(d);
+        }
+    }
+    static getProximoIrmaoRecursivo(d) {
+        if (!d)
+            return;
+        const irmao = getDispositivoPosterior(d);
+        if (irmao) {
+            return irmao;
+        }
+        else {
+            const pai = d.pai;
+            return pai ? undefined : this.getProximoIrmaoRecursivo(pai);
+        }
+    }
+    // /**
+    //  * Retorna rótulo do dispositivo gerado pelo numerador. Não confia no rótulo informado pelo
+    //  * dispositivo original.
+    //  */
+    // public static String getRotulo(final Dispositivo d) {
+    //     return d.getNumeradorDispositivo().getRotulo(d);
+    // }
+    static getRotuloPais(disp) {
+        const sb = new StringBuilder();
+        let pai;
+        while (disp && !isArtigo(disp)) {
+            pai = disp.pai;
+            sb.append(pai.pronomePossessivoSingular);
+            sb.append(pai.getNumeracaoComRotuloParaComandoEmenda(disp));
+            disp = pai;
+        }
+        return sb.toString();
+    }
+    static getDispositivosNaAlteracaoParaComando(alteracao) {
+        const dispositivosAlterados = new Array();
+        percorreHierarquiaDispositivos(alteracao, d => {
+            if (d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+                dispositivosAlterados.push(d);
+            }
+        });
+        const dispositivos = new Array();
+        dispositivosAlterados.forEach(d => {
+            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetadoEmAlteracao(d);
+            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
+                dispositivos.push(dispositivoAfetado);
+            }
+        });
+        dispositivos.sort(DispositivoComparator.compare);
+        return dispositivos;
+    }
+    static isOmissisAdjacenteADispositivoDeEmenda(d) {
+        if (!isOmissis(d)) {
+            return false;
+        }
+        let anterior = CmdEmdUtil.getDispositivoAnteriorDireto(d);
+        if (isCaput(anterior)) {
+            anterior = anterior.pai;
+        }
+        if (anterior && anterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return true;
+        }
+        const posterior = CmdEmdUtil.getDispositivoPosteriorDireto(d);
+        if (posterior && posterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
+            return true;
+        }
+        return false;
+    }
+    static isMesmoTipoParaComandoEmenda(d1, d2) {
+        if (d1.tipo !== d2.tipo) {
+            return false;
+        }
+        if (isArtigo(d1) && CmdEmdUtil.isAlteracaoIntegral(d1) !== CmdEmdUtil.isAlteracaoIntegral(d2)) {
+            return false;
+        }
+        return true;
+    }
+    static getTextoDoDispositivoOuOmissis(d, alteracaoNormaVigente = false) {
+        if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || isCaput(d)) {
+            return ' ' + CmdEmdUtil.trataTextoParaCitacao(d, alteracaoNormaVigente);
+        }
+        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
+            return isOmissis(d) ? ' (Suprimir omissis)' : ' (Suprimir)';
+        }
+        else {
+            return ' ' + new TagNode('Omissis');
+        }
+    }
+    static trataTextoParaCitacao(d, alteracaoNormaVigente = false) {
+        var _a;
+        let texto = isArtigo(d) ? d.caput.texto : (_a = d.texto) !== null && _a !== void 0 ? _a : '';
+        if (texto.includes(TEXTO_OMISSIS)) {
+            texto = texto.replace(TEXTO_OMISSIS, new TagNode('Omissis').toString());
+        }
+        if (alteracaoNormaVigente) {
+            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '');
+        }
+        else {
+            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '’$1 ');
+        }
+        return texto
+            .trim()
+            .replace(/\s{2,}/g, ' ')
+            .replace(/^<p>\s?/i, '')
+            .replace(/\s?<\/p>$/i, '')
+            .replace(/<\/?a.*?>/gi, '')
+            .replace(/\s([\\.,:?!])/g, '$1');
+    }
+    static isFechaAspas(d) {
+        return isUltimaAlteracao(d);
+    }
+    // Considera que dispositivosAdicionadosProposicao é uma lista de dispositivos adicionados à proposição
+    // e que não contém dispositivos adicionados em bloco de alteração.
+    // Podem ser utilizados apenas os dispositivos raiz em um grupo de dispositivos adicionados.
+    static verificaNecessidadeRenumeracaoRedacaoFinal(dispositivosAdicionadosProposicao) {
+        for (const d of dispositivosAdicionadosProposicao) {
+            if (CmdEmdUtil.implicaEmRenumeracaoRedacaoFinal(d)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    // Testa características do dispositivo (considerado fora de bloco de alteração) que implicam
+    // em necessidade de renumeração na redação final.
+    static implicaEmRenumeracaoRedacaoFinal(d) {
+        // rótulo 0 (zero) ou possui sufixo de encaixe (-A, -B...)
+        if (d.rotulo && (d.numero === '0' || /.*(?:-\d).*/i.test(d.rotulo))) {
+            return true;
+        }
+        // adjacente a parágrafo ou artigo único
+        if (isArtigo(d) || isParagrafo(d)) {
+            // Se o dispositivo tiver sido adicionado antes do único cairá no caso anterior de rótulo com 0 (zero)
+            // Não é possível testar pelo rótulo porque o parágrafo único está sendo renumerado.
+            if (irmaosMesmoTipo(d).filter(i => i.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL).length === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+    static normalizaCabecalhoComandoEmenda(texto) {
+        return removeEspacosDuplicados(texto.replace(/caput/g, '<i>caput</i>'));
+    }
+    /*
+    Dados dois agrupadores adicionados, verifica se são sequenciais e não existe artigo ou agrupador não adicionado entre eles.
+    */
+    static verificaAgrupadoresAdicionadosEmSequencia(a1, a2) {
+        if (!isAgrupadorNaoArticulacao(a1) && !isAgrupadorNaoArticulacao(a2)) {
+            return false;
+        }
+        const filhoNaoAdicionado = this.getFilhoNaoAdicionadoDeAgrupadorAdicionado(a1);
+        return !filhoNaoAdicionado && getIrmaoPosteriorIndependenteDeTipo(a1) === a2;
+    }
+    /*
+    Dado um agrupador adicionado retorna o primeiro artigo ou agrupador em sua hierarquia que não seja adicionado.
+    Retorna undefined se todos forem adicionados.
+    */
+    static getFilhoNaoAdicionadoDeAgrupadorAdicionado(agrupador) {
+        return buscaNaHierarquiaDispositivos(agrupador, f => {
+            return (isArtigo(f) || isAgrupadorNaoArticulacao(f)) && f.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO ? f : undefined;
+        });
+    }
+}
+
 // Tipo string para salvar o nome em vez do índice
 var TipoMensagem;
 (function (TipoMensagem) {
@@ -33452,14 +34072,25 @@ const validaTextoDispositivo = (dispositivo) => {
         isDispositivoDeArtigo(dispositivo) &&
         !isParagrafo(dispositivo) &&
         !isOmissis(dispositivo) &&
-        dispositivo.pai.filhos.filter(d => isOmissis(d)).length === 0 &&
         !hasFilhoGenerico(dispositivo.pai) &&
         (!hasFilhos(dispositivo) || isTodosFilhosTipoEnumeracaoSuprimidos(dispositivo)) &&
         !hasIndicativoFinalSequencia(dispositivo) &&
-        !isUltimaAlteracao(dispositivo) &&
+        //isUltimaAlteracao(dispositivo) &&
         isUltimaEnumeracao(dispositivo) &&
         !isSeguidoDeOmissis(dispositivo)) {
         addMensagem(mensagens, TipoMensagem.ERROR, `Último dispositivo de uma sequência deveria terminar com ${converteIndicadorParaTexto(dispositivo.INDICADOR_FIM_SEQUENCIA)}.`);
+    }
+    if (!isDispositivoAlteracao(dispositivo) &&
+        dispositivo.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO &&
+        dispositivo.situacao.tipoEmenda !== ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER &&
+        dispositivo.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+        const dispositivos = [];
+        dispositivos.push(dispositivo);
+        if (CmdEmdUtil.verificaNecessidadeRenumeracaoRedacaoFinal(dispositivos)) {
+            if (localStorage.getItem('naoMostrarExplicacaoSufixo') === null) {
+                addMensagem(mensagens, TipoMensagem.WARNING, `Como interpretar sufixos (-1, -2,...)?`, undefined, 'onmodalsufixos');
+            }
+        }
     }
     return [...new Set(mensagens)];
 };
@@ -33470,11 +34101,11 @@ const isSeguidoDeOmissis = (dispositivo) => {
     }
     return false;
 };
-const addMensagem = (mensagens, tipo, descricao, fix) => {
+const addMensagem = (mensagens, tipo, descricao, fix, nomeEvento = '') => {
     const existe = mensagens.filter(m => m.descricao === descricao).length > 0;
     if (!existe) {
         if (fix === undefined) {
-            mensagens.push({ tipo, descricao });
+            mensagens.push({ tipo, descricao, nomeEvento });
         }
         else {
             mensagens.push({ tipo, descricao, fix });
@@ -33940,6 +34571,18 @@ const converteDataFormatoBrasileiroParaUrn = (data) => {
     const dataRegex = data.match(/^(0[1-9]|[12][0-9]|3[01])[-/](0[1-9]|1[012])[-/](\d{4})$/);
     return dataRegex ? `${dataRegex[3]}-${dataRegex[2]}-${dataRegex[1]}` : '';
 };
+const buildUrn = (autoridade, tipo, numero, data) => {
+    const dataPadrao = /\d{4}[-]/.test(data) || /^\d{4}$/.test(data) ? data : converteDataFormatoBrasileiroParaUrn(data);
+    return `urn:lex:br:${autoridade}:${tipo}:${dataPadrao};${numero}`;
+};
+// Para inicialização de edição de emenda sem texto lexml
+const buildFakeUrn = (sigla, numero, ano) => {
+    const fake = VOCABULARIO.fakeUrns.find(f => f.sigla === sigla.toUpperCase());
+    if (fake) {
+        return buildUrn(fake.urnAutoridade, fake.urnTipoDocumento, numero, ano);
+    }
+    throw `Sigla '${sigla}' não encontrada no vocabulário para montagem da urn.`;
+};
 const validaUrn = (urn) => {
     var _a, _b;
     const autoridade = (_a = getAutoridade(urn)) === null || _a === void 0 ? void 0 : _a.urn;
@@ -33958,6 +34601,10 @@ const getNomeExtenso = (urn) => {
 };
 const getNomeExtensoComDataExtenso = (urn) => {
     var _a;
+    const atalho = VOCABULARIO.atalhosUrn.find(a => a.urn === urn);
+    if (atalho) {
+        return atalho.nome;
+    }
     const u = retiraFragmento(urn);
     const numero = getNumero(u);
     const tipo = (_a = getTipo$1(u)) === null || _a === void 0 ? void 0 : _a.descricao;
@@ -35173,10 +35820,18 @@ function HierarquiaArtigo(Base) {
         }
         renumeraFilhos() {
             if (!podeRenumerarFilhosAutomaticamente(this)) {
+                this.ajustaRotuloParagrafoUnicoSeNecessario();
                 return;
             }
             this.renumeraIncisos();
             this.renumeraParagrafos();
+        }
+        ajustaRotuloParagrafoUnicoSeNecessario() {
+            const nParagrafos = this.paragrafos.filter(p => !isOmissis(p)).length;
+            const paragrafoUnico = this.paragrafos.filter(p => !isOmissis(p)).find(p => { var _a; return (_a = p.id) === null || _a === void 0 ? void 0 : _a.endsWith('par1u'); });
+            if (paragrafoUnico) {
+                paragrafoUnico.rotulo = nParagrafos === 1 ? 'Parágrafo único.' : '§ 1º';
+            }
         }
     };
 }
@@ -37888,6 +38543,9 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
 };
 const getPaiQuePodeReceberFilhoDoTipo = (dispositivo, tipoFilho, dispositivosPermitidos) => {
     var _a;
+    if (!dispositivo) {
+        return undefined;
+    }
     return ((_a = dispositivo.tiposPermitidosFilhos) === null || _a === void 0 ? void 0 : _a.includes(tipoFilho))
         ? dispositivosPermitidos.length === 0 || dispositivosPermitidos.includes(dispositivo)
             ? dispositivo
@@ -38669,6 +39327,12 @@ const aplicaAlteracoesEmenda = (state, action) => {
     });
     if (retorno.emRevisao) {
         retorno.ui.events.push({ stateType: StateType.RevisaoAtivada });
+    }
+    if (state.articulacao) {
+        const d = getDispositivoAndFilhosAsLista(state.articulacao).find(d => !isArticulacao(d) && (isAdicionado(d) || isSuprimido(d) || isModificado(d)));
+        if (d) {
+            retorno.ui.events.push({ stateType: StateType.ElementoMarcado, elementos: [createElemento(d)] });
+        }
     }
     return retorno;
 };
@@ -39620,10 +40284,12 @@ const removeElemento = (state, action) => {
             const dispositivos = getDispositivoAndFilhosAsLista(dispositivo.pai).filter(isAgrupador);
             const agrupadorAntes = dispositivos[dispositivos.indexOf(dispositivo) - 1] || {};
             const agrupadorDepois = dispositivos[dispositivos.indexOf(dispositivo) + 1] || {};
-            return retornaEstadoAtualComMensagem(state, {
-                tipo: TipoMensagem.ERROR,
-                descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
-            });
+            if (agrupadorAntes.tipo !== agrupadorDepois.tipo && !getPaiQuePodeReceberFilhoDoTipo(dispositivo.pai, agrupadorDepois.tipo, [])) {
+                return retornaEstadoAtualComMensagem(state, {
+                    tipo: TipoMensagem.ERROR,
+                    descricao: `Operação não permitida (o agrupador "${agrupadorDepois.rotulo}" não poder estar diretamente subordinado ao agrupador "${agrupadorAntes.rotulo}")`,
+                });
+            }
         }
     }
     if (!isAcaoPermitida(dispositivo, RemoverElemento)) {
@@ -41403,8 +42069,7 @@ const buscarDispositivoByIdTratandoParagrafoUnico = (articulacao, id) => {
         return d;
     }
     else {
-        const idSemConsiderarAlteracaoEmNorma = id.split('alt')[0];
-        if (idSemConsiderarAlteracaoEmNorma.split('_').includes('par1')) {
+        if (id.endsWith('par1') || id.split('_').includes('par1')) {
             return buscaDispositivoById(articulacao, id.replace('_par1_', '_par1u_').replace(/par1$/, 'par1u'));
         }
         else {
@@ -43211,624 +43876,6 @@ const adicionarAgrupadorArtigoDialog = (elemento, quill, store) => {
     dialogElem.show();
 };
 
-/**
- * Utilitário para montar uma tag usando o pattern composite. Essa classe foi retirada do livro
- * Refactoring to Patterns
- */
-class TagNode {
-    constructor(nome) {
-        this.nome = nome;
-        this.valores = new Array();
-        this.atributos = new StringBuilder();
-    }
-    toString() {
-        if (!this.valores.length) {
-            return '<' + this.nome + this.atributos + '/>';
-        }
-        const resultado = new StringBuilder('<' + this.nome + this.atributos + '>');
-        this.valores.forEach(valor => {
-            resultado.append(valor);
-        });
-        resultado.append('</' + this.nome + '>');
-        return resultado.toString();
-    }
-    add(valor) {
-        if (valor) {
-            this.valores.push(valor);
-        }
-        return this;
-    }
-    addAtributo(atributo, valor) {
-        this.atributos.append(' ');
-        this.atributos.append(atributo);
-        if (valor) {
-            this.atributos.append('="');
-            this.atributos.append(valor);
-            this.atributos.append('"');
-        }
-        return this;
-    }
-}
-
-class DispositivoComparator {
-    static compare(d1, d2) {
-        if (!d1 || !d2) {
-            throw new Error('Tentativa de comparação de dispositivo nulo.');
-        }
-        if (!d1.pai) {
-            return -1;
-        }
-        if (!d2.pai) {
-            return 1;
-        }
-        const i1 = DispositivoComparator.getIndices(d1);
-        const i2 = DispositivoComparator.getIndices(d2);
-        return DispositivoComparator.comparaIndices(i1, i2);
-    }
-    static getIndices(d) {
-        const indices = [];
-        // Considera alteração como filha do caput
-        let pai = this.getPaiParaComparacao(d);
-        while (pai) {
-            indices.push(this.getIndexDoFilho(pai, d));
-            d = pai;
-            pai = this.getPaiParaComparacao(d);
-        }
-        indices.reverse();
-        return indices;
-    }
-    // Considera alteração em artigo como filha do caput
-    static getPaiParaComparacao(d) {
-        if (!d.pai) {
-            return undefined;
-        }
-        if (isArtigo(d.pai) && isArticulacaoAlteracao(d)) {
-            return d.pai.caput;
-        }
-        return d.pai;
-    }
-    static getIndexDoFilho(pai, d) {
-        if (isCaput(d)) {
-            return 0;
-        }
-        if (isParagrafo(d) || (isOmissis(d) && isArtigo(pai))) {
-            // Após o caput
-            return pai.filhos.indexOf(d) + 1;
-        }
-        if (isArticulacaoAlteracao(d)) {
-            // Antes dos filhos
-            return -1;
-        }
-        return pai.filhos.indexOf(d);
-    }
-    static comparaIndices(indices1, indices2) {
-        let ret = 0;
-        const size1 = indices1.length;
-        const size2 = indices2.length;
-        for (let i = 0; i < size1 && i < size2 && ret === 0; i++) {
-            ret = indices1[i] - indices2[i];
-        }
-        if (ret === 0) {
-            ret = size1 - size2;
-        }
-        return ret;
-    }
-}
-
-class DispositivoEmendaUtil {
-    static getAlteracao(dispositivo) {
-        let d = dispositivo;
-        if (d.tipo === TipoDispositivo.alteracao.tipo) {
-            return d;
-        }
-        if (!isDispositivoAlteracao(d)) {
-            return undefined;
-        }
-        while (d && d.tipo !== TipoDispositivo.alteracao.tipo) {
-            d = d.pai;
-        }
-        return d;
-    }
-    static existeNaNormaAlterada(dispositivo) {
-        return dispositivo.situacao.existeNaNormaAlterada;
-    }
-}
-
-class CmdEmdUtil {
-    static getDispositivosNaoOriginais(articulacao) {
-        var _a, _b;
-        const ret = [];
-        if (((_b = (_a = articulacao.projetoNorma) === null || _a === void 0 ? void 0 : _a.ementa) === null || _b === void 0 ? void 0 : _b.situacao.descricaoSituacao) === DescricaoSituacao.DISPOSITIVO_MODIFICADO) {
-            ret.push(articulacao.projetoNorma.ementa);
-        }
-        percorreHierarquiaDispositivos(articulacao, d => {
-            if (d.pai && d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-                ret.push(d);
-            }
-        });
-        return ret;
-    }
-    static getDispositivosAdicionados(articulacao) {
-        const ret = [];
-        percorreHierarquiaDispositivos(articulacao, d => {
-            if (d.pai && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-                ret.push(d);
-            }
-        });
-        return ret;
-    }
-    static getDispositivosComando(dispositivosEmenda) {
-        const dispositivos = new Array();
-        for (const d of dispositivosEmenda) {
-            if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL || isDispositivoAlteracao(d) || isArticulacaoAlteracao(d)) {
-                continue;
-            }
-            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetado(d);
-            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
-                dispositivos.push(dispositivoAfetado);
-            }
-        }
-        return dispositivos;
-    }
-    static getDispositivoAfetado(d) {
-        const pai = d.pai;
-        if (isDispositivoRaiz(pai)) {
-            return d;
-        }
-        // Verifica alteração integral de caput
-        if (isCaput(pai) && pai.pai.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            if (pai.filhos.find(f => f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL)) {
-                // Não é alteração integral de caput
-                return d;
-            }
-            // É alteração integral de caput
-            return CmdEmdUtil.getDispositivoAfetado(pai.pai);
-        }
-        // O caso de artigos adicionados junto com seu agrupador já foi tratado antes. Ver uso de retiraPrimeirosFilhosAdicionadosAgrupador
-        if (isArtigo(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return d;
-        }
-        // Se o pai for uma alteração integral
-        if (CmdEmdUtil.isAlteracaoIntegral(pai)) {
-            // Chama recursivamente para o pai
-            return CmdEmdUtil.getDispositivoAfetado(pai);
-        }
-        return d;
-    }
-    // Retira da lista de dispositivos os primeiros artigos e agrupadores adicionados, filhos de um agrupador adicionado.
-    // Considera que os dispositivos estejam ordenados
-    static retiraPrimeirosFilhosAdicionadosAgrupador(dispositivos) {
-        const primeiro = dispositivos[0];
-        if (isDispositivoAlteracao(primeiro) || primeiro.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return dispositivos;
-        }
-        if (!dispositivos.find(d => isAgrupadorNaoArticulacao(d))) {
-            return dispositivos;
-        }
-        const ret = [];
-        let filhosAdicionadosComAgrupador = [];
-        dispositivos.forEach(d => {
-            if (filhosAdicionadosComAgrupador.indexOf(d) < 0) {
-                ret.push(d);
-                if (isAgrupadorNaoArticulacao(d)) {
-                    filhosAdicionadosComAgrupador = this.listaFilhosAdicionadosComAgrupador(d);
-                }
-            }
-        });
-        return ret;
-    }
-    static listaFilhosAdicionadosComAgrupador(d) {
-        const ret = [];
-        buscaNaHierarquiaDispositivos(d, f => {
-            if (f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || isCaput(f) || isArticulacaoAlteracao(f)) {
-                ret.push(f);
-                return false;
-            }
-            return true;
-        });
-        return ret;
-    }
-    static getDispositivoAfetadoEmAlteracao(d) {
-        if (isOmissis(d)) {
-            if (CmdEmdUtil.isOmissisAdjacenteADispositivoDeEmenda(d)) {
-                return undefined;
-            }
-        }
-        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && CmdEmdUtil.isTextoOmitido(d)) {
-            return undefined;
-        }
-        const pai = isCaput(d.pai) ? d.pai.pai : d.pai;
-        // Se o pai for uma alteração integral
-        if (CmdEmdUtil.isAlteracaoIntegralEmAlteracao(pai)) {
-            // Chama recursivamente para o pai
-            return CmdEmdUtil.getDispositivoAfetadoEmAlteracao(pai);
-        }
-        return d;
-    }
-    // Considero texto omitido do Artigo se o seu caput tiver o texto omitido.
-    static isTextoOmitido(d) {
-        var _a;
-        return isOmissis(d) || d.texto.startsWith(TEXTO_OMISSIS) || (isAgrupador(d) && !!((_a = d.caput) === null || _a === void 0 ? void 0 : _a.texto.startsWith(TEXTO_OMISSIS)));
-    }
-    static getDescricaoSituacaoParaComandoEmenda(d) {
-        // Trata dispositivo já existente na norma adicionado em bloco de alteração como dispositivo modificado
-        return d.isDispositivoAlteracao && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && DispositivoEmendaUtil.existeNaNormaAlterada(d) && !isOmissis(d)
-            ? DescricaoSituacao.DISPOSITIVO_MODIFICADO
-            : d.situacao.descricaoSituacao;
-    }
-    static isMesmaSituacaoParaComandoEmenda(d1, d2) {
-        return this.getDescricaoSituacaoParaComandoEmenda(d1) === this.getDescricaoSituacaoParaComandoEmenda(d2);
-    }
-    static isAlteracaoIntegral(d) {
-        const descricaoSituacao = this.getDescricaoSituacaoParaComandoEmenda(d);
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return false;
-        }
-        if (isDispositivoAlteracao(d) && isAgrupadorNaoArticulacao(d) && descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return false;
-        }
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return true;
-        }
-        if (descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            return !isAgrupadorNaoArticulacao(d);
-        }
-        if (!d.filhos.length) {
-            if (isArtigo(d)) {
-                return descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL;
-            }
-            return true;
-        }
-        for (const filho of d.filhos) {
-            if (!CmdEmdUtil.isAlteracaoIntegral(filho)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    static isAlteracaoIntegralEmAlteracao(d) {
-        if (isArticulacaoAlteracao(d)) {
-            return false;
-        }
-        if (isAgrupadorNaoArticulacao(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return false;
-        }
-        return ((d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && !CmdEmdUtil.isTextoOmitido(d)) ||
-            d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO);
-    }
-    static getArvoreDispositivos(dispositivos) {
-        const mapa = new Map();
-        if (!dispositivos.length) {
-            return mapa;
-        }
-        dispositivos.forEach(dispositivo => {
-            this.atualizaMapa(dispositivo, mapa);
-        });
-        return mapa;
-    }
-    static atualizaMapa(dispositivo, mapa) {
-        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
-        let mapaAtual = mapa;
-        hierarquia.forEach(dispositivoAtual => {
-            const mapaFilho = mapaAtual.get(dispositivoAtual);
-            if (mapaFilho) {
-                mapaAtual = mapaFilho;
-            }
-            else {
-                const novoMapa = new Map();
-                mapaAtual.set(dispositivoAtual, novoMapa);
-                mapaAtual = novoMapa;
-            }
-        });
-    }
-    static getHierarquiaDispositivosDeUmDispositivo(dispositivo) {
-        const hierarquia = new Array();
-        hierarquia.push(dispositivo);
-        let pai = dispositivo.pai;
-        while (pai && !isDispositivoRaiz(pai) && !isAgrupadorNaoArticulacao(pai)) {
-            hierarquia.push(pai);
-            pai = pai.pai;
-        }
-        hierarquia.reverse();
-        return hierarquia;
-    }
-    static getArvoreDispositivosDeAlteracaoDeNorma(dispositivos) {
-        const mapa = new Map();
-        if (!dispositivos.length) {
-            return mapa;
-        }
-        for (const dispositivo of dispositivos) {
-            this.atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa);
-        }
-        return mapa;
-    }
-    static atualizaMapaDeAlteracaoDeNorma(dispositivo, mapa) {
-        const hierarquia = this.getHierarquiaDispositivosDeUmDispositivo(dispositivo);
-        let mapaAtual = mapa;
-        for (const dispositivoAtual of hierarquia) {
-            if (!isDispositivoAlteracao(dispositivoAtual) || isArticulacaoAlteracao(dispositivoAtual)) {
-                continue;
-            }
-            if (mapaAtual.has(dispositivoAtual)) {
-                mapaAtual = mapaAtual.get(dispositivoAtual);
-            }
-            else {
-                const novoMapa = new Map();
-                mapaAtual.set(dispositivoAtual, novoMapa);
-                mapaAtual = novoMapa;
-            }
-        }
-        mapa = mapaAtual;
-    }
-    // public static List<Dispositivo> filtraDispositivosModificados(final List<Dispositivo> dispositivos) {
-    //     List<Dispositivo> ret = new ArrayList<Dispositivo>();
-    //     // No caso de dispositivo modificado pode ocorrer o caso de alteração integral de artigo,
-    //     // onde o próprio artigo não está marcado como modificado.
-    //     for (Dispositivo d : dispositivos) {
-    //         if (d.isSituacao(DispositivoModificado.class) || d.isSituacao(DispositivoOriginal.class)
-    //             && CmdEmdUtil.isAlteracaoIntegral(d)) {
-    //             ret.add(d);
-    //         }
-    //     }
-    //     return ret;
-    // }
-    static isSequenciasPlural(sequencias) {
-        const qtdSequencias = sequencias.length;
-        if (qtdSequencias === 0) {
-            return false;
-        }
-        return qtdSequencias > 1 || CmdEmdUtil.isSequenciaPlural(sequencias[0]);
-    }
-    static isSequenciaPlural(sequencia) {
-        const qtdRanges = sequencia.getQuantidadeRanges();
-        if (qtdRanges === 0) {
-            return false;
-        }
-        return qtdRanges > 1 || sequencia.getPrimeiroRange().getQuantidadeDispositivos() > 1;
-    }
-    static getProximoAgrupador(disp) {
-        let ret = disp;
-        do {
-            ret = getDispositivoPosterior(ret);
-        } while (ret && !isAgrupador(ret));
-        return ret;
-    }
-    static getDispositivoIrmaoPosterior(dispositivo) {
-        if (isArtigo(dispositivo) || isAgrupador(dispositivo)) {
-            return this.getArtigoPosterior(dispositivo);
-        }
-        if (!this.isUltimoDispositivoDoMesmoTipo(dispositivo)) {
-            const pai = dispositivo.pai;
-            const index = pai.filhos.indexOf(dispositivo) + 1;
-            return pai.filhos[index];
-        }
-        return undefined;
-    }
-    static getArtigoPosterior(dispositivo) {
-        const pai = dispositivo.pai;
-        if (pai.filhos.length) {
-            const iFilho = pai.filhos.indexOf(dispositivo);
-            for (let i = iFilho + 1; i < pai.filhos.length; i++) {
-                const d = pai.filhos[i];
-                if (isArtigo(d)) {
-                    return d;
-                }
-                else if (isAgrupador(d)) {
-                    const atual = this.buscaProximoArtigo(d);
-                    if (atual) {
-                        return atual;
-                    }
-                }
-            }
-            if (pai.pai) {
-                return this.getArtigoPosterior(pai);
-            }
-        }
-        return undefined;
-    }
-    static buscaProximoArtigo(dispositivo) {
-        const filhos = dispositivo.filhos;
-        for (const d of filhos) {
-            if (isArtigo(d)) {
-                return d;
-            }
-            if (isAgrupador(d)) {
-                return this.buscaProximoArtigo(d);
-            }
-        }
-        return undefined;
-    }
-    static isUltimoDispositivoDoMesmoTipo(dispositivo) {
-        if (!dispositivo.pai) {
-            return true;
-        }
-        const pai = dispositivo.pai;
-        const index = pai.filhos.indexOf(dispositivo);
-        if (pai.filhos.length === index + 1) {
-            return true;
-        }
-        if (pai.filhos[index + 1].tipo === dispositivo.tipo) {
-            return false;
-        }
-        return true;
-    }
-    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
-    static getFilhosEstiloLexML(d) {
-        return getFilhosEstiloLexML(d);
-    }
-    // TODO Alterar referências a este método para função na hierarquiaUtil e excluir o método
-    static getDispositivoAnteriorDireto(d) {
-        return getDispositivoAnteriorDireto(d);
-    }
-    static getDispositivoPosteriorDireto(d) {
-        // primeiro o primeiro filho ou o primeiro irmão do pai (recursivamente)
-        const filhos = this.getFilhosEstiloLexML(d);
-        if (filhos.length) {
-            return filhos[0];
-        }
-        else {
-            return this.getProximoIrmaoRecursivo(d);
-        }
-    }
-    static getProximoIrmaoRecursivo(d) {
-        if (!d)
-            return;
-        const irmao = getDispositivoPosterior(d);
-        if (irmao) {
-            return irmao;
-        }
-        else {
-            const pai = d.pai;
-            return pai ? undefined : this.getProximoIrmaoRecursivo(pai);
-        }
-    }
-    // /**
-    //  * Retorna rótulo do dispositivo gerado pelo numerador. Não confia no rótulo informado pelo
-    //  * dispositivo original.
-    //  */
-    // public static String getRotulo(final Dispositivo d) {
-    //     return d.getNumeradorDispositivo().getRotulo(d);
-    // }
-    static getRotuloPais(disp) {
-        const sb = new StringBuilder();
-        let pai;
-        while (disp && !isArtigo(disp)) {
-            pai = disp.pai;
-            sb.append(pai.pronomePossessivoSingular);
-            sb.append(pai.getNumeracaoComRotuloParaComandoEmenda(disp));
-            disp = pai;
-        }
-        return sb.toString();
-    }
-    static getDispositivosNaAlteracaoParaComando(alteracao) {
-        const dispositivosAlterados = new Array();
-        percorreHierarquiaDispositivos(alteracao, d => {
-            if (d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-                dispositivosAlterados.push(d);
-            }
-        });
-        const dispositivos = new Array();
-        dispositivosAlterados.forEach(d => {
-            const dispositivoAfetado = CmdEmdUtil.getDispositivoAfetadoEmAlteracao(d);
-            if (dispositivoAfetado && !dispositivos.includes(dispositivoAfetado)) {
-                dispositivos.push(dispositivoAfetado);
-            }
-        });
-        dispositivos.sort(DispositivoComparator.compare);
-        return dispositivos;
-    }
-    static isOmissisAdjacenteADispositivoDeEmenda(d) {
-        if (!isOmissis(d)) {
-            return false;
-        }
-        let anterior = CmdEmdUtil.getDispositivoAnteriorDireto(d);
-        if (isCaput(anterior)) {
-            anterior = anterior.pai;
-        }
-        if (anterior && anterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return true;
-        }
-        const posterior = CmdEmdUtil.getDispositivoPosteriorDireto(d);
-        if (posterior && posterior.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ORIGINAL) {
-            return true;
-        }
-        return false;
-    }
-    static isMesmoTipoParaComandoEmenda(d1, d2) {
-        if (d1.tipo !== d2.tipo) {
-            return false;
-        }
-        if (isArtigo(d1) && CmdEmdUtil.isAlteracaoIntegral(d1) !== CmdEmdUtil.isAlteracaoIntegral(d2)) {
-            return false;
-        }
-        return true;
-    }
-    static getTextoDoDispositivoOuOmissis(d, alteracaoNormaVigente = false) {
-        if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO || d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO || isCaput(d)) {
-            return ' ' + CmdEmdUtil.trataTextoParaCitacao(d, alteracaoNormaVigente);
-        }
-        else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return isOmissis(d) ? ' (Suprimir omissis)' : ' (Suprimir)';
-        }
-        else {
-            return ' ' + new TagNode('Omissis');
-        }
-    }
-    static trataTextoParaCitacao(d, alteracaoNormaVigente = false) {
-        var _a;
-        let texto = isArtigo(d) ? d.caput.texto : (_a = d.texto) !== null && _a !== void 0 ? _a : '';
-        if (texto.includes(TEXTO_OMISSIS)) {
-            texto = texto.replace(TEXTO_OMISSIS, new TagNode('Omissis').toString());
-        }
-        if (alteracaoNormaVigente) {
-            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '');
-        }
-        else {
-            texto = texto.replace(/”( *(?:\(NR\)) *)?/, '’$1 ');
-        }
-        return texto
-            .trim()
-            .replace(/\s{2,}/g, ' ')
-            .replace(/^<p>\s?/i, '')
-            .replace(/\s?<\/p>$/i, '')
-            .replace(/<\/?a.*?>/gi, '')
-            .replace(/\s([\\.,:?!])/g, '$1');
-    }
-    static isFechaAspas(d) {
-        return isUltimaAlteracao(d);
-    }
-    // Considera que dispositivosAdicionadosProposicao é uma lista de dispositivos adicionados à proposição
-    // e que não contém dispositivos adicionados em bloco de alteração.
-    // Podem ser utilizados apenas os dispositivos raiz em um grupo de dispositivos adicionados.
-    static verificaNecessidadeRenumeracaoRedacaoFinal(dispositivosAdicionadosProposicao) {
-        for (const d of dispositivosAdicionadosProposicao) {
-            if (CmdEmdUtil.implicaEmRenumeracaoRedacaoFinal(d)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    // Testa características do dispositivo (considerado fora de bloco de alteração) que implicam
-    // em necessidade de renumeração na redação final.
-    static implicaEmRenumeracaoRedacaoFinal(d) {
-        // rótulo 0 (zero) ou possui sufixo de encaixe (-A, -B...)
-        if (d.rotulo && (d.numero === '0' || /.*(?:-\d).*/i.test(d.rotulo))) {
-            return true;
-        }
-        // adjacente a parágrafo ou artigo único
-        if (isArtigo(d) || isParagrafo(d)) {
-            // Se o dispositivo tiver sido adicionado antes do único cairá no caso anterior de rótulo com 0 (zero)
-            // Não é possível testar pelo rótulo porque o parágrafo único está sendo renumerado.
-            if (irmaosMesmoTipo(d).filter(i => i.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ORIGINAL).length === 1) {
-                return true;
-            }
-        }
-        return false;
-    }
-    static normalizaCabecalhoComandoEmenda(texto) {
-        return removeEspacosDuplicados(texto.replace(/caput/g, '<i>caput</i>'));
-    }
-    /*
-    Dados dois agrupadores adicionados, verifica se são sequenciais e não existe artigo ou agrupador não adicionado entre eles.
-    */
-    static verificaAgrupadoresAdicionadosEmSequencia(a1, a2) {
-        if (!isAgrupadorNaoArticulacao(a1) && !isAgrupadorNaoArticulacao(a2)) {
-            return false;
-        }
-        const filhoNaoAdicionado = this.getFilhoNaoAdicionadoDeAgrupadorAdicionado(a1);
-        return !filhoNaoAdicionado && getIrmaoPosteriorIndependenteDeTipo(a1) === a2;
-    }
-    /*
-    Dado um agrupador adicionado retorna o primeiro artigo ou agrupador em sua hierarquia que não seja adicionado.
-    Retorna undefined se todos forem adicionados.
-    */
-    static getFilhoNaoAdicionadoDeAgrupadorAdicionado(agrupador) {
-        return buscaNaHierarquiaDispositivos(agrupador, f => {
-            return (isArtigo(f) || isAgrupadorNaoArticulacao(f)) && f.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO ? f : undefined;
-        });
-    }
-}
-
 class Referencia {
 }
 class Elemento extends Referencia {
@@ -45341,6 +45388,9 @@ class EtaBlotMensagem extends EtaBlot {
     static create(mensagem) {
         const node = super.create();
         let classe = '';
+        if (mensagem.nomeEvento !== '') {
+            node.setAttribute('id', mensagem.nomeEvento);
+        }
         if (mensagem.tipo === TipoMensagem.INFO) {
             classe = 'mensagem--info';
         }
@@ -45356,6 +45406,10 @@ class EtaBlotMensagem extends EtaBlot {
         if (mensagem.fix) {
             node.innerHTML += `. <span class="mensagem__fix">Corrigir agora.</span>`;
             node.onclick = () => node.dispatchEvent(new CustomEvent('mensagem', { bubbles: true, cancelable: true, detail: { mensagem } }));
+        }
+        if (mensagem.nomeEvento && mensagem.nomeEvento !== '') {
+            node.innerHTML += `. <span class="mensagem__fix">Saiba mais</span>`;
+            node.onclick = () => node.dispatchEvent(new CustomEvent(mensagem.nomeEvento, { bubbles: true, cancelable: true, detail: { mensagem } }));
         }
         return node;
     }
@@ -45701,7 +45755,6 @@ class EtaQuill extends Quill {
         this._processandoMudancaLinha = false;
         this.undoRedoEstrutura = new Observable();
         this.elementoSelecionado = new Observable();
-        this.aspasAberta = false;
         this.customClickHandler = (ev) => {
             try {
                 let blot = EtaQuill.find(ev.target);
@@ -45725,7 +45778,6 @@ class EtaQuill extends Quill {
             this._mudouDeLinha = this.verificarMudouLinha(range, oldRange);
             if (this._mudouDeLinha) {
                 this.observableSelectionChange.notify(linhaAtualAux);
-                this.aspasAberta = false;
                 this.limparHistory();
             }
         };
@@ -46018,10 +46070,10 @@ class EtaQuill extends Quill {
             if (texto.indexOf('"') > -1) {
                 for (let i = 0; i < texto.length; i++) {
                     if (texto[i] === '"') {
+                        const novaAspas = i === 0 || texto[i - 1].match(/\s/) ? '“' : '”';
                         posicaoTexto += i;
                         this.deleteText(posicaoTexto, 1, Quill.sources.SILENT);
-                        this.insertText(posicaoTexto, this.aspasAberta ? '”' : '“', Quill.sources.SILENT);
-                        this.aspasAberta = !this.aspasAberta;
+                        this.insertText(posicaoTexto, novaAspas, Quill.sources.SILENT);
                         posicaoTexto = index;
                     }
                 }
@@ -46151,7 +46203,15 @@ class EtaQuillUtil {
         const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
         if (elemento.mensagens && elemento.mensagens.length > 0) {
             elemento.mensagens.forEach((mensagem) => {
-                new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                if (!mensagem.nomeEvento || mensagem.nomeEvento === '') {
+                    new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                }
+                else {
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (mensagem.nomeEvento && mensagem.nomeEvento !== '' && !avisoJaExiste) {
+                        new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                    }
+                }
             });
         }
         new EtaBlotEspaco().insertInto(etaTdEspaco);
@@ -46202,7 +46262,9 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
         this.placeholder = '';
         this.label = '';
         this.items = [];
+        this.disabled = false;
         this.opened = false;
+        this.async = true;
         this.maxSuggestions = 10;
         this.onSearch = (value) => console.log('Texto da pesquisa', value);
         this.onSelect = (value) => console.log('Item selecionado:', value);
@@ -46213,11 +46275,16 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
         this._mouseEnter = false;
         this._search = () => {
             const { value } = this.contentElement;
-            clearTimeout(this._timer);
-            if (value.length >= 5) {
-                this._timer = setTimeout(() => {
-                    this.onSearch(value);
-                }, this._interval);
+            if (this.async) {
+                clearTimeout(this._timer);
+                if (value.length >= 5 || !this.async) {
+                    this._timer = setTimeout(() => {
+                        this.onSearch(value);
+                    }, this.async ? this._interval : 0);
+                }
+            }
+            else {
+                this.onSearch(value);
             }
         };
     }
@@ -46273,6 +46340,7 @@ let AutocompleteAsync = class AutocompleteAsync extends s {
           placeholder=${this.placeholder}
           .value=${((_a = this.value) === null || _a === void 0 ? void 0 : _a.description) || ''}
           @change=${e => this._handleChange(e.target.value)}
+          ?disabled=${this.disabled}
         ></sl-input>
       </slot>
       <div class="suggest-container">
@@ -46463,7 +46531,13 @@ __decorate([
 ], AutocompleteAsync.prototype, "items", void 0);
 __decorate([
     e$3({ type: Boolean, reflect: true })
+], AutocompleteAsync.prototype, "disabled", void 0);
+__decorate([
+    e$3({ type: Boolean, reflect: true })
 ], AutocompleteAsync.prototype, "opened", void 0);
+__decorate([
+    e$3({ type: Boolean, reflect: true })
+], AutocompleteAsync.prototype, "async", void 0);
 __decorate([
     e$3({ type: Number })
 ], AutocompleteAsync.prototype, "maxSuggestions", void 0);
@@ -47303,6 +47377,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <lexml-ajuda-modal></lexml-ajuda-modal>
       <lexml-emenda-comando-modal></lexml-emenda-comando-modal>
       <lexml-atalhos-modal></lexml-atalhos-modal>
+      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
     renderBotoesParaTratarTodasRevisoes() {
@@ -47318,6 +47393,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     }
     showAjudaModal() {
         this.ajudaModal.show();
+    }
+    showModalSufixos() {
+        if (this.sufixosModal !== null) {
+            this.sufixosModal.show();
+        }
     }
     showAtalhosModal() {
         this.atalhosModal.show();
@@ -47884,7 +47964,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     linha.children.tail.remove();
                 }
                 if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
-                    EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (this.isMensagemSufixos(elemento)) {
+                        if (avisoJaExiste === null) {
+                            EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                        }
+                    }
+                    else {
+                        EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    }
                 }
             }
         });
@@ -47944,10 +48032,21 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                     linha.children.tail.remove();
                 }
                 if (elemento.mensagens && elemento.mensagens.length > 0 && !this.elementoRemovidoEmRevisao(elemento)) {
-                    EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (this.isMensagemSufixos(elemento)) {
+                        if (avisoJaExiste === null) {
+                            EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                        }
+                    }
+                    else {
+                        EtaQuillUtil.criarContainerMensagens(elemento).insertInto(linha);
+                    }
                 }
             }
         });
+    }
+    isMensagemSufixos(elemento) {
+        return elemento.mensagens && elemento.mensagens.length === 1 && elemento.mensagens[0].nomeEvento === 'onmodalsufixos';
     }
     montarMenuContexto(event) {
         var _a, _b;
@@ -48043,7 +48142,15 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             event.stopImmediatePropagation();
             this.exibirDiferencas(event.detail.elemento);
         });
+        editorHtml.addEventListener('onmodalsufixos', (event) => {
+            event.stopImmediatePropagation();
+            this.exibirModalSufixos();
+        });
         this.configListenersEta();
+    }
+    exibirModalSufixos() {
+        //exibirSufixosDialog(this.quill);
+        this.showModalSufixos();
     }
     exibirDiferencas(elemento) {
         var _a;
@@ -48442,6 +48549,9 @@ __decorate([
     i$1('lexml-ajuda-modal')
 ], EditorComponent.prototype, "ajudaModal", void 0);
 __decorate([
+    i$1('lexml-sufixos-modal')
+], EditorComponent.prototype, "sufixosModal", void 0);
+__decorate([
     i$1('lexml-atalhos-modal')
 ], EditorComponent.prototype, "atalhosModal", void 0);
 __decorate([
@@ -48670,6 +48780,7 @@ const jaExisteRevisaoUsuarioAtual$1 = (state) => {
 async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const dialogElem = document.createElement('sl-dialog');
     editorTextoRico.appendChild(dialogElem);
+    //tamanhoMaximoAnexo = editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo;
     dialogElem.label = 'Anexo';
     dialogElem.addEventListener('sl-request-close', (event) => {
         if (event.detail.source === 'overlay') {
@@ -48708,11 +48819,15 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     <br/>
     <br/>
     <input id="input-upload" type="file" accept="application/pdf" size="small"></input>
+    <br/>
+    <label class="tipoErrado" style="color: red;" hidden="true" id="tipoErrado">Esse arquivo não é um PDF</label>
+    <br/>
+    <label class="tamanhoMaximoAtingido" style="color: red;" hidden="true" id="tamanhoMaximoAtingido">Ultrapassou o tamanho máximo permitido (${Math.trunc(editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo / 1024)}MB)</label>
   </div>
   <br/>
   <div id="form" class="input-validation-required"></div>
   <br/>
-  <sl-button class="controls" slot="footer" variant="primary">Confirmar</sl-button>
+  <sl-button id="btnConfirmarAnexo" class="controls" slot="footer" variant="primary">Confirmar</sl-button>
   <sl-button class="controls" slot="footer" variant="default">Cancelar</sl-button>
   `);
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -48742,7 +48857,11 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
         wpUpload.hidden = anexos.length ? true : false;
         anexos.forEach(a => (htmlConteudo += `<span class="anexo-item">
                             <sl-icon name="paperclip"></sl-icon>
-                            <span>${a.nomeArquivo}</span>
+                            <a download="${a.nomeArquivo}" href="data:application/pdf;base64,${a.base64}">
+                              <span>
+                                ${a.nomeArquivo}
+                              </span>
+                            </a>
                             <!--
                             <sl-button class="btn-preview-anexo" size="small" title="Visualizar o anexo em uma nova janela" nomeArquivo="${a.nomeArquivo}">
                               <sl-icon name="eye"></sl-icon>
@@ -48765,7 +48884,7 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const confirmar = botoes[0];
     const fechar = botoes[1];
     inputUpload.oninput = () => {
-        addAnexo();
+        addAnexo(editorTextoRico);
     };
     confirmar.onclick = () => {
         atualizaAnexo(anexos);
@@ -48788,14 +48907,50 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
             },
         }));
     };
-    const addAnexo = async () => {
+    const addAnexo = async (editorTextoRico) => {
+        var _a, _b;
         if (inputUpload === null || inputUpload === void 0 ? void 0 : inputUpload.files) {
             const file = inputUpload.files[0];
-            const anexo = await convertAnexo(file);
-            anexos.push(anexo);
-            inputUpload.files = null;
-            conteudoDinamico();
+            const listaRestricoes = restricoes(file, editorTextoRico);
+            if (listaRestricoes.length === 0) {
+                const anexo = await convertAnexo(file);
+                anexos.push(anexo);
+                inputUpload.files = null;
+                conteudoDinamico();
+                (_a = document.getElementById('btnConfirmarAnexo')) === null || _a === void 0 ? void 0 : _a.removeAttribute('disabled');
+            }
+            else {
+                (_b = document.getElementById('btnConfirmarAnexo')) === null || _b === void 0 ? void 0 : _b.setAttribute('disabled', 'true');
+                listaRestricoes.forEach(restricao => {
+                    var _a;
+                    (_a = document.getElementById(restricao)) === null || _a === void 0 ? void 0 : _a.removeAttribute('hidden');
+                });
+                listaRestricoesCompleta.forEach(restricaoCompleta => {
+                    var _a;
+                    if (!listaRestricoes.includes(restricaoCompleta)) {
+                        (_a = document.getElementById(restricaoCompleta)) === null || _a === void 0 ? void 0 : _a.setAttribute('hidden', 'true');
+                    }
+                });
+            }
         }
+    };
+    const listaRestricoesCompleta = ['tamanhoMaximoAtingido', 'tipoErrado'];
+    const restricoes = (file, editorTextoRico) => {
+        const restricoes = [];
+        if (file) {
+            const size = Math.round(file.size / 1024);
+            if (size > editorTextoRico.lexmlEtaConfig.tamanhoMaximoAnexo) {
+                restricoes.push('tamanhoMaximoAtingido');
+            }
+            if (file.type !== 'application/pdf') {
+                restricoes.push('tipoErrado');
+            }
+            if (restricoes.length > 0) {
+                restricoes.push('restricao');
+            }
+        }
+        //const retorno = file && file.type === 'application/pdf' && size <= 4096;
+        return restricoes;
     };
     const convertAnexo = (file) => {
         return new Promise((resolve, reject) => {
@@ -48989,6 +49144,14 @@ const editorTextoRicoCss = $ `
       content: 'Remover coluna';
     }
 
+    .ql-picker-item[data-value='change-width-col-modal']::after {
+      content: 'Alterar a largura da coluna';
+    }
+
+    .ql-picker-item[data-value='change-width-table-modal']::after {
+      content: 'Alterar a largura da tabela';
+    }
+
     .ql-picker-item[data-value='append-row']::after {
       content: 'Inserir linha';
     }
@@ -49083,6 +49246,8 @@ const quillTableCss = $ `<style>
     table-layout: fixed;
     overflow: hidden;
     white-space: nowrap;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .ql-editor table td {
@@ -49360,12 +49525,12 @@ class ContainBlot extends Container$3 {
     return super.create(value);
   }
 
-  formats(domNode) {
-    if (domNode) {
-      return domNode.tagName;
-    }
-    return this.domNode.tagName;
-  }
+  // formats(domNode) {
+  //   if (domNode) {
+  //     return domNode.tagName;
+  //   }
+  //   return this.domNode.tagName;
+  // }
 }
 
 ContainBlot.blotName = 'contain';
@@ -49874,7 +50039,7 @@ class TableSelection {
     if (isInTable && !quill.table.isInTable) {
       // enable
       quill.table.isInTable = true;
-      TableToolbar.enable(quill, ['append-row*', 'append-col*', 'remove-cell', 'remove-row', 'remove-col', 'remove-table']);
+      TableToolbar.enable(quill, ['append-row*', 'append-col*', 'remove-cell', 'remove-row', 'remove-col', 'change-width-col-modal', 'change-width-table-modal', 'remove-table']);
     }
   }
 
@@ -49974,6 +50139,28 @@ class TableTrick {
     return blot; // return TD or NULL
   }
 
+  static find_td_node(quill) {
+    let td = TableTrick.find_td(quill);
+    if(td) {
+      return td.domNode;
+    }
+  }
+
+  static find_table(quill) {
+    const td = TableTrick.find_td(quill);
+    if (td) {
+      return td.parent.parent;
+    }
+  }
+
+  static find_table_node(quill) {
+    const table = TableTrick.find_table(quill);
+    if (table) {
+      return table.domNode;
+    }
+  }
+
+
   static getQuill(el) {
     // Get Quill instance from node/element or blot
     let quill = null;
@@ -50019,8 +50206,8 @@ class TableTrick {
       blot = blot.parent;
     }
     blot.insertBefore(table, top_branch);
-    TableHistory.register('insert', { node: table.domNode, nextNode: top_branch.domNode });
-    TableHistory.add(quill);
+    // TableHistory.register('insert', { node: table.domNode, nextNode: top_branch.domNode });
+    // TableHistory.add(quill);
   }
 
   static removeTable(quill) {
@@ -50041,6 +50228,20 @@ class TableTrick {
       TableHistory.register('remove', { node: table.domNode, nextNode: table.next ? table.next.domNode : null, parentNode: table.parent.domNode });
       TableHistory.add(quill);
       table.remove();
+    }
+  }
+
+
+  static changeWidthTable(quill, width) {
+    const widthValue = width + '%';
+    const styleValue = `width:${widthValue}`;
+    const table = TableTrick.find_table(quill);
+
+    if (table) {
+      const tableNode = table.domNode;
+      TableHistory.register('propertyChange',{ node: tableNode, property: 'style', oldValue: tableNode.style, newValue: styleValue });
+      tableNode.setAttribute('style', styleValue);
+      TableHistory.add(quill);
     }
   }
 
@@ -50260,6 +50461,42 @@ class TableTrick {
         });
       }
       TableSelection.selectionStartElement = TableSelection.selectionEndElement = null;
+      TableHistory.add(quill);
+    }
+  }
+
+  static changeWidthCol(quill, width) {
+    const coords = TableSelection.getSelectionCoords();
+    TableSelection.resetSelection(quill.container);
+    let table, colIndex, colsToRemove;
+    if (coords) {
+      // if we have a selection, remove all selected columns
+      const _table = TableSelection.selectionStartElement.closest('table');
+      table = Parchment$5.find(_table);
+      colIndex = coords.minX;
+      colsToRemove = coords.maxX - coords.minX + 1;
+    } else {
+      // otherwise, remove only the column of current cell
+      colsToRemove = 1;
+      const currentCell = TableTrick.find_td(quill);
+      if (currentCell) {
+        table = currentCell.parent.parent;
+        colIndex = Array.prototype.indexOf.call(currentCell.parent.domNode.children, currentCell.domNode);
+      }
+    }
+
+    if (table && typeof colIndex === 'number' && typeof colsToRemove === 'number') {
+      const widthValue = width + '%';
+      // Remove all TDs with the colIndex and repeat it colsToRemove times if there are multiple columns to delete
+      for (let i = 0; i < colsToRemove; i++) {
+        table.children.forEach(function (tr) {
+          const td = tr.domNode.children[colIndex];
+          if (td) {
+            TableHistory.register('propertyChange', { node: td, property: 'width', oldValue: td.width, newValue: widthValue });
+            td.setAttribute('width', widthValue);
+          }
+        });
+      }
       TableHistory.add(quill);
     }
   }
@@ -50613,7 +50850,11 @@ class TableTrick {
               // Table history entry
               TableHistory.undo(quill, entry.id);
               return false;
-            }
+            } else if (entry.undo?.ops.some(op => op.attributes?.td === null)) {
+              // Ajusta histórico: operação de undo possui um item com atributo td=null que mantém uma célula vazia
+              const index = entry.undo.ops.findIndex(op => op.attributes?.td === null);
+              entry.undo.ops.splice(index, 1);
+          }
             // Classic history entry
           }
           return true;
@@ -50885,12 +51126,9 @@ class TableModule {
     quill.on('selection-change', (range, oldRange) => TableSelection.selectionChange(quill, range, oldRange));
 
     const toolbar = quill.getModule('toolbar');
+
     toolbar.addHandler('table', function (value) {
-      if (isInsertTable(value) && isInTable(quill)) {
-        emitirEventoTableInTable(quill);
-        return false;
-      }
-      return TableTrick.table_handler(value, quill);
+      TableModule.configToolbar(quill, value);
     });
 
     const clipboard = quill.getModule('clipboard');
@@ -50977,6 +51215,15 @@ class TableModule {
     }
     return tableOptions;
   }
+
+  static configToolbar(quill, value) {
+    if (isInsertTable(value) && isInTable(quill)) {
+      emitirEventoTableInTable(quill);
+      return false;
+    }
+    return TableTrick.table_handler(value, quill);
+  }
+
 
   static removeNodeChildren(node) {
     while (node.firstChild) {
@@ -51199,6 +51446,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.texto = '';
         this.anexos = [];
         this.registroEvento = '';
+        this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
         this.onChange = new Observable();
         this.icons = Quill.import('ui/icons');
@@ -51235,6 +51483,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                             handlers: {
                                 undo: this.undo,
                                 redo: this.redo,
+                                image: this.imageHandler,
                             },
                         },
                         aspasCurvas: true,
@@ -51337,7 +51586,70 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 this.elTableManagerButton = this.querySelectorAll('span.ql-table')[1];
                 (_a = this.quill) === null || _a === void 0 ? void 0 : _a.on('text-change', this.updateTexto);
                 (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('selection-change', this.onSelectionChange);
+                this.alterarLarguraColunaModal.callback = this.alterarLarguraDaColuna;
+                this.alterarLarguraTabelaModal.callback = this.alterarLarguraDaTabela;
+                const toolbar = this.quill.getModule('toolbar');
+                toolbar.addHandler('table', (value) => {
+                    var _a, _b;
+                    TableModule.configToolbar(this.quill, value);
+                    if (value === 'change-width-col-modal') {
+                        this.lastSelecion = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection();
+                        const td = TableTrick.find_td_node(this.quill);
+                        this.showAlterarLarguraColunaModal(td.width);
+                    }
+                    else if (value === 'change-width-table-modal') {
+                        this.lastSelecion = (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection();
+                        const table = TableTrick.find_table_node(this.quill);
+                        this.showAlterarLarguraTabelaModal(table.width);
+                    }
+                });
             }
+        };
+        this.imageHandler = () => {
+            let fileInput = this.querySelector('input.ql-image[type=file]');
+            if (fileInput === null) {
+                fileInput = document.createElement('input');
+                fileInput.setAttribute('type', 'file');
+                fileInput.setAttribute('hidden', 'true');
+                fileInput.setAttribute('accept', 'image/png, image/gif, image/jpeg, image/bmp, image/x-icon');
+                fileInput.classList.add('ql-image');
+                fileInput.addEventListener('change', () => {
+                    if (fileInput.files !== null && fileInput.files[0] !== null) {
+                        const reader = new FileReader();
+                        reader.onload = e => {
+                            if (this.tamanhoPermitido(e)) {
+                                const range = this.quill.getSelection(true);
+                                this.quill.updateContents(new Delta().retain(range.index).delete(range.length).insert({ image: e.target.result }), Quill.sources.USER);
+                                fileInput.value = '';
+                                fileInput.remove();
+                            }
+                            else {
+                                this.alertar(`Essa imagem ultrapassa o tamanho máximo permitido (${Math.trunc(this.lexmlEtaConfig.tamanhoMaximoImagem / 1024)}MB)`);
+                                fileInput.remove();
+                            }
+                        };
+                        reader.readAsDataURL(fileInput.files[0]);
+                    }
+                });
+                this.appendChild(fileInput);
+            }
+            fileInput.click();
+        };
+        this.tamanhoPermitido = (e) => {
+            const size = Math.round(e.loaded / 1024);
+            return size < this.lexmlEtaConfig.tamanhoMaximoImagem;
+        };
+        this.alterarLarguraDaColuna = (valor) => {
+            this.quill.setSelection(this.lastSelecion);
+            TableTrick.changeWidthCol(this.quill, valor);
+            this.updateApenasTexto();
+            this.hideAlterarLarguraColunaModal();
+        };
+        this.alterarLarguraDaTabela = (valor) => {
+            this.quill.setSelection(this.lastSelecion);
+            TableTrick.changeWidthTable(this.quill, valor);
+            this.updateApenasTexto();
+            this.hideAlterarLarguraTabelaModal();
         };
         this.onSelectionChange = (range) => {
             setTimeout(() => {
@@ -51395,6 +51707,11 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             this.quill.history.clear(); // Não remover: isso é um workaround para o bug que ocorre ao limpar conteúdo depois de alguma inserção de tabela
             this.quill.setContents(this.quill.clipboard.convert(textoAjustado), 'silent');
             setTimeout(() => this.quill.history.clear(), 100); // A linha anterior gera um history, então é necessário limpar novamente.
+        };
+        this.updateApenasTexto = () => {
+            var _a;
+            const texto = this.ajustaHtml((_a = this.quill) === null || _a === void 0 ? void 0 : _a.root.innerHTML);
+            this.texto = texto === '<p><br></p>' ? '' : texto;
         };
         this.updateTexto = () => {
             var _a, _b;
@@ -51539,6 +51856,18 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.icons['text-indent'] = iconeTextIndent;
         this.icons['margin-bottom'] = iconeMarginBottom;
     }
+    showAlterarLarguraColunaModal(width) {
+        this.alterarLarguraColunaModal.show(width);
+    }
+    hideAlterarLarguraColunaModal() {
+        this.alterarLarguraColunaModal.hide();
+    }
+    showAlterarLarguraTabelaModal(width) {
+        this.alterarLarguraTabelaModal.show(width);
+    }
+    hideAlterarLarguraTabelaModal() {
+        this.alterarLarguraTabelaModal.hide();
+    }
     agendarEmissaoEventoOnChange() {
         clearTimeout(this.timerOnChange);
         this.timerOnChange = setTimeout(() => {
@@ -51585,6 +51914,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         </sl-button>
       </div>
       <div id="${this.id}-inner" class="editor-texto-rico" @onTableInTable=${this.onTableInTable}></div>
+      <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-tabela-modal" tipo="tabela"></lexml-alterar-largura-tabela-coluna-modal>
+      <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-coluna-modal" tipo="coluna"></lexml-alterar-largura-tabela-coluna-modal>
     `;
     }
     renderBotaoAnexo() {
@@ -51637,8 +51968,17 @@ __decorate([
     e$3({ type: String, attribute: 'registro-evento' })
 ], EditorTextoRicoComponent.prototype, "registroEvento", void 0);
 __decorate([
+    e$3({ type: Object })
+], EditorTextoRicoComponent.prototype, "lexmlEtaConfig", void 0);
+__decorate([
     e$3({ type: String })
 ], EditorTextoRicoComponent.prototype, "modo", void 0);
+__decorate([
+    i$1('#lexml-alterar-largura-coluna-modal')
+], EditorTextoRicoComponent.prototype, "alterarLarguraColunaModal", void 0);
+__decorate([
+    i$1('#lexml-alterar-largura-tabela-modal')
+], EditorTextoRicoComponent.prototype, "alterarLarguraTabelaModal", void 0);
 EditorTextoRicoComponent = __decorate([
     n$1('editor-texto-rico')
 ], EditorTextoRicoComponent);
@@ -51660,6 +52000,8 @@ const toolbarOptions = [
         {
             table: [
                 // 'insert',
+                'change-width-col-modal',
+                'change-width-table-modal',
                 'append-row-above',
                 'append-row-below',
                 'append-col-before',
@@ -51676,6 +52018,77 @@ const toolbarOptions = [
     ],
     ['image'],
 ];
+
+let AlterarLarguraTabelaColunaModalComponent = class AlterarLarguraTabelaColunaModalComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.valorLargura = '';
+        this.tipo = '';
+    }
+    show(width) {
+        this.valorLargura = width ? width.replace('%', '') : '';
+        this.slAlert.hide();
+        this.slDialog.show();
+    }
+    hide() {
+        this.slDialog.hide();
+    }
+    alterarLargura() {
+        const width = parseInt(this.valorLargura);
+        if (isNaN(width) || width < 1 || width > 100) {
+            this.slAlert.show();
+        }
+        else if (this.callback) {
+            this.callback(width);
+            this.hide();
+        }
+    }
+    render() {
+        return $ `
+      <style>
+        :host {
+          font-family: var(--sl-font-sans);
+        }
+        sl-input::part(base) {
+          width: 150px;
+        }
+        sl-alert {
+          margin-top: 20px;
+        }
+      </style>
+      <sl-dialog label="Alterar a largura da ${this.tipo}">
+        <label>Informe o percentual da largura da ${this.tipo}</label>
+        <sl-input type="number" value=${this.valorLargura} width="30px" @input=${e => (this.valorLargura = e.target.value)}>
+          <sl-icon name="percent" slot="suffix"></sl-icon>
+        </sl-input>
+        <sl-alert variant="warning" closable class="alert-closable">
+          <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+          Informe uma valor numérico de 1 a 100.
+        </sl-alert>
+        <sl-button slot="footer" @click=${() => this.alterarLargura()}>Alterar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
+      </sl-dialog>
+    `;
+    }
+};
+__decorate([
+    i$1('sl-dialog')
+], AlterarLarguraTabelaColunaModalComponent.prototype, "slDialog", void 0);
+__decorate([
+    i$1('sl-alert')
+], AlterarLarguraTabelaColunaModalComponent.prototype, "slAlert", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "valorLargura", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "tipo", void 0);
+__decorate([
+    e$3({ type: Function })
+], AlterarLarguraTabelaColunaModalComponent.prototype, "callback", void 0);
+AlterarLarguraTabelaColunaModalComponent = __decorate([
+    n$1('lexml-alterar-largura-tabela-coluna-modal')
+], AlterarLarguraTabelaColunaModalComponent);
 
 // Foi utilizado TemplateResult porque o articulacao.component.ts não usa ShadowDom
 const shoelaceLightThemeStyles = $ `
@@ -52148,18 +52561,18 @@ class Emenda {
         // Metadados específicos de sistemas
         this.metadados = {};
         this.proposicao = new RefProposicaoEmendada();
-        this.colegiadoApreciador = new ColegiadoApreciador();
         this.epigrafe = new Epigrafe();
         this.componentes = [new ComponenteEmendado()];
-        this.comandoEmenda = new ComandoEmenda();
         this.comandoEmendaTextoLivre = new ComandoEmendaTextoLivre();
+        this.comandoEmenda = new ComandoEmenda();
+        this.anexos = [];
         this.justificativa = '';
         this.local = '';
         this.data = new Date().toISOString().replace(/T.*/, ''); // formato “YYYY-MM-DD”
         this.autoria = new Autoria();
         this.opcoesImpressao = new OpcoesImpressao();
-        this.anexos = [];
         this.revisoes = [];
+        this.colegiadoApreciador = new ColegiadoApreciador();
     }
 }
 var ModoEdicaoEmenda;
@@ -52167,6 +52580,7 @@ var ModoEdicaoEmenda;
     ModoEdicaoEmenda["EMENDA"] = "emenda";
     ModoEdicaoEmenda["EMENDA_ARTIGO_ONDE_COUBER"] = "emendaArtigoOndeCouber";
     ModoEdicaoEmenda["EMENDA_TEXTO_LIVRE"] = "emendaTextoLivre";
+    ModoEdicaoEmenda["EMENDA_SUBSTITUICAO_TERMO"] = "emendaSubstituicaoTermo";
 })(ModoEdicaoEmenda || (ModoEdicaoEmenda = {}));
 // Dados da proposição ----------------------------
 class RefProposicaoEmendada {
@@ -52270,6 +52684,15 @@ class OpcoesImpressao {
         this.textoCabecalho = '';
         this.reduzirEspacoEntreLinhas = false;
         this.tamanhoFonte = 14;
+    }
+}
+class SubstituicaoTermo {
+    constructor() {
+        this.tipo = 'Expressão';
+        this.termo = '';
+        this.novoTermo = '';
+        this.flexaoGenero = false;
+        this.flexaoNumero = false;
     }
 }
 
@@ -54007,14 +54430,48 @@ class CmdEmdDispPrj {
     }
 }
 
-class ComandoEmendaBuilder {
-    constructor(urn, articulacao) {
+class CmdEmdSubstituicaoTermo {
+    constructor(substituicaoTermo, urn) {
+        this.substituicaoTermo = substituicaoTermo;
         this.urn = urn;
-        this.articulacao = articulacao;
+    }
+    getComplementoFlexoes(flexaoGenero, flexaoNumero) {
+        const flexoes = [];
+        flexaoGenero && flexoes.push('gênero');
+        flexaoNumero && flexoes.push('número');
+        return flexoes.length ? `, fazendo-se as flexões de ${flexoes.join(' e ')} necessárias` : '';
+    }
+    getTexto() {
+        const { tipo, termo, novoTermo, flexaoGenero, flexaoNumero } = this.substituicaoTermo;
+        const refProjeto = getRefGenericaProjeto(this.urn);
+        return `Substitua-se n${refProjeto.genero.artigoDefinido} ${refProjeto.nome} a/o ${tipo.toLowerCase()} “${termo}” por “${novoTermo}”${this.getComplementoFlexoes(flexaoGenero, flexaoNumero)}.`;
+    }
+}
+
+const isInstanceOfSubstituicaoTermo = (payload = {}) => 'termo' in payload;
+class ComandoEmendaBuilder {
+    constructor(urn, payload) {
+        this.urn = urn;
+        this.payload = payload;
     }
     getComandoEmenda() {
+        if (isInstanceOfSubstituicaoTermo(this.payload)) {
+            return this.getComandoEmendaSubstituicaoTermo();
+        }
+        else {
+            return this.getComandoEmendaArticulacao();
+        }
+    }
+    getComandoEmendaSubstituicaoTermo() {
         const ret = new ComandoEmenda();
-        const dispositivosEmenda = CmdEmdUtil.getDispositivosNaoOriginais(this.articulacao);
+        const cmdEmdSubstituicaoTermo = new CmdEmdSubstituicaoTermo(this.payload, this.urn);
+        ret.comandos.push(new ItemComandoEmenda(cmdEmdSubstituicaoTermo.getTexto(), ''));
+        return ret;
+    }
+    getComandoEmendaArticulacao() {
+        const articulacao = this.payload;
+        const ret = new ComandoEmenda();
+        const dispositivosEmenda = CmdEmdUtil.getDispositivosNaoOriginais(articulacao);
         const list = this.getDispositivosRepresentativosDeCadaComando(dispositivosEmenda);
         list.sort(DispositivoComparator.compare);
         if (!list.length) {
@@ -54035,7 +54492,7 @@ class ComandoEmendaBuilder {
             else {
                 const cmd = new CmdEmdDispPrj(dispositivosEmenda);
                 cabecalho = cmd.getTexto(refProjeto);
-                const cit = new CitacaoComandoDispPrj(this.articulacao);
+                const cit = new CitacaoComandoDispPrj(articulacao);
                 citacao = cit.getTexto();
                 complemento = this.getTextoComplementoDispProposicao(dispositivosEmenda);
             }
@@ -54138,14 +54595,15 @@ class DispositivosEmendaBuilder {
                     const caput = d.caput;
                     dm.tipo = this.getTipoDispositivoParaEmenda(caput);
                     dm.id = caput.id;
+                    dm.rotulo = d.rotulo;
                     dm.texto = this.trataTexto(caput.texto);
                 }
                 else {
                     dm.tipo = this.getTipoDispositivoParaEmenda(d);
                     dm.id = d.id;
+                    dm.rotulo = d.rotulo;
                     dm.texto = this.trataTexto(d.texto);
                 }
-                dm.rotulo = d.rotulo;
                 if (d.isDispositivoAlteracao) {
                     this.preencheAtributosAlteracao(d, dm);
                 }
@@ -54522,15 +54980,18 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         super(...arguments);
         this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
-        this.projetoNorma = {};
+        this.urn = '';
         this._timerLoadEmenda = 0;
     }
     createRenderRoot() {
         return this;
     }
-    setProjetoNorma(modo, projetoNorma, preparaAberturaEmenda = false) {
+    inicializarEdicao(modo, urn, projetoNorma, preparaAberturaEmenda = false) {
         this.modo = modo;
-        this.projetoNorma = projetoNorma;
+        this.urn = urn;
+        if (projetoNorma) {
+            this.projetoNorma = projetoNorma;
+        }
         this.loadProjetoNorma(preparaAberturaEmenda);
         document.querySelector('lexml-eta-articulacao')['style'].display = 'block';
     }
@@ -54538,9 +54999,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         if (this.modo !== ClassificacaoDocumento.EMENDA && this.modo !== ClassificacaoDocumento.EMENDA_ARTIGO_ONDE_COUBER) {
             return undefined;
         }
-        const urn = this.projetoNorma.value.metadado.identificacao.urn;
         const articulacao = rootStore.getState().elementoReducer.articulacao;
-        return new DispositivosEmendaBuilder(this.modo, urn, articulacao).getDispositivosEmenda();
+        return new DispositivosEmendaBuilder(this.modo, this.urn, articulacao).getDispositivosEmenda();
     }
     setDispositivosERevisoesEmenda(dispositivosEmenda, revisoes) {
         this.revisoes = revisoes;
@@ -54550,9 +55010,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         }
     }
     getComandoEmenda() {
-        const urn = this.projetoNorma.value.metadado.identificacao.urn;
         const articulacao = rootStore.getState().elementoReducer.articulacao;
-        return new ComandoEmendaBuilder(urn, articulacao).getComandoEmenda();
+        return new ComandoEmendaBuilder(this.urn, articulacao).getComandoEmenda();
     }
     getProjetoAtualizado() {
         const out = { ...this.projetoNorma };
@@ -54561,15 +55020,13 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         return out;
     }
     loadProjetoNorma(preparaAberturaEmenda) {
-        var _a, _b, _c;
+        var _a, _b;
         let documento;
         if (!this.projetoNorma || !this.projetoNorma.value) {
             this.projetoNorma = DOCUMENTO_PADRAO;
         }
         if (this.modo === ModoEdicaoEmenda.EMENDA_ARTIGO_ONDE_COUBER) {
-            const urn = (_a = getUrn(this.projetoNorma)) !== null && _a !== void 0 ? _a : '';
             documento = buildProjetoNormaFromJsonix(DOCUMENTO_PADRAO, true);
-            documento.urn = urn;
             const artigo = documento.articulacao.artigos[0];
             artigo.rotulo = 'Art.';
             artigo.numero = '1';
@@ -54585,7 +55042,8 @@ let LexmlEtaComponent = class LexmlEtaComponent extends connect(rootStore)(s) {
         else {
             documento = buildProjetoNormaFromJsonix(this.projetoNorma, this.modo === ClassificacaoDocumento.EMENDA);
         }
-        (_c = (_b = document.querySelector('lexml-emenda')) === null || _b === void 0 ? void 0 : _b.querySelector('sl-tab')) === null || _c === void 0 ? void 0 : _c.click();
+        documento.urn = this.urn;
+        (_b = (_a = document.querySelector('lexml-emenda')) === null || _a === void 0 ? void 0 : _a.querySelector('sl-tab')) === null || _b === void 0 ? void 0 : _b.click();
         rootStore.dispatch(openArticulacaoAction(documento.articulacao, this.modo));
     }
     loadEmenda() {
@@ -55218,6 +55676,239 @@ AutoriaComponent = __decorate([
     n$1('lexml-autoria')
 ], AutoriaComponent);
 
+let DestinoComponent = class DestinoComponent extends s {
+    constructor() {
+        super(...arguments);
+        this._comissoesAutocomplete = [];
+        this.comissaoSelecionada = '';
+        this.isMPV = false;
+        this.isPlenario = false;
+        this.tipoColegiadoPlenario = false;
+        this._comissoesOptions = [];
+    }
+    set proposicao(value) {
+        // this._autocomplete.value = '';
+        this._proposicao = value;
+        this.isMPV = false;
+        if (this._proposicao.sigla === 'MPV') {
+            this._colegiadoApreciador.siglaCasaLegislativa = 'CN';
+            this._colegiadoApreciador.tipoColegiado = 'Comissão';
+            this._colegiadoApreciador.siglaComissao = `CMMPV ${this._proposicao.numero}/${this._proposicao.ano}`;
+            this._autocomplete.value = `${this._colegiadoApreciador.siglaComissao} - COMISSÃO MISTA DA MEDIDA PROVISÓRIA N° ${this._proposicao.numero}, DE ${this._proposicao.ano}`;
+            this.isMPV = true;
+        }
+        this.requestUpdate();
+    }
+    get proposicao() {
+        return this._proposicao;
+    }
+    set comissoes(value) {
+        this.isPlenario = false;
+        if (!this._comissoes || this._comissoes.length === 0) {
+            this._comissoes = value ? value : [];
+            this._comissoesOptions = this.comissoes.map(comissao => new Option(comissao.sigla, `${comissao.sigla} - ${comissao.nome}`));
+            this.requestUpdate();
+        }
+        if (typeof value === 'undefined') {
+            this.isPlenario = true;
+        }
+    }
+    get comissoes() {
+        return this._comissoes;
+    }
+    set colegiadoApreciador(value) {
+        this._colegiadoApreciador = value ? value : new ColegiadoApreciador();
+        this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário' ? true : false;
+        if (this._colegiadoApreciador.siglaComissao) {
+            const option = this._comissoesOptions.find(op => op.value === this._colegiadoApreciador.siglaComissao) || new Option('', '');
+            this._autocomplete.value = option.description || this._colegiadoApreciador.siglaComissao;
+        }
+        else {
+            this._autocomplete.value = '';
+        }
+        this.requestUpdate();
+    }
+    get colegiadoApreciador() {
+        return this._colegiadoApreciador;
+    }
+    render() {
+        var _a, _b, _c, _d;
+        return $ `
+      <style>
+        fieldset {
+          display: flex;
+          flex-direction: column;
+          gap: 1em;
+          background-color: var(--sl-color-gray-100);
+          box-shadow: var(--sl-shadow-x-large);
+          flex-wrap: wrap;
+          padding: 20px 20px;
+          border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
+          border-radius: var(--sl-border-radius-medium);
+          max-width: 655px;
+        }
+
+        legend {
+          background-color: var(--sl-color-gray-200);
+          font-weight: bold;
+          border-radius: 5px;
+          border: 1px solid var(--sl-color-gray-300);
+          padding: 2px 5px;
+          box-shadow: var(--sl-shadow-small);
+        }
+
+        /* sl-radio-group::part(base) {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 10px;
+          background-color: var(--sl-color-gray-100);
+          box-shadow: var(--sl-shadow-x-large);
+          flex-wrap: wrap;
+          padding: 20px 20px;
+        }
+        sl-radio-group::part(label) {
+          background-color: var(--sl-color-gray-200);
+          font-weight: bold;
+          border-radius: 5px;
+          border: 1px solid var(--sl-color-gray-300);
+          padding: 2px 5px;
+          box-shadow: var(--sl-shadow-small);
+        }
+        sl-radio-group > sl-radio:first-child {
+          display: inline-flex;
+          padding: 0 20px 0 0;
+        }
+        sl-input::part(form-control) {
+          display: flex;
+          flex-direction: row;
+          gap: 10px;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        sl-input::part(base) {
+          max-width: 190px;
+        }
+        @media (max-width: 480px) {
+          sl-input::part(base) {
+            max-width: 150px;
+          }
+        }
+
+        sl-radio-group::part(base) {
+          box-shadow: none;
+        } */
+      </style>
+      <fieldset class="lexml-destino">
+        <legend>Destino</legend>
+        <div>
+          <sl-radio-group id="tipoColegiado">
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.updateTipoColegiado('Plenário')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Plenário'); }}
+              ?checked=${((_a = this._colegiadoApreciador) === null || _a === void 0 ? void 0 : _a.tipoColegiado) === 'Plenário'}
+              value="Plenário"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Plenário</sl-radio
+            >
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.updateTipoColegiado('Comissão')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Comissão'); }}
+              ?checked=${((_b = this._colegiadoApreciador) === null || _b === void 0 ? void 0 : _b.tipoColegiado) === 'Comissão'}
+              value="Comissão"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Comissão</sl-radio
+            >
+            <sl-radio
+              name="tipoColegiado"
+              @click=${() => this.updateTipoColegiado('Plenário via Comissão')}
+              @sl-change=${(evt) => { var _a; return ((_a = evt.target) === null || _a === void 0 ? void 0 : _a.checked) && this.updateTipoColegiado('Plenário via Comissão'); }}
+              ?checked=${((_c = this._colegiadoApreciador) === null || _c === void 0 ? void 0 : _c.tipoColegiado) === 'Plenário via Comissão'}
+              value="Plenário via Comissão"
+              ?disabled=${this.isMPV || this.isPlenario}
+              >Plenário via Comissão</sl-radio
+            >
+          </sl-radio-group>
+        </div>
+        <div style="width:100%;margin-top:10px">
+          <autocomplete-async
+            id="auto-complete-async"
+            label="Comissão"
+            .async=${false}
+            ?readonly=${this.isMPV || this.isPlenario}
+            placeholder="ex: Comissão"
+            .items=${this._comissoesAutocomplete}
+            .onSearch=${value => this._filtroComissao(value)}
+            .onSelect=${value => this._selecionarComissao(value)}
+            @blur=${this._blurAutoComplete}
+            ?disabled=${this.isMPV || this.isPlenario || this.tipoColegiadoPlenario || !((_d = this.comissoes) === null || _d === void 0 ? void 0 : _d.length)}
+          ></autocomplete-async>
+        </div>
+      </fieldset>
+    `;
+    }
+    updateTipoColegiado(value) {
+        if (!this.isMPV && !this.isPlenario) {
+            this._colegiadoApreciador.tipoColegiado = value;
+            this.tipoColegiadoPlenario = this._colegiadoApreciador.tipoColegiado === 'Plenário';
+            this.requestUpdate();
+        }
+    }
+    _selecionarComissao(item) {
+        this._colegiadoApreciador.siglaComissao = item.value;
+    }
+    _filtroComissao(query) {
+        const regex = new RegExp(query, 'i');
+        this._comissoesAutocomplete = this._comissoesOptions.filter(comissao => comissao.description.match(regex));
+    }
+    _blurAutoComplete() {
+        var _a;
+        if (!((_a = this.comissoes) === null || _a === void 0 ? void 0 : _a.length))
+            return;
+        setTimeout(() => {
+            var _a;
+            const comissao = (_a = this._autocomplete.value) !== null && _a !== void 0 ? _a : '';
+            const comissaoSelecionada = this._comissoesOptions.find(comissaoOp => comissao === comissaoOp.description);
+            if (!comissaoSelecionada) {
+                this._autocomplete.value = '';
+                this.comissaoSelecionada = '';
+            }
+        }, 200);
+    }
+    emitirEventoOnChange(origemEvento) {
+        this.dispatchEvent(new CustomEvent('onchange', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                origemEvento,
+            },
+        }));
+    }
+};
+__decorate([
+    i$1('#auto-complete-async')
+], DestinoComponent.prototype, "_autocomplete", void 0);
+__decorate([
+    t$1()
+], DestinoComponent.prototype, "_comissoesAutocomplete", void 0);
+__decorate([
+    t$1()
+], DestinoComponent.prototype, "comissaoSelecionada", void 0);
+__decorate([
+    e$3({ type: RefProposicaoEmendada })
+], DestinoComponent.prototype, "proposicao", null);
+__decorate([
+    e$3({ type: Array, state: true })
+], DestinoComponent.prototype, "comissoes", null);
+__decorate([
+    e$3({ type: Object, state: true })
+], DestinoComponent.prototype, "colegiadoApreciador", null);
+DestinoComponent = __decorate([
+    n$1('lexml-destino')
+], DestinoComponent);
+
 let LexmlAutocomplete = class LexmlAutocomplete extends s {
     constructor() {
         super(...arguments);
@@ -55273,7 +55964,7 @@ let LexmlAutocomplete = class LexmlAutocomplete extends s {
       </style>
       <slot id="dropdown-input">
         <!-- <input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="Parlamentar" .value=${this.value || ''} /> -->
-        <sl-input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="Parlamentar" size="small" .value=${this.value || ''}></sl-input>
+        <sl-input id="defaultInput" class="lexml-autocomplete-input" type="text" placeholder="" size="small" .value=${this.value || ''}></sl-input>
       </slot>
       <div class="suggest-container">
         <ul id="suggestions" ?hidden=${!this.opened} @mouseenter=${this._handleItemMouseEnter} @mouseleave=${this._handleItemMouseLeave}>
@@ -58136,6 +58827,19 @@ const quillSnowStyles = $ `
   </style>
 `;
 
+/**
+ * Parâmetros de inicialização de edição de documento
+ */
+class LexmlEmendaParametrosEdicao {
+    constructor() {
+        this.modo = 'Emenda';
+        // Preenchido automaticamente se for informada a emenda ou o projetoNorma
+        this.ementa = '';
+        // Motivo de uma nova emenda de texto livre
+        // Preenchido automaticamente se for informada a emenda
+        this.motivo = '';
+    }
+}
 let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)(s) {
     constructor() {
         super();
@@ -58143,10 +58847,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.totalAlertas = 0;
         this.exibirAjuda = true;
         this.parlamentares = [];
+        this.comissoes = [];
         this.lexmlEmendaConfig = new LexmlEmendaConfig();
         this.modo = ClassificacaoDocumento.EMENDA;
+        this.urn = '';
+        this.ementa = '';
         this.motivo = '';
-        this.projetoNorma = {};
+        this.parlamentaresCarregados = false;
+        this.comissoesCarregadas = false;
         this.autoria = new Autoria();
         this.desativarMarcaRevisao = () => {
             if (rootStore.getState().elementoReducer.emRevisao) {
@@ -58178,65 +58886,120 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             console.log('Erro inesperado ao carregar lista de parlamentares');
             console.log(err);
         }
+        finally {
+            this.parlamentaresCarregados = true;
+            // this.habilitarBotoes();
+        }
         return Promise.resolve([]);
     }
+    async getComissoes() {
+        try {
+            if (!this.lexmlEmendaConfig.urlComissoes) {
+                return Promise.resolve(undefined);
+            }
+            const _response = await fetch(this.lexmlEmendaConfig.urlComissoes);
+            const _comissoes = await _response.json();
+            return _comissoes.map(c => ({
+                siglaCasaLegislativa: c.siglaCasaLegislativa,
+                sigla: c.sigla,
+                nome: c.nome,
+            }));
+        }
+        catch (err) {
+            console.log('Erro inesperado ao carregar lista de comissões');
+            console.log(err);
+        }
+        finally {
+            this.comissoesCarregadas = true;
+            // this.habilitarBotoes();
+        }
+        return Promise.resolve([]);
+    }
+    // private habilitarBotoes(): void {
+    //   const botoes = document.querySelectorAll('.lexml-eta-main-header input[type=button]');
+    //   if (this.parlamentaresCarregados && this.comissoesCarregadas) {
+    //     botoes.forEach(btn => ((btn as HTMLInputElement).disabled = false));
+    //   } else {
+    //     botoes.forEach(btn => ((btn as HTMLInputElement).disabled = true));
+    //   }
+    // }
     atualizaListaParlamentares() {
         this.getParlamentares().then(parlamentares => (this.parlamentares = parlamentares));
     }
-    montarColegiadoApreciador(numero, ano) {
+    atualizaListaComissoes() {
+        this.getComissoes().then(comissoes => (this.comissoes = comissoes));
+    }
+    montarColegiadoApreciador(sigla, numero, ano) {
+        if (sigla.toUpperCase() === 'MPV') {
+            return {
+                siglaCasaLegislativa: 'CN',
+                tipoColegiado: 'Comissão',
+                siglaComissao: `CMMPV ${numero}/${ano}`,
+            };
+        }
+        // Inicialmente registra destino plenário do SF para demais matérias
         return {
-            siglaCasaLegislativa: 'CN',
-            tipoColegiado: 'Comissão',
-            siglaComissao: `CMMPV ${numero}/${ano}`,
+            siglaCasaLegislativa: 'SF',
+            tipoColegiado: 'Plenário',
         };
     }
     montarLocalFromColegiadoApreciador(colegiado) {
         return colegiado.tipoColegiado === 'Comissão' ? 'Sala da comissão' : 'Sala das sessões';
     }
-    montarEmendaBasicaFromProjetoNorma(projetoNorma, modoEdicao) {
-        var _a, _b, _c, _d;
+    montarEmendaBasica() {
         const emenda = new Emenda();
-        emenda.modoEdicao = modoEdicao;
-        const urn = getUrn(this.projetoNorma);
-        emenda.componentes[0].urn = urn;
+        emenda.modoEdicao = this.modo;
+        emenda.componentes[0].urn = this.urn;
+        emenda.proposicao = this.montarProposicaoPorUrn(this.urn, this.ementa);
+        return emenda;
+    }
+    montarProposicaoPorUrn(urn, ementa) {
         if (urn) {
-            emenda.proposicao = {
-                urn,
+            return {
+                urn: urn,
                 sigla: getSigla(urn),
                 numero: getNumero(urn),
                 ano: getAno(urn),
-                ementa: buildContent$1((_d = (_c = (_b = (_a = projetoNorma === null || projetoNorma === void 0 ? void 0 : projetoNorma.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial) === null || _d === void 0 ? void 0 : _d.ementa.content),
-                identificacaoTexto: 'Texto da MPV',
+                ementa: ementa,
+                identificacaoTexto: 'Texto inicial',
             };
         }
-        return emenda;
+        return new RefProposicaoEmendada();
     }
     getEmenda() {
         // Para evitar erros de referência nula quando chamado antes da inicialização do componente
-        if (!this.projetoNorma['value']) {
+        if (!this.urn) {
             return new Emenda();
         }
-        const emenda = this.montarEmendaBasicaFromProjetoNorma(this.projetoNorma, this.modo);
+        const emenda = this.montarEmendaBasica();
         const numeroProposicao = emenda.proposicao.numero.replace(/^0+/, '');
-        if (!this.isEmendaTextoLivre()) {
-            emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
-            emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
-            emenda.comandoEmendaTextoLivre.motivo = undefined;
-            emenda.comandoEmendaTextoLivre.texto = undefined;
+        if (this.isEmendaSubstituicaoTermo()) {
+            emenda.substituicaoTermo = this._substituicaoTermo.getSubstituicaoTermo();
+            emenda.comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
         }
-        else {
+        else if (this.isEmendaTextoLivre()) {
             emenda.comandoEmendaTextoLivre.motivo = this.motivo;
             emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
             emenda.anexos = this._lexmlEmendaTextoRico.anexos;
+        }
+        else {
+            emenda.comandoEmendaTextoLivre.motivo = undefined;
+            emenda.comandoEmendaTextoLivre.texto = '  ';
+            emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
+            emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
         }
         emenda.justificativa = this._lexmlJustificativa.texto;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
         emenda.opcoesImpressao = this._lexmlOpcoesImpressao.opcoesImpressao;
-        emenda.colegiadoApreciador = this.montarColegiadoApreciador(numeroProposicao, emenda.proposicao.ano);
+        emenda.colegiadoApreciador = this._lexmlDestino.colegiadoApreciador;
         emenda.epigrafe = new Epigrafe();
-        emenda.epigrafe.texto = `EMENDA Nº         - CMMPV ${numeroProposicao}/${emenda.proposicao.ano}`;
-        emenda.epigrafe.complemento = `(à ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
+        emenda.epigrafe.texto = 'EMENDA Nº         ';
+        if (emenda.colegiadoApreciador.tipoColegiado !== 'Plenário' && emenda.colegiadoApreciador.siglaComissao) {
+            emenda.epigrafe.texto += `- ${emenda.colegiadoApreciador.siglaComissao}`;
+        }
+        const generoProposicao = generoFromLetra(getTipo$1(emenda.proposicao.urn).genero);
+        emenda.epigrafe.complemento = `(${generoProposicao.artigoDefinidoPrecedidoPreposicaoASingular.trim()} ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
         emenda.revisoes = this.getRevisoes();
         return emenda;
@@ -58250,34 +59013,75 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
         return revisoes;
     }
-    inicializarEdicao(modo, projetoNorma, emenda, motivo = '', usuario) {
-        var _a;
-        this._lexmlEmendaComando.emenda = [];
-        this.modo = modo;
-        this.projetoNorma = projetoNorma;
-        this.motivo = motivo;
-        if (!this.isEmendaTextoLivre()) {
-            this._lexmlEta.setProjetoNorma(modo, projetoNorma, !!emenda);
+    openModalSufixos() {
+        if (this.sufixosModal !== null) {
+            this.sufixosModal.show();
         }
-        if (emenda) {
-            this.setEmenda(emenda);
+    }
+    inicializarEdicao(params) {
+        var _a, _b, _c;
+        this._lexmlEmendaComando.emenda = [];
+        this.modo = params.modo;
+        this.projetoNorma = params.projetoNorma;
+        this.inicializaProposicao(params);
+        this.motivo = params.motivo;
+        if (this.isEmendaTextoLivre() && params.emenda) {
+            this.motivo = params.emenda.comandoEmendaTextoLivre.motivo || 'Motivo não informado na emenda';
+        }
+        if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
+            this._lexmlEta.inicializarEdicao(this.modo, this.urn, params.projetoNorma, !!params.emenda);
+        }
+        if (params.emenda) {
+            this.setEmenda(params.emenda);
         }
         else {
-            this.resetaEmenda(modo);
+            this.resetaEmenda(params);
         }
         this.limparAlertas();
         if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
             this.showAlertaEmendaTextoLivre();
         }
-        this.setUsuario(usuario !== null && usuario !== void 0 ? usuario : rootStore.getState().elementoReducer.usuario);
+        this.setUsuario((_a = params.usuario) !== null && _a !== void 0 ? _a : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
-        if (!((_a = emenda === null || emenda === void 0 ? void 0 : emenda.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+        if (!((_c = (_b = params.emenda) === null || _b === void 0 ? void 0 : _b.revisoes) === null || _c === void 0 ? void 0 : _c.length)) {
             this.desativarMarcaRevisao();
         }
         this._tabsEsquerda.show('lexml-eta');
         if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             this._tabsDireita.show('comando');
         }
+        this.updateView();
+    }
+    inicializaProposicao(params) {
+        this.urn = '';
+        this.ementa = '';
+        if (params.proposicao) {
+            // Preferência para a proposição informada
+            this.urn = buildFakeUrn(params.proposicao.sigla, params.proposicao.numero, params.proposicao.ano);
+            this.ementa = params.proposicao.ementa; // Preferência para a ementa informada
+        }
+        // Se não forem informados, utilizar da Emenda
+        if (params.emenda) {
+            if (!this.urn) {
+                this.urn = params.emenda.proposicao.urn;
+            }
+            if (!this.ementa) {
+                this.ementa = params.emenda.proposicao.ementa;
+            }
+        }
+        // Por último do ProjetoNorma
+        if (this.projetoNorma) {
+            if (!this.urn) {
+                this.urn = getUrn(this.projetoNorma);
+            }
+            if (!this.ementa) {
+                this.ementa = this.getEmentaFromProjetoNorma(this.projetoNorma);
+            }
+        }
+    }
+    getEmentaFromProjetoNorma(projetoNorma) {
+        var _a, _b, _c, _d;
+        return buildContent$1((_d = (_c = (_b = (_a = projetoNorma.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial) === null || _d === void 0 ? void 0 : _d.ementa.content);
     }
     stateChanged(state) {
         var _a, _b, _c, _d, _e, _f;
@@ -58301,25 +59105,51 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
     }
     setEmenda(emenda) {
-        if (!this.isEmendaTextoLivre()) {
+        if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
             this._lexmlEta.setDispositivosERevisoesEmenda(emenda.componentes[0].dispositivos, emenda.revisoes);
         }
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
+        this._lexmlDestino.colegiadoApreciador = emenda.colegiadoApreciador;
+        this._lexmlDestino.proposicao = emenda.proposicao;
         this._lexmlJustificativa.setContent(emenda.justificativa);
         if (this.isEmendaTextoLivre()) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
             this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
             rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(emenda.componentes[0].dispositivos, emenda.revisoes));
         }
+        else if (this.isEmendaSubstituicaoTermo()) {
+            this._substituicaoTermo.setSubstituicaoTermo(emenda.substituicaoTermo || new SubstituicaoTermo());
+        }
         this._lexmlData.data = emenda.data;
     }
-    resetaEmenda(modoEdicao = ModoEdicaoEmenda.EMENDA) {
+    resetaEmenda(params) {
         const emenda = new Emenda();
-        emenda.modoEdicao = modoEdicao;
+        emenda.modoEdicao = params.modo;
+        emenda.proposicao = this.montarProposicaoPorUrn(this.urn, params.ementa);
+        emenda.autoria = this.montarAutoriaPadrao(params);
+        emenda.opcoesImpressao = this.montarOpcoesImpressaoPadrao(params);
         this._lexmlEmendaComando.emenda = {};
         this.setEmenda(emenda);
         rootStore.dispatch(limparRevisaoAction.execute());
+    }
+    montarAutoriaPadrao(params) {
+        const autoria = new Autoria();
+        const autoriaPadrao = params.autoriaPadrao;
+        const parlamentarAutor = this.parlamentares.find(par => par.identificacao === (autoriaPadrao === null || autoriaPadrao === void 0 ? void 0 : autoriaPadrao.identificacao) && par.siglaCasaLegislativa === (autoriaPadrao === null || autoriaPadrao === void 0 ? void 0 : autoriaPadrao.siglaCasaLegislativa));
+        if (parlamentarAutor) {
+            autoria.parlamentares = [parlamentarAutor];
+        }
+        return autoria;
+    }
+    montarOpcoesImpressaoPadrao(params) {
+        const opcoesImpressao = new OpcoesImpressao();
+        if (params.opcoesImpressaoPadrao) {
+            opcoesImpressao.imprimirBrasao = params.opcoesImpressaoPadrao.imprimirBrasao;
+            opcoesImpressao.textoCabecalho = params.opcoesImpressaoPadrao.textoCabecalho;
+            opcoesImpressao.tamanhoFonte = params.opcoesImpressaoPadrao.tamanhoFonte;
+        }
+        return opcoesImpressao;
     }
     createRenderRoot() {
         return this;
@@ -58356,8 +59186,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     firstUpdated() {
         var _a, _b, _c;
-        setTimeout(() => this.atualizaListaParlamentares(), 5000);
+        // this.habilitarBotoes();
+        setTimeout(() => this.atualizaListaParlamentares(), 0);
+        setTimeout(() => this.atualizaListaComissoes(), 0);
         (_a = this._tabsEsquerda) === null || _a === void 0 ? void 0 : _a.addEventListener('sl-tab-show', (event) => {
+            var _a;
             const tabName = event.detail.name;
             if (tabName === 'avisos') {
                 const badge = event.target.querySelector('sl-badge');
@@ -58367,6 +59200,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
             else if (tabName === 'autoria') {
                 this.parlamentares.length === 0 && this.atualizaListaParlamentares();
+                ((_a = this.comissoes) === null || _a === void 0 ? void 0 : _a.length) === 0 && this.atualizaListaComissoes();
             }
         });
         this.slSplitPanel.addEventListener('sl-reposition', () => {
@@ -58474,7 +59308,20 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     onChange() {
         var _a;
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+        if (this.isEmendaSubstituicaoTermo()) {
+            const comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
+            this._lexmlEmendaComando.emenda = comandoEmenda;
+            this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
+        }
+        else if (this.isEmendaTextoLivre()) {
+            if (!this._lexmlEmendaTextoRico.texto) {
+                this.showAlertaEmendaTextoLivre();
+            }
+            else {
+                rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
+            }
+        }
+        else if (this.modo.startsWith('emenda')) {
             const comandoEmenda = this._lexmlEta.getComandoEmenda();
             this._lexmlEmendaComando.emenda = comandoEmenda;
             this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
@@ -58489,14 +59336,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
             else {
                 rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
-            }
-        }
-        else if (this.isEmendaTextoLivre()) {
-            if (!this._lexmlEmendaTextoRico.texto) {
-                this.showAlertaEmendaTextoLivre();
-            }
-            else {
-                rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
             }
         }
     }
@@ -58517,6 +59356,12 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     isEmendaTextoLivre() {
         return this.modo && this.modo === 'emendaTextoLivre';
+    }
+    isEmendaSubstituicaoTermo() {
+        return this.modo === 'emendaSubstituicaoTermo';
+    }
+    updateView() {
+        this.updateState = new Date();
     }
     render() {
         return $ `
@@ -58600,14 +59445,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           <sl-tab-group id="tabs-esquerda">
             <sl-tab slot="nav" panel="lexml-eta">Texto</sl-tab>
             <sl-tab slot="nav" panel="justificativa">Justificação</sl-tab>
-            <sl-tab slot="nav" panel="autoria">Data, Autoria e Impressão</sl-tab>
+            <sl-tab slot="nav" panel="autoria">Destino, Data, Autoria e Impressão</sl-tab>
             <sl-tab slot="nav" panel="avisos">
               Avisos
               <div class="badge-pulse" id="contadorAvisos">${this.totalAlertas > 0 ? $ ` <sl-badge variant="danger" pill pulse>${this.totalAlertas}</sl-badge> ` : ''}</div>
             </sl-tab>
             <sl-tab-panel name="lexml-eta" class="overflow-hidden">
               <lexml-eta
-                style="display: ${!this.isEmendaTextoLivre() ? 'block' : 'none'}"
+                style="display: ${!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo() ? 'block' : 'none'}"
                 id="lexmlEta"
                 .lexmlEtaConfig=${this.lexmlEmendaConfig}
                 @onchange=${this.onChange}
@@ -58619,12 +59464,21 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 registroEvento="justificativa"
                 @onchange=${this.onChange}
               ></editor-texto-rico>
+              <lexml-substituicao-termo style="display: ${this.isEmendaSubstituicaoTermo() ? 'block' : 'none'}" @onchange=${this.onChange}></lexml-substituicao-termo>
             </sl-tab-panel>
             <sl-tab-panel name="justificativa" class="overflow-hidden">
-              <editor-texto-rico modo="justificativa" id="editor-texto-rico-justificativa" registroEvento="justificativa" @onchange=${this.onChange}></editor-texto-rico>
+              <editor-texto-rico
+                .lexmlEtaConfig=${this.lexmlEmendaConfig}
+                modo="justificativa"
+                id="editor-texto-rico-justificativa"
+                registroEvento="justificativa"
+                @onchange=${this.onChange}
+              ></editor-texto-rico>
             </sl-tab-panel>
             <sl-tab-panel name="autoria" class="overflow-hidden">
               <div class="tab-autoria__container">
+                <lexml-destino .comissoes=${this.comissoes}></lexml-destino>
+                <br />
                 <lexml-data></lexml-data>
                 <br />
                 <lexml-autoria .parlamentares=${this.parlamentares}></lexml-autoria>
@@ -58664,6 +59518,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           </sl-tab-group>
         </div>
       </sl-split-panel>
+      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
 };
@@ -58680,17 +59535,20 @@ __decorate([
     e$3({ type: Array })
 ], LexmlEmendaComponent.prototype, "parlamentares", void 0);
 __decorate([
+    e$3({ type: Array })
+], LexmlEmendaComponent.prototype, "comissoes", void 0);
+__decorate([
     e$3({ type: Object })
 ], LexmlEmendaComponent.prototype, "lexmlEmendaConfig", void 0);
 __decorate([
-    e$3({ type: String })
-], LexmlEmendaComponent.prototype, "modo", void 0);
-__decorate([
-    e$3({ type: String })
-], LexmlEmendaComponent.prototype, "motivo", void 0);
+    t$1()
+], LexmlEmendaComponent.prototype, "updateState", void 0);
 __decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "autoria", void 0);
+__decorate([
+    i$1('lexml-substituicao-termo')
+], LexmlEmendaComponent.prototype, "_substituicaoTermo", void 0);
 __decorate([
     i$1('lexml-eta')
 ], LexmlEmendaComponent.prototype, "_lexmlEta", void 0);
@@ -58700,6 +59558,9 @@ __decorate([
 __decorate([
     i$1('#editor-texto-rico-justificativa')
 ], LexmlEmendaComponent.prototype, "_lexmlJustificativa", void 0);
+__decorate([
+    i$1('lexml-destino')
+], LexmlEmendaComponent.prototype, "_lexmlDestino", void 0);
 __decorate([
     i$1('lexml-autoria')
 ], LexmlEmendaComponent.prototype, "_lexmlAutoria", void 0);
@@ -58724,6 +59585,9 @@ __decorate([
 __decorate([
     i$1('sl-split-panel')
 ], LexmlEmendaComponent.prototype, "slSplitPanel", void 0);
+__decorate([
+    i$1('lexml-sufixos-modal')
+], LexmlEmendaComponent.prototype, "sufixosModal", void 0);
 LexmlEmendaComponent = __decorate([
     n$1('lexml-emenda')
 ], LexmlEmendaComponent);
@@ -59166,6 +60030,79 @@ AjudaModalComponent = __decorate([
     n$1('lexml-ajuda-modal')
 ], AjudaModalComponent);
 
+let SufixosModalComponent = class SufixosModalComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.step = 1;
+    }
+    show() {
+        var _a;
+        const noShowAgain = localStorage.getItem('naoMostrarExplicacaoSufixo');
+        const noShowAgainSwitch = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('#noShowAgain');
+        if (noShowAgain && noShowAgainSwitch) {
+            noShowAgainSwitch.checked = true;
+        }
+        this.slDialog.show();
+    }
+    handleSwitchChange(event) {
+        const isChecked = event.target.checked;
+        if (isChecked) {
+            localStorage.setItem('naoMostrarExplicacaoSufixo', 'true');
+        }
+        else {
+            localStorage.removeItem('naoMostrarExplicacaoSufixo');
+        }
+    }
+    render() {
+        return $ `
+      <sl-dialog>
+        <span slot="label">Sufixos de posicionamento</span>
+
+        <div>
+          <p>
+            Os sufixos na numeração de dispositivos, como -1, -2 e assim por diante, são usados para orientar o posicionamento na redação final. Eles não indicam uma numeração
+            definitiva.
+          </p>
+          <p>Os dispositivos propostos e adjacentes deverão ser devidamente renumerados no momento da consolidação das emendas ao texto da proposição pela Redação Final.</p>
+        </div>
+
+        <div slot="footer" class="footer-container">
+          <sl-switch id="noShowAgain" @sl-change=${this.handleSwitchChange}> Não mostrar novamente </sl-switch>
+
+          <sl-button variant="default" @click=${() => this.slDialog.hide()}> Fechar </sl-button>
+        </div>
+      </sl-dialog>
+    `;
+    }
+};
+SufixosModalComponent.styles = r$2 `
+    .footer-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap; /* Quebra de linha no mobile ou quando o espaço for insuficiente */
+    }
+
+    .footer-container sl-switch {
+      order: 1; /* Garante que o switch sempre venha primeiro */
+      margin-right: auto; /* Empurra qualquer conteúdo à sua direita para o canto mais distante */
+    }
+
+    .footer-container sl-button {
+      order: 2; /* Garante que o botão sempre venha depois do switch */
+      margin-left: auto; /* Empurra qualquer conteúdo à sua esquerda para o canto mais distante */
+    }
+  `;
+__decorate([
+    e$3({ type: Number })
+], SufixosModalComponent.prototype, "step", void 0);
+__decorate([
+    i$1('sl-dialog')
+], SufixosModalComponent.prototype, "slDialog", void 0);
+SufixosModalComponent = __decorate([
+    n$1('lexml-sufixos-modal')
+], SufixosModalComponent);
+
 let ComandoEmendaModalComponent = class ComandoEmendaModalComponent extends s {
     atualizarComandoEmenda(comandoEmenda) {
         this.lexmlComandoEmenda.emenda = comandoEmenda;
@@ -59277,7 +60214,7 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
 
       <sl-radio-group label="Opções de impressão" fieldset class="lexml-opcoes-impressao">
         <div>
-          <input type="checkbox" id="chk-imprimir-brasao" ?checked=${(_a = this._opcoesImpressao) === null || _a === void 0 ? void 0 : _a.imprimirBrasao} @input=${(ev) => this._atualizarImprimirBrasao(ev)} />
+          <sl-checkbox id="chk-imprimir-brasao" ?checked=${(_a = this._opcoesImpressao) === null || _a === void 0 ? void 0 : _a.imprimirBrasao} @input=${(ev) => this._atualizarImprimirBrasao(ev)}></sl-checkbox>
           <label for="chk-imprimir-brasao">Imprimir brasão</label>
         </div>
         <sl-input
@@ -59296,12 +60233,11 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
           </sl-select>
         </div>
         <div>
-          <input
-            type="checkbox"
+          <sl-checkbox
             id="chk-reduzir-espaco"
             ?checked=${(_d = this._opcoesImpressao) === null || _d === void 0 ? void 0 : _d.reduzirEspacoEntreLinhas}
-            @input=${(ev) => this._atualizarReduzirEspacoEntreLinhas(ev)}
-          />
+            @click=${(ev) => this._atualizarReduzirEspacoEntreLinhas(ev)}
+          ></sl-checkbox>
           <label for="chk-reduzir-espaco">Reduzir espaço entre linhas</label>
         </div>
       </sl-radio-group>
@@ -59309,16 +60245,20 @@ let OpcoesImpressaoComponent = class OpcoesImpressaoComponent extends s {
     }
     _atualizarTextoCabecalho(ev) {
         this._opcoesImpressao.textoCabecalho = ev.target.value;
+        this.requestUpdate();
     }
     _atualizarImprimirBrasao(ev) {
         this._opcoesImpressao.imprimirBrasao = ev.target.checked;
+        this.requestUpdate();
     }
     _atualizarTamanhoFonte(ev) {
         const valorFonte = parseInt(ev.target.value);
         this._opcoesImpressao.tamanhoFonte = valorFonte;
+        this.requestUpdate();
     }
     _atualizarReduzirEspacoEntreLinhas(ev) {
         this._opcoesImpressao.reduzirEspacoEntreLinhas = ev.target.checked;
+        this.requestUpdate();
     }
     agendarEmissaoEventoOnChange(origemEvento) {
         clearInterval(this.timerEmitirEventoOnChange);
@@ -59343,19 +60283,10 @@ OpcoesImpressaoComponent.styles = r$2 `
     }
   `;
 __decorate([
-    i$1('#chk-imprimir-brasao')
-], OpcoesImpressaoComponent.prototype, "imprimirBrasao", void 0);
-__decorate([
-    i$1('#input-cabecalho')
-], OpcoesImpressaoComponent.prototype, "textoCabecalho", void 0);
-__decorate([
-    i$1('#chk-reduzir-espaco')
-], OpcoesImpressaoComponent.prototype, "reduzirEspacoEntreLinhas", void 0);
-__decorate([
     i$1('#select-tamanho-fonte')
 ], OpcoesImpressaoComponent.prototype, "tamanhoFonte", void 0);
 __decorate([
-    e$3({ type: Object })
+    e$3({ type: Object, state: true })
 ], OpcoesImpressaoComponent.prototype, "opcoesImpressao", null);
 OpcoesImpressaoComponent = __decorate([
     n$1('lexml-opcoes-impressao')
@@ -59486,8 +60417,148 @@ SwitchRevisaoComponent = __decorate([
     n$1('lexml-switch-revisao')
 ], SwitchRevisaoComponent);
 
+let SubstituicaoTermoComponent = class SubstituicaoTermoComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.timerEmitirEventoOnChange = 0;
+    }
+    onDadosAlterados(evt) {
+        const el = evt === null || evt === void 0 ? void 0 : evt.target;
+        el === this.elTermoASerSubstituido && this.elAlertaTermoASerSubstituido.style.setProperty('visibility', el.value ? 'hidden' : 'unset');
+        el === this.elNovoTermo && this.elAlertaNovoTermo.style.setProperty('visibility', el.value ? 'hidden' : 'unset');
+        this.agendarEmissaoEventoOnChange();
+    }
+    agendarEmissaoEventoOnChange(origemEvento = 'substituicao-termo') {
+        clearInterval(this.timerEmitirEventoOnChange);
+        this.timerEmitirEventoOnChange = window.setTimeout(() => this.emitirEventoOnChange(origemEvento), 500);
+    }
+    emitirEventoOnChange(origemEvento) {
+        this.dispatchEvent(new CustomEvent('onchange', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                origemEvento,
+            },
+        }));
+    }
+    getComandoEmenda(urn) {
+        return new ComandoEmendaBuilder(urn, this.getSubstituicaoTermo()).getComandoEmenda();
+    }
+    getSubstituicaoTermo() {
+        var _a;
+        const ret = new SubstituicaoTermo();
+        ret.tipo = ((_a = this.elTipoSubstituicaoTermo.querySelector('sl-radio[checked]')) === null || _a === void 0 ? void 0 : _a.value) || 'Expressão';
+        ret.termo = this.elTermoASerSubstituido.value || '(termo a ser substituído)';
+        ret.novoTermo = this.elNovoTermo.value || '(novo termo)';
+        ret.flexaoGenero = this.elFlexaoGenero.checked;
+        ret.flexaoNumero = this.elFlexaoNumero.checked;
+        return ret;
+    }
+    setSubstituicaoTermo(substituicaoTermo) {
+        var _a, _b;
+        this.elTermoASerSubstituido.value = substituicaoTermo.tipo;
+        this.elTermoASerSubstituido.value = substituicaoTermo.termo;
+        this.elNovoTermo.value = substituicaoTermo.novoTermo;
+        this.elFlexaoGenero.checked = substituicaoTermo.flexaoGenero;
+        this.elFlexaoNumero.checked = substituicaoTermo.flexaoNumero;
+        (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector(`sl-radio[value="${substituicaoTermo.tipo}"]`)) === null || _b === void 0 ? void 0 : _b.click();
+        this.agendarEmissaoEventoOnChange();
+        if (this.elTermoASerSubstituido.value !== '') {
+            this.elAlertaTermoASerSubstituido.style.setProperty('visibility', 'hidden');
+        }
+        if (this.elNovoTermo.value !== '') {
+            this.elAlertaNovoTermo.style.setProperty('visibility', 'hidden');
+        }
+    }
+    render() {
+        return $ `
+      <fieldset @input=${this.onDadosAlterados}>
+        <legend>Substituição de termo em todo o texto</legend>
+        <sl-radio-group id="tipoSubstituicaoTermo" value="Expressão" @sl-change=${this.onDadosAlterados}>
+          <sl-radio value="Expressão">Expressão</sl-radio>
+          <sl-radio value="Palavra">Palavra</sl-radio>
+          <sl-radio value="Número">Número</sl-radio>
+        </sl-radio-group>
+        <div>
+          <sl-input id="termoASerSubstituido" type="text" required label="Termo a ser substituído: *"></sl-input>
+          <span id="alertaTermoASerSubstituido" class="alerta">Este campo deve ser preenchido</span>
+        </div>
+        <div>
+          <sl-input id="novoTermo" type="text" required label="Novo termo: *"></sl-input>
+          <span id="alertaNovoTermo" class="alerta">Este campo deve ser preenchido</span>
+        </div>
+        <div>
+          <span>Propor fazer flexões de:</span>
+          <sl-checkbox id="flexaoGenero">Gênero</sl-checkbox>
+          <sl-checkbox id="flexaoNumero">Número</sl-checkbox>
+        </div>
+      </fieldset>
+    `;
+    }
+};
+SubstituicaoTermoComponent.styles = r$2 `
+    span.alerta {
+      color: red;
+    }
+
+    fieldset {
+      display: flex;
+      flex-direction: column;
+      gap: 1em;
+      background-color: var(--sl-color-gray-100);
+      box-shadow: var(--sl-shadow-x-large);
+      flex-wrap: wrap;
+      padding: 20px 20px;
+      margin: 10px;
+      border: solid var(--sl-panel-border-width) var(--sl-panel-border-color);
+      border-radius: var(--sl-border-radius-medium);
+    }
+
+    legend {
+      background-color: var(--sl-color-gray-200);
+      font-weight: bold;
+      border-radius: 5px;
+      border: 1px solid var(--sl-color-gray-300);
+      padding: 2px 5px;
+      box-shadow: var(--sl-shadow-small);
+    }
+
+    sl-radio-group::part(base) {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+    #flexaoGenero {
+      margin-left: 20px;
+    }
+  `;
+__decorate([
+    i$1('#tipoSubstituicaoTermo')
+], SubstituicaoTermoComponent.prototype, "elTipoSubstituicaoTermo", void 0);
+__decorate([
+    i$1('#termoASerSubstituido')
+], SubstituicaoTermoComponent.prototype, "elTermoASerSubstituido", void 0);
+__decorate([
+    i$1('#novoTermo')
+], SubstituicaoTermoComponent.prototype, "elNovoTermo", void 0);
+__decorate([
+    i$1('#alertaTermoASerSubstituido')
+], SubstituicaoTermoComponent.prototype, "elAlertaTermoASerSubstituido", void 0);
+__decorate([
+    i$1('#alertaNovoTermo')
+], SubstituicaoTermoComponent.prototype, "elAlertaNovoTermo", void 0);
+__decorate([
+    i$1('#flexaoGenero')
+], SubstituicaoTermoComponent.prototype, "elFlexaoGenero", void 0);
+__decorate([
+    i$1('#flexaoNumero')
+], SubstituicaoTermoComponent.prototype, "elFlexaoNumero", void 0);
+SubstituicaoTermoComponent = __decorate([
+    n$1('lexml-substituicao-termo')
+], SubstituicaoTermoComponent);
+
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEtaComponent, OpcoesImpressaoComponent, SwitchRevisaoComponent, Usuario };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, AlterarLarguraTabelaColunaModalComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SubstituicaoTermoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map

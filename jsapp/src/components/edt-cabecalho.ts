@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { cabecalhoStyles } from './app.css';
 import { Usuario } from '../model/usuario';
+
 @customElement('edt-cabecalho')
 export class EdtCabecalho extends LitElement {
   @property({ type: Object })

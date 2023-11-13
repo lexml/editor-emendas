@@ -292,15 +292,13 @@ export const VOCABULARIO = {
     },
     {
       urn: 'aprovacao.substitutivo.decisao.terminativa',
-      tipoTextoProcessoLegislativo:
-        'Redação do vencido em turno suplementar na Comissão',
+      tipoTextoProcessoLegislativo: 'Redação do vencido em turno suplementar na Comissão',
       substitutivo: 's',
       genero: 'F',
     },
     {
       urn: 'aprovacao.substitutivo',
-      tipoTextoProcessoLegislativo:
-        'Redação do vencido em turno suplementar no Plenário',
+      tipoTextoProcessoLegislativo: 'Redação do vencido em turno suplementar no Plenário',
       substitutivo: 's',
       genero: 'F',
     },

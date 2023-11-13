@@ -127,22 +127,35 @@
     }
 
     function resizeIframe(iframe, height) {
-      iframe.style.height = height + 10 + "px";
+      if (!height || typeof height !== 'number' || height <= 0) {
+        height = 2160;
+      }
+      iframe.style.height = height + 100 + "px";
     }
 
     function configMessageListener(iframe) {
       let timerResizeIframe = null;
+      const trustedOrigin = "https://emendas.camara.leg.br";
+
       window.addEventListener("message", function (event) {
-        if (event.data.type === "quadro-emendas:resize") {
-          clearTimeout(timerResizeIframe);
-          timerResizeIframe = setTimeout(() => resizeIframe(iframe, event.data.payload.height), 200);
-        } else if (event.data.type === "quadro-emendas:ready") {
-          // console.log(11111, 'iframe ready');
-        } else if (event.data.type === "quadro-emendas:urlchange") {
-          sincronizarUrl(event.data.payload.url);
+        if (event.origin !== trustedOrigin) return;
+
+        try {
+          switch (event.data.type) {
+            case "quadro-emendas:resize":
+              clearTimeout(timerResizeIframe);
+              timerResizeIframe = setTimeout(() => resizeIframe(iframe, event.data.payload.height), 200);
+              break;
+            case "quadro-emendas:urlchange":
+              sincronizarUrl(event.data.payload.url);
+              break;
+          }
+        } catch (error) {
+          console.error("Um erro ocorreu durante o processamento da mensagem:", error);
         }
       });
     }
+
 
     window.onload = function () {
       const iframe = document.querySelector("iframe");

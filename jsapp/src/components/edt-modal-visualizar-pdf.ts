@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { html, LitElement, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 
-import { blobToBase64 } from './../servicos/blobUtil';
-import { visualizarPdfStyles } from './app.css';
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
+import { visualizarPdfStyles } from './app.css';
 
 @customElement('edt-modal-visualizar-pdf')
 export class EdtModalVisualizarPdf extends LitElement {
@@ -12,6 +10,7 @@ export class EdtModalVisualizarPdf extends LitElement {
   private pdfUrl = '';
 
   @property({ type: String }) tituloEmenda = '';
+
   @property({ type: Object }) emenda = {};
 
   @query('sl-dialog')
@@ -33,7 +32,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       });
       const fileName = await resp.text();
       console.log(fileName);
-      this.pdfUrl = './api/emenda/pdfFile/' + fileName;
+      this.pdfUrl = `./api/emenda/pdfFile/${fileName}`;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(`Erro inesperado ao gerar o PDF`);
@@ -57,16 +56,11 @@ export class EdtModalVisualizarPdf extends LitElement {
   }
 
   // Emite notificação de erro como toast
-  private emitirAlerta(
-    message: string,
-    variant = 'primary',
-    icon = 'info-circle',
-    duration = 3000
-  ) {
+  private emitirAlerta(message: string, variant = 'primary', icon = 'info-circle', duration = 3000): Promise<void> {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
       closable: true,
-      duration: duration,
+      duration,
       innerHTML: `
         <sl-icon name="${icon}" slot="icon"></sl-icon>
         ${message}
@@ -81,14 +75,9 @@ export class EdtModalVisualizarPdf extends LitElement {
     const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
     return html`
       ${visualizarPdfStyles}
-      <sl-dialog label=${'Visualizar ' + tituloModal} style="--width: 80vw">
+      <sl-dialog label=${`Visualizar ${tituloModal}`} style="--width: 80vw">
         <div class="pdf-area">
-          <embed
-            src=${this.pdfUrl}
-            type="application/pdf"
-            frameborder="0"
-            width="100%"
-          />
+          <embed src=${this.pdfUrl} type="application/pdf" frameborder="0" width="100%" />
         </div>
       </sl-dialog>
     `;

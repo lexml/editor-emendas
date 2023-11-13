@@ -1,13 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, query, queryAll, state } from 'lit/decorators.js';
 import SlInput from '@shoelace-style/shoelace/dist/components/input/input';
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
-import { Proposicao } from './../model/proposicao';
-import {
-  pesquisarProposicoes,
-  pesquisarProposicoesEmTramitacao,
-} from './../servicos/proposicoes';
+import { Proposicao } from '../model/proposicao';
+import { pesquisarProposicoes, pesquisarProposicoesEmTramitacao } from '../servicos/proposicoes';
 import { novaEmendaStyles } from './app.css';
 import { errorInPromise } from '../utils/error-utils';
 import { toggleCarregando } from './edt-app';
@@ -41,13 +37,21 @@ export class EdtModalNovaEmenda extends LitElement {
   @queryAll('tr.proposicao')
   private trProposicoes!: HTMLElement[];
 
+  // @query('edt-modal-emenda-sem-texto')
+  // private modalEmendaSemTexto!: any;
+
   public show(): void {
     this.numero = '';
-    (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value =
-      '';
+    (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value = '';
     this.pesquisar();
     this.slDialog.show();
   }
+
+  // private showModalEmendaSemTexto(): void {
+  //   if(this.modalEmendaSemTexto !== null){
+  //     this.modalEmendaSemTexto.show();
+  //   }
+  // }
 
   private toggleApenasEmTramitacao(): void {
     this.apenasEmTramitacao = !this.apenasEmTramitacao;
@@ -80,11 +84,7 @@ export class EdtModalNovaEmenda extends LitElement {
         if (!(this.sigla && this.ano)) {
           return;
         }
-        this.proposicoes = await pesquisarProposicoes(
-          this.sigla,
-          this.numero,
-          Number(this.ano)
-        );
+        this.proposicoes = await pesquisarProposicoes(this.sigla, this.numero, Number(this.ano));
       }
     } catch (err) {
       errorInPromise(`Erro ao pesquisar as proposições : ${err}`, err, msg => {
@@ -95,13 +95,26 @@ export class EdtModalNovaEmenda extends LitElement {
   }
 
   private emitirEvento(): void {
-    this.dispatchEvent(
-      new CustomEvent('nova-emenda-padrao', {
-        detail: { proposicao: this.proposicaoSelecionada },
-        composed: true,
-        bubbles: true,
-      })
-    );
+    if (this.proposicaoSelecionada && !this.proposicaoSelecionada!.idSdlegDocumentoItemDigital) {
+      this.slDialog.hide();
+      this.dispatchEvent(
+        new CustomEvent('abrir-modal-emenda-sem-texto', {
+          detail: { proposicao: this.proposicaoSelecionada },
+          composed: true,
+          bubbles: true,
+        })
+      );
+    } else {
+      this.dispatchEvent(
+        new CustomEvent('nova-emenda-padrao', {
+          detail: { proposicao: this.proposicaoSelecionada },
+          composed: true,
+          bubbles: true,
+        })
+      );
+      this.slDialog.hide();
+    }
+
     this.slDialog.hide();
   }
 
@@ -116,17 +129,11 @@ export class EdtModalNovaEmenda extends LitElement {
     this.emitirEvento();
   }
 
-  public emitirAlerta = function (
-    message: string,
-    variant: string,
-    icon = 'info-circle',
-    duration = 3000,
-    closable = true
-  ): Promise<void> {
+  public emitirAlerta = function (message: string, variant: string, icon = 'info-circle', duration = 3000, closable = true): Promise<void> {
     const alert = Object.assign(document.createElement('sl-alert') as SlAlert, {
       variant,
       closable,
-      duration: duration,
+      duration,
       innerHTML: `
         <sl-icon name="${icon}" style="font-size:28px" slot="icon"></sl-icon>
         ${message}
@@ -141,9 +148,7 @@ export class EdtModalNovaEmenda extends LitElement {
     return !this.proposicoes.length
       ? html` <div class="modal-nova-emenda--info">
           <sl-animation name="heartBeat" duration="1000" iterations="1" play>
-            <sl-badge pill variant="primary"
-              >Nenhuma proposição para exibir</sl-badge
-            >
+            <sl-badge pill variant="primary">Nenhuma proposição para exibir</sl-badge>
           </sl-animation>
         </div>`
       : html`
@@ -157,53 +162,29 @@ export class EdtModalNovaEmenda extends LitElement {
               </tr>
             </thead>
             <tbody>
-              ${this.proposicoes.map(p => {
-                return html`
+              ${this.proposicoes.map(
+                p => html`
                   <tr
                     tabindex="0"
                     class="proposicao"
-                    @click=${(evt: Event): any =>
-                      this.selecionarProposicao(p, evt)}
-                    @dblclick=${(evt: Event): any =>
-                      this.duploCliqueProposicao(p, evt)}
-                    disabled=${p.idSdlegDocumentoItemDigital ? false : true}
+                    @click=${(evt: Event): any => this.selecionarProposicao(p, evt)}
+                    @dblclick=${(evt: Event): any => this.duploCliqueProposicao(p, evt)}
                   >
-                    <td class="col-center">
-                      ${p.sigla +
-                      ' ' +
-                      this.removerZerosEsquerda(p.numero) +
-                      '/' +
-                      p.ano}
-                    </td>
+                    <td class="col-center">${p.nomeProposicao}</td>
                     <td class="col-center">
                       ${p.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)
-                        ? html`${p.labelPrazoRecebimentoEmendas.substring(
-                              0,
-                              11
-                            )} <br />`
+                        ? html`${p.labelPrazoRecebimentoEmendas.substring(0, 11)} <br />`
                         : ''}
-                      <sl-badge
-                        title=${this.formatarData(
-                          p.dataLimiteRecebimentoEmendas
-                        )}
-                        variant="neutral"
+                      <sl-badge title=${this.formatarData(p.dataLimiteRecebimentoEmendas)} variant="neutral"
                         >${p.labelPrazoRecebimentoEmendas?.includes(' ')
-                          ? p.labelPrazoRecebimentoEmendas
-                              .substring(11)
-                              .replace(/[()]/g, '')
+                          ? p.labelPrazoRecebimentoEmendas.substring(11).replace(/[()]/g, '')
                           : p.labelPrazoRecebimentoEmendas}</sl-badge
                       >
                     </td>
                     <td class="col-center">
                       ${p.labelTramitacao
                         ? html`
-                            <sl-badge
-                              variant="neutral"
-                              title="Publicada em ${this.formatarData(
-                                p.dataPublicacao
-                              )}"
-                              >${p.labelTramitacao}</sl-badge
-                            >
+                            <sl-badge variant="neutral" title="Publicada em ${this.formatarData(p.dataPublicacao)}">${p.labelTramitacao}</sl-badge>
                           `
                         : ''}
                     </td>
@@ -211,26 +192,18 @@ export class EdtModalNovaEmenda extends LitElement {
                       <div class="ementa">
                         ${p.idSdlegDocumentoItemDigital
                           ? p.ementa
-                          : html`<sl-badge variant="neutral"
-                                >Texto ainda indisponível</sl-badge
-                              >
-                              ${p.ementa}`}
+                          : html`<sl-badge variant="neutral">Texto ainda indisponível</sl-badge> ${p.ementa}`}
                       </div>
                     </td>
                   </tr>
-                `;
-              })}
+                `
+              )}
             </tbody>
           </table>
         `;
   }
 
-  private formatarData = (data = ''): string =>
-    data?.length === 10 ? data.split('-').reverse().join('/') : '';
-
-  private removerZerosEsquerda(numero: any): string {
-    return numero.replace(/^0+/, '');
-  }
+  private formatarData = (data = ''): string => (data?.length === 10 ? data.split('-').reverse().join('/') : '');
 
   render(): TemplateResult {
     return html`
@@ -242,8 +215,7 @@ export class EdtModalNovaEmenda extends LitElement {
               class="tipo-proposicao"
               size="small"
               value="mpv"
-              @sl-input=${(ev: Event): any =>
-                (this.sigla = (ev.target as HTMLInputElement).value)}
+              @sl-input=${(ev: Event): any => (this.sigla = (ev.target as HTMLInputElement).value)}
             >
               <sl-menu-item value="mpv">MPV</sl-menu-item>
             </sl-select>
@@ -257,8 +229,7 @@ export class EdtModalNovaEmenda extends LitElement {
               type="number"
               inputmode="numeric"
               enterkeyhint="enter"
-              @sl-input=${(ev: Event): any =>
-                (this.numero = (ev.target as HTMLInputElement).value)}
+              @sl-input=${(ev: Event): any => (this.numero = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-input
               class="ano-proposicao"
@@ -270,8 +241,7 @@ export class EdtModalNovaEmenda extends LitElement {
               type="number"
               inputmode="numeric"
               enterkeyhint="enter"
-              @sl-input=${(ev: Event): any =>
-                (this.ano = (ev.target as HTMLInputElement).value)}
+              @sl-input=${(ev: Event): any => (this.ano = (ev.target as HTMLInputElement).value)}
             ></sl-input>
             <sl-button
               id="pesquisarButton"
@@ -286,12 +256,7 @@ export class EdtModalNovaEmenda extends LitElement {
               Pesquisar
             </sl-button>
             <label>
-              <input
-                type="checkbox"
-                id="chk-mostrar-todas"
-                @change=${this.toggleApenasEmTramitacao}
-                .checked=${this.apenasEmTramitacao}
-              />
+              <input type="checkbox" id="chk-mostrar-todas" @change=${this.toggleApenasEmTramitacao} .checked=${this.apenasEmTramitacao} />
               apenas em tramitação
             </label>
           </div>
@@ -299,35 +264,13 @@ export class EdtModalNovaEmenda extends LitElement {
           <div class="table-wrap">${this.renderProposicoes()}</div>
           <br />
           <div class="ementa">
-            <label for="ementa"
-              >Ementa
-              ${this.proposicaoSelecionada?.sigla
-                ? this.proposicaoSelecionada?.sigla +
-                  ' ' +
-                  this.removerZerosEsquerda(
-                    this.proposicaoSelecionada?.numero
-                  ) +
-                  '/' +
-                  this.proposicaoSelecionada?.ano
-                : ''}</label
-            >
-            <textarea id="ementa" cols="40" rows="3" disabled>
-              ${this.proposicaoSelecionada?.ementa ?? ''}</textarea
-            >
+            <label for="ementa">Ementa ${this.proposicaoSelecionada?.nomeProposicao ?? ''}</label>
+            <textarea id="ementa" cols="40" rows="3" disabled>              ${this.proposicaoSelecionada?.ementa ?? ''}</textarea>
           </div>
         </div>
 
-        <sl-button
-          slot="footer"
-          variant="default"
-          @click=${(): void => this.slDialog.hide()}
-          >Cancelar</sl-button
-        >
-        <sl-button
-          slot="footer"
-          variant="primary"
-          @click=${(): void => this.emitirEvento()}
-          ?disabled=${!this.proposicaoSelecionada}
+        <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Cancelar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${(): void => this.emitirEvento()} ?disabled=${!this.proposicaoSelecionada}
           >Selecionar</sl-button
         >
       </sl-dialog>

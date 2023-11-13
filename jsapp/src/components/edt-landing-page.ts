@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, state, query, property } from 'lit/decorators.js';
 import { landingPageStyles } from './app.css';
@@ -36,19 +35,25 @@ interface ContactFormErrors {
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
   @property() versao = '';
+
   @state() name = '';
+
   @state() email = '';
+
   @state() message = '';
+
   @state() touched: TouchedFields = {
     name: false,
     email: false,
     message: false,
   };
+
   @state() errors: ContactFormErrors = {
     name: NameError.NameEmpty,
     email: EmailError.EmailEmpty,
     message: MessageError.MessageEmpty,
   };
+
   @state() submitEnabled = false;
 
   @state() submitState: SubmitState = SubmitState.NotSubmitted;
@@ -79,8 +84,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   enableSubmit(): void {
-    this.submitEnabled =
-      this.nameValid() && this.emailValid() && this.messageValid();
+    this.submitEnabled = this.nameValid() && this.emailValid() && this.messageValid();
   }
 
   nameValid(): boolean {
@@ -108,9 +112,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   showMessageRequired(): boolean {
-    return (
-      this.touched.message && this.errors.message === MessageError.MessageEmpty
-    );
+    return this.touched.message && this.errors.message === MessageError.MessageEmpty;
   }
 
   handleNameBlur(): void {
@@ -136,8 +138,7 @@ export class EdtLandingPage extends LitElement {
     this.enableSubmit();
   }
 
-  tester =
-    /^[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  tester = /^[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
 
   validateEmailFormat(email: string): boolean {
     if (!email) return false;
@@ -159,9 +160,7 @@ export class EdtLandingPage extends LitElement {
 
     const domainParts = address.split('.');
 
-    const validDomains = domainParts.some(function (part) {
-      return part.length > 63;
-    });
+    const validDomains = domainParts.some(part => part.length > 63);
 
     if (validDomains) {
       return false;
@@ -200,27 +199,21 @@ export class EdtLandingPage extends LitElement {
     if (!this.touched.name) {
       return 'form-control';
     }
-    return this.errors.name === undefined
-      ? 'form-control'
-      : 'form-control is-invalid';
+    return this.errors.name === undefined ? 'form-control' : 'form-control is-invalid';
   }
 
   classForEmail(): string {
     if (!this.touched.email) {
       return 'form-control';
     }
-    return this.errors.email === undefined
-      ? 'form-control'
-      : 'form-control is-invalid';
+    return this.errors.email === undefined ? 'form-control' : 'form-control is-invalid';
   }
 
   classForMessage(): string {
     if (!this.touched.message) {
       return 'form-control';
     }
-    return this.errors.message === undefined
-      ? 'form-control'
-      : 'form-control is-invalid';
+    return this.errors.message === undefined ? 'form-control' : 'form-control is-invalid';
   }
 
   classForSubmitButton(): string {
@@ -286,67 +279,25 @@ export class EdtLandingPage extends LitElement {
         <div class="container px-4 px-lg-5">
           <div class="row cn-vertical-align">
             <div class="col-4">
-              <a
-                href="https://www.congressonacional.leg.br"
-                title="Ir para o Portal do Congresso Nacional"
-              >
-                <img
-                  class="cn-topo-logo"
-                  src="./assets/img/logo_cn.png"
-                  th:src="@{/img/logo_cn.png}"
-                  alt="Logo Congresso Nacional"
-                />
+              <a href="https://www.congressonacional.leg.br" title="Ir para o Portal do Congresso Nacional">
+                <img class="cn-topo-logo" src="./assets/img/logo_cn.png" th:src="@{/img/logo_cn.png}" alt="Logo Congresso Nacional" />
               </a>
             </div>
             <div class="col-8 text-end links-header">
-              <a
-                href="https://www.congressonacional.leg.br/fale-conosco"
-                class="pull-right d-none d-sm-inline px-2 link-externo"
-                >Fale conosco</a
-              >
+              <a href="https://www.congressonacional.leg.br/fale-conosco" class="pull-right d-none d-sm-inline px-2 link-externo">Fale conosco</a>
               <span class="d-none d-sm-inline">|</span>
-              <a
-                href="https://www12.senado.leg.br/hpsenado"
-                class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png"
-                  alt="Senado"
-                  title="Senado"
-                />
+              <a href="https://www12.senado.leg.br/hpsenado" class="pull-right d-none d-sm-inline ps-2 pe-1 link-externo" target="_blank">
+                <img src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_senado_ico.png" alt="Senado" title="Senado" />
               </a>
-              <a
-                href="https://www.camara.leg.br/"
-                class="pull-right d-none d-sm-inline px-1 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png"
-                  alt="Câmara"
-                  title="Câmara"
-                />
+              <a href="https://www.camara.leg.br/" class="pull-right d-none d-sm-inline px-1 link-externo" target="_blank">
+                <img src="https://www.congressonacional.leg.br/congresso-theme/images/_topo_camara_ico.png" alt="Câmara" title="Câmara" />
               </a>
-              <a
-                href="https://portal.tcu.gov.br/inicio/index.htm"
-                class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo"
-                target="_blank"
-              >
-                <img
-                  src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg"
-                  alt="TCU"
-                  title="TCU"
-                />
+              <a href="https://portal.tcu.gov.br/inicio/index.htm" class="pull-right d-none d-sm-inline ps-1 pe-2 link-externo" target="_blank">
+                <img src="https://www.congressonacional.leg.br/congresso-theme/images/icon-tcu.svg" alt="TCU" title="TCU" />
               </a>
               <span class="d-none d-sm-inline">|</span>
               <a href="#" id="link_vlibras" class="js-vlibras">
-                <img
-                  src="./assets/img/icon_libras.png"
-                  th:src="@{/img/icon_libras.png}"
-                  class="img_libras"
-                  alt="Libras"
-                  title="Libras"
-                />
+                <img src="./assets/img/icon_libras.png" th:src="@{/img/icon_libras.png}" class="img_libras" alt="Libras" title="Libras" />
               </a>
             </div>
           </div>
@@ -362,16 +313,8 @@ export class EdtLandingPage extends LitElement {
 
       <nav class="navbar navbar-expand-lg navbar-light py-3" id="mainNav">
         <div class="container px-4 px-lg-5">
-          <a
-            class="navbar-brand navbar-brand--long fs-6 d-none d-md-none d-lg-block"
-            href="#page-top"
-            >Editor de Emendas a Medidas Provisórias</a
-          >
-          <a
-            class="navbar-brand navbar-brand--short fs-6 d-md-block d-lg-none"
-            href="#page-top"
-            >Editor de Emendas a MPs</a
-          >
+          <a class="navbar-brand navbar-brand--long fs-6 d-none d-md-none d-lg-block" href="#page-top">Editor de Emendas a Medidas Provisórias</a>
+          <a class="navbar-brand navbar-brand--short fs-6 d-md-block d-lg-none" href="#page-top">Editor de Emendas a MPs</a>
           <button
             class="navbar-toggler navbar-toggler-right"
             type="button"
@@ -403,41 +346,24 @@ export class EdtLandingPage extends LitElement {
       </nav>
       <header class="masthead" id="iniciar">
         <div class="container px-4 px-lg-5 h-100">
-          <div
-            class="row gx-4 gx-lg-5 h-100 d-flex align-items-center justify-content-center"
-          >
+          <div class="row gx-4 gx-lg-5 h-100 d-flex align-items-center justify-content-center">
             <div class="col-lg-6 text-center text-lg-start">
-              <h1 class="font-weight-bold fs-1">
-                Elabore emendas de forma fácil e precisa
-              </h1>
-              <p class="mb-4 fs-4 text-muted">
-                Crie emendas compatíveis com a técnica legislativa utilizando
-                qualquer dispositivo eletrônico.
-              </p>
+              <h1 class="font-weight-bold fs-1">Elabore emendas de forma fácil e precisa</h1>
+              <p class="mb-4 fs-4 text-muted">Crie emendas compatíveis com a técnica legislativa utilizando qualquer dispositivo eletrônico.</p>
               <div class="row gx-4 justify-content-center">
                 <div class="col-sm-6 text-center py-4 py-sm-0">
                   <i class="bi-file-earmark-plus fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Criar emenda</h2>
-                  <p class="mb-3 text-muted fs-5">
-                    Pesquise medidas provisórias recentes e comece a editar.
-                  </p>
-                  <button
-                    class="btn btn-primary btn-md rounded-pill px-4"
-                    @click=${(): void => this.emitirEvento('nova')}
-                  >
+                  <p class="mb-3 text-muted fs-5">Pesquise medidas provisórias recentes e comece a editar.</p>
+                  <button class="btn btn-primary btn-md rounded-pill px-4" @click=${(): void => this.emitirEvento('nova')}>
                     Selecionar Medida Provisória
                   </button>
                 </div>
                 <div class="col-sm-6 text-center py-4 py-sm-0">
                   <i class="bi-pen fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Abrir emenda</h2>
-                  <p class="mb-3 text-muted fs-5">
-                    Abra emendas em PDF do seu celular ou computador.
-                  </p>
-                  <button
-                    class="btn btn-secondary btn-md rounded-pill px-4"
-                    @click=${(): void => this.emitirEvento('abrir')}
-                  >
+                  <p class="mb-3 text-muted fs-5">Abra emendas em PDF do seu celular ou computador.</p>
+                  <button class="btn btn-secondary btn-md rounded-pill px-4" @click=${(): void => this.emitirEvento('abrir')}>
                     Abrir emenda do seu local
                   </button>
                 </div>
@@ -460,13 +386,9 @@ export class EdtLandingPage extends LitElement {
             <div class="col-lg-7 align-middle px-5 text-center text-lg-start">
               <h2>Fique por dentro do editor de emendas</h2>
               <p class="text-white-75 mb-4 fs-4">
-                Assista a vídeos curtos e aprenda as funcionalidades do editor
-                de emendas com demonstrações rápidas.
+                Assista a vídeos curtos e aprenda as funcionalidades do editor de emendas com demonstrações rápidas.
               </p>
-              <button
-                class="btn btn-light btn-md rounded-pill px-4"
-                @click=${(): void => this.emitirEvento('videos')}
-              >
+              <button class="btn btn-light btn-md rounded-pill px-4" @click=${(): void => this.emitirEvento('videos')}>
                 Acessar os vídeos tutoriais
               </button>
             </div>
@@ -495,10 +417,7 @@ export class EdtLandingPage extends LitElement {
           <h2 class="text-center my-0">Principais funcionalidades</h2>
           <div class="text-center text-muted">Versão ${this.versao}</div>
           <hr class="divider mt-2" />
-          <p class="text-center py-0">
-            Selecione os botões a seguir para acessar as instruções passo a
-            passo, disponíveis em formato PDF.
-          </p>
+          <p class="text-center py-0">Selecione os botões a seguir para acessar as instruções passo a passo, disponíveis em formato PDF.</p>
           <div class="row gy-2 gx-4 gx-lg-5 align-items-start">
             <div class="col-6 col-lg-3 text-center">
               <div>
@@ -508,13 +427,7 @@ export class EdtLandingPage extends LitElement {
               </div>
             </div>
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/01-criar-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/01-criar-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-file-earmark-plus fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Criar emenda</h3>
@@ -523,13 +436,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/02-abrir-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/02-abrir-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-folder fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Abrir emenda</h3>
@@ -538,13 +445,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/03-alertas-de-edicao.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/03-alertas-de-edicao.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-pen fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Alertas de edição</h3>
@@ -583,13 +484,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/06-alterar-norma-vigente.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/06-alterar-norma-vigente.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-file-earmark-ruled fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Alterar norma vigente</h3>
@@ -598,13 +493,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/07-justificar-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/07-justificar-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-justify fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Justificar a emenda</h3>
@@ -628,13 +517,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/09-avisos.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/09-avisos.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-exclamation-diamond   fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Avisos</h3>
@@ -643,13 +526,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/10-comando-de-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/10-comando-de-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-code fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Comando de emenda</h3>
@@ -658,13 +535,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/11-visualizar-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/11-visualizar-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-eye fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Visualizar emenda</h3>
@@ -673,13 +544,7 @@ export class EdtLandingPage extends LitElement {
             </div>
 
             <div class="col-6 col-lg-3 text-center">
-              <a
-                href="./assets/pdf/12-salvar-emenda.pdf"
-                role="button"
-                class="funcionalidades--link"
-                onclick="this.blur();"
-                target="_blank"
-              >
+              <a href="./assets/pdf/12-salvar-emenda.pdf" role="button" class="funcionalidades--link" onclick="this.blur();" target="_blank">
                 <div class="mb-2">
                   <i class="bi-file-pdf fs-1 text-primary"></i>
                   <h3 class="h4 mb-2">Salvar emenda</h3>
@@ -699,43 +564,27 @@ export class EdtLandingPage extends LitElement {
                   <thead></thead>
                   <tbody>
                     <tr>
-                      <th scope="row" class="text-start">
-                        Elaborar emendas a anexos
-                      </th>
+                      <th scope="row" class="text-start">Elaborar emendas a anexos</th>
                       <td>
-                        <span class="badge rounded-pill bg-success"
-                          >Em breve</span
-                        >
+                        <span class="badge rounded-pill bg-success">Em breve</span>
                       </td>
                     </tr>
                     <tr>
-                      <th scope="row" class="text-start">
-                        Emenda substitutiva global
-                      </th>
+                      <th scope="row" class="text-start">Emenda substitutiva global</th>
                       <td>
-                        <span class="badge rounded-pill bg-success"
-                          >Em breve</span
-                        >
+                        <span class="badge rounded-pill bg-success">Em breve</span>
                       </td>
                     </tr>
                     <tr>
-                      <th scope="row" class="text-start">
-                        Alteração de normas que não seguem a LC nº 95/98
-                      </th>
+                      <th scope="row" class="text-start">Alteração de normas que não seguem a LC nº 95/98</th>
                       <td>
-                        <span class="badge rounded-pill bg-success"
-                          >Em breve</span
-                        >
+                        <span class="badge rounded-pill bg-success">Em breve</span>
                       </td>
                     </tr>
                     <tr>
-                      <th scope="row" class="text-start">
-                        Enviar emenda ao sistema de protocolo
-                      </th>
+                      <th scope="row" class="text-start">Enviar emenda ao sistema de protocolo</th>
                       <td>
-                        <span class="badge rounded-pill bg-secondary"
-                          >Previsto</span
-                        >
+                        <span class="badge rounded-pill bg-secondary">Previsto</span>
                       </td>
                     </tr>
                   </tbody>
@@ -745,96 +594,64 @@ export class EdtLandingPage extends LitElement {
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
-                      <th scope="row" class="text-start">
-                        Salvar emenda em PDF
-                      </th>
+                      <th scope="row" class="text-start">Salvar emenda em PDF</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Editar justificação da emenda</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Informar data e autoria</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Gerar o comando de emenda</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Validar alterações na emenda conforme a LC nº 95/98</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Adicionar, modificar e suprimir dispositivos</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Adicionar agrupadores de artigos</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Alterar norma vigente</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Utilizar recursos de formatação de texto</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Desfazer ou refazer operações de edição</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Utilizar teclas de atalho</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Numerar novos dispositivos automaticamente</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Tratar aspas e notas de alteração (NR, AC)</th>
+                      <td><i class="bi bi-check-lg"></i></td>
+                    </tr>
+                    <tr>
+                      <th scope="row" class="text-start">Manter referências às normas alteradas</th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
                     <tr>
                       <th scope="row" class="text-start">
-                        Editar justificação da emenda
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Informar data e autoria
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Gerar o comando de emenda
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Validar alterações na emenda conforme a LC nº 95/98
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Adicionar, modificar e suprimir dispositivos
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Adicionar agrupadores de artigos
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Alterar norma vigente
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Utilizar recursos de formatação de texto
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Desfazer ou refazer operações de edição
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Utilizar teclas de atalho
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Numerar novos dispositivos automaticamente
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Tratar aspas e notas de alteração (NR, AC)
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Manter referências às normas alteradas
-                      </th>
-                      <td><i class="bi bi-check-lg"></i></td>
-                    </tr>
-                    <tr>
-                      <th scope="row" class="text-start">
-                        Integração com o quadro de emendas da MPV (<a
-                          href="https://emendas.camara.leg.br"
-                          target="_blank"
-                          >emendas.camara.leg.br</a
-                        >)
+                        Integração com o quadro de emendas da MPV (<a href="https://emendas.camara.leg.br" target="_blank">emendas.camara.leg.br</a>)
                       </th>
                       <td><i class="bi bi-check-lg"></i></td>
                     </tr>
@@ -852,11 +669,8 @@ export class EdtLandingPage extends LitElement {
               <h2 class="mt-0">Reporte um erro</h2>
               <hr class="divider" />
               <p class="text-muted mb-5">
-                Descreva o erro encontrado e envie prints ou vídeos para o
-                email:
-                <a href="mailto:editoremenda@camara.leg.br"
-                  >editoremenda@camara.leg.br</a
-                >.
+                Descreva o erro encontrado e envie prints ou vídeos para o email:
+                <a href="mailto:editoremenda@camara.leg.br">editoremenda@camara.leg.br</a>.
               </p>
             </div>
           </div>
@@ -875,11 +689,7 @@ export class EdtLandingPage extends LitElement {
                     .value=${this.name}
                   />
                   <label for="name">Nome completo</label>
-                  <div
-                    class="invalid-feedback"
-                    style="display: block"
-                    data-sb-feedback="name:required"
-                  >
+                  <div class="invalid-feedback" style="display: block" data-sb-feedback="name:required">
                     ${this.showNameRequired() ? 'O nome é requerido.' : ''}
                   </div>
                 </div>
@@ -895,18 +705,10 @@ export class EdtLandingPage extends LitElement {
                     .value=${this.email}
                   />
                   <label for="email">Endereço de email</label>
-                  <div
-                    class="invalid-feedback"
-                    style="display: block"
-                    data-sb-feedback="email:required"
-                  >
+                  <div class="invalid-feedback" style="display: block" data-sb-feedback="email:required">
                     ${this.showEmailRequired() ? 'Um e-mail é requerido.' : ''}
                   </div>
-                  <div
-                    class="invalid-feedback"
-                    style="display: block"
-                    data-sb-feedback="email:email"
-                  >
+                  <div class="invalid-feedback" style="display: block" data-sb-feedback="email:email">
                     ${this.showEmailInvalid() ? 'Email não é válido.' : ''}
                   </div>
                 </div>
@@ -924,31 +726,17 @@ export class EdtLandingPage extends LitElement {
 ${this.message}</textarea
                   >
                   <label for="message">Mensagem</label>
-                  <div
-                    class="invalid-feedback"
-                    style="display: block"
-                    data-sb-feedback="message:required"
-                  >
-                    ${this.showMessageRequired()
-                      ? 'Uma mensagem é requerida.'
-                      : ''}
+                  <div class="invalid-feedback" style="display: block" data-sb-feedback="message:required">
+                    ${this.showMessageRequired() ? 'Uma mensagem é requerida.' : ''}
                   </div>
                 </div>
-                <div
-                  class=${this.classForSubmittedMessage()}
-                  id="submitSuccessMessage"
-                >
+                <div class=${this.classForSubmittedMessage()} id="submitSuccessMessage">
                   <div class="text-center mb-3">
                     <div class="fw-bolder">Mensagem enviada com sucesso!</div>
                   </div>
                 </div>
-                <div
-                  class=${this.classForFailedMessage()}
-                  id="submitErrorMessage"
-                >
-                  <div class="text-center text-danger mb-3">
-                    Ocorreu um erro no envio da mensagem!
-                  </div>
+                <div class=${this.classForFailedMessage()} id="submitErrorMessage">
+                  <div class="text-center text-danger mb-3">Ocorreu um erro no envio da mensagem!</div>
                 </div>
                 <div class=${this.classForSubmitButton()}>
                   <button
@@ -970,22 +758,13 @@ ${this.message}</textarea
       <div class="cn-rodape">
         <div class="container">
           <div class="row cn-vertical-align">
-            <div
-              class="col-md-6 cn-rodape-logo text-center text-md-end pt-4 pt-md-0"
-            >
-              <a href="https://www.congressonacional.leg.br"
-                ><img
-                  src="./assets/img/logo_cn.png"
-                  th:src="@{/img/logo_cn.png}"
-              /></a>
+            <div class="col-md-6 cn-rodape-logo text-center text-md-end pt-4 pt-md-0">
+              <a href="https://www.congressonacional.leg.br"><img src="./assets/img/logo_cn.png" th:src="@{/img/logo_cn.png}" /></a>
             </div>
             <div class="col-md-6 cn-rodape-txt">
-              <i class="icon-globe icon-white"></i> Praça dos Três Poderes -
-              Brasília, DF - CEP 70160-900 <br />
-              <i class="icon-headphones icon-white"></i> Fale com o Senado: 0800
-              612 211 <br />
-              <i class="icon-headphones icon-white"></i> Disque Câmara: 0800 619
-              619
+              <i class="icon-globe icon-white"></i> Praça dos Três Poderes - Brasília, DF - CEP 70160-900 <br />
+              <i class="icon-headphones icon-white"></i> Fale com o Senado: 0800 612 211 <br />
+              <i class="icon-headphones icon-white"></i> Disque Câmara: 0800 619 619
             </div>
           </div>
         </div>

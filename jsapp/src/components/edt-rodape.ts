@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { EdtApp } from './edt-app';
-import { LitElement, html, TemplateResult, PropertyValueMap } from 'lit';
+import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { rodapeStyles } from './app.css';
 
@@ -17,9 +15,7 @@ export class EdtRodape extends LitElement {
     return html`
       ${rodapeStyles}
       <footer>
-        <a href="https://www.congressonacional.leg.br/" target="_blank">
-          Congresso Nacional
-        </a>
+        <a href="https://www.congressonacional.leg.br/" target="_blank"> Congresso Nacional </a>
         <span class="">Versão ${this.versao}</span>
       </footer>
     `;

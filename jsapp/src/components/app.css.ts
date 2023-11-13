@@ -1,4 +1,5 @@
 import { html } from 'lit';
+
 export const appStyles = html`
   <style>
     :host {
@@ -72,6 +73,15 @@ export const appStyles = html`
       box-sizing: border-box;
     }
 
+    .detalhe-emenda--prazo::part(base) {
+      padding: 6px;
+    }
+
+    .detalhe-emenda--prazo sl-icon {
+      margin-top: 9px;
+      font-size: 14px;
+    }
+
     .detalhe-emenda--ementa {
       display: block;
       width: 100%;
@@ -80,11 +90,7 @@ export const appStyles = html`
       padding-right: 30px;
       -ms-overflow-style: none; /* IE and Edge */
       scrollbar-width: none; /* Firefox */
-      -webkit-mask-image: linear-gradient(
-        90deg,
-        rgba(0, 0, 0, 1) 90%,
-        rgba(0, 0, 0, 0) 100%
-      );
+      -webkit-mask-image: linear-gradient(90deg, rgba(0, 0, 0, 1) 90%, rgba(0, 0, 0, 0) 100%);
     }
 
     .detalhe-emenda--ementa::-webkit-scrollbar {
@@ -152,6 +158,13 @@ export const appStyles = html`
 
     label {
       font-weight: bold;
+    }
+
+    .dialog-emenda {
+      --width: 60vw;
+      @media (max-width: 768px) {
+        --width: 100vw;
+      }
     }
   </style>
 `;
@@ -671,26 +684,13 @@ export const ondeCouberStyles = html`
 
 export const landingPageStyles = html`
   <!-- Bootstrap Icons-->
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css"
-  />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css" />
   <!-- Google fonts-->
-  <link
-    href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700"
-    rel="stylesheet"
-  />
-  <link
-    href="https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic"
-    rel="stylesheet"
-    type="text/css"
-  />
+  <link href="https://fonts.googleapis.com/css?family=Merriweather+Sans:400,700" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" href="./assets/css/styles-landing-page.css" />
   <!-- SimpleLightbox plugin CSS-->
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/SimpleLightbox/2.1.0/simpleLightbox.min.css" rel="stylesheet" />
   <style>
     :root {
       --edt-opacity-overlay: 0.3;
@@ -828,6 +828,20 @@ export const ajudaStyles = html`
       left: 0;
       width: 100%;
       height: 100%;
+      z-index: 1; /* This ensures the iframe stays on top */
+    }
+
+    .fullscreen-btn {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 5px 15px;
+      border: none;
+      cursor: pointer;
+      z-index: 2; /* This will place the button above the iframe */
     }
   </style>
 `;
