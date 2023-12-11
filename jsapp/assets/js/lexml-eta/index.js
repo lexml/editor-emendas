@@ -30209,7 +30209,7 @@ SlCard = __decorateClass([
   n$6("sl-card")
 ], SlCard);
 
-const Delta$2 = Quill.import('delta');
+const Delta$3 = Quill.import('delta');
 class ModuloAspasCurvas {
     constructor(quill, options) {
         this.enabled = true;
@@ -30241,17 +30241,454 @@ class ModuloAspasCurvas {
         const aspasTransformada = !texto || (texto === null || texto === void 0 ? void 0 : texto.match(/\s$/g)) ? abreAspas : fechaAspas;
         const format = (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getFormat(range);
         // Insere o caracter normalmente
-        let delta = new Delta$2().retain(range.index).delete(range.length).insert(caracter, format);
+        let delta = new Delta$3().retain(range.index).delete(range.length).insert(caracter, format);
         (_c = this.quill) === null || _c === void 0 ? void 0 : _c.updateContents(delta, Quill.sources.USER);
         (_d = this.quill) === null || _d === void 0 ? void 0 : _d.history.cutoff();
         // Troca por aspas curvas
-        delta = new Delta$2().retain(range.index).delete(1).insert(aspasTransformada, format);
+        delta = new Delta$3().retain(range.index).delete(1).insert(aspasTransformada, format);
         (_e = this.quill) === null || _e === void 0 ? void 0 : _e.updateContents(delta, Quill.sources.USER);
         (_f = this.quill) === null || _f === void 0 ? void 0 : _f.setSelection(range.index + 1, Quill.sources.SILENT);
         return false;
     }
     setEnabled(enabled) {
         this.enabled = enabled;
+    }
+}
+
+class NotaRodape {
+    constructor({ id, numero, texto }) {
+        this.id = id;
+        this.numero = numero;
+        this.texto = texto;
+    }
+}
+const NOTA_RODAPE_INPUT_EVENT = 'nota-rodape:input';
+const NOTA_RODAPE_CHANGE_EVENT = 'nota-rodape:change';
+const NOTA_RODAPE_REMOVE_EVENT = 'nota-rodape:remove';
+
+class NotaRodapeModal {
+    constructor(options) {
+        var _a, _b;
+        this.idNotaRodape = options.idNotaRodape;
+        this.textoInicialNotaRodape = (_a = options.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
+        this.domNodeNotaRodape = options.domNodeNotaRodape;
+        this.tituloModal = options.tituloModal;
+        this.modalElement = document.createElement('div');
+        this.modalElement.classList.add('modal');
+        this.shadowRoot = this.modalElement.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+      <style>
+
+        :host {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          min-width: 400px;
+          max-width: 640px;
+          background-color: white;
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+          z-index: 1010;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.95);
+          transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .modal-title {
+          margin: 0;
+          font-size: 20px;
+        }
+
+        .modal-footer {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+
+        .modal-textarea {
+          width: 100%;
+          height: 100px;
+          margin-bottom: 15px;
+          font-family: inherit;
+          font-size: inherit;
+          padding: 10px;
+          box-sizing: border-box;
+        }
+
+        .modal-close-button {
+          cursor: pointer;
+          background-color: #eee;
+          padding: 5px 10px;
+          border-radius: 5px;
+          transition: background-color 0.3s;
+          border: none;
+        }
+
+        .header-close-button {
+          background-color: transparent;
+          font-size: 30px;
+        }
+
+        .modal-save-button {
+          cursor: pointer;
+          background-color: #0284c7;
+          color: white;
+          padding: 9px 14px;
+          border-radius: 5px;
+          border: none;
+        }
+
+        .modal-save-button:hover {
+          background-color: #0ea5e9;
+        }
+
+        .modal-close-button: hover {
+          background-color: #ddd;
+        }
+
+        @media (max-width: 600px) {
+          :host {
+            width: 80%;
+            min-width: 0;
+          }
+        }
+      </style>
+      <div class="modal-header">
+        <h1 id="modalTitle" class="modal-title">Editar nota de rodapé</h1>
+        <button class="modal-close-button header-close-button" aria-label="Fechar" title="Fechar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <textarea class="modal-textarea" placeholder="Digite a nota de rodapé aqui..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-save-button" aria-label="Salvar">Salvar</button>
+        <button class="modal-close-button" aria-label="Fechar">Fechar</button>
+      </div>
+    `;
+        this.overlayElement = document.createElement('div');
+        this.overlayElement.classList.add('overlay');
+        this.overlayElement.style.opacity = '0';
+        this.overlayElement.style.transition = 'opacity 0.3s';
+        this.overlayElement.style.position = 'fixed';
+        this.overlayElement.style.top = '0';
+        this.overlayElement.style.left = '0';
+        this.overlayElement.style.width = '100%';
+        this.overlayElement.style.height = '100%';
+        this.overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+        this.overlayElement.style.zIndex = '1000';
+        document.body.appendChild(this.overlayElement);
+        document.body.appendChild(this.modalElement);
+        this.keydownListener = (event) => {
+            if (event.key === 'Escape') {
+                this.close();
+            }
+        };
+        document.addEventListener('keydown', this.keydownListener);
+        Array.from(this.shadowRoot.querySelectorAll('.modal-close-button')).forEach(element => element.addEventListener('click', () => this.close()));
+        (_b = this.shadowRoot.querySelector('.modal-save-button')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', this.save.bind(this));
+    }
+    open() {
+        var _a, _b;
+        this.overlayElement.style.display = 'block';
+        setTimeout(() => {
+            this.overlayElement.style.opacity = '1';
+            this.modalElement.style.opacity = '1';
+            this.modalElement.style.transform = 'translate(-50%, -50%) scale(1)';
+        }, 10);
+        const firstFocusableElement = this.getTextArea();
+        if (firstFocusableElement) {
+            firstFocusableElement.focus();
+            firstFocusableElement.value = (_a = this.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
+        }
+        const modalTitle = this.shadowRoot.querySelector('.modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = (_b = this.tituloModal) !== null && _b !== void 0 ? _b : modalTitle.innerHTML;
+        }
+    }
+    getTextArea() {
+        return this.shadowRoot.querySelector('.modal-textarea');
+    }
+    close(fromSave = false) {
+        if (fromSave || this.shouldClose()) {
+            this.modalElement.style.opacity = '0';
+            this.overlayElement.style.opacity = '0';
+            setTimeout(() => this.removeModal(), 300); // Tempo de transição
+        }
+    }
+    shouldClose() {
+        const textarea = this.getTextArea();
+        return !(textarea.value !== this.textoInicialNotaRodape && !confirm('Tem certeza que deseja fechar? As alterações não salvas serão perdidas.'));
+    }
+    removeModal() {
+        document.removeEventListener('keydown', this.keydownListener);
+        this.modalElement.remove();
+        this.overlayElement.remove();
+    }
+    save() {
+        const textarea = this.getTextArea();
+        if (textarea.value === this.textoInicialNotaRodape || !textarea.value) {
+            this.close(true);
+            return;
+        }
+        this.domNodeNotaRodape.dispatchEvent(new CustomEvent(NOTA_RODAPE_INPUT_EVENT, { detail: { id: this.idNotaRodape, texto: textarea.value } }));
+        this.close(true);
+    }
+}
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+const PREFIXO_ID = 'nr';
+const Delta$2 = Quill.import('delta');
+const Module = Quill.import('core/module');
+const Embed = Quill.import('blots/embed'); // Inline Embed
+const Text$1 = Quill.import('blots/text'); // Inline Text
+const Parchment$a = Quill.import('parchment');
+const cfgInline = {
+    scope: Parchment$a.Scope.INLINE_ATTRIBUTE,
+};
+const IdNotaRodapeAttribute = new Parchment$a.Attributor.Attribute('id-nota-rodape', 'id-nota-rodape', cfgInline);
+const NumeroAttribute = new Parchment$a.Attributor.Attribute('numero', 'numero', cfgInline);
+const TextoAttribute = new Parchment$a.Attributor.Attribute('texto', 'texto', cfgInline);
+class NotaRodapeBlot extends Embed {
+    static create(value) {
+        let node = super.create(value);
+        node.setAttribute('class', 'nota-rodape');
+        node.setAttribute('contenteditable', 'false');
+        NotaRodapeBlot.valueToAttributes(value, node);
+        return node;
+    }
+    static value(domNode) {
+        return domNode.notaRodape || NotaRodapeBlot.buildNotaRodape(domNode);
+    }
+    format(name, value) {
+        if (name !== this.statics.blotName || !value)
+            return super.format(name, value);
+        NotaRodapeBlot.valueToAttributes(value, this.domNode);
+    }
+    // static formats(domNode) {
+    //   return { 'nota-rodape': domNode.notaRodape || NotaRodapeBlot.buildNotaRodape(domNode) };
+    // }
+    static buildNotaRodape(domNode) {
+        return {
+            // id: domNode.getAttribute('id'),
+            id: domNode.getAttribute('id-nota-rodape'),
+            numero: domNode.getAttribute('numero'),
+            texto: domNode.getAttribute('texto'),
+        };
+    }
+    static valueToAttributes(value, domNode) {
+        if (!value || typeof value === 'boolean')
+            return;
+        // value.id && domNode.setAttribute('id', value.id);
+        value.id && domNode.setAttribute('id-nota-rodape', value.id);
+        value.numero && domNode.setAttribute('numero', value.numero);
+        domNode.notaRodape = value;
+        domNode.innerText = value.numero;
+        domNode.setAttribute('texto', value.texto);
+    }
+}
+NotaRodapeBlot.blotName = 'nota-rodape';
+NotaRodapeBlot.tagName = 'nota-rodape';
+NotaRodapeBlot.allowedChildren = [Text$1];
+class ModuloNotaRodape extends Module {
+    constructor(quill, options) {
+        var _a;
+        super(quill, options);
+        this._isAbrindoTexto = false;
+        this.quill = quill;
+        this.options = options;
+        this.options.numeroInicial = (_a = this.options.numeroInicial) !== null && _a !== void 0 ? _a : 1;
+        this.quill.notasRodape = this;
+        const toolbar = this.quill.getModule('toolbar');
+        if (toolbar) {
+            toolbar.addHandler('nota-rodape', this.solicitarTexto.bind(this));
+        }
+        this.addClipboardMatcher();
+        this.quill.on('text-change', this.onTextChange.bind(this));
+        this.quill.root.addEventListener('click', this.onClick.bind(this));
+        this.quill.root.addEventListener(NOTA_RODAPE_INPUT_EVENT, this.tratarRespostaModal.bind(this));
+    }
+    get isAbrindoTexto() {
+        return this._isAbrindoTexto;
+    }
+    set isAbrindoTexto(value) {
+        this._isAbrindoTexto = value;
+        // if (!value) {
+        //   setTimeout(() => {
+        //     this.quill.root.innerHTML = this.ajustarConteudoTagsNotaRodape(this.quill.root.innerHTML);
+        //   }, 0);
+        // }
+    }
+    static register() {
+        Quill.register(NotaRodapeBlot);
+        Quill.register(IdNotaRodapeAttribute);
+        Quill.register(NumeroAttribute);
+        Quill.register(TextoAttribute);
+    }
+    addClipboardMatcher() {
+        this.quill.clipboard.addMatcher('nota-rodape', (node, delta) => {
+            let match = Parchment$a.query(node);
+            if (match == null || match.blotName !== 'nota-rodape') {
+                return delta;
+            }
+            const id = this.isAbrindoTexto ? node.getAttribute('id-nota-rodape') : this.gerarId();
+            const numero = node.getAttribute('numero');
+            const texto = node.getAttribute('texto');
+            const notaRodape = new NotaRodape({ id, numero, texto });
+            return new Delta$2().insert({ 'nota-rodape': notaRodape });
+            // const ops = delta.ops.reduce((acc, op) => {
+            //   if (op.insert && op.attributes?.['id-nota-rodape']) {
+            //     const { 'id-nota-rodape': id, numero, texto } = op.attributes || {};
+            //     const notaRodape = new NotaRodape({ id, numero: +numero, texto });
+            //     acc.push({ insert: { 'nota-rodape': notaRodape } });
+            //   }
+            //   return acc;
+            // }, []);
+            // return new Delta(ops);
+        });
+    }
+    onTextChange(delta, oldContent, source) {
+        const undo = this.quill.history.stack.undo[this.quill.history.stack.undo.length - 1];
+        const redo = this.quill.history.stack.redo[this.quill.history.stack.redo.length - 1];
+        if (this.hasNotaRodape(delta) || this.hasNotaRodape(undo === null || undo === void 0 ? void 0 : undo.undo) || this.hasNotaRodape(undo === null || undo === void 0 ? void 0 : undo.redo) || this.hasNotaRodape(redo === null || redo === void 0 ? void 0 : redo.redo)) {
+            this.renumerarTodasNotas();
+            this.emitirEventoNotaRodapeAdicionadaOuRemovida(this.hasNotaRodape(delta));
+        }
+        if (this.hasNotaRodape(delta)) {
+            this.removerEspacosAoRedorNotaRodape();
+        }
+    }
+    removerEspacosAoRedorNotaRodape() {
+        // A operação de colar texto que possua nota de rodapé está adicionando \t antes e depois do número da nota
+        // O código abaixo remove esses espaços
+        const notas = this.findBlotsNotaRodape();
+        notas.forEach(item => {
+            var _a, _b, _c, _d;
+            ((_b = (_a = item.blot.next) === null || _a === void 0 ? void 0 : _a.text) === null || _b === void 0 ? void 0 : _b.match(/^\t/)) && this.quill.deleteText(item.index + 1, 1, 'silent');
+            ((_d = (_c = item.blot.prev) === null || _c === void 0 ? void 0 : _c.text) === null || _d === void 0 ? void 0 : _d.match(/\s$/)) && this.quill.deleteText(item.index - 1, 1, 'silent');
+        });
+    }
+    emitirEventoNotaRodapeAdicionadaOuRemovida(isAdicionadaOuAtualizada) {
+        clearTimeout(this.timerEmitirEventoNotaRodapeChange);
+        this.timerEmitirEventoNotaRodapeChange = setTimeout(() => {
+            const eventName = isAdicionadaOuAtualizada ? NOTA_RODAPE_CHANGE_EVENT : NOTA_RODAPE_REMOVE_EVENT;
+            this.quill.root.dispatchEvent(new CustomEvent(eventName, { bubbles: true }));
+        }, 100);
+    }
+    hasNotaRodape(delta) {
+        var _a;
+        return (_a = delta === null || delta === void 0 ? void 0 : delta.ops) === null || _a === void 0 ? void 0 : _a.find(op => { var _a; return (_a = op.insert) === null || _a === void 0 ? void 0 : _a['nota-rodape']; });
+    }
+    onClick(e) {
+        var _a;
+        const el = e.target;
+        if ((el === null || el === void 0 ? void 0 : el.tagName) === 'NOTA-RODAPE' || ((_a = el === null || el === void 0 ? void 0 : el.parentElement) === null || _a === void 0 ? void 0 : _a.tagName) === 'NOTA-RODAPE') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.solicitarTexto(el.notaRodape || el.parentElement.notaRodape);
+        }
+    }
+    tratarRespostaModal(event) {
+        event.stopPropagation();
+        const { id, texto } = event.detail;
+        const el = id && this.findNodeById(id);
+        this.quill.focus();
+        el ? this.atualizarTexto(el.notaRodape, texto) : this.adicionar(texto);
+    }
+    solicitarTexto(notaRodape) {
+        // const texto = prompt('Texto da nota', notaRodape?.texto);
+        // if (!texto) return;
+        // typeof notaRodape === 'object' ? this.atualizarTexto(notaRodape, texto) : this.adicionar(texto);
+        const notaRodapeModal = new NotaRodapeModal({
+            domNodeNotaRodape: this.quill.root,
+            idNotaRodape: notaRodape === null || notaRodape === void 0 ? void 0 : notaRodape.id,
+            textoInicialNotaRodape: notaRodape === null || notaRodape === void 0 ? void 0 : notaRodape.texto,
+            tituloModal: typeof notaRodape === 'object' ? 'Editar nota de rodapé' : 'Adicionar nota de rodapé',
+        });
+        notaRodapeModal.open();
+    }
+    atualizarTexto(notaRodape, novoTexto) {
+        const elemento = this.findNodeById(notaRodape.id);
+        const blot = Quill.find(elemento);
+        blot.format('nota-rodape', { ...notaRodape, texto: novoTexto });
+        return blot.domNode.notaRodape;
+    }
+    adicionar(texto) {
+        const quill = this.quill;
+        const range = quill.getSelection();
+        if (!range)
+            return;
+        const id = this.gerarId();
+        const notaRodape = new NotaRodape({ id, numero: 0, texto });
+        const delta = new Delta$2().retain(range.index).delete(range.length).insert({ 'nota-rodape': notaRodape });
+        quill.updateContents(delta, 'user');
+        quill.setSelection(range.index + 1, 0);
+        return notaRodape;
+    }
+    remover(idNotaRodape) {
+        const elemento = this.findNodeById(idNotaRodape);
+        const blot = Quill.find(elemento);
+        blot === null || blot === void 0 ? void 0 : blot.remove();
+    }
+    editar(idNotaRodape) {
+        var _a;
+        const notaRodape = (_a = this.findNodeById(idNotaRodape)) === null || _a === void 0 ? void 0 : _a.notaRodape;
+        notaRodape && this.solicitarTexto(notaRodape);
+    }
+    associar(notasRodape) {
+        notasRodape.forEach(nota => {
+            const elemento = this.findNodeById(nota.id);
+            if (elemento) {
+                elemento.notaRodape = nota;
+            }
+        });
+    }
+    getNotasRodape() {
+        return this.findBlotsNotaRodape().map(item => item.blot.domNode.notaRodape);
+    }
+    gerarId() {
+        return PREFIXO_ID + new Date().getTime();
+    }
+    findNodeById(id) {
+        return this.quill.root.querySelector(`nota-rodape[id-nota-rodape="${id}"]`);
+    }
+    findBlotsNotaRodape() {
+        return Array.from(this.quill.root.querySelectorAll('nota-rodape')).map(domNode => {
+            const blot = Quill.find(domNode);
+            const index = blot.offset(this.quill.scroll);
+            return {
+                index,
+                blot,
+            };
+        });
+    }
+    renumerarTodasNotas() {
+        const range = this.quill.getSelection();
+        const notas = this.findBlotsNotaRodape();
+        notas.forEach((item, idx) => {
+            var _a;
+            const numero = idx + this.options.numeroInicial;
+            const node = item.blot.domNode;
+            node.innerText = numero;
+            node.setAttribute('numero', numero);
+            if ((_a = node.notaRodape) === null || _a === void 0 ? void 0 : _a.id) {
+                node.notaRodape.numero = numero;
+            }
+        });
+        range && this.quill.setSelection(range.index, range.length);
+    }
+    ajustarConteudoTagsNotaRodape(html) {
+        // Ajusta o conteúdo das tags <nota-rodape> para que o número da nota fique dentro da tag <nota-rodape>
+        return html.replace(/<nota-rodape.+?<\/nota-rodape>/g, (texto) => texto.replace(/>.?<span[^>]*>(\d+)<\/span>.?</g, '>$1<'));
     }
 }
 
@@ -36069,6 +36506,9 @@ function NumeracaoArtigo(Base) {
             else if (this.numero !== undefined && !isNumeracaoValida(this.numero)) {
                 this.rotulo = this.PREFIXO + this.numero + this.SUFIXO;
             }
+            else if (isDispositivoAlteracao(dispositivo) && this.numero !== undefined && isNumeracaoValida(this.numero)) {
+                this.rotulo = this.PREFIXO + this.numero + this.SUFIXO;
+            }
             else if (isDispositivoCabecaAlteracao(dispositivo)) {
                 this.rotulo = this.informouArtigoUnico ? this.ARTIGO_UNICO : this.PREFIXO + this.getNumeroAndSufixoNumeracao(dispositivo);
             }
@@ -39848,7 +40288,14 @@ const autoFixElemento = (state, action) => {
             const elementoAtual = createElemento(atual);
             eventos.add(StateType.ElementoIncluido, [elementoNovo]);
             eventos.add(StateType.ElementoValidado, [elementoAtual]);
-            eventos.setReferencia(createElemento(anterior !== null && anterior !== void 0 ? anterior : (isIncisoCaput(atual) ? atual.pai.pai : atual.pai)));
+            let ref;
+            if (anterior) {
+                ref = isArtigo(anterior) && hasFilhos(anterior) ? getUltimoFilho(anterior) : anterior;
+            }
+            else {
+                ref = isIncisoCaput(atual) ? atual.pai.pai : atual.pai;
+            }
+            eventos.setReferencia(createElemento(ref));
             break;
         }
         case AutoFix.OMISSIS_SEQUENCIAIS: {
@@ -43794,8 +44241,14 @@ const adicionarAgrupadorArtigoDialog = (elemento, quill, store) => {
     const elTipoAgrupadorDefault = opcoes.find(el => el.value === defaultAux);
     elTipoAgrupadorDefault.checked = true;
     opcoes.forEach(el => {
-        el.disabled = !tiposPermitidos.includes(el.value);
-        el.checked = el.disabled ? false : el.checked;
+        const element = el;
+        element.disabled = !tiposPermitidos.includes(element.value);
+        element.checked = element.disabled ? false : element.checked;
+        if (element.checked) {
+            setTimeout(() => {
+                element.focus();
+            }, 0);
+        }
     });
     const botoes = content.querySelectorAll('sl-button');
     const cancelar = botoes[0];
@@ -45364,6 +45817,13 @@ const iconeTextIndent = `
 <path class="ql-fill" d="M 1.65,2.3 0.9,3.05 2.65,4.95 0.9,6.9 1.65,7.65 4.15,4.95 1.65,2.3 M 2.5,12.45 v 1.1 h 11.25 v -1.1 H 2.5 m 11.25,-2.1 V 9.25 H 2.5 v 1.1 h 11.25 m 0,-4.3 H 6.25 V 7.1 h 7.5 V 6.05 m 0,-3.25 h -7.5 v 1.1 h 7.5 z"></path>
 </svg>
 `;
+const iconeNotaDeRodape = `
+<svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <path class="ql-fill" d="M 5,12.5 C 5,12.223858 5.2238576,12 5.5,12 h 2 c 0.6666664,0 0.6666664,1 0,1 h -2 C 5.2238576,13 5,12.776142 5,12.5 m 0,-2 C 5,10.223858 5.2238576,10 5.5,10 h 5 c 0.666666,0 0.666666,1 0,1 h -5 C 5.2238576,11 5,10.776142 5,10.5" />
+  <path class="ql-fill" d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2" />
+  <path class="ql-fill" d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1z" />
+</svg>
+`;
 
 const Inline = Quill.import('blots/inline');
 class EtaBlotConteudoOmissis extends Inline {
@@ -46685,6 +47145,7 @@ AutocompleteNorma = __decorate([
 ], AutocompleteNorma);
 
 async function assistenteAlteracaoDialog(elemento, quill, store, action, urlAutocomplete) {
+    var _a, _b, _c, _d, _e, _f;
     const dialogElem = document.createElement('sl-dialog');
     document.body.appendChild(dialogElem);
     dialogElem.label = 'Assistente de alteração de norma';
@@ -46816,7 +47277,9 @@ async function assistenteAlteracaoDialog(elemento, quill, store, action, urlAuto
     quill.blur();
     await dialogElem.appendChild(content);
     await dialogElem.show();
-    autocompleteNorma.focus();
+    const elementoFocavel = (_f = (_e = (_d = (_c = (_b = (_a = document
+        .querySelector('#auto-norma')) === null || _a === void 0 ? void 0 : _a.shadowRoot) === null || _b === void 0 ? void 0 : _b.querySelector('#auto-complete-async')) === null || _c === void 0 ? void 0 : _c.shadowRoot) === null || _d === void 0 ? void 0 : _d.querySelector('#defaultInput')) === null || _e === void 0 ? void 0 : _e.shadowRoot) === null || _f === void 0 ? void 0 : _f.querySelector('#input');
+    elementoFocavel === null || elementoFocavel === void 0 ? void 0 : elementoFocavel.focus();
 }
 
 const editarNotaAlteracaoDialog = (elemento, quill, store) => {
@@ -47377,7 +47840,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <lexml-ajuda-modal></lexml-ajuda-modal>
       <lexml-emenda-comando-modal></lexml-emenda-comando-modal>
       <lexml-atalhos-modal></lexml-atalhos-modal>
-      <lexml-sufixos-modal></lexml-sufixos-modal>
+      <!-- <lexml-sufixos-modal></lexml-sufixos-modal> -->
     `;
     }
     renderBotoesParaTratarTodasRevisoes() {
@@ -47393,11 +47856,6 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     }
     showAjudaModal() {
         this.ajudaModal.show();
-    }
-    showModalSufixos() {
-        if (this.sufixosModal !== null) {
-            this.sufixosModal.show();
-        }
     }
     showAtalhosModal() {
         this.atalhosModal.show();
@@ -48149,8 +48607,11 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.configListenersEta();
     }
     exibirModalSufixos() {
-        //exibirSufixosDialog(this.quill);
-        this.showModalSufixos();
+        this.dispatchEvent(new CustomEvent('onexibirsufixos', {
+            bubbles: true,
+            composed: true,
+            detail: {},
+        }));
     }
     exibirDiferencas(elemento) {
         var _a;
@@ -48180,9 +48641,14 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
     aceitarRevisao(elemento) {
         rootStore.dispatch(aceitarRevisaoAction.execute(elemento, undefined));
         this.alertaGlobalRevisao();
+        this.setCursorCurrentLine();
+    }
+    setCursorCurrentLine() {
+        this.quill.focus();
     }
     rejeitarRevisao(elemento) {
         rootStore.dispatch(rejeitarRevisaoAction.execute(elemento, undefined));
+        this.setCursorCurrentLine();
     }
     aceitarTodasRevisoes() {
         rootStore.dispatch(aceitarRevisaoAction.execute(undefined, undefined));
@@ -48548,9 +49014,6 @@ __decorate([
 __decorate([
     i$1('lexml-ajuda-modal')
 ], EditorComponent.prototype, "ajudaModal", void 0);
-__decorate([
-    i$1('lexml-sufixos-modal')
-], EditorComponent.prototype, "sufixosModal", void 0);
 __decorate([
     i$1('lexml-atalhos-modal')
 ], EditorComponent.prototype, "atalhosModal", void 0);
@@ -48972,6 +49435,37 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     await dialogElem.show();
 }
 
+async function showMenuImagem(editorTextoRico, img, top, left) {
+    const content = document.createRange().createContextualFragment(`
+    <div>
+      <style>
+      #bg-wp-menu-img {
+        position:absolute; top:0; left:0; width:100%; height:100%; z-index:999;
+      }
+      #menu-img {
+        position:absolute; z-index:9999;
+      }
+      </style>
+      <div id="bg-wp-menu-img">
+        <sl-menu id="menu-img" style="top:${top}px;left:${left}px;">
+          <sl-menu-item id="item-menu-largura-img" value="alterar-largura-imagem">Alterar a largura da imagem</sl-menu-item>
+        </sl-menu>
+      </div>
+    </div>
+  `);
+    const itemMenu = content.querySelector('#item-menu-largura-img');
+    const bgWpMenuImagem = content.querySelector('#bg-wp-menu-img');
+    itemMenu.onclick = () => {
+        const width = img.getAttribute('width');
+        editorTextoRico.showAlterarLarguraImagemModal(img, width);
+    };
+    bgWpMenuImagem.onclick = () => {
+        var _a;
+        (_a = bgWpMenuImagem.parentElement) === null || _a === void 0 ? void 0 : _a.remove();
+    };
+    await editorTextoRico.appendChild(content);
+}
+
 const atualizaRevisaoTextoLivre = (state, removeAllRevisoesTextoLivre = false) => {
     if (!state.emRevisao) {
         return state;
@@ -49207,7 +49701,7 @@ const editorTextoRicoCss = $ `
     }
 
     .ql-snow .ql-editor img {
-      max-width: 60%;
+      max-width: 100%;
     }
 
     .editor-texto-rico p.ql-text-indent-0px {
@@ -51437,6 +51931,17 @@ const config = {
 // const MarginBottomStyle = new Parchment.Attributor.Style('margin-bottom', 'margin-bottom', config);
 const MarginBottomClass = new Parchment.Attributor.Class('margin-bottom', 'ql-margin-bottom', config);
 
+const notaRodapeCss = $ `
+  <style>
+    .nota-rodape {
+      vertical-align: super; /* Ajusta para sobrescrito */
+      font-size: 0.8em; /* Tamanho da fonte pode ser ajustado conforme necessário */
+      line-height: 1; /* Garante que o espaçamento entre linhas não seja afetado */
+      cursor: pointer; /* Muda o cursor para o padrão de link */
+    }
+  </style>
+`;
+
 const DefaultKeyboardModule = Quill.import('modules/keyboard');
 const DefaultClipboardModule = Quill.import('modules/clipboard');
 const Delta = Quill.import('delta');
@@ -51445,6 +51950,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         super();
         this.texto = '';
         this.anexos = [];
+        this.notasRodape = [];
         this.registroEvento = '';
         this.lexmlEtaConfig = new LexmlEmendaConfig();
         this.modo = '';
@@ -51475,11 +51981,31 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 Quill.register('formats/estilo-texto', EstiloTextoClass, true);
                 Quill.register('formats/text-indent', NoIndentClass, true);
                 Quill.register('formats/margin-bottom', MarginBottomClass, true);
+                const customToolbarOptions = toolbarOptions;
+                this.modo === Modo.JUSTIFICATIVA && customToolbarOptions.push(['nota-rodape']);
                 this.quill = new Quill(quillContainer, {
-                    formats: ['estilo', 'bold', 'italic', 'image', 'underline', 'align', 'list', 'script', 'image', 'table', 'tr', 'td', 'text-indent', 'margin-bottom'],
+                    formats: [
+                        'estilo',
+                        'bold',
+                        'italic',
+                        'image',
+                        'underline',
+                        'align',
+                        'list',
+                        'script',
+                        'image',
+                        'table',
+                        'tr',
+                        'td',
+                        'text-indent',
+                        'margin-bottom',
+                        'width',
+                        // this.modo === Modo.JUSTIFICATIVA ? 'nota-rodape' : '',
+                        'nota-rodape',
+                    ],
                     modules: {
                         toolbar: {
-                            container: toolbarOptions,
+                            container: customToolbarOptions,
                             handlers: {
                                 undo: this.undo,
                                 redo: this.redo,
@@ -51487,6 +52013,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                             },
                         },
                         aspasCurvas: true,
+                        notaRodape: true,
                         table: {
                             cellSelectionOnClick: false,
                         },
@@ -51580,7 +52107,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                     placeholder: '',
                     theme: 'snow',
                 });
-                this.setContent(this.texto);
+                this.setContent(this.texto, this.notasRodape);
                 this.addBotoesExtra();
                 this.configureTooltip();
                 this.elTableManagerButton = this.querySelectorAll('span.ql-table')[1];
@@ -51588,6 +52115,9 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('selection-change', this.onSelectionChange);
                 this.alterarLarguraColunaModal.callback = this.alterarLarguraDaColuna;
                 this.alterarLarguraTabelaModal.callback = this.alterarLarguraDaTabela;
+                this.alterarLarguraImagemModal.callback = this.alterarLarguraDaImagem;
+                quillContainer.addEventListener('contextmenu', this.menuContextImagem);
+                quillContainer.addEventListener('click', this.onClick);
                 const toolbar = this.quill.getModule('toolbar');
                 toolbar.addHandler('table', (value) => {
                     var _a, _b;
@@ -51603,7 +52133,27 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                         this.showAlterarLarguraTabelaModal(table.width);
                     }
                 });
+                this.quill.root.addEventListener(NOTA_RODAPE_CHANGE_EVENT, this.updateNotasRodape);
+                this.quill.root.addEventListener(NOTA_RODAPE_REMOVE_EVENT, this.updateNotasRodape);
             }
+        };
+        this.menuContextImagem = (ev) => {
+            const elemento = ev.target;
+            if (elemento.tagName === 'IMG') {
+                ev.preventDefault();
+                showMenuImagem(this, elemento, ev.pageY, ev.pageX);
+            }
+        };
+        this.onClick = (ev) => {
+            const elemento = ev.target;
+            if (elemento.tagName === 'IMG') {
+                ev.preventDefault();
+                this.selectImage(elemento);
+            }
+        };
+        this.selectImage = (img) => {
+            const imgBlot = Quill.find(img);
+            imgBlot && this.quill.setSelection(this.quill.getIndex(imgBlot), 1);
         };
         this.imageHandler = () => {
             let fileInput = this.querySelector('input.ql-image[type=file]');
@@ -51651,6 +52201,10 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             this.updateApenasTexto();
             this.hideAlterarLarguraTabelaModal();
         };
+        this.alterarLarguraDaImagem = (img, valor) => {
+            const blot = Quill.find(img);
+            blot && blot.format('width', `${valor}%`);
+        };
         this.onSelectionChange = (range) => {
             setTimeout(() => {
                 var _a;
@@ -51693,9 +52247,11 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             this.setTitle(toolbarContainer, 'button.ql-redo', 'Refazer (Ctrl+y)');
             this.setTitle(toolbarContainer, 'button.ql-margin-bottom', 'Distância entre parágrafos');
             this.setTitle(toolbarContainer, 'button.ql-text-indent', 'Recuo de parágrafo');
+            this.setTitle(toolbarContainer, 'button.ql-table', 'Tabela');
+            this.setTitle(toolbarContainer, 'button.ql-nota-rodape', 'Nota de rodapé');
         };
         this.setTitle = (toolbarContainer, seletor, title) => { var _a; return (_a = toolbarContainer.querySelector(seletor)) === null || _a === void 0 ? void 0 : _a.setAttribute('title', title); };
-        this.setContent = (texto) => {
+        this.setContent = (texto, notasRodape = []) => {
             if (!this.quill || !this.quill.root) {
                 return;
             }
@@ -51705,8 +52261,17 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 .replace(/align-center/g, 'ql-align-center')
                 .replace(/align-right/g, 'ql-align-right');
             this.quill.history.clear(); // Não remover: isso é um workaround para o bug que ocorre ao limpar conteúdo depois de alguma inserção de tabela
+            this.configAbrindoTexto(true);
             this.quill.setContents(this.quill.clipboard.convert(textoAjustado), 'silent');
-            setTimeout(() => this.quill.history.clear(), 100); // A linha anterior gera um history, então é necessário limpar novamente.
+            this.configAbrindoTexto(false);
+            this.notasRodape = notasRodape;
+            setTimeout(() => {
+                this.quill.history.clear();
+                this.quill.notasRodape.associar(notasRodape);
+            }, 100); // A linha anterior gera um history, então é necessário limpar novamente.
+        };
+        this.configAbrindoTexto = (valor) => {
+            this.quill.notasRodape.isAbrindoTexto = valor;
         };
         this.updateApenasTexto = () => {
             var _a;
@@ -51721,13 +52286,18 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             this.buildRevisoes();
             this.onSelectionChange((_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection());
         };
+        this.updateNotasRodape = () => {
+            this.notasRodape = this.quill.notasRodape.getNotasRodape();
+            // this.agendarEmissaoEventoOnChange();
+        };
         this.ajustaHtml = (html = '') => {
-            const result = html
+            let result = html
                 .replace(/ql-indent/g, 'indent')
                 .replace(/ql-align-justify/g, 'align-justify')
                 .replace(/ql-align-center/g, 'align-center')
                 .replace(/ql-align-right/g, 'align-right');
-            return removeElementosTDOcultos(result);
+            result = removeElementosTDOcultos(result);
+            return this.quill.notasRodape.ajustarConteudoTagsNotaRodape(result);
         };
         this.buildRevisoes = () => {
             if (this.modo === Modo.JUSTIFICATIVA) {
@@ -51855,6 +52425,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.icons['underline'] = sublinhado;
         this.icons['text-indent'] = iconeTextIndent;
         this.icons['margin-bottom'] = iconeMarginBottom;
+        this.icons['nota-rodape'] = iconeNotaDeRodape;
     }
     showAlterarLarguraColunaModal(width) {
         this.alterarLarguraColunaModal.show(width);
@@ -51864,6 +52435,9 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     }
     showAlterarLarguraTabelaModal(width) {
         this.alterarLarguraTabelaModal.show(width);
+    }
+    showAlterarLarguraImagemModal(img, width) {
+        this.alterarLarguraImagemModal.show(img, width);
     }
     hideAlterarLarguraTabelaModal() {
         this.alterarLarguraTabelaModal.hide();
@@ -51896,7 +52470,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     }
     render() {
         return $ `
-      ${quillTableCss} ${editorTextoRicoCss} ${this.modo === Modo.TEXTO_LIVRE ? this.renderBotaoAnexo() : ''}
+      ${quillTableCss} ${editorTextoRicoCss} ${notaRodapeCss} ${this.modo === Modo.TEXTO_LIVRE ? this.renderBotaoAnexo() : ''}
 
       <div class="panel-revisao">
         <lexml-switch-revisao modo="${this.modo}" class="revisao-container" .nomeSwitch="${this.getNomeSwitch()}" .nomeBadgeQuantidadeRevisao="${this.getNomeBadge()}">
@@ -51916,6 +52490,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
       <div id="${this.id}-inner" class="editor-texto-rico" @onTableInTable=${this.onTableInTable}></div>
       <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-tabela-modal" tipo="tabela"></lexml-alterar-largura-tabela-coluna-modal>
       <lexml-alterar-largura-tabela-coluna-modal id="lexml-alterar-largura-coluna-modal" tipo="coluna"></lexml-alterar-largura-tabela-coluna-modal>
+      <lexml-alterar-largura-imagem-modal id="lexml-alterar-largura-img-modal"></lexml-alterar-largura-imagem-modal>
     `;
     }
     renderBotaoAnexo() {
@@ -51956,14 +52531,22 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         (_b = this.quill) === null || _b === void 0 ? void 0 : _b.off('selection-change', this.onSelectionChange);
         super.disconnectedCallback();
     }
+    editarNotaRodape(idNotaRodape) {
+        this.quill.notasRodape.editar(idNotaRodape);
+    }
+    removerNotaRodape(idNotaRodape) {
+        this.quill.notasRodape.remover(idNotaRodape);
+    }
 };
 __decorate([
     e$3({ type: String })
 ], EditorTextoRicoComponent.prototype, "texto", void 0);
 __decorate([
-    t$1(),
     e$3({ type: Array })
 ], EditorTextoRicoComponent.prototype, "anexos", void 0);
+__decorate([
+    e$3({ type: Array })
+], EditorTextoRicoComponent.prototype, "notasRodape", void 0);
 __decorate([
     e$3({ type: String, attribute: 'registro-evento' })
 ], EditorTextoRicoComponent.prototype, "registroEvento", void 0);
@@ -51979,6 +52562,9 @@ __decorate([
 __decorate([
     i$1('#lexml-alterar-largura-tabela-modal')
 ], EditorTextoRicoComponent.prototype, "alterarLarguraTabelaModal", void 0);
+__decorate([
+    i$1('#lexml-alterar-largura-img-modal')
+], EditorTextoRicoComponent.prototype, "alterarLarguraImagemModal", void 0);
 EditorTextoRicoComponent = __decorate([
     n$1('editor-texto-rico')
 ], EditorTextoRicoComponent);
@@ -52089,6 +52675,78 @@ __decorate([
 AlterarLarguraTabelaColunaModalComponent = __decorate([
     n$1('lexml-alterar-largura-tabela-coluna-modal')
 ], AlterarLarguraTabelaColunaModalComponent);
+
+let AlterarLarguraImagemModalComponent = class AlterarLarguraImagemModalComponent extends s {
+    constructor() {
+        super(...arguments);
+        this.valorLargura = '';
+        this.tipo = '';
+    }
+    show(img, width) {
+        this.valorLargura = width ? width.replace('%', '') : '';
+        this.img = img;
+        this.slAlert.hide();
+        this.slDialog.show();
+    }
+    hide() {
+        this.slDialog.hide();
+    }
+    alterarLargura() {
+        const width = parseInt(this.valorLargura);
+        if (isNaN(width) || width < 1 || width > 100) {
+            this.slAlert.show();
+        }
+        else if (this.callback) {
+            this.callback(this.img, width);
+            this.hide();
+        }
+    }
+    render() {
+        return $ `
+      <style>
+        :host {
+          font-family: var(--sl-font-sans);
+        }
+        sl-input::part(base) {
+          width: 150px;
+        }
+        sl-alert {
+          margin-top: 20px;
+        }
+      </style>
+      <sl-dialog label="Alterar a largura da Imagem">
+        <label>Informe o percentual da largura da Imagem</label>
+        <sl-input type="number" value=${this.valorLargura} width="30px" @input=${e => (this.valorLargura = e.target.value)}>
+          <sl-icon name="percent" slot="suffix"></sl-icon>
+        </sl-input>
+        <sl-alert variant="warning" closable class="alert-closable">
+          <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
+          Informe uma valor numérico de 1 a 100.
+        </sl-alert>
+        <sl-button slot="footer" @click=${() => this.alterarLargura()}>Alterar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
+      </sl-dialog>
+    `;
+    }
+};
+__decorate([
+    i$1('sl-dialog')
+], AlterarLarguraImagemModalComponent.prototype, "slDialog", void 0);
+__decorate([
+    i$1('sl-alert')
+], AlterarLarguraImagemModalComponent.prototype, "slAlert", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraImagemModalComponent.prototype, "valorLargura", void 0);
+__decorate([
+    e$3({ type: String })
+], AlterarLarguraImagemModalComponent.prototype, "tipo", void 0);
+__decorate([
+    e$3({ type: Function })
+], AlterarLarguraImagemModalComponent.prototype, "callback", void 0);
+AlterarLarguraImagemModalComponent = __decorate([
+    n$1('lexml-alterar-largura-imagem-modal')
+], AlterarLarguraImagemModalComponent);
 
 // Foi utilizado TemplateResult porque o articulacao.component.ts não usa ShadowDom
 const shoelaceLightThemeStyles = $ `
@@ -52573,6 +53231,7 @@ class Emenda {
         this.opcoesImpressao = new OpcoesImpressao();
         this.revisoes = [];
         this.colegiadoApreciador = new ColegiadoApreciador();
+        this.notasRodape = [];
     }
 }
 var ModoEdicaoEmenda;
@@ -57184,6 +57843,7 @@ const editorStyles = $ `
     :root {
       --elemento-padding-factor: 20;
       --eta-font-serif: 'Times New Roman', Times, serif;
+      --eta-font-sans: var(--sl-font-sans);
     }
 
     #lx-eta-box {
@@ -58855,6 +59515,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.motivo = '';
         this.parlamentaresCarregados = false;
         this.comissoesCarregadas = false;
+        this.notasRodape = [];
         this.autoria = new Autoria();
         this.desativarMarcaRevisao = () => {
             if (rootStore.getState().elementoReducer.emRevisao) {
@@ -58862,12 +59523,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
         };
         this.MOBILE_WIDTH = 768;
-        this.splitPanelPosition = 68;
+        this.splitPanelPosition = 67;
         this.sizeMode = '';
         this.handleResize = () => {
             this.updateLayoutSplitPanel();
             this.ajustarAltura();
         };
+        this.addEventListener(NOTA_RODAPE_CHANGE_EVENT, this.onChangeNotasRodape);
+        this.addEventListener(NOTA_RODAPE_REMOVE_EVENT, this.onChangeNotasRodape);
     }
     async getParlamentares() {
         try {
@@ -58989,6 +59652,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
         }
         emenda.justificativa = this._lexmlJustificativa.texto;
+        emenda.notasRodape = this._lexmlJustificativa.notasRodape;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
         emenda.opcoesImpressao = this._lexmlOpcoesImpressao.opcoesImpressao;
@@ -59023,6 +59687,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlEmendaComando.emenda = [];
         this.modo = params.modo;
         this.projetoNorma = params.projetoNorma;
+        this.toggleTabsDireita();
         this.inicializaProposicao(params);
         this.motivo = params.motivo;
         if (this.isEmendaTextoLivre() && params.emenda) {
@@ -59051,6 +59716,13 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             this._tabsDireita.show('comando');
         }
         this.updateView();
+    }
+    toggleTabsDireita() {
+        var _a;
+        const elementos = (_a = this.querySelector('#tabs-direita')) === null || _a === void 0 ? void 0 : _a.querySelectorAll('sl-tab, sl-tab-panel');
+        elementos === null || elementos === void 0 ? void 0 : elementos.forEach(el => {
+            el.style.display = this.isEmendaTextoLivre() && el.getAttribute('panel') !== 'notas' && el.getAttribute('name') !== 'notas' ? 'none' : 'block';
+        });
     }
     inicializaProposicao(params) {
         this.urn = '';
@@ -59112,7 +59784,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
         this._lexmlDestino.colegiadoApreciador = emenda.colegiadoApreciador;
         this._lexmlDestino.proposicao = emenda.proposicao;
-        this._lexmlJustificativa.setContent(emenda.justificativa);
+        this.notasRodape = emenda.notasRodape || [];
+        this._lexmlJustificativa.setContent(emenda.justificativa, emenda.notasRodape);
         if (this.isEmendaTextoLivre()) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
             this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
@@ -59155,7 +59828,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return this;
     }
     updateLayoutSplitPanel(forceUpdate = false) {
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+        if (this.modo.startsWith('emenda')) {
             if (this.sizeMode === 'desktop') {
                 this.slSplitPanel.position = this.splitPanelPosition;
             }
@@ -59227,14 +59900,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
     }
     updated() {
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
-            this.slSplitPanel.removeAttribute('disabled');
-            this.slSplitPanel.position = this.splitPanelPosition;
-        }
-        else {
-            this.slSplitPanel.setAttribute('disabled', 'true');
-            this.slSplitPanel.position = 100;
-        }
+        this.slSplitPanel.removeAttribute('disabled');
+        this.slSplitPanel.position = this.splitPanelPosition;
     }
     pesquisarAlturaParentElement(elemento) {
         if (elemento.parentElement === null) {
@@ -59307,13 +59974,19 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return true;
     }
     onChange() {
-        var _a;
+        let comandoEmenda = null;
         if (this.isEmendaSubstituicaoTermo()) {
-            const comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
+            comandoEmenda = this._substituicaoTermo.getComandoEmenda(this.urn);
             this._lexmlEmendaComando.emenda = comandoEmenda;
             this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
         }
         else if (this.isEmendaTextoLivre()) {
+            if (!this._lexmlJustificativa.texto) {
+                this.disparaAlerta();
+            }
+            else {
+                rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
+            }
             if (!this._lexmlEmendaTextoRico.texto) {
                 this.showAlertaEmendaTextoLivre();
             }
@@ -59321,23 +59994,35 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 rootStore.dispatch(removerAlerta('alerta-global-emenda-texto-livre'));
             }
         }
-        else if (this.modo.startsWith('emenda')) {
-            const comandoEmenda = this._lexmlEta.getComandoEmenda();
+        if (!this.isEmendaTextoLivre()) {
+            this.buildAlertaJustificativa(comandoEmenda);
+        }
+    }
+    buildAlertaJustificativa(comandoEmenda) {
+        var _a;
+        if (comandoEmenda === null) {
+            comandoEmenda = this._lexmlEta.getComandoEmenda();
             this._lexmlEmendaComando.emenda = comandoEmenda;
             this._lexmlEmendaComandoModal.atualizarComandoEmenda(comandoEmenda);
-            if (((_a = comandoEmenda.comandos) === null || _a === void 0 ? void 0 : _a.length) > 0 && !this._lexmlJustificativa.texto) {
-                const alerta = {
-                    id: 'alerta-global-justificativa',
-                    tipo: 'error',
-                    mensagem: 'A emenda não possui uma justificação',
-                    podeFechar: false,
-                };
-                rootStore.dispatch(adicionarAlerta$1(alerta));
-            }
-            else {
-                rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
-            }
         }
+        if (comandoEmenda !== null && ((_a = comandoEmenda.comandos) === null || _a === void 0 ? void 0 : _a.length) > 0 && !this._lexmlJustificativa.texto) {
+            this.disparaAlerta();
+        }
+        else {
+            rootStore.dispatch(removerAlerta('alerta-global-justificativa'));
+        }
+    }
+    disparaAlerta() {
+        const alerta = {
+            id: 'alerta-global-justificativa',
+            tipo: 'error',
+            mensagem: 'A emenda não possui uma justificação',
+            podeFechar: false,
+        };
+        rootStore.dispatch(adicionarAlerta$1(alerta));
+    }
+    getJustificativa() {
+        return '';
     }
     limparAlertas() {
         rootStore.dispatch(limparAlertas$1());
@@ -59373,6 +60058,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           --min-height: 300px;
           --heightJustificativa: 100%;
           --heightEmenda: 100%;
+          --visibilityNotasAcao: hidden;
         }
         sl-tab-panel {
           --padding: 0px;
@@ -59423,7 +60109,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
 
         sl-split-panel {
-          --divider-width: ${this.modo.startsWith('emenda') && !this.isEmendaTextoLivre() ? '15px' : '0px'};
+          --divider-width: '15px'};
         }
         sl-tab sl-icon {
           margin-right: 5px;
@@ -59432,6 +60118,76 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         .tab-autoria__container {
           padding: 10px;
         }
+        .notas-rodape {
+          font-family: var(--eta-font-serif);
+          font-style: normal;
+          padding: 10px;
+        }
+        .notas-rodape h4 {
+          font-family: var(--eta-font-sans);
+          font-style: normal;
+          padding: 1rem 0px 0.5rem;
+          margin: 0px;
+        }
+        .notas-texto-vazio {
+          padding-left: 20px;
+          color: var(--sl-color-gray-500);
+          font-style: italic;
+        }
+
+        .notas-rodape ol {
+          padding-left: 20px;
+          list-style: none;
+          counter-reset: item;
+          margin: 0px;
+        }
+
+        .notas-rodape li {
+          padding: 4px;
+          position: relative;
+          cursor: pointer;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .notas-rodape li:hover {
+          --visibilityNotasAcao: visible;
+          background-color: var(--sl-color-gray-100);
+        }
+
+        .notas-rodape li::before {
+          content: counter(item);
+          counter-increment: item;
+          position: absolute;
+          width: 20px;
+          left: -20px;
+          top: 4px;
+          font-size: smaller;
+          vertical-align: super;
+          font-weight: bold;
+          font-size: 12px;
+          color: var(--sl-color-gray-500);
+          text-align: right;
+        }
+
+        .notas-texto {
+          flex-grow: 1;
+        }
+
+        .notas-acoes {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+        }
+
+        .notas-acao {
+          margin-left: 5px;
+          visibility: var(--visibilityNotasAcao);
+          cursor: pointer;
+        }
+
         @media (max-width: 768px) {
           sl-split-panel {
             --divider-width: 0px;
@@ -59496,6 +60252,12 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
               <sl-icon name="code"></sl-icon>
               Comando
             </sl-tab>
+            <sl-tab slot="nav" panel="notas" title="Notas de rodapé">
+              <sl-badge variant="primary" id="badgeAtalhos" pill>
+                <sl-icon name="footnote"></sl-icon>
+                Notas
+              </sl-badge>
+            </sl-tab>
             <sl-tab slot="nav" panel="dicas">
               <sl-icon name="lightbulb"></sl-icon>
               Dicas
@@ -59509,6 +60271,12 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             <sl-tab-panel name="comando" class="overflow-hidden">
               <lexml-emenda-comando></lexml-emenda-comando>
             </sl-tab-panel>
+            <sl-tab-panel name="notas" class="overflow-hidden">
+              <div class="notas-rodape">
+                <h4>Notas de rodapé</h4>
+                ${this.renderNotasRodape()}
+              </div>
+            </sl-tab-panel>
             <sl-tab-panel name="dicas" class="overflow-hidden">
               <lexml-ajuda></lexml-ajuda>
             </sl-tab-panel>
@@ -59520,6 +60288,93 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
       </sl-split-panel>
       <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
+    }
+    onChangeNotasRodape() {
+        this.notasRodape = this._lexmlJustificativa.notasRodape;
+        this.focusOnTab('notas');
+    }
+    renderNotasRodape() {
+        return !this.notasRodape.length
+            ? $ `<span class="notas-texto-vazio">Não há notas de rodapé registradas.</span>`
+            : $ `
+          <ol>
+            ${this._lexmlJustificativa.notasRodape.map((nr) => $ `
+                  <li>
+                    <span class="notas-texto" idNotaRodape="${nr.id}" @click=${this.localizarNotaRodape}>${nr.texto}</span>
+                    <span class="notas-acoes">
+                      <sl-button
+                        class="notas-acao"
+                        variant="default"
+                        size="small"
+                        aria-label="Editar nota de rodapé"
+                        title="Editar nota de rodapé"
+                        idNotaRodape="${nr.id}"
+                        @click=${this.editarNotaRodape}
+                      >
+                        <sl-icon slot="prefix" name="pencil-square"></sl-icon>
+                      </sl-button>
+                      <sl-button
+                        class="notas-acao"
+                        variant="default"
+                        size="small"
+                        aria-label="Excluir nota de rodapé"
+                        title="Excluir nota de rodapé"
+                        idNotaRodape="${nr.id}"
+                        @click=${this.removerNotaRodape}
+                      >
+                        <sl-icon slot="prefix" name="trash"></sl-icon>
+                      </sl-button>
+                    </span>
+                  </li>
+                `)}
+          </ol>
+        `;
+    }
+    focusOnTab(tabName) {
+        const tab = this.querySelector(`sl-tab[panel="${tabName}"]`);
+        if (!tab)
+            return;
+        tab.click();
+        if (tabName === 'notas') {
+            const badgeElement = tab === null || tab === void 0 ? void 0 : tab.querySelector('sl-badge');
+            if (!badgeElement)
+                return;
+            if (!tab.hasAttribute('active')) {
+                if (tabName === 'notas') {
+                    badgeElement.setAttribute('pulse', '');
+                    setTimeout(() => {
+                        badgeElement.removeAttribute('pulse');
+                    }, 4000);
+                }
+            }
+        }
+    }
+    localizarNotaRodape(event) {
+        const idNotaRodape = event.target.getAttribute('idNotaRodape');
+        const notaRodapeElement = this.querySelector(`.ql-editor nota-rodape[id-nota-rodape="${idNotaRodape}"]`);
+        const tab = this.getTabFromElement(notaRodapeElement);
+        this.focusOnTab(tab.getAttribute('name'));
+        notaRodapeElement && setTimeout(() => notaRodapeElement.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    }
+    editarNotaRodape(event) {
+        const idNotaRodape = event.target.getAttribute('idNotaRodape');
+        const notaRodapeElement = this.querySelector(`.ql-editor nota-rodape[id-nota-rodape="${idNotaRodape}"]`);
+        const editorTextoRico = this.getEditorTextoRicoFromElement(notaRodapeElement);
+        editorTextoRico === null || editorTextoRico === void 0 ? void 0 : editorTextoRico.focus();
+        editorTextoRico.editarNotaRodape(idNotaRodape);
+    }
+    removerNotaRodape(event) {
+        const idNotaRodape = event.target.getAttribute('idNotaRodape');
+        const notaRodapeElement = this.querySelector(`.ql-editor nota-rodape[id-nota-rodape="${idNotaRodape}"]`);
+        const editorTextoRico = this.getEditorTextoRicoFromElement(notaRodapeElement);
+        editorTextoRico === null || editorTextoRico === void 0 ? void 0 : editorTextoRico.focus();
+        editorTextoRico.removerNotaRodape(idNotaRodape);
+    }
+    getEditorTextoRicoFromElement(element) {
+        return element.closest('editor-texto-rico');
+    }
+    getTabFromElement(element) {
+        return element.closest('sl-tab-panel');
     }
 };
 __decorate([
@@ -59543,6 +60398,9 @@ __decorate([
 __decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "updateState", void 0);
+__decorate([
+    t$1()
+], LexmlEmendaComponent.prototype, "notasRodape", void 0);
 __decorate([
     t$1()
 ], LexmlEmendaComponent.prototype, "autoria", void 0);
@@ -60559,6 +61417,7 @@ SubstituicaoTermoComponent = __decorate([
 
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
+Quill.register('modules/notaRodape', ModuloNotaRodape, true);
 
-export { AjudaComponent, AjudaModalComponent, AlertasComponent, AlterarLarguraTabelaColunaModalComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SubstituicaoTermoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
+export { AjudaComponent, AjudaModalComponent, AlertasComponent, AlterarLarguraImagemModalComponent, AlterarLarguraTabelaColunaModalComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SubstituicaoTermoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };
 //# sourceMappingURL=index.js.map
