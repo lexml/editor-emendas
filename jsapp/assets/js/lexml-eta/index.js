@@ -59687,7 +59687,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this._lexmlEmendaComando.emenda = [];
         this.modo = params.modo;
         this.projetoNorma = params.projetoNorma;
-        this.toggleTabsDireita();
         this.inicializaProposicao(params);
         this.motivo = params.motivo;
         if (this.isEmendaTextoLivre() && params.emenda) {
@@ -59716,13 +59715,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             this._tabsDireita.show('comando');
         }
         this.updateView();
-    }
-    toggleTabsDireita() {
-        var _a;
-        const elementos = (_a = this.querySelector('#tabs-direita')) === null || _a === void 0 ? void 0 : _a.querySelectorAll('sl-tab, sl-tab-panel');
-        elementos === null || elementos === void 0 ? void 0 : elementos.forEach(el => {
-            el.style.display = this.isEmendaTextoLivre() && el.getAttribute('panel') !== 'notas' && el.getAttribute('name') !== 'notas' ? 'none' : 'block';
-        });
     }
     inicializaProposicao(params) {
         this.urn = '';
@@ -59828,7 +59820,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return this;
     }
     updateLayoutSplitPanel(forceUpdate = false) {
-        if (this.modo.startsWith('emenda')) {
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             if (this.sizeMode === 'desktop') {
                 this.slSplitPanel.position = this.splitPanelPosition;
             }
@@ -59900,8 +59892,14 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
     }
     updated() {
-        this.slSplitPanel.removeAttribute('disabled');
-        this.slSplitPanel.position = this.splitPanelPosition;
+        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+            this.slSplitPanel.removeAttribute('disabled');
+            this.slSplitPanel.position = this.splitPanelPosition;
+        }
+        else {
+            this.slSplitPanel.setAttribute('disabled', 'true');
+            this.slSplitPanel.position = 100;
+        }
     }
     pesquisarAlturaParentElement(elemento) {
         if (elemento.parentElement === null) {
@@ -60109,7 +60107,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
 
         sl-split-panel {
-          --divider-width: '15px'};
+          --divider-width: ${this.modo.startsWith('emenda') && !this.isEmendaTextoLivre() ? '15px' : '0px'};
         }
         sl-tab sl-icon {
           margin-right: 5px;
