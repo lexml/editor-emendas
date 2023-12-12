@@ -59820,23 +59820,18 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         return this;
     }
     updateLayoutSplitPanel(forceUpdate = false) {
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
-            if (this.sizeMode === 'desktop') {
-                this.slSplitPanel.position = this.splitPanelPosition;
-            }
-            if (window.innerWidth <= this.MOBILE_WIDTH && (this.sizeMode !== 'mobile' || forceUpdate)) {
-                this.sizeMode = 'mobile';
-                this.slSplitPanel.position = 100;
-                this.slSplitPanel.setAttribute('disabled', 'true');
-            }
-            else if (window.innerWidth > this.MOBILE_WIDTH && (this.sizeMode !== 'desktop' || forceUpdate)) {
-                this.sizeMode = 'desktop';
-                this.slSplitPanel.position = this.splitPanelPosition;
-                this.slSplitPanel.removeAttribute('disabled');
-            }
+        if (this.sizeMode === 'desktop') {
+            this.slSplitPanel.position = this.splitPanelPosition;
         }
-        else {
+        if (window.innerWidth <= this.MOBILE_WIDTH && (this.sizeMode !== 'mobile' || forceUpdate)) {
+            this.sizeMode = 'mobile';
             this.slSplitPanel.position = 100;
+            this.slSplitPanel.setAttribute('disabled', 'true');
+        }
+        else if (window.innerWidth > this.MOBILE_WIDTH && (this.sizeMode !== 'desktop' || forceUpdate)) {
+            this.sizeMode = 'desktop';
+            this.slSplitPanel.position = this.splitPanelPosition;
+            this.slSplitPanel.removeAttribute('disabled');
         }
     }
     // Documentação de tratamento de eventos no Lit
@@ -59850,7 +59845,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         super.disconnectedCallback();
     }
     firstUpdated() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d, _e;
         // this.habilitarBotoes();
         setTimeout(() => this.atualizaListaParlamentares(), 0);
         setTimeout(() => this.atualizaListaComissoes(), 0);
@@ -59890,16 +59885,21 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 localStorage.setItem('naoPulsarBadgeAtalhos', 'true');
             }
         });
-    }
-    updated() {
         if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
-            this.slSplitPanel.removeAttribute('disabled');
-            this.slSplitPanel.position = this.splitPanelPosition;
+            (_d = this._tabsDireita) === null || _d === void 0 ? void 0 : _d.show('comando');
         }
         else {
-            this.slSplitPanel.setAttribute('disabled', 'true');
-            this.slSplitPanel.position = 100;
+            (_e = this._tabsDireita) === null || _e === void 0 ? void 0 : _e.show('notas');
         }
+    }
+    updated() {
+        // if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+        //   this.slSplitPanel.removeAttribute('disabled');
+        //   this.slSplitPanel.position = this.splitPanelPosition;
+        // } else {
+        //   this.slSplitPanel.setAttribute('disabled', 'true');
+        //   this.slSplitPanel.position = 100;
+        // }
     }
     pesquisarAlturaParentElement(elemento) {
         if (elemento.parentElement === null) {
@@ -60107,7 +60107,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
 
         sl-split-panel {
-          --divider-width: ${this.modo.startsWith('emenda') && !this.isEmendaTextoLivre() ? '15px' : '0px'};
+          --divider-width: 15px;
         }
         sl-tab sl-icon {
           margin-right: 5px;
@@ -60193,7 +60193,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
       </style>
 
-      <sl-split-panel>
+      <sl-split-panel position="67">
         <sl-icon slot="handle" name="grip-vertical"></sl-icon>
         <div slot="start">
           <sl-tab-group id="tabs-esquerda">
@@ -60246,26 +60246,38 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         </div>
         <div slot="end">
           <sl-tab-group id="tabs-direita">
-            <sl-tab slot="nav" panel="comando">
-              <sl-icon name="code"></sl-icon>
-              Comando
-            </sl-tab>
+            ${this.tabIsVisible()
+            ? $ `
+                  <sl-tab slot="nav" panel="comando">
+                    <sl-icon name="code"></sl-icon>
+                    Comando
+                  </sl-tab>
+                `
+            : ''}
             <sl-tab slot="nav" panel="notas" title="Notas de rodapé">
               <sl-badge variant="primary" id="badgeAtalhos" pill>
                 <sl-icon name="footnote"></sl-icon>
                 Notas
               </sl-badge>
             </sl-tab>
-            <sl-tab slot="nav" panel="dicas">
-              <sl-icon name="lightbulb"></sl-icon>
-              Dicas
-            </sl-tab>
-            <sl-tab slot="nav" panel="atalhos">
-              <sl-badge variant="primary" id="badgeAtalhos" pill>
-                <sl-icon name="keyboard"></sl-icon>
-                Atalhos
-              </sl-badge>
-            </sl-tab>
+            ${this.tabIsVisible()
+            ? $ `
+                  <sl-tab slot="nav" panel="dicas">
+                    <sl-icon name="lightbulb"></sl-icon>
+                    Dicas
+                  </sl-tab>
+                `
+            : ''}
+            ${this.tabIsVisible()
+            ? $ `
+                  <sl-tab slot="nav" panel="atalhos">
+                    <sl-badge variant="primary" id="badgeAtalhos" pill>
+                      <sl-icon name="keyboard"></sl-icon>
+                      Atalhos
+                    </sl-badge>
+                  </sl-tab>
+                `
+            : ''}
             <sl-tab-panel name="comando" class="overflow-hidden">
               <lexml-emenda-comando></lexml-emenda-comando>
             </sl-tab-panel>
@@ -60286,6 +60298,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
       </sl-split-panel>
       <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
+    }
+    tabIsVisible() {
+        return this.modo.startsWith('emenda') && !this.isEmendaTextoLivre();
     }
     onChangeNotasRodape() {
         this.notasRodape = this._lexmlJustificativa.notasRodape;
@@ -60329,10 +60344,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         `;
     }
     focusOnTab(tabName) {
+        var _a;
         const tab = this.querySelector(`sl-tab[panel="${tabName}"]`);
         if (!tab)
             return;
-        tab.click();
+        (_a = this._tabsDireita) === null || _a === void 0 ? void 0 : _a.show('notas');
         if (tabName === 'notas') {
             const badgeElement = tab === null || tab === void 0 ? void 0 : tab.querySelector('sl-badge');
             if (!badgeElement)
