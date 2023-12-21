@@ -42,9 +42,13 @@ export class EdtModalNovaEmenda extends LitElement {
 
   public show(): void {
     this.numero = '';
-    (this.shadowRoot?.querySelector('.numero-proposicao') as SlInput).value = '';
+    const numeroInput = this.shadowRoot?.querySelector('.numero-proposicao') as SlInput;
+    numeroInput.value = '';
     this.pesquisar();
     this.slDialog.show();
+    setTimeout(() => {
+      numeroInput.focus();
+    }, 100);
   }
 
   // private showModalEmendaSemTexto(): void {
@@ -62,7 +66,8 @@ export class EdtModalNovaEmenda extends LitElement {
 
   private processarKeyup(evt: KeyboardEvent): void {
     if (!evt.ctrlKey && !evt.altKey && !evt.metaKey && evt.key === 'Enter') {
-      this.pesquisar();
+      // this.pesquisar();
+      this.cliqueBotaoPesquisar();
     }
   }
 
@@ -121,7 +126,13 @@ export class EdtModalNovaEmenda extends LitElement {
   private selecionarProposicao(proposicao: Proposicao, evt: Event): void {
     this.proposicaoSelecionada = proposicao;
     this.trProposicoes.forEach(tr => tr.removeAttribute('selected'));
-    (evt.target as HTMLElement).parentElement!.setAttribute('selected', 'true');
+
+    if (evt.type === 'click') {
+      (evt.target as HTMLElement).parentElement!.setAttribute('selected', 'true');
+    } else if (evt.type === 'keyup') {
+      evt.preventDefault();
+      (evt.target as HTMLElement).setAttribute('selected', 'true');
+    }
   }
 
   private duploCliqueProposicao(proposicao: Proposicao, evt: Event): void {
@@ -169,6 +180,14 @@ export class EdtModalNovaEmenda extends LitElement {
                     class="proposicao"
                     @click=${(evt: Event): any => this.selecionarProposicao(p, evt)}
                     @dblclick=${(evt: Event): any => this.duploCliqueProposicao(p, evt)}
+                    @keyup=${(evt: KeyboardEvent): any => {
+                      if (evt.key === 'Enter') {
+                        this.duploCliqueProposicao(p, evt);
+                      }
+                      if (evt.key === ' ') {
+                        this.selecionarProposicao(p, evt);
+                      }
+                    }}
                   >
                     <td class="col-center">${p.nomeProposicao}</td>
                     <td class="col-center">
@@ -209,8 +228,8 @@ export class EdtModalNovaEmenda extends LitElement {
     return html`
       ${novaEmendaStyles}
       <sl-dialog label="Selecionar texto">
-        <div @keyup=${this.processarKeyup}>
-          <div class="form-group">
+        <div>
+          <div class="form-group" @keyup=${this.processarKeyup}>
             <sl-select
               class="tipo-proposicao"
               size="small"
