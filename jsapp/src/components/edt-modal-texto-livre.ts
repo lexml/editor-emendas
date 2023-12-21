@@ -53,9 +53,9 @@ export class EdtModalTextoLivre extends LitElement {
     this.slDialog.show();
     const radio = this.radioMotivo[0];
     setTimeout(() => {
-      radio.checked = true;
+      radio.click();
       radio.focus();
-    }, 0);
+    }, 100);
   }
 
   private showAlerta(mensagem: string): void {
