@@ -5,13 +5,13 @@ import { ondeCouberStyles } from './app.css';
 @customElement('edt-modal-texto-livre')
 export class EdtModalTextoLivre extends LitElement {
   private motivos = [
-    { id: 1, desc: 'Emendamento ou adição de pena, penalidade etc.' },
+    { id: 1, desc: 'Emendamento ou adição de anexos.' },
+    { id: 2, desc: 'Emendamento ou adição de pena, penalidade etc.' },
     {
-      id: 2,
+      id: 3,
       desc: 'Emendamento ou adição de especificação temática do dispositivo (usado para nome do tipo penal e outros).',
     },
-    { id: 3, desc: 'Alteração de anexo de MP de crédito extraordinário.' },
-    { id: 4, desc: 'Emendamento ou adição de anexos.' },
+    { id: 4, desc: 'Alteração de anexo de MP de crédito extraordinário.' },
     {
       id: 5,
       desc: 'Alteração do texto da proposição e proposta de adição de dispositivos onde couber na mesma emenda.',
@@ -51,6 +51,11 @@ export class EdtModalTextoLivre extends LitElement {
     this.inputMotivo.value = '';
     this.radioMotivo.forEach((r: HTMLInputElement) => (r.checked = false));
     this.slDialog.show();
+    const radio = this.radioMotivo[0];
+    setTimeout(() => {
+      radio.checked = true;
+      radio.focus();
+    }, 0);
   }
 
   private showAlerta(mensagem: string): void {
