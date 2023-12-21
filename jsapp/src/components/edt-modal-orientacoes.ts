@@ -133,6 +133,10 @@ export class EdtModalOrientacoes extends LitElement {
     }
     this.step = 1;
     this.slDialog.show();
+    setTimeout(() => {
+      const btnAvancar = this.shadowRoot?.querySelector('#btnAvancar') as any;
+      btnAvancar.focus();
+    }, 0);
   }
 
   private handleNextStep(): void {
@@ -357,9 +361,8 @@ export class EdtModalOrientacoes extends LitElement {
           <div class="wizard-controls">
             <sl-button @click=${this.handlePreviousStep} ?disabled=${this.step === 1}> Voltar </sl-button>
             ${this.step} / ${this.stepsData.length}
-            <sl-button @click=${this.handleNextStep} ?disabled="${this.step === this.stepsData.length}"> Avançar </sl-button>
+            <sl-button id="btnAvancar" @click=${this.handleNextStep} ?disabled="${this.step === this.stepsData.length}"> Avançar </sl-button>
           </div>
-
           <!-- Botão de fechar à direita -->
           <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Fechar</sl-button>
         </div>
