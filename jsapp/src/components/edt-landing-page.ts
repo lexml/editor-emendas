@@ -134,7 +134,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   messageValid(): boolean {
-    return !this.touched.message || this.errors.message === undefined;
+    return (!this.touched.message || this.errors.message === undefined) && this.message !== '';
   }
 
   origemValid(): boolean {
