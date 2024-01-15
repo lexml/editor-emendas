@@ -6,10 +6,15 @@ interface TouchedFields {
   name: boolean;
   email: boolean;
   message: boolean;
+  origem: boolean;
 }
 
 enum NameError {
   NameEmpty,
+}
+
+enum OrigemError {
+  OrigemEmpty,
 }
 
 enum EmailError {
@@ -31,6 +36,7 @@ interface ContactFormErrors {
   name?: NameError;
   email?: EmailError;
   message?: MessageError;
+  origem?: OrigemError;
 }
 @customElement('edt-landing-page')
 export class EdtLandingPage extends LitElement {
@@ -42,16 +48,20 @@ export class EdtLandingPage extends LitElement {
 
   @state() message = '';
 
+  @state() origem = '';
+
   @state() touched: TouchedFields = {
     name: false,
     email: false,
     message: false,
+    origem: false,
   };
 
   @state() errors: ContactFormErrors = {
     name: NameError.NameEmpty,
     email: EmailError.EmailEmpty,
     message: MessageError.MessageEmpty,
+    origem: OrigemError.OrigemEmpty,
   };
 
   @state() submitEnabled = false;
@@ -74,6 +84,22 @@ export class EdtLandingPage extends LitElement {
     this.validateName();
   }
 
+  handleOrigemInput(event: Event): void {
+    this.touched.origem = true;
+    const e = event.target as any;
+    this.origem = e.value;
+    this.validateOrigem();
+  }
+
+  validateOrigem(): void {
+    if (this.origem === '') {
+      this.errors.origem = OrigemError.OrigemEmpty;
+    } else {
+      this.errors.origem = undefined;
+    }
+    this.enableSubmit();
+  }
+
   validateName(): void {
     if (this.name === '') {
       this.errors.name = NameError.NameEmpty;
@@ -84,7 +110,7 @@ export class EdtLandingPage extends LitElement {
   }
 
   enableSubmit(): void {
-    this.submitEnabled = this.nameValid() && this.emailValid() && this.messageValid();
+    this.submitEnabled = this.nameValid() && this.emailValid() && this.messageValid() && this.origemValid();
   }
 
   nameValid(): boolean {
@@ -109,6 +135,10 @@ export class EdtLandingPage extends LitElement {
 
   messageValid(): boolean {
     return !this.touched.message || this.errors.message === undefined;
+  }
+
+  origemValid(): boolean {
+    return this.touched.origem || this.errors.origem === undefined;
   }
 
   showMessageRequired(): boolean {
@@ -249,6 +279,7 @@ export class EdtLandingPage extends LitElement {
       nome: this.elName.value,
       email: this.elEmail.value,
       mensagem: this.elMessage.value,
+      origem: this.origem,
     };
 
     try {
@@ -723,12 +754,21 @@ export class EdtLandingPage extends LitElement {
                     @input=${this.handleMessageInput}
                     @blur=${this.handleMessageBlur}
                   >
-${this.message}</textarea
+                  ${this.message}</textarea
                   >
                   <label for="message">Mensagem</label>
                   <div class="invalid-feedback" style="display: block" data-sb-feedback="message:required">
                     ${this.showMessageRequired() ? 'Uma mensagem é requerida.' : ''}
                   </div>
+                </div>
+                <div>
+                  <label for="origem">Origem</label>
+                  <fieldset id="groupOrigem">
+                    <input id="camaraRadio" type="radio" value="camara" name="origem" @click=${this.handleOrigemInput} /> Câmara dos Deputados
+                    <input id="senadoRadio" type="radio" value="senado" name="origem" @click=${this.handleOrigemInput} /> Senado
+                    <input id="sociedadeRadio" type="radio" value="sociedade" name="origem" @click=${this.handleOrigemInput} /> Sociedade
+                  </fieldset>
+                  <br />
                 </div>
                 <div class=${this.classForSubmittedMessage()} id="submitSuccessMessage">
                   <div class="text-center mb-3">
