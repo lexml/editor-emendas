@@ -4,6 +4,7 @@ public class MensagemLandingPage {
     private String nome;
     private String email;
     private String mensagem;
+    private String origem;
 
     public String getNome() {
         return nome;
@@ -28,4 +29,14 @@ public class MensagemLandingPage {
     public void setMensagem(String mensagem) {
         this.mensagem = mensagem;
     }
+
+	public String getOrigem() {
+		return origem;
+	}
+
+	public void setOrigem(String origem) {
+		this.origem = origem;
+	}
+    
+    
 }
