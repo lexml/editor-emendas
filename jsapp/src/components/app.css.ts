@@ -774,6 +774,21 @@ export const landingPageStyles = html`
     .js-vlibras {
       padding: 0 0 0 10px;
     }
+
+    #groupOrigem {
+      margin-top: 5px;
+      text-align: center;
+    }
+
+    #groupOrigem span {
+      margin-left: 5px;
+      margin-right: 5px;
+      white-space: nowrap;
+    }
+
+    #groupOrigem span label {
+      font-weight: normal;
+    }
   </style>
 `;
 

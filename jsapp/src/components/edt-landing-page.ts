@@ -753,9 +753,8 @@ export class EdtLandingPage extends LitElement {
                     data-sb-validations="required"
                     @input=${this.handleMessageInput}
                     @blur=${this.handleMessageBlur}
-                  >
-                  ${this.message}</textarea
-                  >
+                  // eslint-disable-next-line prettier/prettier
+                  >${this.message}</textarea>
                   <label for="message">Mensagem</label>
                   <div class="invalid-feedback" style="display: block" data-sb-feedback="message:required">
                     ${this.showMessageRequired() ? 'Uma mensagem é requerida.' : ''}
@@ -764,9 +763,18 @@ export class EdtLandingPage extends LitElement {
                 <div>
                   <label for="origem">Origem</label>
                   <fieldset id="groupOrigem">
-                    <input id="camaraRadio" type="radio" value="camara" name="origem" @click=${this.handleOrigemInput} /> Câmara dos Deputados
-                    <input id="senadoRadio" type="radio" value="senado" name="origem" @click=${this.handleOrigemInput} /> Senado
-                    <input id="sociedadeRadio" type="radio" value="sociedade" name="origem" @click=${this.handleOrigemInput} /> Sociedade
+                    <span>
+                      <input id="camaraRadio" type="radio" value="Câmara dos Deputados" name="origem" @click=${this.handleOrigemInput} />
+                      <label for="camaraRadio">Câmara dos Deputados</label>
+                    </span>
+                    <span>
+                      <input id="senadoRadio" type="radio" value="Senado" name="origem" @click=${this.handleOrigemInput} />
+                      <label for="senadoRadio">Senado</label>
+                    </span>
+                    <span>
+                      <input id="externoRadio" type="radio" value="Público externo" name="origem" @click=${this.handleOrigemInput} />
+                      <label for="externoRadio">Público externo</label>
+                    </span>
                   </fieldset>
                   <br />
                 </div>
