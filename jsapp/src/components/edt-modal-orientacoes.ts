@@ -186,10 +186,10 @@ export class EdtModalOrientacoes extends LitElement {
                     nome do usuário.
                   </li>
                   <li>
-                    <strong>Editor:</strong> Esse é a principal área do editor, contendo abas como Texto e Justificativa, onde você fará a maior parte
+                    <strong>Editor:</strong> Esse é a principal área do editor, contendo abas como Texto e Justificação, onde você fará a maior parte
                     de suas edições.
                   </li>
-                  <li><strong>Emenda:</strong> Um painel com comandos da emenda, dicas e atalhos para facilitar sua experiência.</li>
+                  <li><strong>Emenda:</strong> Um painel com comandos da emenda, dicas e atalhos de teclado para facilitar sua experiência.</li>
                   <li><strong>Rodapé:</strong> Mantenha-se informado sobre a versão atual do aplicativo.</li>
                 </ol>
               </div>
@@ -203,10 +203,10 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col1">
                 <p>O <strong>Cabeçalho</strong> serve como sua primeira orientação no editor. Nele, você encontrará:</p>
                 <ol>
-                  <li><strong>Número e ano da MPV:</strong> Uma identificação rápida da Medida Provisória que você está editando.</li>
+                  <li><strong>Nome do arquivo:</strong> O nome do arquivo da emenda que está sendo editada.</li>
                   <li>
                     <strong>Sinalizador de arquivo não salvo:</strong>
-                    Aparece quando a emenda tem alterações que não foram salvas.
+                    Aparece, ao lado do nome do arquivo, quando a emenda tem alterações que não foram salvas.
                     <br />
                     <img class="image" style="margin-top: 5px;" src="./assets/jpg/orientacoes-2-1.jpg" alt="Sinalizador de arquivo não salvo" />
                   </li>
@@ -233,11 +233,10 @@ export class EdtModalOrientacoes extends LitElement {
                   </li>
                   <li><strong>Avisos:</strong> Área com alertas de erros, omissões ou sugestões referentes à emenda em elaboração.</li>
                   <li><strong>Menu de contexto:</strong> Ações que podem ser realizadas a partir do dispositivo selecionado.</li>
-                  <li>
-                    <strong>Marcas de revisão:</strong> Opção para ativar/desativar o modo de revisão. (só aparecerá quando existirem revisões na
-                    emenda)
+                  <li><strong>Marcas de revisão:</strong> Opção para ativar/desativar o modo de revisão.</li>
                   </li>
-                  <li><strong>Ações de revisão:</strong> Botões para ações relacionadas com as marcas de revisão.</li>
+                  <li><strong>Ações de revisão:</strong> Botões para ações relacionadas com as marcas de revisão. (só aparecerão quando existirem revisões na
+                    emenda)</li>
                 </ol>
               </div>
               <div class="col" id="col2">
@@ -295,7 +294,7 @@ export class EdtModalOrientacoes extends LitElement {
                   <li>
                     <strong>"Onde couber":</strong>
                     <p>
-                      Esse tipo de emenda permite propor alterações sem especificar a localização exata na medida provisória. No entanto, orienta-se o
+                      Esse tipo de emenda permite propor novos dispositivos sem especificar a localização exata na medida provisória. No entanto, orienta-se o
                       uso preferencial de emendas padrão, com posicionamento dos novos dispositivos propostos, em vez de emendas de dispositivos "onde
                       couber".
                     </p>
