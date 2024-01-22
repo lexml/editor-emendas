@@ -22,6 +22,7 @@ const videos: Array<Video> = [
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
   new Video('Marcas de revisão', '4zmICnwq3HQ'),
   new Video('Emenda de texto livre', '_i1jDNEBNRw'),
+  new Video('Uso de linhas pontilhadas ao colar dispositivos', 'uYXsH-F-AQM'),
 ];
 
 @customElement('edt-modal-ajuda')
