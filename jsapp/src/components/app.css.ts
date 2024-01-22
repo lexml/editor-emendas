@@ -796,7 +796,9 @@ export const ajudaStyles = html`
   <style>
     sl-dialog {
       --width: 80vw;
+      height: 80vh;
     }
+
     sl-tab-group {
       display: block;
     }
@@ -826,8 +828,8 @@ export const ajudaStyles = html`
     }
 
     .video-container {
-      overflow: hidden;
-      position: relative;
+      position: sticky;
+      top: 0;
       width: 100%;
     }
 
