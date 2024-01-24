@@ -779,7 +779,9 @@ export class EdtApp extends LitElement {
       dataUltimaModificacao: null,
     };
 
-    emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
+    if (emendaComAlteracoesSalvas.comandoEmendaTextoLivre) {
+      emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
+    }
     emenda.comandoEmendaTextoLivre.texto = emenda.comandoEmendaTextoLivre.texto.trim();
 
     const _isDirty = !objetosIguais(emendaComAlteracoesSalvas, emenda);

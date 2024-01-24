@@ -1,0 +1,67 @@
+{
+  "dataUltimaModificacao" : "2023-12-01T14:44:21.474Z",
+  "aplicacao" : "",
+  "versaoAplicacao" : "",
+  "modoEdicao" : "emendaTextoLivre",
+  "metadados" : { },
+  "proposicao" : {
+    "urn" : "urn:lex:br:federal:medida.provisoria:2023-11-07;1198",
+    "sigla" : "MPV",
+    "numero" : "1198",
+    "ano" : "2023",
+    "ementa" : "Institui poupança de incentivo à permanência e conclusão escolar para estudantes do ensino médio.",
+    "identificacaoTexto" : "Texto inicial"
+  },
+  "epigrafe" : {
+    "texto" : "EMENDA Nº         - CMMPV 1198/2023",
+    "complemento" : "(à MPV 1198/2023)"
+  },
+  "componentes" : [ {
+    "urn" : "urn:lex:br:federal:medida.provisoria:2023-11-07;1198",
+    "articulado" : true,
+    "dispositivos" : {
+      "dispositivosSuprimidos" : [ ],
+      "dispositivosModificados" : [ ],
+      "dispositivosAdicionados" : [ ]
+    }
+  } ],
+  "comandoEmendaTextoLivre" : {
+    "motivo" : "Alteração do texto da proposição e proposta de adição de dispositivos onde couber na mesma emenda.",
+    "texto" : "<p class=\"align-justify\">\tAcrescente, onde couber, na Media Provisória 1.198/2023 a seguinte redação:</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">“Art. X. Os recursos disponibilizados ao Fundo deverá ser registrado de forma detalhada a fim de evidenciar as respectivas transferências, sendo assegurado que a Caixa Econômica Federal só receberá a remuneração no sucesso das operações que fizer.</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">Art. X. A fiscalização e o controle do disposto nesta Lei, especialmente em relação à aplicação da totalidade dos recursos do Fundo, serão exercidos:</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">&nbsp;&nbsp;&nbsp;&nbsp;I - pelo órgão de controle interno no âmbito da União e pelos órgãos de controle interno no âmbito dos Estados, do Distrito Federal e dos Municípios;</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">&nbsp;&nbsp;&nbsp;&nbsp;II - pelos Tribunais de Contas dos Estados, do Distrito Federal e dos Municípios, perante os respectivos entes governamentais sob suas jurisdições;</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">&nbsp;&nbsp;&nbsp;&nbsp;III - pelo Tribunal de Contas da União, no que tange às atribuições a cargo dos órgãos federais, especialmente em relação à complementação da União;</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">Art. X. Os Ministérios da Fazenda e da Educação prestarão contas dos recursos do Fundo conforme os procedimentos adotados pelos Tribunais de Contas competentes, observada a regulamentação aplicável.</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">Art. X. O acompanhamento e o controle social sobre a distribuição, a transferência e a aplicação dos recursos do Fundo serão exercidos, perante os respectivos governos, no âmbito da União, dos Estados, do Distrito Federal e dos Municípios.</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">&nbsp;Art. X. Os registros contábeis e os demonstrativos gerenciais mensais, atualizados, relativos aos recursos repassados e recebidos à conta do Fundo, assim como os referentes às despesas realizadas, ficarão permanentemente à disposição do Congresso Nacional, bem como dos órgãos federais, estaduais e municipais de controle interno e externo, e ser-lhes-á dada ampla publicidade, inclusive por meio eletrônico.</p><p class=\"align-justify\">&nbsp;</p><p class=\"align-justify\">Art. X. Serão observadas as seguintes diretrizes na formulação do Fundo:</p><p class=\"align-justify\">I - uso criterioso dos recursos e adequada política de garantias, com limitação das responsabilidades de crédito por cotista, de forma a atender a um universo maior de beneficiários e assegurar racionalidade, eficiência, eficácia e retorno às aplicações;</p><p class=\"align-justify\">II - proibição de aplicação de recursos a fundo perdido.</p><p class=\"align-justify\">&nbsp;(NR)</p><p><br></p>  "
+  },
+  "comandoEmenda" : {
+    "comandos" : [ ]
+  },
+  "anexos" : [ ],
+  "justificativa" : "<p class=\"align-justify\">\tA Constituição Federal estabelece que a igualdade de condições para o acesso e permanência na escola é um dos princípios a partir dos quais o ensino será ministrado (art. 206, I).</p><p class=\"align-justify\">\tAlunos matriculados no Ensino Médio, na Educação de Jovens e Adultos (EJA) ou em jornada de Tempo Integral muitas vezes enfrentam desafios adicionais que podem dificultar sua permanência na escola e comprometer o acesso à educação de qualidade. </p><p class=\"align-justify\">\tNesse contexto, a presente proposta de emenda é uma medida essencial para conceder transparência ao Fundo a ser criado e a segurança jurídica adequada aos investimentos. </p><p class=\"align-justify\">\tDessa forma, conclui-se pela viabilidade legal e compatibilidade constitucional do pleito em questão. </p><p class=\"align-justify\">\tPelo exposto, contamos com o apoio dos nobres pares para a aprovação da presente proposta.</p><p><br></p>",
+  "local" : "Sala da comissão",
+  "data" : "2023-12-01",
+  "autoria" : {
+    "tipo" : "Parlamentar",
+    "imprimirPartidoUF" : true,
+    "quantidadeAssinaturasAdicionaisSenadores" : 0,
+    "quantidadeAssinaturasAdicionaisDeputados" : 0,
+    "parlamentares" : [ {
+      "identificacao" : "220543",
+      "nome" : "Ricardo Ayres",
+      "sexo" : "M",
+      "siglaPartido" : "REPUBLICANOS",
+      "siglaCasaLegislativa" : "CD",
+      "cargo" : "",
+      "siglaUF" : "TO"
+    } ]
+  },
+  "opcoesImpressao" : {
+    "imprimirBrasao" : true,
+    "textoCabecalho" : "",
+    "reduzirEspacoEntreLinhas" : false,
+    "tamanhoFonte" : 14
+  },
+  "revisoes" : [ ],
+  "notasRodape" : [ ],
+  "colegiadoApreciador" : {
+    "siglaCasaLegislativa" : "CN",
+    "tipoColegiado" : "Comissão",
+    "siglaComissao" : "CMMPV 1198/2023"
+  }
+}

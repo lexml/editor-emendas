@@ -137,7 +137,7 @@ export class EdtModalAjuda extends LitElement {
 
     return html`
       ${ajudaStyles}
-      <sl-dialog label=${tituloModal} @sl-hide=${this.emitirEvento}>
+      <sl-dialog data-cy="dialog-ajuda" label=${tituloModal} @sl-hide=${this.emitirEvento}>
         <!-- Desktop e tablet -->
         ${this.visivel ? this.tabGroupTemplate() : html``}
         <!-- Celular -->

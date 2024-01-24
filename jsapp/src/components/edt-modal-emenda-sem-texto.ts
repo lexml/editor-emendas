@@ -50,7 +50,7 @@ export class EdtModalEmendaSemTexto extends LitElement {
   render(): TemplateResult {
     const { sigla, numero, ano } = this.proposicaoSelecionada || {};
     return html`
-      <sl-dialog>
+      <sl-dialog data-cy="dialog-emenda-sem-texto">
         <span slot="label">${`${sigla} ${numero?.replace(/^0*/, '')}/${ano}`} - Texto indisponível para emenda padrão</span>
 
         <div>
@@ -61,12 +61,21 @@ export class EdtModalEmendaSemTexto extends LitElement {
         </div>
 
         <div slot="footer" class="footer-container">
-          <sl-button class="btn" variant="primary" @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}> Onde couber </sl-button>
-          <sl-button class="btn" variant="secondary" @click=${(): void => this.emitirEvento('cria-substituicao-termo')}>
+          <sl-button data-cy="btnOndeCouber" class="btn" variant="primary" @click=${(): void => this.emitirEvento('cria-artigo-onde-couber')}>
+            Onde couber
+          </sl-button>
+          <sl-button
+            data-cy="btnSubstituicaoTermo"
+            class="btn"
+            variant="secondary"
+            @click=${(): void => this.emitirEvento('cria-substituicao-termo')}
+          >
             Substituição de Termo
           </sl-button>
-          <sl-button class="btn" variant="secondary" @click=${(): void => this.emitirEvento('cria-texto-livre')}> Texto livre </sl-button>
-          <sl-button class="btn" variant="default" @click=${(): void => this.slDialog.hide()}> Fechar </sl-button>
+          <sl-button data-cy="btnTextoLivre" class="btn" variant="secondary" @click=${(): void => this.emitirEvento('cria-texto-livre')}>
+            Texto livre
+          </sl-button>
+          <sl-button data-cy="btnFechar" class="btn" variant="default" @click=${(): void => this.slDialog.hide()}> Fechar </sl-button>
         </div>
       </sl-dialog>
     `;

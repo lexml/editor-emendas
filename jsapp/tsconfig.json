@@ -6,6 +6,7 @@
     "noEmitOnError": true,
     "lib": ["es2017", "es2019", "dom"],
     "strict": true,
+    "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
@@ -16,5 +17,6 @@
     "rootDir": "./",
     "incremental": true
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "*.d.ts"]
 }

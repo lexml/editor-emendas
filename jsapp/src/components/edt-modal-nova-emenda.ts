@@ -227,7 +227,7 @@ export class EdtModalNovaEmenda extends LitElement {
   render(): TemplateResult {
     return html`
       ${novaEmendaStyles}
-      <sl-dialog label="Selecionar texto">
+      <sl-dialog data-cy="dialog-nova-emenda" label="Selecionar texto">
         <div>
           <div class="form-group" @keyup=${this.processarKeyup}>
             <sl-select
@@ -289,7 +289,12 @@ export class EdtModalNovaEmenda extends LitElement {
         </div>
 
         <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Cancelar</sl-button>
-        <sl-button slot="footer" variant="primary" @click=${(): void => this.emitirEvento()} ?disabled=${!this.proposicaoSelecionada}
+        <sl-button
+          data-cy="btnSelecionarMpv"
+          slot="footer"
+          variant="primary"
+          @click=${(): void => this.emitirEvento()}
+          ?disabled=${!this.proposicaoSelecionada}
           >Selecionar</sl-button
         >
       </sl-dialog>

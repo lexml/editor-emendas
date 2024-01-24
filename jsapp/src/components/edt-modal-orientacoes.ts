@@ -363,7 +363,7 @@ export class EdtModalOrientacoes extends LitElement {
             <sl-button id="btnAvancar" @click=${this.handleNextStep} ?disabled="${this.step === this.stepsData.length}"> Avançar </sl-button>
           </div>
           <!-- Botão de fechar à direita -->
-          <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Fechar</sl-button>
+          <sl-button data-cy="btnFechar" slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Fechar</sl-button>
         </div>
       </sl-dialog>
     `;
