@@ -814,7 +814,7 @@ export class EdtApp extends LitElement {
   private getTextoComplementarPrazoEmenda(proposicao: Proposicao): string | undefined {
     if (!proposicao) return undefined;
     if (proposicao.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)) {
-      return proposicao.labelPrazoRecebimentoEmendas?.substring(11);
+      return proposicao.labelPrazoRecebimentoEmendas?.substring(11).replace(/\(|\)/g, '');
     }
     return proposicao.labelPrazoRecebimentoEmendas;
   }
