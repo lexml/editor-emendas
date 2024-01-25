@@ -82,11 +82,6 @@ Cypress.Commands.add('abrirEmenda', (payload: any) => {
 });
 
 Cypress.Commands.add('checarDadosAposAbrirEmenda', (payload: any) => {
-  // TODO: Testar Título da emenda
-  // TODO: Testar Status da emenda (sem alterações)
-  // TODO: Testar Título da MPV
-  // TODO: Testar preenchimentos de todas as abas do lexml-emenda
-
   cy.fixture(payload.fixtureEmendaJson).then(emenda => {
     fnChecarTituloEmenda(payload.pdfName);
     fnChecarSituacaoEmenda(emenda);
@@ -145,6 +140,7 @@ const fnChecarDadosEmendaAbaTextoPadrao = (emenda: any): void => {
   // TODO: tornar genérico
   const rotulo = emenda.componentes[0].dispositivos.dispositivosAdicionados[0].rotulo;
   cy.get('edt-app lexml-eta-editor').find('label').contains(rotulo);
+  cy.get('#onmodalsufixos.mensagem.mensagem--warning').should('have.text', 'Como interpretar sufixos (-1, -2,...)?. Saiba mais');
 };
 
 const fnChecarDadosEmendaAbaTextoOndeCouber = (emenda: any): void => {
@@ -168,12 +164,12 @@ const fnChecarDadosEmendaAbaTextoTextoLivre = (emenda: any): void => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fnChecarDadosEmendaAbaJustificativa = (emenda: any): void => {
-  // TODO
+  // TODO: Verificar se a aparece o texto completo da justificação
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fnChecarDadosEmendaAbaAutoria = (emenda: any): void => {
-  // TODO
+  // TODO: Verificar se os campos das seções da aba estão preenchidos
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
