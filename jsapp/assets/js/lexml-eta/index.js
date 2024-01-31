@@ -30209,7 +30209,7 @@ SlCard = __decorateClass([
   n$6("sl-card")
 ], SlCard);
 
-const Delta$3 = Quill.import('delta');
+const Delta$4 = Quill.import('delta');
 class ModuloAspasCurvas {
     constructor(quill, options) {
         this.enabled = true;
@@ -30241,11 +30241,11 @@ class ModuloAspasCurvas {
         const aspasTransformada = !texto || (texto === null || texto === void 0 ? void 0 : texto.match(/\s$/g)) ? abreAspas : fechaAspas;
         const format = (_b = this.quill) === null || _b === void 0 ? void 0 : _b.getFormat(range);
         // Insere o caracter normalmente
-        let delta = new Delta$3().retain(range.index).delete(range.length).insert(caracter, format);
+        let delta = new Delta$4().retain(range.index).delete(range.length).insert(caracter, format);
         (_c = this.quill) === null || _c === void 0 ? void 0 : _c.updateContents(delta, Quill.sources.USER);
         (_d = this.quill) === null || _d === void 0 ? void 0 : _d.history.cutoff();
         // Troca por aspas curvas
-        delta = new Delta$3().retain(range.index).delete(1).insert(aspasTransformada, format);
+        delta = new Delta$4().retain(range.index).delete(1).insert(aspasTransformada, format);
         (_e = this.quill) === null || _e === void 0 ? void 0 : _e.updateContents(delta, Quill.sources.USER);
         (_f = this.quill) === null || _f === void 0 ? void 0 : _f.setSelection(range.index + 1, Quill.sources.SILENT);
         return false;
@@ -30254,6 +30254,2212 @@ class ModuloAspasCurvas {
         this.enabled = enabled;
     }
 }
+
+const generateUUID = () => {
+    let uuid = '';
+    for (let i = 0; i < 32; i++) {
+        const randomNumber = (Math.random() * 16) | 0;
+        const value = (i === 12 ? 4 : i === 16 ? (randomNumber & 3) | 8 : randomNumber).toString(16);
+        uuid += (i === 8 || i === 12 || i === 16 || i === 20 ? '-' : '') + value;
+    }
+    return uuid;
+};
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
+const Delta$3 = Quill.import('delta');
+const Parchment$b = Quill.import('parchment');
+const Module$1 = Quill.import('core/module');
+const Inline$1 = Quill.import('blots/inline');
+// const clipboard = Quill.import("modules/clipboard");
+const Keyboard$1 = Quill.import('modules/keyboard');
+// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+class RevisaoUtil {
+    static valueToAttributes(value, domNode) {
+        if (!value)
+            return;
+        const partes = value.split('|');
+        domNode.setAttribute('usuario', partes[0]);
+        domNode.setAttribute('date', partes[1]);
+        domNode.setAttribute('title', 'Revisão de ' + partes[0] + ' em ' + this.formatDDMMYYYYAndTime(new Date(partes[1])));
+        domNode.setAttribute('id-revisao', partes[2]);
+    }
+    static formats(domNode) {
+        if ((domNode === null || domNode === void 0 ? void 0 : domNode.hasAttribute('usuario')) && (domNode === null || domNode === void 0 ? void 0 : domNode.hasAttribute('date'))) {
+            return [domNode.getAttribute('usuario'), domNode.getAttribute('date'), domNode.getAttribute('id-revisao')].join('|');
+        }
+    }
+    static padTo2Digits(num) {
+        return num.toString().padStart(2, '0');
+    }
+    static formatDate(date) {
+        return ([date.getFullYear(), RevisaoUtil.padTo2Digits(date.getMonth() + 1), RevisaoUtil.padTo2Digits(date.getDate())].join('-') +
+            ' ' +
+            [
+                RevisaoUtil.padTo2Digits(date.getHours()),
+                RevisaoUtil.padTo2Digits(date.getMinutes()),
+                // RevisaoUtil.padTo2Digits(date.getSeconds()),
+                '00',
+            ].join(':'));
+    }
+    static formatDDMMYYYYAndTime(date) {
+        const data = [this.padTo2Digits(date.getDate()), this.padTo2Digits(date.getMonth() + 1), date.getFullYear()].join('/');
+        const hora = [this.padTo2Digits(date.getHours()), this.padTo2Digits(date.getMinutes())].join(':');
+        return `${data} ${hora}`;
+    }
+}
+// --------------------------------------------------------------------------------------------------------------------
+// Fornatos de revisão inline
+class InlineRevisionBaseFormat extends Inline$1 {
+    static create(value) {
+        let node = super.create();
+        RevisaoUtil.valueToAttributes(value, node);
+        return node;
+    }
+    static formats(domNode) {
+        return RevisaoUtil.formats(domNode);
+    }
+    format(name, value) {
+        if (name !== this.statics.blotName || !value)
+            return super.format(name, value);
+        RevisaoUtil.valueToAttributes(value, this.domNode);
+    }
+}
+InlineRevisionBaseFormat.blotName = 'revisionBaseFormat';
+InlineRevisionBaseFormat.tagName = '';
+class InsBlot extends InlineRevisionBaseFormat {
+}
+InsBlot.blotName = 'added';
+InsBlot.tagName = 'ins';
+class DelBlot extends InlineRevisionBaseFormat {
+}
+DelBlot.blotName = 'removed';
+DelBlot.tagName = 'del';
+// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+// Módulo de revisão
+// A classe abaixo adiciona um listener para o evento keydown para ser executado antes do listener padrão do Quill
+class CustomKeyboard extends Keyboard$1 {
+    listen() {
+        this.quill.root.addEventListener('keydown', this.onKeyDown.bind(this));
+        super.listen();
+    }
+    onKeyDown(e) {
+        var _a, _b, _c, _d;
+        if (((_b = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.revisao) === null || _b === void 0 ? void 0 : _b.gerenciarKeydown) && ((_d = (_c = this.quill) === null || _c === void 0 ? void 0 : _c.revisao) === null || _d === void 0 ? void 0 : _d.emRevisao)) {
+            this.quill.revisao.handleKeyDown(e);
+        }
+    }
+}
+class ModuloRevisao extends Module$1 {
+    constructor(quill, options) {
+        var _a, _b, _c;
+        super(quill, options);
+        this.ignorarEventoTextChange = false;
+        this.emRevisao = false;
+        this.gerenciarKeydown = true;
+        this.isAbrindoTexto = false;
+        this.quill = quill;
+        this.options = options;
+        if (!options || !Object.keys(options).length)
+            return;
+        // this.quill.options.formats.push(...['added', 'removed']);
+        this.usuario = options.usuario;
+        this.emRevisao = (_a = options.emRevisao) !== null && _a !== void 0 ? _a : false;
+        this.gerenciarKeydown = (_b = options.gerenciarKeydown) !== null && _b !== void 0 ? _b : true;
+        this.tableModule = options.tableModule;
+        this.tableTrick = options.tableTrick;
+        this.quill.revisao = this;
+        this.addClipboardMatcher();
+        this.addKeyboardBindings(this.quill);
+        this.quill.on('text-change', this.onTextChange.bind(this));
+        this.quill.root.addEventListener('click', this.tratarClick.bind(this));
+        if (this.tableModule) {
+            const toolbar = (_c = this.quill) === null || _c === void 0 ? void 0 : _c.getModule('toolbar');
+            toolbar.addHandler('table', (value) => {
+                var _a;
+                const quill = this.quill;
+                const isInsertTable = (value = '') => value.includes('newtable_');
+                const isInTable = (quill) => quill && quill.getSelection(true) && quill.getFormat(quill.getSelection(true)).td;
+                if (isInsertTable(value) && isInTable(quill)) {
+                    return false;
+                }
+                (_a = quill === null || quill === void 0 ? void 0 : quill.revisao) === null || _a === void 0 ? void 0 : _a.setIgnorarEventoTextChange(true);
+                return this.tableTrick.table_handler(value, quill);
+            });
+        }
+    }
+    static register() {
+        Quill.register('modules/keyboard', CustomKeyboard, true);
+        Quill.register(InsBlot, true);
+        Quill.register(DelBlot, true);
+    }
+    isTagRevisao(param) {
+        const tagName = typeof param === 'string' ? param : param === null || param === void 0 ? void 0 : param.tagName;
+        return ['INS', 'DEL'].includes(tagName);
+    }
+    getTagRevisaoMaisProxima(elemento) {
+        if (!elemento || ['BODY', 'HTML'].includes(elemento.tagName))
+            return null;
+        if (this.isTagRevisao(elemento))
+            return elemento;
+        return this.getTagRevisaoMaisProxima(elemento.parentNode);
+    }
+    tratarClick(event) {
+        const elRevisao = this.getTagRevisaoMaisProxima(event.target);
+        elRevisao && this.mostrarTooltipRevisao(elRevisao);
+    }
+    revisarTodos(aceitar) {
+        this.revisar(this.getRevisoes(), aceitar, true);
+    }
+    revisar(elementosRevisao, aceitar, todos = false) {
+        if (!this.emRevisao)
+            return;
+        elementosRevisao
+            .filter(el => this.isTagRevisao(el))
+            .forEach(elRevisao => {
+            const isTagIns = elRevisao.tagName === 'INS';
+            const blot = Quill.find(elRevisao);
+            this.ignorarEventoTextChange = true;
+            if (blot !== null) {
+                if ((aceitar && !isTagIns) || (!aceitar && isTagIns)) {
+                    const index = this.quill.getIndex(blot);
+                    const length = blot.length();
+                    this.quill.updateContents(new Delta$3().retain(index).delete(length), 'user');
+                }
+                else {
+                    blot.format(isTagIns ? 'added' : 'removed', false, 'user');
+                }
+            }
+        });
+        //força o revisar quando é "todos" e ainda sobrou revisões no quill
+        if (todos && this.getRevisoes().length > 0) {
+            this.revisar(this.getRevisoes(), aceitar);
+        }
+    }
+    padTo2Digits(num) {
+        return num.toString().padStart(2, '0');
+    }
+    mostrarTooltipRevisao(elRevisao) {
+        if (!elRevisao)
+            return;
+        const tooltip = document.createElement('div');
+        tooltip.classList.add('tooltip-revisao');
+        const data = new Date(elRevisao.getAttribute('date') || '');
+        tooltip.innerHTML = `
+        <style>
+        .tooltip-revisao {
+          position: absolute;
+          border: 1px solid black;
+          background-color: white;
+          padding: 10px;
+          border-radius: 4px;
+          z-index: 9999;
+          font-size: 0.9rem;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          max-width: 300px;
+          transition: all 0.3s ease-in-out;
+        }
+        .tooltip-revisao__actions {
+          display: flex;
+          flex-direction: row;
+          gap: 0.5rem;
+          align-items: center;
+          justify-content: center;
+        }
+        .tooltip-revisao__actions button {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border: 1px solid #ccc;
+          border-radius: 15px;
+          background-color: #eee;
+          cursor: pointer;
+          padding: 0;
+          width: 24px;
+          height: 24px;
+        }
+        .tooltip-revisao__actions svg {
+          fill: currentColor;
+          width: 24px;
+          height: 24px;
+        }
+        .tooltip-revisao button:hover {
+          background-color: #ddd;
+        }
+        .tooltip-revisao button:active {
+          background-color: #ccc;
+        }
+        .tooltip-revisao__body {
+          display: flex;
+          flex-direction: row;
+          gap: 1rem;
+        }
+        .tooltip-revisao__autor {
+          font-weight: bold;
+        }
+        .tooltip-revisao__data {
+          font-size: 0.8rem;
+          color: #666;
+        }
+      </style>
+      <div class="tooltip-revisao__body" role="tooltip">
+        <div>
+          <div class="tooltip-revisao__autor">${elRevisao.getAttribute('usuario')}</div>
+          <div class="tooltip-revisao__data">${RevisaoUtil.formatDDMMYYYYAndTime(data)}</div>
+        </div>
+        <div class="tooltip-revisao__actions">
+          <button id="button-rejeitar-revisao" aria-label="Rejeitar revisão" title="Rejeitar revisão">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+              <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+            </svg>
+          </button>
+          <button id="button-aceitar-revisao" aria-label="Aceitar revisão" title="Aceitar revisão">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16">
+              <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      `;
+        tooltip.style.opacity = '0';
+        document.body.appendChild(tooltip);
+        const fnActionRevisao = (event, aceitar) => {
+            const elementos = [...this.quill.root.querySelectorAll(`${elRevisao.tagName}[id-revisao="${elRevisao.getAttribute('id-revisao')}"]`)];
+            this.revisar(elementos, aceitar);
+            closeTooltip(event);
+        };
+        tooltip.querySelector('#button-rejeitar-revisao').addEventListener('click', (event) => fnActionRevisao(event, false));
+        tooltip.querySelector('#button-aceitar-revisao').addEventListener('click', (event) => fnActionRevisao(event, true));
+        this.ajustaPosicaoTooltip(tooltip, elRevisao);
+        const closeTooltip = (e) => {
+            if (e.type === 'click') {
+                limpaTooltip();
+            }
+            else if (e.type === 'keydown' && e.key === 'Escape') {
+                limpaTooltip();
+            }
+            setTimeout(() => this.quill.root.focus(), 0);
+        };
+        const limpaTooltip = () => {
+            tooltip.style.opacity = '0';
+            setTimeout(() => {
+                tooltip.remove();
+                document.removeEventListener('click', closeTooltip);
+                document.removeEventListener('keydown', closeTooltip);
+            }, 300);
+        };
+        setTimeout(() => {
+            document.addEventListener('click', closeTooltip);
+            document.addEventListener('keydown', closeTooltip);
+            tooltip.style.opacity = '1';
+        }, 0);
+        window.addEventListener('resize', () => this.ajustaPosicaoTooltip(tooltip, elRevisao));
+    }
+    ajustaPosicaoTooltip(tooltip, button) {
+        const rect = button.getBoundingClientRect();
+        const offset = 10;
+        // Abrir para cima por padrão, a menos que não haja espaço suficiente
+        let topOffset = rect.top - tooltip.clientHeight - offset;
+        if (topOffset < window.scrollY) {
+            topOffset = rect.bottom + offset;
+        }
+        tooltip.style.top = `${topOffset + window.scrollY}px`;
+        // Ajustar horizontalmente se estiver muito próximo à borda direita
+        let leftOffset = rect.left + rect.width / 2 - tooltip.clientWidth / 2;
+        if (leftOffset + tooltip.clientWidth > window.innerWidth) {
+            leftOffset = window.innerWidth - tooltip.clientWidth - offset;
+        }
+        else if (leftOffset < 0) {
+            leftOffset = offset;
+        }
+        tooltip.style.left = `${leftOffset + window.scrollX}px`;
+    }
+    createTooltip() {
+        Array.from(this.querySelectorAll('#tooltipAcceptRefuse')).forEach(el => this.removeChild(el));
+        const tooltipElem = document.createElement('tooltip');
+        tooltipElem.id = 'tooltipAcceptRefuse';
+        document.body.appendChild(tooltipElem);
+        document.createRange().createContextualFragment(`
+    <style>
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .tooltip .tooltiptext {
+      display: none;
+      width: 120px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      top: calc(100% + 5px);
+      left: 50%;
+      margin-left: -60px;
+    }
+
+    </style>
+    <div class="tooltip" id="tooltip">
+      Hover sobre mim
+      <span class="tooltiptext" id="tooltipContent">
+        <button onclick="botaoClicado(1)">Botão 1</button>
+        <button onclick="botaoClicado(2)">Botão 2</button>
+      </span>
+    </div>
+
+    <sl-button slot="footer" variant="primary">Fechar</sl-button>
+  `);
+    }
+    handleKeyDown(e) {
+        // Não implementado
+    }
+    addClipboardMatcher() {
+        // Handle para tratar colagem de trechos com tag <del>
+        this.quill.clipboard.addMatcher('DEL', (node, delta) => {
+            if (this.isAbrindoTexto) {
+                console.log('abrindo texto');
+                return delta;
+            }
+            else {
+                let match = Parchment$b.query(node);
+                if (match == null || match.blotName !== 'removed') {
+                    return delta;
+                }
+                const id = generateUUID();
+                const ops = delta.ops.reduce((acc, op) => {
+                    if (op.insert) {
+                        delete op.attributes.background;
+                        delete op.attributes.removed;
+                        if (this.emRevisao) {
+                            op.attributes.added = this.buildAttributes(id);
+                        }
+                        acc.push(op);
+                    }
+                    return acc;
+                }, []);
+                return new Delta$3(ops);
+            }
+        });
+    }
+    addKeyboardBindings(quill) {
+        function addBindingOnTop(keyBinding, context, handler) {
+            quill.keyboard.addBinding(keyBinding, context, handler);
+            const key = Object.keys(quill.keyboard.bindings)
+                .map(k => quill.keyboard.bindings[k])
+                .flat()
+                .find(binding => binding.handler === handler).key;
+            const newBinding = (quill.keyboard.bindings[key] || []).pop();
+            quill.keyboard.bindings[key].unshift(newBinding);
+        }
+        addBindingOnTop({ key: 'Backspace' }, null, (range, context) => this.handleRemove(range, context, 'Backspace'));
+        addBindingOnTop({ key: 'Delete' }, null, (range, context) => this.handleRemove(range, context, 'Delete'));
+        // Undo
+        addBindingOnTop({ key: 'z', shortKey: true }, null, (range, context) => this.handleUndo(range, context));
+        // Redo
+        addBindingOnTop({ key: 'z', shortKey: true, shiftKey: true }, null, (range, context) => this.handleRedo(range, context));
+        addBindingOnTop({ key: 'y', shortKey: true }, null, (range, context) => this.handleRedo(range, context));
+    }
+    handleUndo(range, context) {
+        const hasModuloTabela = this.quill.getModule('table') && this.tableModule;
+        if (this.emRevisao) {
+            this.ignorarEventoTextChange = true;
+        }
+        if (hasModuloTabela) {
+            return this.tableModule.keyboardHandler(this.quill, 'undo', range, context);
+        }
+        else {
+            this.quill.history.undo();
+        }
+    }
+    handleRedo(range, context) {
+        const hasModuloTabela = this.quill.getModule('table') && this.tableModule;
+        if (this.emRevisao) {
+            this.ignorarEventoTextChange = true;
+        }
+        // console.log(11111, 'REDO', this.quill.history.stack.redo[this.quill.history.stack.redo.length - 1]);
+        if (hasModuloTabela) {
+            return this.tableModule.keyboardHandler(this.quill, 'redo', range, context);
+        }
+        else {
+            this.quill.history.redo();
+        }
+    }
+    buildAttributes(id = '') {
+        return this.usuario + '|' + RevisaoUtil.formatDate(new Date()) + ' |' + id;
+    }
+    handleRemove(range, context, key) {
+        const deslocamento = key === 'Delete' ? 1 : -1;
+        const quill = this.quill;
+        if (this.emRevisao) {
+            const blot = quill.getLeaf(range.index)[0];
+            const isEmbedBlot = ['image'].includes(blot.statics.blotName);
+            const index = (blot.text || isEmbedBlot) && deslocamento === -1 && !range.length ? range.index - 1 : range.index;
+            let posicao = index;
+            if (index < 0 || index >= quill.getLength())
+                return true;
+            const delta = quill.getContents(index, range.length || 1);
+            const id = generateUUID();
+            const ops = delta.ops.reduce((acc, op) => {
+                var _a, _b;
+                const numChars = typeof op.insert === 'string' ? op.insert.length : 1;
+                if ((_a = op.attributes) === null || _a === void 0 ? void 0 : _a.added) {
+                    acc.push({ delete: numChars });
+                }
+                else {
+                    if (((_b = op.attributes) === null || _b === void 0 ? void 0 : _b.list) && !blot.text) {
+                        acc.push({ retain: numChars, attributes: { list: false } });
+                    }
+                    else if (!blot.text && !isEmbedBlot) {
+                        acc.push({ delete: numChars });
+                    }
+                    else {
+                        acc.push({
+                            retain: numChars,
+                            attributes: { ...(op.attributes || {}), removed: this.buildAttributes(id) },
+                        });
+                        if (deslocamento === 1) {
+                            posicao += numChars;
+                        }
+                    }
+                }
+                return acc;
+            }, []);
+            index && ops.unshift({ retain: index });
+            this.ignorarEventoTextChange = true;
+            quill.updateContents({ ops }, 'user');
+            // quill.setSelection(deslocamento === 1 ? index + length : index);
+            quill.setSelection(posicao);
+            return false;
+        }
+        return true;
+    }
+    onTextChange(delta, oldContent, source) {
+        var _a, _b, _c;
+        const isInsertJaFormatadoEmModoDeRevisao = (_b = (_a = delta.ops.find(op => op.insert)) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.added;
+        const apenasNovaLinha = delta.ops.length === 2 && delta.ops[0].retain && delta.ops[1].insert === '\n';
+        if (this.ignorarEventoTextChange || !this.emRevisao || isInsertJaFormatadoEmModoDeRevisao || !delta.ops.length || apenasNovaLinha) {
+            this.ignorarEventoTextChange = false;
+            return;
+        }
+        const quill = this.quill;
+        if (quill.history.stack.undo.length === 0)
+            return;
+        let numCaracteresRemovidos = 0;
+        this.ignorarEventoTextChange = true;
+        let itemUndo = quill.history.stack.undo.pop();
+        const redo = JSON.parse(JSON.stringify(itemUndo.redo));
+        quill.history.cutoff();
+        quill.history.ignoreChange = true;
+        quill.updateContents(itemUndo.undo, 'silent');
+        quill.history.ignoreChange = false;
+        if (!((_c = quill.history.options) === null || _c === void 0 ? void 0 : _c.userOnly))
+            quill.history.stack.undo.pop();
+        this.ignorarEventoTextChange = true;
+        let rev = { ops: [] };
+        let idx = 0;
+        const id = generateUUID();
+        rev = redo.ops.reduce((acc, op) => {
+            var _a, _b;
+            const length = op.retain || op.delete || (typeof op.insert === 'string' ? op.insert.length : 1);
+            if (op.retain && ((_a = op.attributes) === null || _a === void 0 ? void 0 : _a.list)) {
+                // idx += 1;
+                acc.ops.push({ retain: op.retain, attributes: { ...(op.attributes || {}) } });
+                idx += op.retain;
+            }
+            else if (op.retain) {
+                acc.ops.push({ retain: op.retain, attributes: { ...(op.attributes || {}) } });
+                idx += op.retain;
+            }
+            else if (op.delete) {
+                // Para refazer trechos removidos em modo de revisão é preciso identificar o que está sendo removido
+                const contentDeletedRange = quill.getContents(idx, op.delete);
+                contentDeletedRange.ops.forEach(op2 => {
+                    var _a, _b;
+                    if (op2.insert && ((_a = op2.attributes) === null || _a === void 0 ? void 0 : _a.added)) {
+                        // Deixa remover conteúdo adicionado em modo de revisão
+                        acc.ops.push({ delete: op2.insert.length });
+                    }
+                    else if (op2.insert && !((_b = op2.attributes) === null || _b === void 0 ? void 0 : _b.added)) {
+                        // Não deixa remover conteúdo adicionado FORA modo de revisão
+                        // Formata como removido em modo de revisão
+                        acc.ops.push({ retain: op2.insert.length, attributes: { removed: this.buildAttributes(id) } });
+                        idx += op2.insert.length;
+                        numCaracteresRemovidos += op2.insert.length;
+                    }
+                    else {
+                        acc.ops.push({ retain: op2.retain || op2.delete, attributes: { removed: this.buildAttributes(id) } });
+                        idx += op2.retain || op2.delete;
+                    }
+                });
+            }
+            else if (op.insert && !((_b = op.attributes) === null || _b === void 0 ? void 0 : _b.added)) {
+                op.attributes = { ...(op.attributes || {}), added: this.buildAttributes(id), removed: false };
+                acc.ops.push(op);
+                idx += length;
+            }
+            return acc;
+        }, rev);
+        quill.history.cutoff();
+        quill.updateContents(rev, 'user');
+        setTimeout(() => {
+            // TODO: Corrigir setSelection (falhando em vários casos)
+            quill.setSelection(idx - numCaracteresRemovidos, 0);
+            // quill.format('added', true, 'silent');
+            quill.format('added', this.buildAttributes(id), 'silent');
+            quill.format('removed', false, 'silent');
+            this.ignorarEventoTextChange = false;
+        }, 0);
+    }
+    setUsuario(usuario) {
+        this.usuario = usuario;
+    }
+    setEmRevisao(emRevisao) {
+        this.emRevisao = emRevisao;
+    }
+    setIgnorarEventoTextChange(ignorarEventoTextChange) {
+        this.ignorarEventoTextChange = ignorarEventoTextChange;
+    }
+    getQuantidadeRevisoes() {
+        return this.getRevisoesSemDuplicidade(this.getRevisoes()).length;
+    }
+    getRevisoes() {
+        const cursorCode = 65279;
+        return [...this.quill.root.querySelectorAll('ins, del')].filter(el => { var _a; return ((_a = el.innerText) === null || _a === void 0 ? void 0 : _a.charCodeAt(0)) !== cursorCode; });
+    }
+    getRevisoesSemDuplicidade(listElements) {
+        const revisoesSemDuplicidade = [];
+        listElements.forEach(element => {
+            if (!revisoesSemDuplicidade.find(r => r.getAttribute('id-revisao') === element.getAttribute('id-revisao'))) {
+                revisoesSemDuplicidade.push(element);
+            }
+        });
+        return revisoesSemDuplicidade;
+    }
+}
+// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
+Quill.register('modules/revisao', ModuloRevisao, true);
+
+function Diff() {}
+Diff.prototype = {
+  diff: function diff(oldString, newString) {
+    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    var callback = options.callback;
+
+    if (typeof options === 'function') {
+      callback = options;
+      options = {};
+    }
+
+    this.options = options;
+    var self = this;
+
+    function done(value) {
+      if (callback) {
+        setTimeout(function () {
+          callback(undefined, value);
+        }, 0);
+        return true;
+      } else {
+        return value;
+      }
+    } // Allow subclasses to massage the input prior to running
+
+
+    oldString = this.castInput(oldString);
+    newString = this.castInput(newString);
+    oldString = this.removeEmpty(this.tokenize(oldString));
+    newString = this.removeEmpty(this.tokenize(newString));
+    var newLen = newString.length,
+        oldLen = oldString.length;
+    var editLength = 1;
+    var maxEditLength = newLen + oldLen;
+
+    if (options.maxEditLength) {
+      maxEditLength = Math.min(maxEditLength, options.maxEditLength);
+    }
+
+    var bestPath = [{
+      newPos: -1,
+      components: []
+    }]; // Seed editLength = 0, i.e. the content starts with the same values
+
+    var oldPos = this.extractCommon(bestPath[0], newString, oldString, 0);
+
+    if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
+      // Identity per the equality and tokenizer
+      return done([{
+        value: this.join(newString),
+        count: newString.length
+      }]);
+    } // Main worker method. checks all permutations of a given edit length for acceptance.
+
+
+    function execEditLength() {
+      for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
+        var basePath = void 0;
+
+        var addPath = bestPath[diagonalPath - 1],
+            removePath = bestPath[diagonalPath + 1],
+            _oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
+
+        if (addPath) {
+          // No one else is going to attempt to use this value, clear it
+          bestPath[diagonalPath - 1] = undefined;
+        }
+
+        var canAdd = addPath && addPath.newPos + 1 < newLen,
+            canRemove = removePath && 0 <= _oldPos && _oldPos < oldLen;
+
+        if (!canAdd && !canRemove) {
+          // If this path is a terminal then prune
+          bestPath[diagonalPath] = undefined;
+          continue;
+        } // Select the diagonal that we want to branch from. We select the prior
+        // path whose position in the new string is the farthest from the origin
+        // and does not pass the bounds of the diff graph
+
+
+        if (!canAdd || canRemove && addPath.newPos < removePath.newPos) {
+          basePath = clonePath(removePath);
+          self.pushComponent(basePath.components, undefined, true);
+        } else {
+          basePath = addPath; // No need to clone, we've pulled it from the list
+
+          basePath.newPos++;
+          self.pushComponent(basePath.components, true, undefined);
+        }
+
+        _oldPos = self.extractCommon(basePath, newString, oldString, diagonalPath); // If we have hit the end of both strings, then we are done
+
+        if (basePath.newPos + 1 >= newLen && _oldPos + 1 >= oldLen) {
+          return done(buildValues(self, basePath.components, newString, oldString, self.useLongestToken));
+        } else {
+          // Otherwise track this path as a potential candidate and continue.
+          bestPath[diagonalPath] = basePath;
+        }
+      }
+
+      editLength++;
+    } // Performs the length of edit iteration. Is a bit fugly as this has to support the
+    // sync and async mode which is never fun. Loops over execEditLength until a value
+    // is produced, or until the edit length exceeds options.maxEditLength (if given),
+    // in which case it will return undefined.
+
+
+    if (callback) {
+      (function exec() {
+        setTimeout(function () {
+          if (editLength > maxEditLength) {
+            return callback();
+          }
+
+          if (!execEditLength()) {
+            exec();
+          }
+        }, 0);
+      })();
+    } else {
+      while (editLength <= maxEditLength) {
+        var ret = execEditLength();
+
+        if (ret) {
+          return ret;
+        }
+      }
+    }
+  },
+  pushComponent: function pushComponent(components, added, removed) {
+    var last = components[components.length - 1];
+
+    if (last && last.added === added && last.removed === removed) {
+      // We need to clone here as the component clone operation is just
+      // as shallow array clone
+      components[components.length - 1] = {
+        count: last.count + 1,
+        added: added,
+        removed: removed
+      };
+    } else {
+      components.push({
+        count: 1,
+        added: added,
+        removed: removed
+      });
+    }
+  },
+  extractCommon: function extractCommon(basePath, newString, oldString, diagonalPath) {
+    var newLen = newString.length,
+        oldLen = oldString.length,
+        newPos = basePath.newPos,
+        oldPos = newPos - diagonalPath,
+        commonCount = 0;
+
+    while (newPos + 1 < newLen && oldPos + 1 < oldLen && this.equals(newString[newPos + 1], oldString[oldPos + 1])) {
+      newPos++;
+      oldPos++;
+      commonCount++;
+    }
+
+    if (commonCount) {
+      basePath.components.push({
+        count: commonCount
+      });
+    }
+
+    basePath.newPos = newPos;
+    return oldPos;
+  },
+  equals: function equals(left, right) {
+    if (this.options.comparator) {
+      return this.options.comparator(left, right);
+    } else {
+      return left === right || this.options.ignoreCase && left.toLowerCase() === right.toLowerCase();
+    }
+  },
+  removeEmpty: function removeEmpty(array) {
+    var ret = [];
+
+    for (var i = 0; i < array.length; i++) {
+      if (array[i]) {
+        ret.push(array[i]);
+      }
+    }
+
+    return ret;
+  },
+  castInput: function castInput(value) {
+    return value;
+  },
+  tokenize: function tokenize(value) {
+    return value.split('');
+  },
+  join: function join(chars) {
+    return chars.join('');
+  }
+};
+
+function buildValues(diff, components, newString, oldString, useLongestToken) {
+  var componentPos = 0,
+      componentLen = components.length,
+      newPos = 0,
+      oldPos = 0;
+
+  for (; componentPos < componentLen; componentPos++) {
+    var component = components[componentPos];
+
+    if (!component.removed) {
+      if (!component.added && useLongestToken) {
+        var value = newString.slice(newPos, newPos + component.count);
+        value = value.map(function (value, i) {
+          var oldValue = oldString[oldPos + i];
+          return oldValue.length > value.length ? oldValue : value;
+        });
+        component.value = diff.join(value);
+      } else {
+        component.value = diff.join(newString.slice(newPos, newPos + component.count));
+      }
+
+      newPos += component.count; // Common case
+
+      if (!component.added) {
+        oldPos += component.count;
+      }
+    } else {
+      component.value = diff.join(oldString.slice(oldPos, oldPos + component.count));
+      oldPos += component.count; // Reverse add and remove so removes are output first to match common convention
+      // The diffing algorithm is tied to add then remove output and this is the simplest
+      // route to get the desired output with minimal overhead.
+
+      if (componentPos && components[componentPos - 1].added) {
+        var tmp = components[componentPos - 1];
+        components[componentPos - 1] = components[componentPos];
+        components[componentPos] = tmp;
+      }
+    }
+  } // Special case handle for when one terminal is ignored (i.e. whitespace).
+  // For this case we merge the terminal into the prior string and drop the change.
+  // This is only available for string mode.
+
+
+  var lastComponent = components[componentLen - 1];
+
+  if (componentLen > 1 && typeof lastComponent.value === 'string' && (lastComponent.added || lastComponent.removed) && diff.equals('', lastComponent.value)) {
+    components[componentLen - 2].value += lastComponent.value;
+    components.pop();
+  }
+
+  return components;
+}
+
+function clonePath(path) {
+  return {
+    newPos: path.newPos,
+    components: path.components.slice(0)
+  };
+}
+
+var characterDiff = new Diff();
+function diffChars(oldStr, newStr, options) {
+  return characterDiff.diff(oldStr, newStr, options);
+}
+
+function generateOptions(options, defaults) {
+  if (typeof options === 'function') {
+    defaults.callback = options;
+  } else if (options) {
+    for (var name in options) {
+      /* istanbul ignore else */
+      if (options.hasOwnProperty(name)) {
+        defaults[name] = options[name];
+      }
+    }
+  }
+
+  return defaults;
+}
+
+//
+// Ranges and exceptions:
+// Latin-1 Supplement, 0080–00FF
+//  - U+00D7  × Multiplication sign
+//  - U+00F7  ÷ Division sign
+// Latin Extended-A, 0100–017F
+// Latin Extended-B, 0180–024F
+// IPA Extensions, 0250–02AF
+// Spacing Modifier Letters, 02B0–02FF
+//  - U+02C7  ˇ &#711;  Caron
+//  - U+02D8  ˘ &#728;  Breve
+//  - U+02D9  ˙ &#729;  Dot Above
+//  - U+02DA  ˚ &#730;  Ring Above
+//  - U+02DB  ˛ &#731;  Ogonek
+//  - U+02DC  ˜ &#732;  Small Tilde
+//  - U+02DD  ˝ &#733;  Double Acute Accent
+// Latin Extended Additional, 1E00–1EFF
+
+var extendedWordChars = /^[A-Za-z\xC0-\u02C6\u02C8-\u02D7\u02DE-\u02FF\u1E00-\u1EFF]+$/;
+var reWhitespace = /\S/;
+var wordDiff = new Diff();
+
+wordDiff.equals = function (left, right) {
+  if (this.options.ignoreCase) {
+    left = left.toLowerCase();
+    right = right.toLowerCase();
+  }
+
+  return left === right || this.options.ignoreWhitespace && !reWhitespace.test(left) && !reWhitespace.test(right);
+};
+
+wordDiff.tokenize = function (value) {
+  // All whitespace symbols except newline group into one token, each newline - in separate token
+  var tokens = value.split(/([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/); // Join the boundary splits that we do not consider to be boundaries. This is primarily the extended Latin character set.
+
+  for (var i = 0; i < tokens.length - 1; i++) {
+    // If we have an empty string in the next field and we have only word chars before and after, merge
+    if (!tokens[i + 1] && tokens[i + 2] && extendedWordChars.test(tokens[i]) && extendedWordChars.test(tokens[i + 2])) {
+      tokens[i] += tokens[i + 2];
+      tokens.splice(i + 1, 2);
+      i--;
+    }
+  }
+
+  return tokens;
+};
+
+function diffWords(oldStr, newStr, options) {
+  options = generateOptions(options, {
+    ignoreWhitespace: true
+  });
+  return wordDiff.diff(oldStr, newStr, options);
+}
+
+var lineDiff = new Diff();
+
+lineDiff.tokenize = function (value) {
+  var retLines = [],
+      linesAndNewlines = value.split(/(\n|\r\n)/); // Ignore the final empty token that occurs if the string ends with a new line
+
+  if (!linesAndNewlines[linesAndNewlines.length - 1]) {
+    linesAndNewlines.pop();
+  } // Merge the content and line separators into single tokens
+
+
+  for (var i = 0; i < linesAndNewlines.length; i++) {
+    var line = linesAndNewlines[i];
+
+    if (i % 2 && !this.options.newlineIsToken) {
+      retLines[retLines.length - 1] += line;
+    } else {
+      if (this.options.ignoreWhitespace) {
+        line = line.trim();
+      }
+
+      retLines.push(line);
+    }
+  }
+
+  return retLines;
+};
+
+var sentenceDiff = new Diff();
+
+sentenceDiff.tokenize = function (value) {
+  return value.split(/(\S.+?[.!?])(?=\s+|$)/);
+};
+
+var cssDiff = new Diff();
+
+cssDiff.tokenize = function (value) {
+  return value.split(/([{}:;,]|\s+)/);
+};
+
+function _typeof(obj) {
+  "@babel/helpers - typeof";
+
+  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
+    _typeof = function (obj) {
+      return typeof obj;
+    };
+  } else {
+    _typeof = function (obj) {
+      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    };
+  }
+
+  return _typeof(obj);
+}
+
+var objectPrototypeToString = Object.prototype.toString;
+var jsonDiff = new Diff(); // Discriminate between two lines of pretty-printed, serialized JSON where one of them has a
+// dangling comma and the other doesn't. Turns out including the dangling comma yields the nicest output:
+
+jsonDiff.useLongestToken = true;
+jsonDiff.tokenize = lineDiff.tokenize;
+
+jsonDiff.castInput = function (value) {
+  var _this$options = this.options,
+      undefinedReplacement = _this$options.undefinedReplacement,
+      _this$options$stringi = _this$options.stringifyReplacer,
+      stringifyReplacer = _this$options$stringi === void 0 ? function (k, v) {
+    return typeof v === 'undefined' ? undefinedReplacement : v;
+  } : _this$options$stringi;
+  return typeof value === 'string' ? value : JSON.stringify(canonicalize(value, null, null, stringifyReplacer), stringifyReplacer, '  ');
+};
+
+jsonDiff.equals = function (left, right) {
+  return Diff.prototype.equals.call(jsonDiff, left.replace(/,([\r\n])/g, '$1'), right.replace(/,([\r\n])/g, '$1'));
+};
+// object that is already on the "stack" of items being processed. Accepts an optional replacer
+
+function canonicalize(obj, stack, replacementStack, replacer, key) {
+  stack = stack || [];
+  replacementStack = replacementStack || [];
+
+  if (replacer) {
+    obj = replacer(key, obj);
+  }
+
+  var i;
+
+  for (i = 0; i < stack.length; i += 1) {
+    if (stack[i] === obj) {
+      return replacementStack[i];
+    }
+  }
+
+  var canonicalizedObj;
+
+  if ('[object Array]' === objectPrototypeToString.call(obj)) {
+    stack.push(obj);
+    canonicalizedObj = new Array(obj.length);
+    replacementStack.push(canonicalizedObj);
+
+    for (i = 0; i < obj.length; i += 1) {
+      canonicalizedObj[i] = canonicalize(obj[i], stack, replacementStack, replacer, key);
+    }
+
+    stack.pop();
+    replacementStack.pop();
+    return canonicalizedObj;
+  }
+
+  if (obj && obj.toJSON) {
+    obj = obj.toJSON();
+  }
+
+  if (_typeof(obj) === 'object' && obj !== null) {
+    stack.push(obj);
+    canonicalizedObj = {};
+    replacementStack.push(canonicalizedObj);
+
+    var sortedKeys = [],
+        _key;
+
+    for (_key in obj) {
+      /* istanbul ignore else */
+      if (obj.hasOwnProperty(_key)) {
+        sortedKeys.push(_key);
+      }
+    }
+
+    sortedKeys.sort();
+
+    for (i = 0; i < sortedKeys.length; i += 1) {
+      _key = sortedKeys[i];
+      canonicalizedObj[_key] = canonicalize(obj[_key], stack, replacementStack, replacer, _key);
+    }
+
+    stack.pop();
+    replacementStack.pop();
+  } else {
+    canonicalizedObj = obj;
+  }
+
+  return canonicalizedObj;
+}
+
+var arrayDiff = new Diff();
+
+arrayDiff.tokenize = function (value) {
+  return value.slice();
+};
+
+arrayDiff.join = arrayDiff.removeEmpty = function (value) {
+  return value;
+};
+
+function containsTags(text) {
+    return /<.+>/g.test(text === null || text === void 0 ? void 0 : text.trim());
+}
+function endsWithPunctuation(texto) {
+    return /[.,:]\s*$/.test(texto);
+}
+function isValidHTML(html) {
+    const doc = document.createElement('div');
+    doc.innerHTML = html;
+    return doc.innerHTML === html;
+}
+function getTextoSemHtml(html) {
+    return removeEspacosDuplicados(html.replace(/(<([^>]+)>)/gi, '').trim());
+}
+function endsWithWord(texto, indicadores) {
+    return indicadores.map(word => new RegExp(addSpaceRegex(escapeRegex(word)) + '\\s*$').test(texto)).filter(r => r)[0] === true;
+}
+function converteIndicadorParaTexto(indicadores) {
+    switch (indicadores[0].trim()) {
+        case '.':
+            return 'ponto';
+        case ':':
+            return 'dois pontos';
+        case ';':
+            return 'ponto e vírgula';
+        case ',':
+            return 'vírgula';
+        default:
+            return indicadores[0].trim();
+    }
+}
+function escapeRegex(str) {
+    return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+function addSpaceRegex(str) {
+    return str.replace(/\s+/g, '\\s+');
+}
+function primeiraLetraMaiuscula(str) {
+    if (!str) {
+        return '';
+    }
+    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+function join(list) {
+    let str = '';
+    list.forEach(s => {
+        str += s;
+    });
+    return str;
+}
+function removeEspacosDuplicados(str) {
+    return str.replace(/\s{2,}/g, ' ');
+}
+function removeAllHtmlTags(texto) {
+    return texto.replace(/(<([^>]+)>)/gi, '');
+}
+const removeAllHtmlTagsExcept = (texto, tags) => {
+    // const regex = new RegExp(`(<(?!${tags.join('|')})[^>]+>)`, 'gi');
+    const regex = new RegExp(`<(?!(?:/?(${tags.join('|')})\\b))[^>]*>`, 'gi');
+    return texto.replace(regex, '');
+};
+class StringBuilder {
+    constructor(str) {
+        this.strs = new Array();
+        if (str) {
+            this.append(str);
+        }
+    }
+    append(str) {
+        if (str) {
+            this.strs.push(str);
+        }
+    }
+    toString() {
+        return join(this.strs);
+    }
+}
+const REGEX_ACCENTS = /[\u0300-\u036f]/g;
+const removeTagEConteudo = (texto, tag) => {
+    return texto.replace(new RegExp(`<${tag}[^<]*(?:(?!</${tag}>)<[^<]*)*</${tag}>`, 'gi'), '');
+};
+const removeTagStyle = (texto) => removeTagEConteudo(texto, 'style');
+const removeTagScript = (texto) => removeTagEConteudo(texto, 'script');
+const removeTagHead = (texto) => removeTagEConteudo(texto, 'head');
+const getIniciais = (texto = '') => {
+    var _a;
+    return (((_a = texto
+        .match(/\b[A-Z][a-z]*\b/g)) === null || _a === void 0 ? void 0 : _a.map(word => word.charAt(0)).filter((_, i, arr) => i === 0 || i === arr.length - 1).join('')) || '');
+};
+const textoDiffAsHtml = (texto1, texto2, typeDiff) => {
+    const fn = typeDiff === 'diffChars' ? diffChars : diffWords;
+    const buildPartAdded = (str) => `<ins>${str}</ins>`; //`<span class="texto-inserido">${str}</span>`;
+    const buildPartRemoved = (str) => `<del>${str}</del>`; //`<span classs="texto-removido">${str}</span>`;
+    const diff = fn(texto1, texto2);
+    return diff.map(part => (part.added ? buildPartAdded(part.value) : part.removed ? buildPartRemoved(part.value) : part.value)).join('');
+};
+const substituiEspacosEntreTagsPorNbsp = (texto, tags) => {
+    if (tags) {
+        const regex = new RegExp(`(?<=<(${tags.join('|')})>) +(?=</\\1>)`, 'gi');
+        return texto.replace(regex, texto => texto.replace(/ /g, '&nbsp;'));
+    }
+    else {
+        return texto.replace(/ /g, '&nbsp;');
+    }
+};
+const substituiMultiplosEspacosPorNbsp = (texto) => {
+    return texto.replace(/ +/g, texto => texto.replace(/ /g, '&nbsp;'));
+};
+/**
+ * Faz escape de caracteres especiais do html
+ *
+ * @param texto
+ */
+const encodeHtml = (texto) => {
+    const p = document.createElement('p');
+    p.textContent = texto;
+    return p.innerHTML || '';
+};
+/**
+ * Desfaz escape de caracteres especiais do html
+ *
+ * @param texto
+ */
+const decodeHtml = (texto) => {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = texto;
+    return txt.value;
+};
+
+/**
+ * @license
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+const t$3=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,e$6=Symbol(),n$5=new Map;class s$3{constructor(t,n){if(this._$cssResult$=!0,n!==e$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t;}get styleSheet(){let e=n$5.get(this.cssText);return t$3&&void 0===e&&(n$5.set(this.cssText,e=new CSSStyleSheet),e.replaceSync(this.cssText)),e}toString(){return this.cssText}}const o$5=t=>new s$3("string"==typeof t?t:t+"",e$6),r$2=(t,...n)=>{const o=1===t.length?t[0]:n.reduce(((e,n,s)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(n)+t[s+1]),t[0]);return new s$3(o,e$6)},i$4=(e,n)=>{t$3?e.adoptedStyleSheets=n.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet)):n.forEach((t=>{const n=document.createElement("style"),s=window.litNonce;void 0!==s&&n.setAttribute("nonce",s),n.textContent=t.cssText,e.appendChild(n);}));},S$1=t$3?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const n of t.cssRules)e+=n.cssText;return o$5(e)})(t):t;
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */var s$2;const e$5=window.trustedTypes,r$1=e$5?e$5.emptyScript:"",h$1=window.reactiveElementPolyfillSupport,o$4={toAttribute(t,i){switch(i){case Boolean:t=t?r$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,i){let s=t;switch(i){case Boolean:s=null!==t;break;case Number:s=null===t?null:Number(t);break;case Object:case Array:try{s=JSON.parse(t);}catch(t){s=null;}}return s}},n$4=(t,i)=>i!==t&&(i==i||t==t),l$2={attribute:!0,type:String,converter:o$4,reflect:!1,hasChanged:n$4};class a$1 extends HTMLElement{constructor(){super(),this._$Et=new Map,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Ei=null,this.o();}static addInitializer(t){var i;null!==(i=this.l)&&void 0!==i||(this.l=[]),this.l.push(t);}static get observedAttributes(){this.finalize();const t=[];return this.elementProperties.forEach(((i,s)=>{const e=this._$Eh(s,i);void 0!==e&&(this._$Eu.set(e,s),t.push(e));})),t}static createProperty(t,i=l$2){if(i.state&&(i.attribute=!1),this.finalize(),this.elementProperties.set(t,i),!i.noAccessor&&!this.prototype.hasOwnProperty(t)){const s="symbol"==typeof t?Symbol():"__"+t,e=this.getPropertyDescriptor(t,s,i);void 0!==e&&Object.defineProperty(this.prototype,t,e);}}static getPropertyDescriptor(t,i,s){return {get(){return this[i]},set(e){const r=this[t];this[i]=e,this.requestUpdate(t,r,s);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)||l$2}static finalize(){if(this.hasOwnProperty("finalized"))return !1;this.finalized=!0;const t=Object.getPrototypeOf(this);if(t.finalize(),this.elementProperties=new Map(t.elementProperties),this._$Eu=new Map,this.hasOwnProperty("properties")){const t=this.properties,i=[...Object.getOwnPropertyNames(t),...Object.getOwnPropertySymbols(t)];for(const s of i)this.createProperty(s,t[s]);}return this.elementStyles=this.finalizeStyles(this.styles),!0}static finalizeStyles(i){const s=[];if(Array.isArray(i)){const e=new Set(i.flat(1/0).reverse());for(const i of e)s.unshift(S$1(i));}else void 0!==i&&s.push(S$1(i));return s}static _$Eh(t,i){const s=i.attribute;return !1===s?void 0:"string"==typeof s?s:"string"==typeof t?t.toLowerCase():void 0}o(){var t;this._$Ep=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$Em(),this.requestUpdate(),null===(t=this.constructor.l)||void 0===t||t.forEach((t=>t(this)));}addController(t){var i,s;(null!==(i=this._$Eg)&&void 0!==i?i:this._$Eg=[]).push(t),void 0!==this.renderRoot&&this.isConnected&&(null===(s=t.hostConnected)||void 0===s||s.call(t));}removeController(t){var i;null===(i=this._$Eg)||void 0===i||i.splice(this._$Eg.indexOf(t)>>>0,1);}_$Em(){this.constructor.elementProperties.forEach(((t,i)=>{this.hasOwnProperty(i)&&(this._$Et.set(i,this[i]),delete this[i]);}));}createRenderRoot(){var t;const s=null!==(t=this.shadowRoot)&&void 0!==t?t:this.attachShadow(this.constructor.shadowRootOptions);return i$4(s,this.constructor.elementStyles),s}connectedCallback(){var t;void 0===this.renderRoot&&(this.renderRoot=this.createRenderRoot()),this.enableUpdating(!0),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostConnected)||void 0===i?void 0:i.call(t)}));}enableUpdating(t){}disconnectedCallback(){var t;null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostDisconnected)||void 0===i?void 0:i.call(t)}));}attributeChangedCallback(t,i,s){this._$AK(t,s);}_$ES(t,i,s=l$2){var e,r;const h=this.constructor._$Eh(t,s);if(void 0!==h&&!0===s.reflect){const n=(null!==(r=null===(e=s.converter)||void 0===e?void 0:e.toAttribute)&&void 0!==r?r:o$4.toAttribute)(i,s.type);this._$Ei=t,null==n?this.removeAttribute(h):this.setAttribute(h,n),this._$Ei=null;}}_$AK(t,i){var s,e,r;const h=this.constructor,n=h._$Eu.get(t);if(void 0!==n&&this._$Ei!==n){const t=h.getPropertyOptions(n),l=t.converter,a=null!==(r=null!==(e=null===(s=l)||void 0===s?void 0:s.fromAttribute)&&void 0!==e?e:"function"==typeof l?l:null)&&void 0!==r?r:o$4.fromAttribute;this._$Ei=n,this[n]=a(i,t.type),this._$Ei=null;}}requestUpdate(t,i,s){let e=!0;void 0!==t&&(((s=s||this.constructor.getPropertyOptions(t)).hasChanged||n$4)(this[t],i)?(this._$AL.has(t)||this._$AL.set(t,i),!0===s.reflect&&this._$Ei!==t&&(void 0===this._$EC&&(this._$EC=new Map),this._$EC.set(t,s))):e=!1),!this.isUpdatePending&&e&&(this._$Ep=this._$E_());}async _$E_(){this.isUpdatePending=!0;try{await this._$Ep;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){var t;if(!this.isUpdatePending)return;this.hasUpdated,this._$Et&&(this._$Et.forEach(((t,i)=>this[i]=t)),this._$Et=void 0);let i=!1;const s=this._$AL;try{i=this.shouldUpdate(s),i?(this.willUpdate(s),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostUpdate)||void 0===i?void 0:i.call(t)})),this.update(s)):this._$EU();}catch(t){throw i=!1,this._$EU(),t}i&&this._$AE(s);}willUpdate(t){}_$AE(t){var i;null===(i=this._$Eg)||void 0===i||i.forEach((t=>{var i;return null===(i=t.hostUpdated)||void 0===i?void 0:i.call(t)})),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EU(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$Ep}shouldUpdate(t){return !0}update(t){void 0!==this._$EC&&(this._$EC.forEach(((t,i)=>this._$ES(i,this[i],t))),this._$EC=void 0),this._$EU();}updated(t){}firstUpdated(t){}}a$1.finalized=!0,a$1.elementProperties=new Map,a$1.elementStyles=[],a$1.shadowRootOptions={mode:"open"},null==h$1||h$1({ReactiveElement:a$1}),(null!==(s$2=globalThis.reactiveElementVersions)&&void 0!==s$2?s$2:globalThis.reactiveElementVersions=[]).push("1.3.1");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+var t$2;const i$3=globalThis.trustedTypes,s$1=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$4=`lit$${(Math.random()+"").slice(9)}$`,o$3="?"+e$4,n$3=`<${o$3}>`,l$1=document,h=(t="")=>l$1.createComment(t),r=t=>null===t||"object"!=typeof t&&"function"!=typeof t,d=Array.isArray,u=t=>{var i;return d(t)||"function"==typeof(null===(i=t)||void 0===i?void 0:i[Symbol.iterator])},c=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,a=/>/g,f=/>|[ 	\n\r](?:([^\s"'>=/]+)([ 	\n\r]*=[ 	\n\r]*(?:[^ 	\n\r"'`<>=]|("|')|))|$)/g,_=/'/g,m=/"/g,g=/^(?:script|style|textarea|title)$/i,p=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),$=p(1),b=Symbol.for("lit-noChange"),w=Symbol.for("lit-nothing"),T=new WeakMap,x=(t,i,s)=>{var e,o;const n=null!==(e=null==s?void 0:s.renderBefore)&&void 0!==e?e:i;let l=n._$litPart$;if(void 0===l){const t=null!==(o=null==s?void 0:s.renderBefore)&&void 0!==o?o:null;n._$litPart$=l=new N(i.insertBefore(h(),t),t,void 0,null!=s?s:{});}return l._$AI(t),l},A=l$1.createTreeWalker(l$1,129,null,!1),C$1=(t,i)=>{const o=t.length-1,l=[];let h,r=2===i?"<svg>":"",d=c;for(let i=0;i<o;i++){const s=t[i];let o,u,p=-1,$=0;for(;$<s.length&&(d.lastIndex=$,u=d.exec(s),null!==u);)$=d.lastIndex,d===c?"!--"===u[1]?d=v:void 0!==u[1]?d=a:void 0!==u[2]?(g.test(u[2])&&(h=RegExp("</"+u[2],"g")),d=f):void 0!==u[3]&&(d=f):d===f?">"===u[0]?(d=null!=h?h:c,p=-1):void 0===u[1]?p=-2:(p=d.lastIndex-u[2].length,o=u[1],d=void 0===u[3]?f:'"'===u[3]?m:_):d===m||d===_?d=f:d===v||d===a?d=c:(d=f,h=void 0);const y=d===f&&t[i+1].startsWith("/>")?" ":"";r+=d===c?s+n$3:p>=0?(l.push(o),s.slice(0,p)+"$lit$"+s.slice(p)+e$4+y):s+e$4+(-2===p?(l.push(void 0),i):y);}const u=r+(t[o]||"<?>")+(2===i?"</svg>":"");if(!Array.isArray(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return [void 0!==s$1?s$1.createHTML(u):u,l]};class E{constructor({strings:t,_$litType$:s},n){let l;this.parts=[];let r=0,d=0;const u=t.length-1,c=this.parts,[v,a]=C$1(t,s);if(this.el=E.createElement(v,n),A.currentNode=this.el.content,2===s){const t=this.el.content,i=t.firstChild;i.remove(),t.append(...i.childNodes);}for(;null!==(l=A.nextNode())&&c.length<u;){if(1===l.nodeType){if(l.hasAttributes()){const t=[];for(const i of l.getAttributeNames())if(i.endsWith("$lit$")||i.startsWith(e$4)){const s=a[d++];if(t.push(i),void 0!==s){const t=l.getAttribute(s.toLowerCase()+"$lit$").split(e$4),i=/([.?@])?(.*)/.exec(s);c.push({type:1,index:r,name:i[2],strings:t,ctor:"."===i[1]?M$1:"?"===i[1]?H:"@"===i[1]?I$1:S});}else c.push({type:6,index:r});}for(const i of t)l.removeAttribute(i);}if(g.test(l.tagName)){const t=l.textContent.split(e$4),s=t.length-1;if(s>0){l.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)l.append(t[i],h()),A.nextNode(),c.push({type:2,index:++r});l.append(t[s],h());}}}else if(8===l.nodeType)if(l.data===o$3)c.push({type:2,index:r});else {let t=-1;for(;-1!==(t=l.data.indexOf(e$4,t+1));)c.push({type:7,index:r}),t+=e$4.length-1;}r++;}}static createElement(t,i){const s=l$1.createElement("template");return s.innerHTML=t,s}}function P(t,i,s=t,e){var o,n,l,h;if(i===b)return i;let d=void 0!==e?null===(o=s._$Cl)||void 0===o?void 0:o[e]:s._$Cu;const u=r(i)?void 0:i._$litDirective$;return (null==d?void 0:d.constructor)!==u&&(null===(n=null==d?void 0:d._$AO)||void 0===n||n.call(d,!1),void 0===u?d=void 0:(d=new u(t),d._$AT(t,s,e)),void 0!==e?(null!==(l=(h=s)._$Cl)&&void 0!==l?l:h._$Cl=[])[e]=d:s._$Cu=d),void 0!==d&&(i=P(t,d._$AS(t,i.values),d,e)),i}class V$1{constructor(t,i){this.v=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}p(t){var i;const{el:{content:s},parts:e}=this._$AD,o=(null!==(i=null==t?void 0:t.creationScope)&&void 0!==i?i:l$1).importNode(s,!0);A.currentNode=o;let n=A.nextNode(),h=0,r=0,d=e[0];for(;void 0!==d;){if(h===d.index){let i;2===d.type?i=new N(n,n.nextSibling,this,t):1===d.type?i=new d.ctor(n,d.name,d.strings,this,t):6===d.type&&(i=new L$1(n,this,t)),this.v.push(i),d=e[++r];}h!==(null==d?void 0:d.index)&&(n=A.nextNode(),h++);}return o}m(t){let i=0;for(const s of this.v)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class N{constructor(t,i,s,e){var o;this.type=2,this._$AH=w,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cg=null===(o=null==e?void 0:e.isConnected)||void 0===o||o;}get _$AU(){var t,i;return null!==(i=null===(t=this._$AM)||void 0===t?void 0:t._$AU)&&void 0!==i?i:this._$Cg}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=P(this,t,i),r(t)?t===w||null==t||""===t?(this._$AH!==w&&this._$AR(),this._$AH=w):t!==this._$AH&&t!==b&&this.$(t):void 0!==t._$litType$?this.T(t):void 0!==t.nodeType?this.k(t):u(t)?this.S(t):this.$(t);}M(t,i=this._$AB){return this._$AA.parentNode.insertBefore(t,i)}k(t){this._$AH!==t&&(this._$AR(),this._$AH=this.M(t));}$(t){this._$AH!==w&&r(this._$AH)?this._$AA.nextSibling.data=t:this.k(l$1.createTextNode(t)),this._$AH=t;}T(t){var i;const{values:s,_$litType$:e}=t,o="number"==typeof e?this._$AC(t):(void 0===e.el&&(e.el=E.createElement(e.h,this.options)),e);if((null===(i=this._$AH)||void 0===i?void 0:i._$AD)===o)this._$AH.m(s);else {const t=new V$1(o,this),i=t.p(this.options);t.m(s),this.k(i),this._$AH=t;}}_$AC(t){let i=T.get(t.strings);return void 0===i&&T.set(t.strings,i=new E(t)),i}S(t){d(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const o of t)e===i.length?i.push(s=new N(this.M(h()),this.M(h()),this,this.options)):s=i[e],s._$AI(o),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){var s;for(null===(s=this._$AP)||void 0===s||s.call(this,!1,!0,i);t&&t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){var i;void 0===this._$AM&&(this._$Cg=t,null===(i=this._$AP)||void 0===i||i.call(this,t));}}class S{constructor(t,i,s,e,o){this.type=1,this._$AH=w,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=o,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=w;}get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}_$AI(t,i=this,s,e){const o=this.strings;let n=!1;if(void 0===o)t=P(this,t,i,0),n=!r(t)||t!==this._$AH&&t!==b,n&&(this._$AH=t);else {const e=t;let l,h;for(t=o[0],l=0;l<o.length-1;l++)h=P(this,e[s+l],i,l),h===b&&(h=this._$AH[l]),n||(n=!r(h)||h!==this._$AH[l]),h===w?t=w:t!==w&&(t+=(null!=h?h:"")+o[l+1]),this._$AH[l]=h;}n&&!e&&this.C(t);}C(t){t===w?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,null!=t?t:"");}}class M$1 extends S{constructor(){super(...arguments),this.type=3;}C(t){this.element[this.name]=t===w?void 0:t;}}const k=i$3?i$3.emptyScript:"";class H extends S{constructor(){super(...arguments),this.type=4;}C(t){t&&t!==w?this.element.setAttribute(this.name,k):this.element.removeAttribute(this.name);}}class I$1 extends S{constructor(t,i,s,e,o){super(t,i,s,e,o),this.type=5;}_$AI(t,i=this){var s;if((t=null!==(s=P(this,t,i,0))&&void 0!==s?s:w)===b)return;const e=this._$AH,o=t===w&&e!==w||t.capture!==e.capture||t.once!==e.once||t.passive!==e.passive,n=t!==w&&(e===w||o);o&&this.element.removeEventListener(this.name,this,e),n&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){var i,s;"function"==typeof this._$AH?this._$AH.call(null!==(s=null===(i=this.options)||void 0===i?void 0:i.host)&&void 0!==s?s:this.element,t):this._$AH.handleEvent(t);}}class L$1{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){P(this,t);}}const z=window.litHtmlPolyfillSupport;null==z||z(E,N),(null!==(t$2=globalThis.litHtmlVersions)&&void 0!==t$2?t$2:globalThis.litHtmlVersions=[]).push("2.2.2");
+
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */var l,o$2;class s extends a$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Dt=void 0;}createRenderRoot(){var t,e;const i=super.createRenderRoot();return null!==(t=(e=this.renderOptions).renderBefore)&&void 0!==t||(e.renderBefore=i.firstChild),i}update(t){const i=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Dt=x(i,this.renderRoot,this.renderOptions);}connectedCallback(){var t;super.connectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!0);}disconnectedCallback(){var t;super.disconnectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!1);}render(){return b}}s.finalized=!0,s._$litElement$=!0,null===(l=globalThis.litElementHydrateSupport)||void 0===l||l.call(globalThis,{LitElement:s});const n$2=globalThis.litElementPolyfillSupport;null==n$2||n$2({LitElement:s});(null!==(o$2=globalThis.litElementVersions)&&void 0!==o$2?o$2:globalThis.litElementVersions=[]).push("3.2.0");
+
+// Foi utilizado TemplateResult porque o editor.component.ts não usa ShadowDom
+const quillSnowStyles = $ `
+  <style>
+    /*!
+    * Quill Editor v1.3.7
+    * https://quilljs.com/
+    * Copyright (c) 2014, Jason Chen
+    * Copyright (c) 2013, salesforce.com
+    */
+    .ql-container {
+      box-sizing: border-box;
+      /* font-family: Helvetica, Arial, sans-serif; */
+      font-family: var(--eta-font-serif);
+      font-size: 13px;
+      height: 100%;
+      margin: 0px;
+      position: relative;
+    }
+    .ql-container.ql-disabled .ql-tooltip {
+      visibility: hidden;
+    }
+    .ql-container.ql-disabled .ql-editor ul[data-checked] > li::before {
+      pointer-events: none;
+    }
+    .ql-clipboard {
+      left: -100000px;
+      height: 1px;
+      overflow-y: hidden;
+      position: absolute;
+      top: 50%;
+    }
+    .ql-clipboard p {
+      margin: 0;
+      padding: 0;
+    }
+    .ql-editor {
+      box-sizing: border-box;
+      line-height: 1.42;
+      height: 100%;
+      outline: none;
+      overflow-y: auto;
+      padding: 12px 15px;
+      tab-size: 4;
+      -moz-tab-size: 4;
+      text-align: left;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .ql-editor > * {
+      cursor: text;
+    }
+    .ql-editor p,
+    .ql-editor ol,
+    .ql-editor ul,
+    .ql-editor pre,
+    .ql-editor blockquote,
+    .ql-editor h1,
+    .ql-editor h2,
+    .ql-editor h3,
+    .ql-editor h4,
+    .ql-editor h5,
+    .ql-editor h6 {
+      margin: 0;
+      padding: 0;
+      counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
+    }
+    .ql-editor p {
+      line-height: 1.42;
+      font-size: 18px;
+    }
+    .ql-editor ol,
+    .ql-editor ul {
+      padding-left: 1.5em;
+    }
+    .ql-editor ol > li,
+    .ql-editor ul > li {
+      list-style-type: none;
+    }
+    .ql-editor ul > li::before {
+      content: '\\2022';
+    }
+    .ql-editor ul[data-checked='true'],
+    .ql-editor ul[data-checked='false'] {
+      pointer-events: none;
+    }
+    .ql-editor ul[data-checked='true'] > li *,
+    .ql-editor ul[data-checked='false'] > li * {
+      pointer-events: all;
+    }
+    .ql-editor ul[data-checked='true'] > li::before,
+    .ql-editor ul[data-checked='false'] > li::before {
+      color: #777;
+      cursor: pointer;
+      pointer-events: all;
+    }
+    .ql-editor ul[data-checked='true'] > li::before {
+      content: '\\2611';
+    }
+    .ql-editor ul[data-checked='false'] > li::before {
+      content: '\\2610';
+    }
+    .ql-editor li::before {
+      display: inline-block;
+      white-space: nowrap;
+      width: 1.2em;
+    }
+    .ql-editor li:not(.ql-direction-rtl)::before {
+      margin-left: -1.5em;
+      margin-right: 0.3em;
+      text-align: right;
+    }
+    .ql-editor li.ql-direction-rtl::before {
+      margin-left: 0.3em;
+      margin-right: -1.5em;
+    }
+    .ql-editor ol li:not(.ql-direction-rtl),
+    .ql-editor ul li:not(.ql-direction-rtl) {
+      padding-left: 1.5em;
+    }
+    .ql-editor ol li.ql-direction-rtl,
+    .ql-editor ul li.ql-direction-rtl {
+      padding-right: 1.5em;
+    }
+    .ql-editor ol li {
+      counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
+      counter-increment: list-0;
+    }
+    .ql-editor ol li:before {
+      content: counter(list-0, decimal) '. ';
+    }
+    .ql-editor ol li.ql-indent-1 {
+      counter-increment: list-1;
+    }
+    .ql-editor ol li.ql-indent-1:before {
+      content: counter(list-1, lower-alpha) '. ';
+    }
+    .ql-editor ol li.ql-indent-1 {
+      counter-reset: list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-2 {
+      counter-increment: list-2;
+    }
+    .ql-editor ol li.ql-indent-2:before {
+      content: counter(list-2, lower-roman) '. ';
+    }
+    .ql-editor ol li.ql-indent-2 {
+      counter-reset: list-3 list-4 list-5 list-6 list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-3 {
+      counter-increment: list-3;
+    }
+    .ql-editor ol li.ql-indent-3:before {
+      content: counter(list-3, decimal) '. ';
+    }
+    .ql-editor ol li.ql-indent-3 {
+      counter-reset: list-4 list-5 list-6 list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-4 {
+      counter-increment: list-4;
+    }
+    .ql-editor ol li.ql-indent-4:before {
+      content: counter(list-4, lower-alpha) '. ';
+    }
+    .ql-editor ol li.ql-indent-4 {
+      counter-reset: list-5 list-6 list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-5 {
+      counter-increment: list-5;
+    }
+    .ql-editor ol li.ql-indent-5:before {
+      content: counter(list-5, lower-roman) '. ';
+    }
+    .ql-editor ol li.ql-indent-5 {
+      counter-reset: list-6 list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-6 {
+      counter-increment: list-6;
+    }
+    .ql-editor ol li.ql-indent-6:before {
+      content: counter(list-6, decimal) '. ';
+    }
+    .ql-editor ol li.ql-indent-6 {
+      counter-reset: list-7 list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-7 {
+      counter-increment: list-7;
+    }
+    .ql-editor ol li.ql-indent-7:before {
+      content: counter(list-7, lower-alpha) '. ';
+    }
+    .ql-editor ol li.ql-indent-7 {
+      counter-reset: list-8 list-9;
+    }
+    .ql-editor ol li.ql-indent-8 {
+      counter-increment: list-8;
+    }
+    .ql-editor ol li.ql-indent-8:before {
+      content: counter(list-8, lower-roman) '. ';
+    }
+    .ql-editor ol li.ql-indent-8 {
+      counter-reset: list-9;
+    }
+    .ql-editor ol li.ql-indent-9 {
+      counter-increment: list-9;
+    }
+    .ql-editor ol li.ql-indent-9:before {
+      content: counter(list-9, decimal) '. ';
+    }
+    .ql-editor .ql-indent-1:not(.ql-direction-rtl) {
+      padding-left: 3em;
+    }
+    .ql-editor li.ql-indent-1:not(.ql-direction-rtl) {
+      padding-left: 4.5em;
+    }
+    .ql-editor .ql-indent-1.ql-direction-rtl.ql-align-right {
+      padding-right: 3em;
+    }
+    .ql-editor li.ql-indent-1.ql-direction-rtl.ql-align-right {
+      padding-right: 4.5em;
+    }
+    .ql-editor .ql-indent-2:not(.ql-direction-rtl) {
+      padding-left: 6em;
+    }
+    .ql-editor li.ql-indent-2:not(.ql-direction-rtl) {
+      padding-left: 7.5em;
+    }
+    .ql-editor .ql-indent-2.ql-direction-rtl.ql-align-right {
+      padding-right: 6em;
+    }
+    .ql-editor li.ql-indent-2.ql-direction-rtl.ql-align-right {
+      padding-right: 7.5em;
+    }
+    .ql-editor .ql-indent-3:not(.ql-direction-rtl) {
+      padding-left: 9em;
+    }
+    .ql-editor li.ql-indent-3:not(.ql-direction-rtl) {
+      padding-left: 10.5em;
+    }
+    .ql-editor .ql-indent-3.ql-direction-rtl.ql-align-right {
+      padding-right: 9em;
+    }
+    .ql-editor li.ql-indent-3.ql-direction-rtl.ql-align-right {
+      padding-right: 10.5em;
+    }
+    .ql-editor .ql-indent-4:not(.ql-direction-rtl) {
+      padding-left: 12em;
+    }
+    .ql-editor li.ql-indent-4:not(.ql-direction-rtl) {
+      padding-left: 13.5em;
+    }
+    .ql-editor .ql-indent-4.ql-direction-rtl.ql-align-right {
+      padding-right: 12em;
+    }
+    .ql-editor li.ql-indent-4.ql-direction-rtl.ql-align-right {
+      padding-right: 13.5em;
+    }
+    .ql-editor .ql-indent-5:not(.ql-direction-rtl) {
+      padding-left: 15em;
+    }
+    .ql-editor li.ql-indent-5:not(.ql-direction-rtl) {
+      padding-left: 16.5em;
+    }
+    .ql-editor .ql-indent-5.ql-direction-rtl.ql-align-right {
+      padding-right: 15em;
+    }
+    .ql-editor li.ql-indent-5.ql-direction-rtl.ql-align-right {
+      padding-right: 16.5em;
+    }
+    .ql-editor .ql-indent-6:not(.ql-direction-rtl) {
+      padding-left: 18em;
+    }
+    .ql-editor li.ql-indent-6:not(.ql-direction-rtl) {
+      padding-left: 19.5em;
+    }
+    .ql-editor .ql-indent-6.ql-direction-rtl.ql-align-right {
+      padding-right: 18em;
+    }
+    .ql-editor li.ql-indent-6.ql-direction-rtl.ql-align-right {
+      padding-right: 19.5em;
+    }
+    .ql-editor .ql-indent-7:not(.ql-direction-rtl) {
+      padding-left: 21em;
+    }
+    .ql-editor li.ql-indent-7:not(.ql-direction-rtl) {
+      padding-left: 22.5em;
+    }
+    .ql-editor .ql-indent-7.ql-direction-rtl.ql-align-right {
+      padding-right: 21em;
+    }
+    .ql-editor li.ql-indent-7.ql-direction-rtl.ql-align-right {
+      padding-right: 22.5em;
+    }
+    .ql-editor .ql-indent-8:not(.ql-direction-rtl) {
+      padding-left: 24em;
+    }
+    .ql-editor li.ql-indent-8:not(.ql-direction-rtl) {
+      padding-left: 25.5em;
+    }
+    .ql-editor .ql-indent-8.ql-direction-rtl.ql-align-right {
+      padding-right: 24em;
+    }
+    .ql-editor li.ql-indent-8.ql-direction-rtl.ql-align-right {
+      padding-right: 25.5em;
+    }
+    .ql-editor .ql-indent-9:not(.ql-direction-rtl) {
+      padding-left: 27em;
+    }
+    .ql-editor li.ql-indent-9:not(.ql-direction-rtl) {
+      padding-left: 28.5em;
+    }
+    .ql-editor .ql-indent-9.ql-direction-rtl.ql-align-right {
+      padding-right: 27em;
+    }
+    .ql-editor li.ql-indent-9.ql-direction-rtl.ql-align-right {
+      padding-right: 28.5em;
+    }
+    .ql-editor .ql-video {
+      display: block;
+      max-width: 100%;
+    }
+    .ql-editor .ql-video.ql-align-center {
+      margin: 0 auto;
+    }
+    .ql-editor .ql-video.ql-align-right {
+      margin: 0 0 0 auto;
+    }
+    .ql-editor .ql-bg-black {
+      background-color: #000;
+    }
+    .ql-editor .ql-bg-red {
+      background-color: #e60000;
+    }
+    .ql-editor .ql-bg-orange {
+      background-color: #f90;
+    }
+    .ql-editor .ql-bg-yellow {
+      background-color: #ff0;
+    }
+    .ql-editor .ql-bg-green {
+      background-color: #008a00;
+    }
+    .ql-editor .ql-bg-blue {
+      background-color: #06c;
+    }
+    .ql-editor .ql-bg-purple {
+      background-color: #93f;
+    }
+    .ql-editor .ql-color-white {
+      color: #fff;
+    }
+    .ql-editor .ql-color-red {
+      color: #e60000;
+    }
+    .ql-editor .ql-color-orange {
+      color: #f90;
+    }
+    .ql-editor .ql-color-yellow {
+      color: #ff0;
+    }
+    .ql-editor .ql-color-green {
+      color: #008a00;
+    }
+    .ql-editor .ql-color-blue {
+      color: #06c;
+    }
+    .ql-editor .ql-color-purple {
+      color: #93f;
+    }
+    .ql-editor .ql-font-serif {
+      font-family: Georgia, Times New Roman, serif;
+    }
+    .ql-editor .ql-font-monospace {
+      font-family: Monaco, Courier New, monospace;
+    }
+    .ql-editor .ql-size-small {
+      font-size: 0.75em;
+    }
+    .ql-editor .ql-size-large {
+      font-size: 1.5em;
+    }
+    .ql-editor .ql-size-huge {
+      font-size: 2.5em;
+    }
+    .ql-editor .ql-direction-rtl {
+      direction: rtl;
+      text-align: inherit;
+    }
+    .ql-editor .ql-align-center {
+      text-align: center;
+    }
+    .ql-editor .ql-align-justify {
+      text-align: justify;
+    }
+    .ql-editor .ql-align-right {
+      text-align: right;
+    }
+    .ql-editor.ql-blank::before {
+      color: rgba(0, 0, 0, 0.6);
+      content: attr(data-placeholder);
+      font-style: italic;
+      left: 15px;
+      pointer-events: none;
+      position: absolute;
+      right: 15px;
+    }
+    .ql-snow.ql-toolbar:after,
+    .ql-snow .ql-toolbar:after {
+      clear: both;
+      content: '';
+      display: table;
+    }
+    .ql-snow.ql-toolbar button,
+    .ql-snow .ql-toolbar button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: inline-block;
+      float: left;
+      height: 24px;
+      padding: 3px 5px;
+      width: 28px;
+    }
+    .ql-snow.ql-toolbar button svg,
+    .ql-snow .ql-toolbar button svg {
+      float: left;
+      height: 100%;
+    }
+    .ql-snow.ql-toolbar button:active:hover,
+    .ql-snow .ql-toolbar button:active:hover {
+      outline: none;
+    }
+    .ql-snow.ql-toolbar input.ql-image[type='file'],
+    .ql-snow .ql-toolbar input.ql-image[type='file'] {
+      display: none;
+    }
+    .ql-snow.ql-toolbar button:hover,
+    .ql-snow .ql-toolbar button:hover,
+    .ql-snow.ql-toolbar button:focus,
+    .ql-snow .ql-toolbar button:focus,
+    .ql-snow.ql-toolbar button.ql-active,
+    .ql-snow .ql-toolbar button.ql-active,
+    .ql-snow.ql-toolbar .ql-picker-label:hover,
+    .ql-snow .ql-toolbar .ql-picker-label:hover,
+    .ql-snow.ql-toolbar .ql-picker-label.ql-active,
+    .ql-snow .ql-toolbar .ql-picker-label.ql-active,
+    .ql-snow.ql-toolbar .ql-picker-item:hover,
+    .ql-snow .ql-toolbar .ql-picker-item:hover,
+    .ql-snow.ql-toolbar .ql-picker-item.ql-selected,
+    .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
+      color: #06c;
+    }
+    .ql-snow.ql-toolbar button:hover .ql-fill,
+    .ql-snow .ql-toolbar button:hover .ql-fill,
+    .ql-snow.ql-toolbar button:focus .ql-fill,
+    .ql-snow .ql-toolbar button:focus .ql-fill,
+    .ql-snow.ql-toolbar button.ql-active .ql-fill,
+    .ql-snow .ql-toolbar button.ql-active .ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-fill,
+    .ql-snow.ql-toolbar button:hover .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar button:hover .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar button:focus .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar button:focus .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
+    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill,
+    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill {
+      fill: #06c;
+    }
+    .ql-snow.ql-toolbar button:hover .ql-stroke,
+    .ql-snow .ql-toolbar button:hover .ql-stroke,
+    .ql-snow.ql-toolbar button:focus .ql-stroke,
+    .ql-snow .ql-toolbar button:focus .ql-stroke,
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke,
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke,
+    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,
+    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke,
+    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,
+    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke,
+    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke,
+    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
+    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
+    .ql-snow.ql-toolbar button:hover .ql-stroke-miter,
+    .ql-snow .ql-toolbar button:hover .ql-stroke-miter,
+    .ql-snow.ql-toolbar button:focus .ql-stroke-miter,
+    .ql-snow .ql-toolbar button:focus .ql-stroke-miter,
+    .ql-snow.ql-toolbar button.ql-active .ql-stroke-miter,
+    .ql-snow .ql-toolbar button.ql-active .ql-stroke-miter,
+    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
+    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
+    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
+    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
+    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
+    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
+    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter,
+    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter {
+      stroke: #06c;
+    }
+    @media (pointer: coarse) {
+      .ql-snow.ql-toolbar button:hover:not(.ql-active),
+      .ql-snow .ql-toolbar button:hover:not(.ql-active) {
+        color: #444;
+      }
+      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-fill,
+      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-fill,
+      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill,
+      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill {
+        fill: #444;
+      }
+      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke,
+      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke,
+      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter,
+      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter {
+        stroke: #444;
+      }
+    }
+    .ql-snow {
+      box-sizing: border-box;
+    }
+    .ql-snow * {
+      box-sizing: border-box;
+    }
+    .ql-snow .ql-hidden {
+      display: none;
+    }
+    .ql-snow .ql-out-bottom,
+    .ql-snow .ql-out-top {
+      visibility: hidden;
+    }
+    .ql-snow .ql-tooltip {
+      position: absolute;
+      transform: translateY(10px);
+    }
+    .ql-snow .ql-tooltip a {
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .ql-snow .ql-tooltip.ql-flip {
+      transform: translateY(-10px);
+    }
+    .ql-snow .ql-formats {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .ql-snow .ql-formats:after {
+      clear: both;
+      content: '';
+      display: table;
+    }
+    .ql-snow .ql-stroke {
+      fill: none;
+      stroke: #444;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2;
+    }
+    .ql-snow .ql-stroke-miter {
+      fill: none;
+      stroke: #444;
+      stroke-miterlimit: 10;
+      stroke-width: 2;
+    }
+    .ql-snow .ql-fill,
+    .ql-snow .ql-stroke.ql-fill {
+      fill: #444;
+    }
+    .ql-snow .ql-empty {
+      fill: none;
+    }
+    .ql-snow .ql-even {
+      fill-rule: evenodd;
+    }
+    .ql-snow .ql-thin,
+    .ql-snow .ql-stroke.ql-thin {
+      stroke-width: 1;
+    }
+    .ql-snow .ql-transparent {
+      opacity: 0.4;
+    }
+    .ql-snow .ql-direction svg:last-child {
+      display: none;
+    }
+    .ql-snow .ql-direction.ql-active svg:last-child {
+      display: inline;
+    }
+    .ql-snow .ql-direction.ql-active svg:first-child {
+      display: none;
+    }
+    .ql-snow .ql-editor h1 {
+      font-size: 2em;
+    }
+    .ql-snow .ql-editor h2 {
+      font-size: 1.5em;
+    }
+    .ql-snow .ql-editor h3 {
+      font-size: 1.17em;
+    }
+    .ql-snow .ql-editor h4 {
+      font-size: 1em;
+    }
+    .ql-snow .ql-editor h5 {
+      font-size: 0.83em;
+    }
+    .ql-snow .ql-editor h6 {
+      font-size: 0.67em;
+    }
+    .ql-snow .ql-editor a {
+      text-decoration: underline;
+    }
+    .ql-snow .ql-editor blockquote {
+      border-left: 4px solid #ccc;
+      margin-bottom: 5px;
+      margin-top: 5px;
+      padding-left: 16px;
+    }
+    .ql-snow .ql-editor code,
+    .ql-snow .ql-editor pre {
+      background-color: #f0f0f0;
+      border-radius: 3px;
+    }
+    .ql-snow .ql-editor pre {
+      white-space: pre-wrap;
+      margin-bottom: 5px;
+      margin-top: 5px;
+      padding: 5px 10px;
+    }
+    .ql-snow .ql-editor code {
+      font-size: 85%;
+      padding: 2px 4px;
+    }
+    .ql-snow .ql-editor pre.ql-syntax {
+      background-color: #23241f;
+      color: #f8f8f2;
+      overflow: visible;
+    }
+    .ql-snow .ql-editor img {
+      max-width: 100%;
+    }
+    .ql-snow .ql-picker {
+      color: #444;
+      display: inline-block;
+      float: left;
+      font-size: 14px;
+      font-weight: 500;
+      height: 24px;
+      position: relative;
+      vertical-align: middle;
+    }
+    .ql-snow .ql-picker-label {
+      cursor: pointer;
+      display: inline-block;
+      height: 100%;
+      padding-left: 8px;
+      padding-right: 2px;
+      position: relative;
+      width: 100%;
+    }
+    .ql-snow .ql-picker-label::before {
+      display: inline-block;
+      line-height: 22px;
+    }
+    .ql-snow .ql-picker-options {
+      background-color: #fff;
+      display: none;
+      min-width: 100%;
+      padding: 4px 8px;
+      position: absolute;
+      white-space: nowrap;
+    }
+    .ql-snow .ql-picker-options .ql-picker-item {
+      cursor: pointer;
+      display: block;
+      padding-bottom: 5px;
+      padding-top: 5px;
+    }
+    .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+      color: #ccc;
+      z-index: 2;
+    }
+    .ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-fill {
+      fill: #ccc;
+    }
+    .ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke {
+      stroke: #ccc;
+    }
+    .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+      display: block;
+      margin-top: -1px;
+      top: 100%;
+      z-index: 1;
+    }
+    .ql-snow .ql-color-picker,
+    .ql-snow .ql-icon-picker {
+      width: 28px;
+    }
+    .ql-snow .ql-color-picker .ql-picker-label,
+    .ql-snow .ql-icon-picker .ql-picker-label {
+      padding: 2px 4px;
+    }
+    .ql-snow .ql-color-picker .ql-picker-label svg,
+    .ql-snow .ql-icon-picker .ql-picker-label svg {
+      right: 4px;
+    }
+    .ql-snow .ql-icon-picker .ql-picker-options {
+      padding: 4px 0px;
+    }
+    .ql-snow .ql-icon-picker .ql-picker-item {
+      height: 24px;
+      width: 24px;
+      padding: 2px 4px;
+    }
+    .ql-snow .ql-color-picker .ql-picker-options {
+      padding: 3px 5px;
+      width: 152px;
+    }
+    .ql-snow .ql-color-picker .ql-picker-item {
+      border: 1px solid transparent;
+      float: left;
+      height: 16px;
+      margin: 2px;
+      padding: 0px;
+      width: 16px;
+    }
+    .ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg {
+      position: absolute;
+      margin-top: -9px;
+      right: 0;
+      top: 50%;
+      width: 18px;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-label]:not([data-label=''])::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-label]:not([data-label=''])::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-label]:not([data-label=''])::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-label]:not([data-label=''])::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-label]:not([data-label=''])::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-label]:not([data-label=''])::before {
+      content: attr(data-label);
+    }
+    .ql-snow .ql-picker.ql-header {
+      width: 98px;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item::before {
+      content: 'Normal';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='1']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='1']::before {
+      content: 'Heading 1';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='2']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before {
+      content: 'Heading 2';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='3']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before {
+      content: 'Heading 3';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='4']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='4']::before {
+      content: 'Heading 4';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='5']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='5']::before {
+      content: 'Heading 5';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='6']::before,
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='6']::before {
+      content: 'Heading 6';
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='1']::before {
+      font-size: 2em;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before {
+      font-size: 1.5em;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before {
+      font-size: 1.17em;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='4']::before {
+      font-size: 1em;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='5']::before {
+      font-size: 0.83em;
+    }
+    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='6']::before {
+      font-size: 0.67em;
+    }
+    .ql-snow .ql-picker.ql-font {
+      width: 108px;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item::before {
+      content: 'Sans Serif';
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='serif']::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='serif']::before {
+      content: 'Serif';
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='monospace']::before,
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='monospace']::before {
+      content: 'Monospace';
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='serif']::before {
+      font-family: Georgia, Times New Roman, serif;
+    }
+    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='monospace']::before {
+      font-family: Monaco, Courier New, monospace;
+    }
+    .ql-snow .ql-picker.ql-size {
+      width: 98px;
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+      content: 'Normal';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='small']::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='small']::before {
+      content: 'Small';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='large']::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='large']::before {
+      content: 'Large';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='huge']::before,
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before {
+      content: 'Huge';
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='small']::before {
+      font-size: 10px;
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='large']::before {
+      font-size: 18px;
+    }
+    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before {
+      font-size: 32px;
+    }
+    .ql-snow .ql-color-picker.ql-background .ql-picker-item {
+      background-color: #fff;
+    }
+    .ql-snow .ql-color-picker.ql-color .ql-picker-item {
+      background-color: #000;
+    }
+    .ql-toolbar.ql-snow {
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+      padding: 8px;
+    }
+    .ql-toolbar.ql-snow .ql-formats {
+      margin-right: 15px;
+    }
+    .ql-toolbar.ql-snow .ql-picker-label {
+      border: 1px solid transparent;
+    }
+    .ql-toolbar.ql-snow .ql-picker-options {
+      border: 1px solid transparent;
+      box-shadow: rgba(0, 0, 0, 0.2) 0 2px 8px;
+    }
+    .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
+      border-color: #ccc;
+    }
+    .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-options {
+      border-color: #ccc;
+    }
+    .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item.ql-selected,
+    .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item:hover {
+      border-color: #000;
+    }
+    .ql-toolbar.ql-snow + .ql-container.ql-snow {
+      border-top: 0px;
+    }
+    .ql-snow .ql-tooltip {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0px 0px 5px #ddd;
+      color: #444;
+      padding: 5px 12px;
+      white-space: nowrap;
+    }
+    .ql-snow .ql-tooltip::before {
+      content: 'Visit URL:';
+      line-height: 26px;
+      margin-right: 8px;
+    }
+    .ql-snow .ql-tooltip input[type='text'] {
+      display: none;
+      border: 1px solid #ccc;
+      font-size: 13px;
+      height: 26px;
+      margin: 0px;
+      padding: 3px 5px;
+      width: 170px;
+    }
+    .ql-snow .ql-tooltip a.ql-preview {
+      display: inline-block;
+      max-width: 200px;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+      vertical-align: top;
+    }
+    .ql-snow .ql-tooltip a.ql-action::after {
+      border-right: 1px solid #ccc;
+      content: 'Edit';
+      margin-left: 16px;
+      padding-right: 8px;
+    }
+    .ql-snow .ql-tooltip a.ql-remove::before {
+      content: 'Remove';
+      margin-left: 8px;
+    }
+    .ql-snow .ql-tooltip a {
+      line-height: 26px;
+    }
+    .ql-snow .ql-tooltip.ql-editing a.ql-preview,
+    .ql-snow .ql-tooltip.ql-editing a.ql-remove {
+      display: none;
+    }
+    .ql-snow .ql-tooltip.ql-editing input[type='text'] {
+      display: inline-block;
+    }
+    .ql-snow .ql-tooltip.ql-editing a.ql-action::after {
+      border-right: 0px;
+      content: 'Save';
+      padding-right: 0px;
+    }
+    .ql-snow .ql-tooltip[data-mode='link']::before {
+      content: 'Enter link:';
+    }
+    .ql-snow .ql-tooltip[data-mode='formula']::before {
+      content: 'Enter formula:';
+    }
+    .ql-snow .ql-tooltip[data-mode='video']::before {
+      content: 'Enter video:';
+    }
+    .ql-snow a {
+      color: #06c;
+    }
+    .ql-container.ql-snow {
+      border: 1px solid #ccc;
+    }
+  </style>
+`;
+
+const Parchment$a = Quill.import('parchment');
+const config$2 = {
+    scope: Parchment$a.Scope.BLOCK,
+    whitelist: ['ementa', 'norma-alterada'],
+};
+const EstiloTextoClass = new Parchment$a.Attributor.Class('estilo', 'estilo', config$2);
+
+const Parchment$9 = Quill.import('parchment');
+const config$1 = {
+    scope: Parchment$9.Scope.BLOCK,
+    whitelist: ['0px'],
+};
+// const MarginBottomStyle = new Parchment.Attributor.Style('margin-bottom', 'margin-bottom', config);
+const MarginBottomClass = new Parchment$9.Attributor.Class('margin-bottom', 'ql-margin-bottom', config$1);
 
 class NotaRodape {
     constructor({ id, numero, texto }) {
@@ -30266,20 +32472,68 @@ const NOTA_RODAPE_INPUT_EVENT = 'nota-rodape:input';
 const NOTA_RODAPE_CHANGE_EVENT = 'nota-rodape:change';
 const NOTA_RODAPE_REMOVE_EVENT = 'nota-rodape:remove';
 
+class QuillUtil {
+    static configurarAcoesLink(quill) {
+        const theme = quill.theme;
+        const div = document.createElement('div');
+        div.setAttribute('class', 'tooltip-invalid-message');
+        theme.tooltip.root.appendChild(div);
+        // Sobrescreve o método de criação do tooltip para adicionar a validação do link
+        const originalEditTooltip = theme.tooltip.edit.bind(theme.tooltip);
+        theme.tooltip.edit = (mode = 'link', preview = null) => {
+            var _a;
+            (_a = theme.tooltip.textbox) === null || _a === void 0 ? void 0 : _a.setAttribute('pattern', mode === 'link' ? 'https?://.+' : '');
+            originalEditTooltip(mode, preview);
+        };
+        // Sobrescreve o método de salvamento do tooltip para adicionar a validação do link
+        const originalSaveTooltip = theme.tooltip.save.bind(theme.tooltip);
+        theme.tooltip.save = () => {
+            var _a, _b, _c;
+            const el = quill.root.querySelector('.ql-tooltip[data-mode="link"]') || ((_a = quill.root.parentNode) === null || _a === void 0 ? void 0 : _a.querySelector('.ql-tooltip[data-mode="link"]'));
+            const url = (_c = (_b = theme.tooltip.textbox) === null || _b === void 0 ? void 0 : _b.value) !== null && _c !== void 0 ? _c : '';
+            if (el && !url.match(/https?:\/\//)) {
+                el.classList.add('ql-tooltip-invalid');
+                return;
+            }
+            originalSaveTooltip();
+        };
+    }
+}
+
+const Parchment$8 = Quill.import('parchment');
+const config = {
+    scope: Parchment$8.Scope.BLOCK,
+    whitelist: ['0px'],
+};
+// const NoIndentStyle = new Parchment.Attributor.Style('text-indent', 'text-indent', config);
+const NoIndentClass = new Parchment$8.Attributor.Class('text-indent', 'ql-text-indent', config);
+
+const DefaultKeyboardModule$1 = Quill.import('modules/keyboard');
+const DefaultClipboardModule$1 = Quill.import('modules/clipboard');
 class NotaRodapeModal {
     constructor(options) {
         var _a, _b;
+        this.ajustaHtml = (html = '') => {
+            return html
+                .replace(/ql-indent/g, 'indent')
+                .replace(/ql-align-justify/g, 'align-justify')
+                .replace(/ql-align-center/g, 'align-center')
+                .replace(/ql-align-right/g, 'align-right');
+        };
         this.idNotaRodape = options.idNotaRodape;
         this.textoInicialNotaRodape = (_a = options.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
         this.domNodeNotaRodape = options.domNodeNotaRodape;
         this.tituloModal = options.tituloModal;
         this.modalElement = document.createElement('div');
         this.modalElement.classList.add('modal');
-        this.shadowRoot = this.modalElement.attachShadow({ mode: 'open' });
+        this.modalElement.classList.add('modal-nota-rodape');
+        this.shadowRoot = document.createElement('div');
+        this.modalElement.appendChild(this.shadowRoot);
         this.shadowRoot.innerHTML = `
+      ${quillSnowStyles.strings.join('')}
       <style>
 
-        :host {
+        .modal-nota-rodape {
           position: absolute;
           top: 50%;
           left: 50%;
@@ -30298,6 +32552,9 @@ class NotaRodapeModal {
           transition: opacity 0.3s, transform 0.3s;
         }
 
+        .modal-body .ql-editor {
+          min-height: 400px;
+        }
         .modal-header {
           display: flex;
           justify-content: space-between;
@@ -30362,13 +32619,54 @@ class NotaRodapeModal {
             min-width: 0;
           }
         }
+        .ql-snow .ql-tooltip.ql-editing a.ql-action::after {
+          content: 'Salvar';
+        }
+        .ql-snow .ql-tooltip a.ql-action::after {
+          display: inline;
+          content: 'Editar';
+        }
+
+        .ql-snow .ql-tooltip a.ql-remove::before {
+          display: inline;
+          content: 'Remover';
+        }
+
+        .ql-snow .ql-tooltip[data-mode='link']::before  {
+          content: 'Insira o link:';
+        }
+
+        .ql-snow .ql-tooltip::before {
+          content: 'Visite a URL:';
+        }
+
+
+        .modal-nota-rodape .ql-tooltip input:invalid {
+          color: red;
+        }
+
+        .modal-nota-rodape .ql-tooltip div.tooltip-invalid-message {
+          color: red;
+          display: none;
+          font-family: Helvetica, sans-serif;
+          font-size: 0.9rem;
+        }
+
+        .modal-nota-rodape .ql-tooltip[data-mode='link'] div.tooltip-invalid-message::after {
+          content: 'Digite uma URL válida, iniciando com http:// ou https://';
+        }
+
+        .modal-nota-rodape .ql-tooltip[data-mode='link'] input:invalid ~ div.tooltip-invalid-message {
+          display: block;
+        }
+
       </style>
       <div class="modal-header">
         <h1 id="modalTitle" class="modal-title">Editar nota de rodapé</h1>
         <button class="modal-close-button header-close-button" aria-label="Fechar" title="Fechar">&times;</button>
       </div>
       <div class="modal-body">
-        <textarea class="modal-textarea" placeholder="Digite a nota de rodapé aqui..."></textarea>
+        <div id="editor-nota-rodape-container"></div>
       </div>
       <div class="modal-footer">
         <button class="modal-save-button" aria-label="Salvar">Salvar</button>
@@ -30384,7 +32682,7 @@ class NotaRodapeModal {
         this.overlayElement.style.left = '0';
         this.overlayElement.style.width = '100%';
         this.overlayElement.style.height = '100%';
-        this.overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+        this.overlayElement.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
         this.overlayElement.style.zIndex = '1000';
         document.body.appendChild(this.overlayElement);
         document.body.appendChild(this.modalElement);
@@ -30396,6 +32694,23 @@ class NotaRodapeModal {
         document.addEventListener('keydown', this.keydownListener);
         Array.from(this.shadowRoot.querySelectorAll('.modal-close-button')).forEach(element => element.addEventListener('click', () => this.close()));
         (_b = this.shadowRoot.querySelector('.modal-save-button')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', this.save.bind(this));
+        const quillContainer = this.shadowRoot.querySelector('#editor-nota-rodape-container');
+        Quill.register('modules/keyboard', DefaultKeyboardModule$1, true);
+        Quill.register('modules/clipboard', DefaultClipboardModule$1, true);
+        Quill.register('formats/estilo-texto', EstiloTextoClass, true);
+        Quill.register('formats/text-indent', NoIndentClass, true);
+        Quill.register('formats/margin-bottom', MarginBottomClass, true);
+        this.quill = new Quill(quillContainer, {
+            formats: ['bold', 'italic', 'underline', 'link'],
+            modules: {
+                toolbar: {
+                    container: [['bold', 'italic', 'underline'], ['link']],
+                },
+            },
+            placeholder: 'Digite a nota de rodapé aqui...',
+            theme: 'snow',
+        });
+        QuillUtil.configurarAcoesLink(this.quill);
     }
     open() {
         var _a, _b;
@@ -30405,18 +32720,11 @@ class NotaRodapeModal {
             this.modalElement.style.opacity = '1';
             this.modalElement.style.transform = 'translate(-50%, -50%) scale(1)';
         }, 10);
-        const firstFocusableElement = this.getTextArea();
-        if (firstFocusableElement) {
-            firstFocusableElement.focus();
-            firstFocusableElement.value = (_a = this.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
-        }
+        this.quill.root.innerHTML = (_a = this.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
         const modalTitle = this.shadowRoot.querySelector('.modal-title');
         if (modalTitle) {
             modalTitle.innerHTML = (_b = this.tituloModal) !== null && _b !== void 0 ? _b : modalTitle.innerHTML;
         }
-    }
-    getTextArea() {
-        return this.shadowRoot.querySelector('.modal-textarea');
     }
     close(fromSave = false) {
         if (fromSave || this.shouldClose()) {
@@ -30426,8 +32734,12 @@ class NotaRodapeModal {
         }
     }
     shouldClose() {
-        const textarea = this.getTextArea();
-        return !(textarea.value !== this.textoInicialNotaRodape && !confirm('Tem certeza que deseja fechar? As alterações não salvas serão perdidas.'));
+        const texto = this.quill.root.innerHTML;
+        console.log(texto, this.textoInicialNotaRodape);
+        if (texto !== this.textoInicialNotaRodape) {
+            return confirm('Tem certeza que deseja fechar? As alterações não salvas serão perdidas.');
+        }
+        return true;
     }
     removeModal() {
         document.removeEventListener('keydown', this.keydownListener);
@@ -30435,12 +32747,12 @@ class NotaRodapeModal {
         this.overlayElement.remove();
     }
     save() {
-        const textarea = this.getTextArea();
-        if (textarea.value === this.textoInicialNotaRodape || !textarea.value) {
+        const texto = this.quill.root.innerHTML;
+        if (texto === this.textoInicialNotaRodape || !texto) {
             this.close(true);
             return;
         }
-        this.domNodeNotaRodape.dispatchEvent(new CustomEvent(NOTA_RODAPE_INPUT_EVENT, { detail: { id: this.idNotaRodape, texto: textarea.value } }));
+        this.domNodeNotaRodape.dispatchEvent(new CustomEvent(NOTA_RODAPE_INPUT_EVENT, { detail: { id: this.idNotaRodape, texto: this.quill.root.innerHTML } }));
         this.close(true);
     }
 }
@@ -30451,13 +32763,13 @@ const Delta$2 = Quill.import('delta');
 const Module = Quill.import('core/module');
 const Embed = Quill.import('blots/embed'); // Inline Embed
 const Text$1 = Quill.import('blots/text'); // Inline Text
-const Parchment$a = Quill.import('parchment');
+const Parchment$7 = Quill.import('parchment');
 const cfgInline = {
-    scope: Parchment$a.Scope.INLINE_ATTRIBUTE,
+    scope: Parchment$7.Scope.INLINE_ATTRIBUTE,
 };
-const IdNotaRodapeAttribute = new Parchment$a.Attributor.Attribute('id-nota-rodape', 'id-nota-rodape', cfgInline);
-const NumeroAttribute = new Parchment$a.Attributor.Attribute('numero', 'numero', cfgInline);
-const TextoAttribute = new Parchment$a.Attributor.Attribute('texto', 'texto', cfgInline);
+const IdNotaRodapeAttribute = new Parchment$7.Attributor.Attribute('id-nota-rodape', 'id-nota-rodape', cfgInline);
+const NumeroAttribute = new Parchment$7.Attributor.Attribute('numero', 'numero', cfgInline);
+const TextoAttribute = new Parchment$7.Attributor.Attribute('texto', 'texto', cfgInline);
 class NotaRodapeBlot extends Embed {
     static create(value) {
         let node = super.create(value);
@@ -30482,7 +32794,7 @@ class NotaRodapeBlot extends Embed {
             // id: domNode.getAttribute('id'),
             id: domNode.getAttribute('id-nota-rodape'),
             numero: domNode.getAttribute('numero'),
-            texto: domNode.getAttribute('texto'),
+            texto: decodeHtml(domNode.getAttribute('texto')),
         };
     }
     static valueToAttributes(value, domNode) {
@@ -30493,7 +32805,7 @@ class NotaRodapeBlot extends Embed {
         value.numero && domNode.setAttribute('numero', value.numero);
         domNode.notaRodape = value;
         domNode.innerText = value.numero;
-        domNode.setAttribute('texto', value.texto);
+        domNode.setAttribute('texto', encodeHtml(value.texto));
     }
 }
 NotaRodapeBlot.blotName = 'nota-rodape';
@@ -30536,13 +32848,13 @@ class ModuloNotaRodape extends Module {
     }
     addClipboardMatcher() {
         this.quill.clipboard.addMatcher('nota-rodape', (node, delta) => {
-            let match = Parchment$a.query(node);
+            let match = Parchment$7.query(node);
             if (match == null || match.blotName !== 'nota-rodape') {
                 return delta;
             }
             const id = this.isAbrindoTexto ? node.getAttribute('id-nota-rodape') : this.gerarId();
             const numero = node.getAttribute('numero');
-            const texto = node.getAttribute('texto');
+            const texto = decodeHtml(node.getAttribute('texto'));
             const notaRodape = new NotaRodape({ id, numero, texto });
             return new Delta$2().insert({ 'nota-rodape': notaRodape });
             // const ops = delta.ops.reduce((acc, op) => {
@@ -30591,7 +32903,8 @@ class ModuloNotaRodape extends Module {
     onClick(e) {
         var _a;
         const el = e.target;
-        if ((el === null || el === void 0 ? void 0 : el.tagName) === 'NOTA-RODAPE' || ((_a = el === null || el === void 0 ? void 0 : el.parentElement) === null || _a === void 0 ? void 0 : _a.tagName) === 'NOTA-RODAPE') {
+        const elRev = el === null || el === void 0 ? void 0 : el.closest('ins, del');
+        if (!elRev && ((el === null || el === void 0 ? void 0 : el.tagName) === 'NOTA-RODAPE' || ((_a = el === null || el === void 0 ? void 0 : el.parentElement) === null || _a === void 0 ? void 0 : _a.tagName) === 'NOTA-RODAPE')) {
             e.preventDefault();
             e.stopPropagation();
             this.solicitarTexto(el.notaRodape || el.parentElement.notaRodape);
@@ -30713,32 +33026,6 @@ function __decorate(decorators, target, key, desc) {
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 }
-
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$3=window.ShadowRoot&&(void 0===window.ShadyCSS||window.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,e$6=Symbol(),n$5=new Map;class s$3{constructor(t,n){if(this._$cssResult$=!0,n!==e$6)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t;}get styleSheet(){let e=n$5.get(this.cssText);return t$3&&void 0===e&&(n$5.set(this.cssText,e=new CSSStyleSheet),e.replaceSync(this.cssText)),e}toString(){return this.cssText}}const o$5=t=>new s$3("string"==typeof t?t:t+"",e$6),r$2=(t,...n)=>{const o=1===t.length?t[0]:n.reduce(((e,n,s)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(n)+t[s+1]),t[0]);return new s$3(o,e$6)},i$4=(e,n)=>{t$3?e.adoptedStyleSheets=n.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet)):n.forEach((t=>{const n=document.createElement("style"),s=window.litNonce;void 0!==s&&n.setAttribute("nonce",s),n.textContent=t.cssText,e.appendChild(n);}));},S$1=t$3?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const n of t.cssRules)e+=n.cssText;return o$5(e)})(t):t;
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */var s$2;const e$5=window.trustedTypes,r$1=e$5?e$5.emptyScript:"",h$1=window.reactiveElementPolyfillSupport,o$4={toAttribute(t,i){switch(i){case Boolean:t=t?r$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,i){let s=t;switch(i){case Boolean:s=null!==t;break;case Number:s=null===t?null:Number(t);break;case Object:case Array:try{s=JSON.parse(t);}catch(t){s=null;}}return s}},n$4=(t,i)=>i!==t&&(i==i||t==t),l$2={attribute:!0,type:String,converter:o$4,reflect:!1,hasChanged:n$4};class a$1 extends HTMLElement{constructor(){super(),this._$Et=new Map,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Ei=null,this.o();}static addInitializer(t){var i;null!==(i=this.l)&&void 0!==i||(this.l=[]),this.l.push(t);}static get observedAttributes(){this.finalize();const t=[];return this.elementProperties.forEach(((i,s)=>{const e=this._$Eh(s,i);void 0!==e&&(this._$Eu.set(e,s),t.push(e));})),t}static createProperty(t,i=l$2){if(i.state&&(i.attribute=!1),this.finalize(),this.elementProperties.set(t,i),!i.noAccessor&&!this.prototype.hasOwnProperty(t)){const s="symbol"==typeof t?Symbol():"__"+t,e=this.getPropertyDescriptor(t,s,i);void 0!==e&&Object.defineProperty(this.prototype,t,e);}}static getPropertyDescriptor(t,i,s){return {get(){return this[i]},set(e){const r=this[t];this[i]=e,this.requestUpdate(t,r,s);},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)||l$2}static finalize(){if(this.hasOwnProperty("finalized"))return !1;this.finalized=!0;const t=Object.getPrototypeOf(this);if(t.finalize(),this.elementProperties=new Map(t.elementProperties),this._$Eu=new Map,this.hasOwnProperty("properties")){const t=this.properties,i=[...Object.getOwnPropertyNames(t),...Object.getOwnPropertySymbols(t)];for(const s of i)this.createProperty(s,t[s]);}return this.elementStyles=this.finalizeStyles(this.styles),!0}static finalizeStyles(i){const s=[];if(Array.isArray(i)){const e=new Set(i.flat(1/0).reverse());for(const i of e)s.unshift(S$1(i));}else void 0!==i&&s.push(S$1(i));return s}static _$Eh(t,i){const s=i.attribute;return !1===s?void 0:"string"==typeof s?s:"string"==typeof t?t.toLowerCase():void 0}o(){var t;this._$Ep=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$Em(),this.requestUpdate(),null===(t=this.constructor.l)||void 0===t||t.forEach((t=>t(this)));}addController(t){var i,s;(null!==(i=this._$Eg)&&void 0!==i?i:this._$Eg=[]).push(t),void 0!==this.renderRoot&&this.isConnected&&(null===(s=t.hostConnected)||void 0===s||s.call(t));}removeController(t){var i;null===(i=this._$Eg)||void 0===i||i.splice(this._$Eg.indexOf(t)>>>0,1);}_$Em(){this.constructor.elementProperties.forEach(((t,i)=>{this.hasOwnProperty(i)&&(this._$Et.set(i,this[i]),delete this[i]);}));}createRenderRoot(){var t;const s=null!==(t=this.shadowRoot)&&void 0!==t?t:this.attachShadow(this.constructor.shadowRootOptions);return i$4(s,this.constructor.elementStyles),s}connectedCallback(){var t;void 0===this.renderRoot&&(this.renderRoot=this.createRenderRoot()),this.enableUpdating(!0),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostConnected)||void 0===i?void 0:i.call(t)}));}enableUpdating(t){}disconnectedCallback(){var t;null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostDisconnected)||void 0===i?void 0:i.call(t)}));}attributeChangedCallback(t,i,s){this._$AK(t,s);}_$ES(t,i,s=l$2){var e,r;const h=this.constructor._$Eh(t,s);if(void 0!==h&&!0===s.reflect){const n=(null!==(r=null===(e=s.converter)||void 0===e?void 0:e.toAttribute)&&void 0!==r?r:o$4.toAttribute)(i,s.type);this._$Ei=t,null==n?this.removeAttribute(h):this.setAttribute(h,n),this._$Ei=null;}}_$AK(t,i){var s,e,r;const h=this.constructor,n=h._$Eu.get(t);if(void 0!==n&&this._$Ei!==n){const t=h.getPropertyOptions(n),l=t.converter,a=null!==(r=null!==(e=null===(s=l)||void 0===s?void 0:s.fromAttribute)&&void 0!==e?e:"function"==typeof l?l:null)&&void 0!==r?r:o$4.fromAttribute;this._$Ei=n,this[n]=a(i,t.type),this._$Ei=null;}}requestUpdate(t,i,s){let e=!0;void 0!==t&&(((s=s||this.constructor.getPropertyOptions(t)).hasChanged||n$4)(this[t],i)?(this._$AL.has(t)||this._$AL.set(t,i),!0===s.reflect&&this._$Ei!==t&&(void 0===this._$EC&&(this._$EC=new Map),this._$EC.set(t,s))):e=!1),!this.isUpdatePending&&e&&(this._$Ep=this._$E_());}async _$E_(){this.isUpdatePending=!0;try{await this._$Ep;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){var t;if(!this.isUpdatePending)return;this.hasUpdated,this._$Et&&(this._$Et.forEach(((t,i)=>this[i]=t)),this._$Et=void 0);let i=!1;const s=this._$AL;try{i=this.shouldUpdate(s),i?(this.willUpdate(s),null===(t=this._$Eg)||void 0===t||t.forEach((t=>{var i;return null===(i=t.hostUpdate)||void 0===i?void 0:i.call(t)})),this.update(s)):this._$EU();}catch(t){throw i=!1,this._$EU(),t}i&&this._$AE(s);}willUpdate(t){}_$AE(t){var i;null===(i=this._$Eg)||void 0===i||i.forEach((t=>{var i;return null===(i=t.hostUpdated)||void 0===i?void 0:i.call(t)})),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t);}_$EU(){this._$AL=new Map,this.isUpdatePending=!1;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$Ep}shouldUpdate(t){return !0}update(t){void 0!==this._$EC&&(this._$EC.forEach(((t,i)=>this._$ES(i,this[i],t))),this._$EC=void 0),this._$EU();}updated(t){}firstUpdated(t){}}a$1.finalized=!0,a$1.elementProperties=new Map,a$1.elementStyles=[],a$1.shadowRootOptions={mode:"open"},null==h$1||h$1({ReactiveElement:a$1}),(null!==(s$2=globalThis.reactiveElementVersions)&&void 0!==s$2?s$2:globalThis.reactiveElementVersions=[]).push("1.3.1");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-var t$2;const i$3=globalThis.trustedTypes,s$1=i$3?i$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$4=`lit$${(Math.random()+"").slice(9)}$`,o$3="?"+e$4,n$3=`<${o$3}>`,l$1=document,h=(t="")=>l$1.createComment(t),r=t=>null===t||"object"!=typeof t&&"function"!=typeof t,d=Array.isArray,u=t=>{var i;return d(t)||"function"==typeof(null===(i=t)||void 0===i?void 0:i[Symbol.iterator])},c=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v=/-->/g,a=/>/g,f=/>|[ 	\n\r](?:([^\s"'>=/]+)([ 	\n\r]*=[ 	\n\r]*(?:[^ 	\n\r"'`<>=]|("|')|))|$)/g,_=/'/g,m=/"/g,g=/^(?:script|style|textarea|title)$/i,p=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),$=p(1),b=Symbol.for("lit-noChange"),w=Symbol.for("lit-nothing"),T=new WeakMap,x=(t,i,s)=>{var e,o;const n=null!==(e=null==s?void 0:s.renderBefore)&&void 0!==e?e:i;let l=n._$litPart$;if(void 0===l){const t=null!==(o=null==s?void 0:s.renderBefore)&&void 0!==o?o:null;n._$litPart$=l=new N(i.insertBefore(h(),t),t,void 0,null!=s?s:{});}return l._$AI(t),l},A=l$1.createTreeWalker(l$1,129,null,!1),C$1=(t,i)=>{const o=t.length-1,l=[];let h,r=2===i?"<svg>":"",d=c;for(let i=0;i<o;i++){const s=t[i];let o,u,p=-1,$=0;for(;$<s.length&&(d.lastIndex=$,u=d.exec(s),null!==u);)$=d.lastIndex,d===c?"!--"===u[1]?d=v:void 0!==u[1]?d=a:void 0!==u[2]?(g.test(u[2])&&(h=RegExp("</"+u[2],"g")),d=f):void 0!==u[3]&&(d=f):d===f?">"===u[0]?(d=null!=h?h:c,p=-1):void 0===u[1]?p=-2:(p=d.lastIndex-u[2].length,o=u[1],d=void 0===u[3]?f:'"'===u[3]?m:_):d===m||d===_?d=f:d===v||d===a?d=c:(d=f,h=void 0);const y=d===f&&t[i+1].startsWith("/>")?" ":"";r+=d===c?s+n$3:p>=0?(l.push(o),s.slice(0,p)+"$lit$"+s.slice(p)+e$4+y):s+e$4+(-2===p?(l.push(void 0),i):y);}const u=r+(t[o]||"<?>")+(2===i?"</svg>":"");if(!Array.isArray(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return [void 0!==s$1?s$1.createHTML(u):u,l]};class E{constructor({strings:t,_$litType$:s},n){let l;this.parts=[];let r=0,d=0;const u=t.length-1,c=this.parts,[v,a]=C$1(t,s);if(this.el=E.createElement(v,n),A.currentNode=this.el.content,2===s){const t=this.el.content,i=t.firstChild;i.remove(),t.append(...i.childNodes);}for(;null!==(l=A.nextNode())&&c.length<u;){if(1===l.nodeType){if(l.hasAttributes()){const t=[];for(const i of l.getAttributeNames())if(i.endsWith("$lit$")||i.startsWith(e$4)){const s=a[d++];if(t.push(i),void 0!==s){const t=l.getAttribute(s.toLowerCase()+"$lit$").split(e$4),i=/([.?@])?(.*)/.exec(s);c.push({type:1,index:r,name:i[2],strings:t,ctor:"."===i[1]?M$1:"?"===i[1]?H:"@"===i[1]?I$1:S});}else c.push({type:6,index:r});}for(const i of t)l.removeAttribute(i);}if(g.test(l.tagName)){const t=l.textContent.split(e$4),s=t.length-1;if(s>0){l.textContent=i$3?i$3.emptyScript:"";for(let i=0;i<s;i++)l.append(t[i],h()),A.nextNode(),c.push({type:2,index:++r});l.append(t[s],h());}}}else if(8===l.nodeType)if(l.data===o$3)c.push({type:2,index:r});else {let t=-1;for(;-1!==(t=l.data.indexOf(e$4,t+1));)c.push({type:7,index:r}),t+=e$4.length-1;}r++;}}static createElement(t,i){const s=l$1.createElement("template");return s.innerHTML=t,s}}function P(t,i,s=t,e){var o,n,l,h;if(i===b)return i;let d=void 0!==e?null===(o=s._$Cl)||void 0===o?void 0:o[e]:s._$Cu;const u=r(i)?void 0:i._$litDirective$;return (null==d?void 0:d.constructor)!==u&&(null===(n=null==d?void 0:d._$AO)||void 0===n||n.call(d,!1),void 0===u?d=void 0:(d=new u(t),d._$AT(t,s,e)),void 0!==e?(null!==(l=(h=s)._$Cl)&&void 0!==l?l:h._$Cl=[])[e]=d:s._$Cu=d),void 0!==d&&(i=P(t,d._$AS(t,i.values),d,e)),i}class V$1{constructor(t,i){this.v=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}p(t){var i;const{el:{content:s},parts:e}=this._$AD,o=(null!==(i=null==t?void 0:t.creationScope)&&void 0!==i?i:l$1).importNode(s,!0);A.currentNode=o;let n=A.nextNode(),h=0,r=0,d=e[0];for(;void 0!==d;){if(h===d.index){let i;2===d.type?i=new N(n,n.nextSibling,this,t):1===d.type?i=new d.ctor(n,d.name,d.strings,this,t):6===d.type&&(i=new L$1(n,this,t)),this.v.push(i),d=e[++r];}h!==(null==d?void 0:d.index)&&(n=A.nextNode(),h++);}return o}m(t){let i=0;for(const s of this.v)void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class N{constructor(t,i,s,e){var o;this.type=2,this._$AH=w,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cg=null===(o=null==e?void 0:e.isConnected)||void 0===o||o;}get _$AU(){var t,i;return null!==(i=null===(t=this._$AM)||void 0===t?void 0:t._$AU)&&void 0!==i?i:this._$Cg}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=P(this,t,i),r(t)?t===w||null==t||""===t?(this._$AH!==w&&this._$AR(),this._$AH=w):t!==this._$AH&&t!==b&&this.$(t):void 0!==t._$litType$?this.T(t):void 0!==t.nodeType?this.k(t):u(t)?this.S(t):this.$(t);}M(t,i=this._$AB){return this._$AA.parentNode.insertBefore(t,i)}k(t){this._$AH!==t&&(this._$AR(),this._$AH=this.M(t));}$(t){this._$AH!==w&&r(this._$AH)?this._$AA.nextSibling.data=t:this.k(l$1.createTextNode(t)),this._$AH=t;}T(t){var i;const{values:s,_$litType$:e}=t,o="number"==typeof e?this._$AC(t):(void 0===e.el&&(e.el=E.createElement(e.h,this.options)),e);if((null===(i=this._$AH)||void 0===i?void 0:i._$AD)===o)this._$AH.m(s);else {const t=new V$1(o,this),i=t.p(this.options);t.m(s),this.k(i),this._$AH=t;}}_$AC(t){let i=T.get(t.strings);return void 0===i&&T.set(t.strings,i=new E(t)),i}S(t){d(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const o of t)e===i.length?i.push(s=new N(this.M(h()),this.M(h()),this,this.options)):s=i[e],s._$AI(o),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){var s;for(null===(s=this._$AP)||void 0===s||s.call(this,!1,!0,i);t&&t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){var i;void 0===this._$AM&&(this._$Cg=t,null===(i=this._$AP)||void 0===i||i.call(this,t));}}class S{constructor(t,i,s,e,o){this.type=1,this._$AH=w,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=o,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=w;}get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}_$AI(t,i=this,s,e){const o=this.strings;let n=!1;if(void 0===o)t=P(this,t,i,0),n=!r(t)||t!==this._$AH&&t!==b,n&&(this._$AH=t);else {const e=t;let l,h;for(t=o[0],l=0;l<o.length-1;l++)h=P(this,e[s+l],i,l),h===b&&(h=this._$AH[l]),n||(n=!r(h)||h!==this._$AH[l]),h===w?t=w:t!==w&&(t+=(null!=h?h:"")+o[l+1]),this._$AH[l]=h;}n&&!e&&this.C(t);}C(t){t===w?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,null!=t?t:"");}}class M$1 extends S{constructor(){super(...arguments),this.type=3;}C(t){this.element[this.name]=t===w?void 0:t;}}const k=i$3?i$3.emptyScript:"";class H extends S{constructor(){super(...arguments),this.type=4;}C(t){t&&t!==w?this.element.setAttribute(this.name,k):this.element.removeAttribute(this.name);}}class I$1 extends S{constructor(t,i,s,e,o){super(t,i,s,e,o),this.type=5;}_$AI(t,i=this){var s;if((t=null!==(s=P(this,t,i,0))&&void 0!==s?s:w)===b)return;const e=this._$AH,o=t===w&&e!==w||t.capture!==e.capture||t.once!==e.once||t.passive!==e.passive,n=t!==w&&(e===w||o);o&&this.element.removeEventListener(this.name,this,e),n&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){var i,s;"function"==typeof this._$AH?this._$AH.call(null!==(s=null===(i=this.options)||void 0===i?void 0:i.host)&&void 0!==s?s:this.element,t):this._$AH.handleEvent(t);}}class L$1{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){P(this,t);}}const z=window.litHtmlPolyfillSupport;null==z||z(E,N),(null!==(t$2=globalThis.litHtmlVersions)&&void 0!==t$2?t$2:globalThis.litHtmlVersions=[]).push("2.2.2");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */var l,o$2;class s extends a$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Dt=void 0;}createRenderRoot(){var t,e;const i=super.createRenderRoot();return null!==(t=(e=this.renderOptions).renderBefore)&&void 0!==t||(e.renderBefore=i.firstChild),i}update(t){const i=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Dt=x(i,this.renderRoot,this.renderOptions);}connectedCallback(){var t;super.connectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!0);}disconnectedCallback(){var t;super.disconnectedCallback(),null===(t=this._$Dt)||void 0===t||t.setConnected(!1);}render(){return b}}s.finalized=!0,s._$litElement$=!0,null===(l=globalThis.litElementHydrateSupport)||void 0===l||l.call(globalThis,{LitElement:s});const n$2=globalThis.litElementPolyfillSupport;null==n$2||n$2({LitElement:s});(null!==(o$2=globalThis.litElementVersions)&&void 0!==o$2?o$2:globalThis.litElementVersions=[]).push("3.2.0");
 
 /**
  * @license
@@ -31990,7 +34277,7 @@ const renumerarElementoAction = new RenumerarElemento();
 const RESTAURAR_ELEMENTO = 'RESTAURAR_ELEMENTO';
 class RestaurarElemento {
     constructor() {
-        this.descricao = 'Abandonar modificações';
+        this.descricao = 'Restaurar texto original';
     }
     execute(atual) {
         return {
@@ -33038,603 +35325,6 @@ function getDispositivoByUuid2(dispositivo, uuid2) {
     return null;
 }
 
-function Diff() {}
-Diff.prototype = {
-  diff: function diff(oldString, newString) {
-    var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
-    var callback = options.callback;
-
-    if (typeof options === 'function') {
-      callback = options;
-      options = {};
-    }
-
-    this.options = options;
-    var self = this;
-
-    function done(value) {
-      if (callback) {
-        setTimeout(function () {
-          callback(undefined, value);
-        }, 0);
-        return true;
-      } else {
-        return value;
-      }
-    } // Allow subclasses to massage the input prior to running
-
-
-    oldString = this.castInput(oldString);
-    newString = this.castInput(newString);
-    oldString = this.removeEmpty(this.tokenize(oldString));
-    newString = this.removeEmpty(this.tokenize(newString));
-    var newLen = newString.length,
-        oldLen = oldString.length;
-    var editLength = 1;
-    var maxEditLength = newLen + oldLen;
-
-    if (options.maxEditLength) {
-      maxEditLength = Math.min(maxEditLength, options.maxEditLength);
-    }
-
-    var bestPath = [{
-      newPos: -1,
-      components: []
-    }]; // Seed editLength = 0, i.e. the content starts with the same values
-
-    var oldPos = this.extractCommon(bestPath[0], newString, oldString, 0);
-
-    if (bestPath[0].newPos + 1 >= newLen && oldPos + 1 >= oldLen) {
-      // Identity per the equality and tokenizer
-      return done([{
-        value: this.join(newString),
-        count: newString.length
-      }]);
-    } // Main worker method. checks all permutations of a given edit length for acceptance.
-
-
-    function execEditLength() {
-      for (var diagonalPath = -1 * editLength; diagonalPath <= editLength; diagonalPath += 2) {
-        var basePath = void 0;
-
-        var addPath = bestPath[diagonalPath - 1],
-            removePath = bestPath[diagonalPath + 1],
-            _oldPos = (removePath ? removePath.newPos : 0) - diagonalPath;
-
-        if (addPath) {
-          // No one else is going to attempt to use this value, clear it
-          bestPath[diagonalPath - 1] = undefined;
-        }
-
-        var canAdd = addPath && addPath.newPos + 1 < newLen,
-            canRemove = removePath && 0 <= _oldPos && _oldPos < oldLen;
-
-        if (!canAdd && !canRemove) {
-          // If this path is a terminal then prune
-          bestPath[diagonalPath] = undefined;
-          continue;
-        } // Select the diagonal that we want to branch from. We select the prior
-        // path whose position in the new string is the farthest from the origin
-        // and does not pass the bounds of the diff graph
-
-
-        if (!canAdd || canRemove && addPath.newPos < removePath.newPos) {
-          basePath = clonePath(removePath);
-          self.pushComponent(basePath.components, undefined, true);
-        } else {
-          basePath = addPath; // No need to clone, we've pulled it from the list
-
-          basePath.newPos++;
-          self.pushComponent(basePath.components, true, undefined);
-        }
-
-        _oldPos = self.extractCommon(basePath, newString, oldString, diagonalPath); // If we have hit the end of both strings, then we are done
-
-        if (basePath.newPos + 1 >= newLen && _oldPos + 1 >= oldLen) {
-          return done(buildValues(self, basePath.components, newString, oldString, self.useLongestToken));
-        } else {
-          // Otherwise track this path as a potential candidate and continue.
-          bestPath[diagonalPath] = basePath;
-        }
-      }
-
-      editLength++;
-    } // Performs the length of edit iteration. Is a bit fugly as this has to support the
-    // sync and async mode which is never fun. Loops over execEditLength until a value
-    // is produced, or until the edit length exceeds options.maxEditLength (if given),
-    // in which case it will return undefined.
-
-
-    if (callback) {
-      (function exec() {
-        setTimeout(function () {
-          if (editLength > maxEditLength) {
-            return callback();
-          }
-
-          if (!execEditLength()) {
-            exec();
-          }
-        }, 0);
-      })();
-    } else {
-      while (editLength <= maxEditLength) {
-        var ret = execEditLength();
-
-        if (ret) {
-          return ret;
-        }
-      }
-    }
-  },
-  pushComponent: function pushComponent(components, added, removed) {
-    var last = components[components.length - 1];
-
-    if (last && last.added === added && last.removed === removed) {
-      // We need to clone here as the component clone operation is just
-      // as shallow array clone
-      components[components.length - 1] = {
-        count: last.count + 1,
-        added: added,
-        removed: removed
-      };
-    } else {
-      components.push({
-        count: 1,
-        added: added,
-        removed: removed
-      });
-    }
-  },
-  extractCommon: function extractCommon(basePath, newString, oldString, diagonalPath) {
-    var newLen = newString.length,
-        oldLen = oldString.length,
-        newPos = basePath.newPos,
-        oldPos = newPos - diagonalPath,
-        commonCount = 0;
-
-    while (newPos + 1 < newLen && oldPos + 1 < oldLen && this.equals(newString[newPos + 1], oldString[oldPos + 1])) {
-      newPos++;
-      oldPos++;
-      commonCount++;
-    }
-
-    if (commonCount) {
-      basePath.components.push({
-        count: commonCount
-      });
-    }
-
-    basePath.newPos = newPos;
-    return oldPos;
-  },
-  equals: function equals(left, right) {
-    if (this.options.comparator) {
-      return this.options.comparator(left, right);
-    } else {
-      return left === right || this.options.ignoreCase && left.toLowerCase() === right.toLowerCase();
-    }
-  },
-  removeEmpty: function removeEmpty(array) {
-    var ret = [];
-
-    for (var i = 0; i < array.length; i++) {
-      if (array[i]) {
-        ret.push(array[i]);
-      }
-    }
-
-    return ret;
-  },
-  castInput: function castInput(value) {
-    return value;
-  },
-  tokenize: function tokenize(value) {
-    return value.split('');
-  },
-  join: function join(chars) {
-    return chars.join('');
-  }
-};
-
-function buildValues(diff, components, newString, oldString, useLongestToken) {
-  var componentPos = 0,
-      componentLen = components.length,
-      newPos = 0,
-      oldPos = 0;
-
-  for (; componentPos < componentLen; componentPos++) {
-    var component = components[componentPos];
-
-    if (!component.removed) {
-      if (!component.added && useLongestToken) {
-        var value = newString.slice(newPos, newPos + component.count);
-        value = value.map(function (value, i) {
-          var oldValue = oldString[oldPos + i];
-          return oldValue.length > value.length ? oldValue : value;
-        });
-        component.value = diff.join(value);
-      } else {
-        component.value = diff.join(newString.slice(newPos, newPos + component.count));
-      }
-
-      newPos += component.count; // Common case
-
-      if (!component.added) {
-        oldPos += component.count;
-      }
-    } else {
-      component.value = diff.join(oldString.slice(oldPos, oldPos + component.count));
-      oldPos += component.count; // Reverse add and remove so removes are output first to match common convention
-      // The diffing algorithm is tied to add then remove output and this is the simplest
-      // route to get the desired output with minimal overhead.
-
-      if (componentPos && components[componentPos - 1].added) {
-        var tmp = components[componentPos - 1];
-        components[componentPos - 1] = components[componentPos];
-        components[componentPos] = tmp;
-      }
-    }
-  } // Special case handle for when one terminal is ignored (i.e. whitespace).
-  // For this case we merge the terminal into the prior string and drop the change.
-  // This is only available for string mode.
-
-
-  var lastComponent = components[componentLen - 1];
-
-  if (componentLen > 1 && typeof lastComponent.value === 'string' && (lastComponent.added || lastComponent.removed) && diff.equals('', lastComponent.value)) {
-    components[componentLen - 2].value += lastComponent.value;
-    components.pop();
-  }
-
-  return components;
-}
-
-function clonePath(path) {
-  return {
-    newPos: path.newPos,
-    components: path.components.slice(0)
-  };
-}
-
-var characterDiff = new Diff();
-function diffChars(oldStr, newStr, options) {
-  return characterDiff.diff(oldStr, newStr, options);
-}
-
-function generateOptions(options, defaults) {
-  if (typeof options === 'function') {
-    defaults.callback = options;
-  } else if (options) {
-    for (var name in options) {
-      /* istanbul ignore else */
-      if (options.hasOwnProperty(name)) {
-        defaults[name] = options[name];
-      }
-    }
-  }
-
-  return defaults;
-}
-
-//
-// Ranges and exceptions:
-// Latin-1 Supplement, 0080–00FF
-//  - U+00D7  × Multiplication sign
-//  - U+00F7  ÷ Division sign
-// Latin Extended-A, 0100–017F
-// Latin Extended-B, 0180–024F
-// IPA Extensions, 0250–02AF
-// Spacing Modifier Letters, 02B0–02FF
-//  - U+02C7  ˇ &#711;  Caron
-//  - U+02D8  ˘ &#728;  Breve
-//  - U+02D9  ˙ &#729;  Dot Above
-//  - U+02DA  ˚ &#730;  Ring Above
-//  - U+02DB  ˛ &#731;  Ogonek
-//  - U+02DC  ˜ &#732;  Small Tilde
-//  - U+02DD  ˝ &#733;  Double Acute Accent
-// Latin Extended Additional, 1E00–1EFF
-
-var extendedWordChars = /^[A-Za-z\xC0-\u02C6\u02C8-\u02D7\u02DE-\u02FF\u1E00-\u1EFF]+$/;
-var reWhitespace = /\S/;
-var wordDiff = new Diff();
-
-wordDiff.equals = function (left, right) {
-  if (this.options.ignoreCase) {
-    left = left.toLowerCase();
-    right = right.toLowerCase();
-  }
-
-  return left === right || this.options.ignoreWhitespace && !reWhitespace.test(left) && !reWhitespace.test(right);
-};
-
-wordDiff.tokenize = function (value) {
-  // All whitespace symbols except newline group into one token, each newline - in separate token
-  var tokens = value.split(/([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/); // Join the boundary splits that we do not consider to be boundaries. This is primarily the extended Latin character set.
-
-  for (var i = 0; i < tokens.length - 1; i++) {
-    // If we have an empty string in the next field and we have only word chars before and after, merge
-    if (!tokens[i + 1] && tokens[i + 2] && extendedWordChars.test(tokens[i]) && extendedWordChars.test(tokens[i + 2])) {
-      tokens[i] += tokens[i + 2];
-      tokens.splice(i + 1, 2);
-      i--;
-    }
-  }
-
-  return tokens;
-};
-
-function diffWords(oldStr, newStr, options) {
-  options = generateOptions(options, {
-    ignoreWhitespace: true
-  });
-  return wordDiff.diff(oldStr, newStr, options);
-}
-
-var lineDiff = new Diff();
-
-lineDiff.tokenize = function (value) {
-  var retLines = [],
-      linesAndNewlines = value.split(/(\n|\r\n)/); // Ignore the final empty token that occurs if the string ends with a new line
-
-  if (!linesAndNewlines[linesAndNewlines.length - 1]) {
-    linesAndNewlines.pop();
-  } // Merge the content and line separators into single tokens
-
-
-  for (var i = 0; i < linesAndNewlines.length; i++) {
-    var line = linesAndNewlines[i];
-
-    if (i % 2 && !this.options.newlineIsToken) {
-      retLines[retLines.length - 1] += line;
-    } else {
-      if (this.options.ignoreWhitespace) {
-        line = line.trim();
-      }
-
-      retLines.push(line);
-    }
-  }
-
-  return retLines;
-};
-
-var sentenceDiff = new Diff();
-
-sentenceDiff.tokenize = function (value) {
-  return value.split(/(\S.+?[.!?])(?=\s+|$)/);
-};
-
-var cssDiff = new Diff();
-
-cssDiff.tokenize = function (value) {
-  return value.split(/([{}:;,]|\s+)/);
-};
-
-function _typeof(obj) {
-  "@babel/helpers - typeof";
-
-  if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") {
-    _typeof = function (obj) {
-      return typeof obj;
-    };
-  } else {
-    _typeof = function (obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    };
-  }
-
-  return _typeof(obj);
-}
-
-var objectPrototypeToString = Object.prototype.toString;
-var jsonDiff = new Diff(); // Discriminate between two lines of pretty-printed, serialized JSON where one of them has a
-// dangling comma and the other doesn't. Turns out including the dangling comma yields the nicest output:
-
-jsonDiff.useLongestToken = true;
-jsonDiff.tokenize = lineDiff.tokenize;
-
-jsonDiff.castInput = function (value) {
-  var _this$options = this.options,
-      undefinedReplacement = _this$options.undefinedReplacement,
-      _this$options$stringi = _this$options.stringifyReplacer,
-      stringifyReplacer = _this$options$stringi === void 0 ? function (k, v) {
-    return typeof v === 'undefined' ? undefinedReplacement : v;
-  } : _this$options$stringi;
-  return typeof value === 'string' ? value : JSON.stringify(canonicalize(value, null, null, stringifyReplacer), stringifyReplacer, '  ');
-};
-
-jsonDiff.equals = function (left, right) {
-  return Diff.prototype.equals.call(jsonDiff, left.replace(/,([\r\n])/g, '$1'), right.replace(/,([\r\n])/g, '$1'));
-};
-// object that is already on the "stack" of items being processed. Accepts an optional replacer
-
-function canonicalize(obj, stack, replacementStack, replacer, key) {
-  stack = stack || [];
-  replacementStack = replacementStack || [];
-
-  if (replacer) {
-    obj = replacer(key, obj);
-  }
-
-  var i;
-
-  for (i = 0; i < stack.length; i += 1) {
-    if (stack[i] === obj) {
-      return replacementStack[i];
-    }
-  }
-
-  var canonicalizedObj;
-
-  if ('[object Array]' === objectPrototypeToString.call(obj)) {
-    stack.push(obj);
-    canonicalizedObj = new Array(obj.length);
-    replacementStack.push(canonicalizedObj);
-
-    for (i = 0; i < obj.length; i += 1) {
-      canonicalizedObj[i] = canonicalize(obj[i], stack, replacementStack, replacer, key);
-    }
-
-    stack.pop();
-    replacementStack.pop();
-    return canonicalizedObj;
-  }
-
-  if (obj && obj.toJSON) {
-    obj = obj.toJSON();
-  }
-
-  if (_typeof(obj) === 'object' && obj !== null) {
-    stack.push(obj);
-    canonicalizedObj = {};
-    replacementStack.push(canonicalizedObj);
-
-    var sortedKeys = [],
-        _key;
-
-    for (_key in obj) {
-      /* istanbul ignore else */
-      if (obj.hasOwnProperty(_key)) {
-        sortedKeys.push(_key);
-      }
-    }
-
-    sortedKeys.sort();
-
-    for (i = 0; i < sortedKeys.length; i += 1) {
-      _key = sortedKeys[i];
-      canonicalizedObj[_key] = canonicalize(obj[_key], stack, replacementStack, replacer, _key);
-    }
-
-    stack.pop();
-    replacementStack.pop();
-  } else {
-    canonicalizedObj = obj;
-  }
-
-  return canonicalizedObj;
-}
-
-var arrayDiff = new Diff();
-
-arrayDiff.tokenize = function (value) {
-  return value.slice();
-};
-
-arrayDiff.join = arrayDiff.removeEmpty = function (value) {
-  return value;
-};
-
-function containsTags(text) {
-    return /<.+>/g.test(text === null || text === void 0 ? void 0 : text.trim());
-}
-function endsWithPunctuation(texto) {
-    return /[.,:]\s*$/.test(texto);
-}
-function isValidHTML(html) {
-    const doc = document.createElement('div');
-    doc.innerHTML = html;
-    return doc.innerHTML === html;
-}
-function getTextoSemHtml(html) {
-    return removeEspacosDuplicados(html.replace(/(<([^>]+)>)/gi, '').trim());
-}
-function endsWithWord(texto, indicadores) {
-    return indicadores.map(word => new RegExp(addSpaceRegex(escapeRegex(word)) + '\\s*$').test(texto)).filter(r => r)[0] === true;
-}
-function converteIndicadorParaTexto(indicadores) {
-    switch (indicadores[0].trim()) {
-        case '.':
-            return 'ponto';
-        case ':':
-            return 'dois pontos';
-        case ';':
-            return 'ponto e vírgula';
-        case ',':
-            return 'vírgula';
-        default:
-            return indicadores[0].trim();
-    }
-}
-function escapeRegex(str) {
-    return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-function addSpaceRegex(str) {
-    return str.replace(/\s+/g, '\\s+');
-}
-function primeiraLetraMaiuscula(str) {
-    if (!str) {
-        return '';
-    }
-    return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-function join(list) {
-    let str = '';
-    list.forEach(s => {
-        str += s;
-    });
-    return str;
-}
-function removeEspacosDuplicados(str) {
-    return str.replace(/\s{2,}/g, ' ');
-}
-function removeAllHtmlTags(texto) {
-    return texto.replace(/(<([^>]+)>)/gi, '');
-}
-const removeAllHtmlTagsExcept = (texto, tags) => {
-    // const regex = new RegExp(`(<(?!${tags.join('|')})[^>]+>)`, 'gi');
-    const regex = new RegExp(`<(?!(?:/?(${tags.join('|')})\\b))[^>]*>`, 'gi');
-    return texto.replace(regex, '');
-};
-class StringBuilder {
-    constructor(str) {
-        this.strs = new Array();
-        if (str) {
-            this.append(str);
-        }
-    }
-    append(str) {
-        if (str) {
-            this.strs.push(str);
-        }
-    }
-    toString() {
-        return join(this.strs);
-    }
-}
-const REGEX_ACCENTS = /[\u0300-\u036f]/g;
-const removeTagEConteudo = (texto, tag) => {
-    return texto.replace(new RegExp(`<${tag}[^<]*(?:(?!</${tag}>)<[^<]*)*</${tag}>`, 'gi'), '');
-};
-const removeTagStyle = (texto) => removeTagEConteudo(texto, 'style');
-const removeTagScript = (texto) => removeTagEConteudo(texto, 'script');
-const removeTagHead = (texto) => removeTagEConteudo(texto, 'head');
-const getIniciais = (texto = '') => {
-    var _a;
-    return (((_a = texto
-        .match(/\b[A-Z][a-z]*\b/g)) === null || _a === void 0 ? void 0 : _a.map(word => word.charAt(0)).filter((_, i, arr) => i === 0 || i === arr.length - 1).join('')) || '');
-};
-const textoDiffAsHtml = (texto1, texto2, typeDiff) => {
-    const fn = typeDiff === 'diffChars' ? diffChars : diffWords;
-    const buildPartAdded = (str) => `<ins>${str}</ins>`; //`<span class="texto-inserido">${str}</span>`;
-    const buildPartRemoved = (str) => `<del>${str}</del>`; //`<span classs="texto-removido">${str}</span>`;
-    const diff = fn(texto1, texto2);
-    return diff.map(part => (part.added ? buildPartAdded(part.value) : part.removed ? buildPartRemoved(part.value) : part.value)).join('');
-};
-const substituiEspacosEntreTagsPorNbsp = (texto, tags) => {
-    if (tags) {
-        const regex = new RegExp(`(?<=<(${tags.join('|')})>) +(?=</\\1>)`, 'gi');
-        return texto.replace(regex, texto => texto.replace(/ /g, '&nbsp;'));
-    }
-    else {
-        return texto.replace(/ /g, '&nbsp;');
-    }
-};
-const substituiMultiplosEspacosPorNbsp = (texto) => {
-    return texto.replace(/ +/g, texto => texto.replace(/ /g, '&nbsp;'));
-};
-
 /**
  * Utilitário para montar uma tag usando o pattern composite. Essa classe foi retirada do livro
  * Refactoring to Patterns
@@ -33914,8 +35604,8 @@ class CmdEmdUtil {
         if (isArticulacaoAlteracao(d)) {
             return false;
         }
-        if (isAgrupadorNaoArticulacao(d) && d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return false;
+        if (isAgrupadorNaoArticulacao(d)) {
+            return this.getDescricaoSituacaoParaComandoEmenda(d) === DescricaoSituacao.DISPOSITIVO_ADICIONADO;
         }
         return ((d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && !CmdEmdUtil.isTextoOmitido(d)) ||
             d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO);
@@ -33982,7 +35672,6 @@ class CmdEmdUtil {
                 mapaAtual = novoMapa;
             }
         }
-        mapa = mapaAtual;
     }
     // public static List<Dispositivo> filtraDispositivosModificados(final List<Dispositivo> dispositivos) {
     //     List<Dispositivo> ret = new ArrayList<Dispositivo>();
@@ -34172,7 +35861,7 @@ class CmdEmdUtil {
             return ' ' + CmdEmdUtil.trataTextoParaCitacao(d, alteracaoNormaVigente);
         }
         else if (d.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            return isOmissis(d) ? ' (Suprimir omissis)' : ' (Suprimir)';
+            return isOmissis(d) ? ' (Suprimir linha pontilhada)' : ' (Suprimir)';
         }
         else {
             return ' ' + new TagNode('Omissis');
@@ -34263,8 +35952,8 @@ var TipoMensagem;
 var AutoFix;
 (function (AutoFix) {
     AutoFix["INFORMAR_NORMA"] = "\u00C9 necess\u00E1rio informar a norma a ser alterada";
-    AutoFix["OMISSIS_ANTES"] = "\u00C9 necess\u00E1rio um omissis antes deste dispositivo";
-    AutoFix["OMISSIS_SEQUENCIAIS"] = "N\u00E3o pode haver mais de um omissis sequencialmente";
+    AutoFix["OMISSIS_ANTES"] = "\u00C9 necess\u00E1rio uma linha pontilhada antes deste dispositivo";
+    AutoFix["OMISSIS_SEQUENCIAIS"] = "N\u00E3o pode haver mais de uma linha pontilhada sequencialmente";
     AutoFix["RENUMERAR_DISPOSITIVO"] = "Numere o dispositivo";
 })(AutoFix || (AutoFix = {}));
 
@@ -35410,7 +37099,7 @@ const validaHierarquia = (dispositivo) => {
         isOmissis(getUltimoFilho(getDispositivoAnterior(dispositivo)) || isOmissis(getDispositivoAnterior(dispositivo)))) {
         mensagens.push({
             tipo: TipoMensagem.ERROR,
-            descricao: 'Não pode haver mais de um omissis sequencialmente',
+            descricao: 'Não pode haver mais de uma linha pontilhada sequencialmente',
         });
     }
     if (dispositivo !== null &&
@@ -35461,7 +37150,7 @@ const validaHierarquia = (dispositivo) => {
         comparaNumeracao('' + (+getDispositivoAnterior(dispositivo).numero + 1), getDispositivoPosterior(dispositivo).numero) === 0) {
         mensagens.push({
             tipo: TipoMensagem.ERROR,
-            descricao: 'Não pode haver omissis entre dispositivos originais sequenciais',
+            descricao: 'Não pode haver linha pontilhada entre dispositivos originais sequenciais',
         });
     }
     return mensagens;
@@ -35532,6 +37221,7 @@ const validaNumeracaoDispositivoAlteracao = (dispositivo) => {
         !isDispositivoCabecaAlteracao(dispositivo) &&
         dispositivo.numero !== undefined &&
         isPrimeiroMesmoTipo(dispositivo) &&
+        !isAgrupador(dispositivo.pai) &&
         !isOmissis(dispositivo) &&
         (!getDispositivoAnterior(dispositivo) || (getDispositivoAnterior(dispositivo) !== undefined && !isOmissis(getUltimoFilho(getDispositivoAnterior(dispositivo))))) &&
         dispositivo.numero !== '1' &&
@@ -35549,6 +37239,7 @@ const validaNumeracaoDispositivoAlteracao = (dispositivo) => {
         getDispositivoAnteriorMesmoTipo(dispositivo) &&
         dispositivo.tipo !== ((_h = getDispositivoAnteriorMesmoTipo(dispositivo)) === null || _h === void 0 ? void 0 : _h.rotulo) &&
         !isOmissis(getDispositivoAnterior(dispositivo)) &&
+        !isOmissis(getDispositivoAnteriorNaSequenciaDeLeitura(dispositivo)) &&
         !validaOrdemDispositivo(getDispositivoAnterior(dispositivo), dispositivo) &&
         dispositivo.numero !== ((_j = getDispositivoAnteriorMesmoTipo(dispositivo)) === null || _j === void 0 ? void 0 : _j.numero)) {
         mensagens.push({
@@ -35623,8 +37314,8 @@ class DispositivoSuprimido {
     getAcoesPermitidas(dispositivo, acoes) {
         const a = [];
         if ((isIncisoCaput(dispositivo) ? dispositivo.pai.pai : dispositivo.pai).situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_SUPRIMIDO) {
-            a.push(restaurarElementoAction);
             a.push(...acoes.filter(acao => acao.descricao.startsWith('Adicionar') && dispositivo.tipo === acao.tipo));
+            a.push(restaurarElementoAction);
         }
         return a;
     }
@@ -35951,9 +37642,6 @@ const podeAdicionarAtributoDeExistencia = (elemento) => {
         elemento.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
         return false;
     }
-    else if (elemento.tipo === 'Artigo') {
-        return true;
-    }
     else {
         return (_c = (_b = (_a = elemento.hierarquia) === null || _a === void 0 ? void 0 : _a.pai) === null || _b === void 0 ? void 0 : _b.existeNaNormaAlterada) !== null && _c !== void 0 ? _c : true;
     }
@@ -36020,16 +37708,6 @@ function generateId(init = 0) {
     };
 }
 const Counter = generateId();
-
-const generateUUID = () => {
-    let uuid = '';
-    for (let i = 0; i < 32; i++) {
-        const randomNumber = (Math.random() * 16) | 0;
-        const value = (i === 12 ? 4 : i === 16 ? (randomNumber & 3) | 8 : randomNumber).toString(16);
-        uuid += (i === 8 || i === 12 || i === 16 || i === 20 ? '-' : '') + value;
-    }
-    return uuid;
-};
 
 function ValidacaoDispositivo(Base) {
     return class extends Base {
@@ -36506,10 +38184,7 @@ function NumeracaoArtigo(Base) {
             else if (this.numero !== undefined && !isNumeracaoValida(this.numero)) {
                 this.rotulo = this.PREFIXO + this.numero + this.SUFIXO;
             }
-            else if (isDispositivoAlteracao(dispositivo) && this.numero !== undefined && isNumeracaoValida(this.numero)) {
-                this.rotulo = this.PREFIXO + this.numero + this.SUFIXO;
-            }
-            else if (isDispositivoCabecaAlteracao(dispositivo)) {
+            else if (isDispositivoCabecaAlteracao(dispositivo) || (isDispositivoAlteracao(dispositivo) && isAgrupador(dispositivo.pai) && dispositivo.pai.filhos.length === 1)) {
                 this.rotulo = this.informouArtigoUnico ? this.ARTIGO_UNICO : this.PREFIXO + this.getNumeroAndSufixoNumeracao(dispositivo);
             }
             else {
@@ -37216,7 +38891,8 @@ function RegrasArtigo(Base) {
             if (dispositivo.pai.indexOf(dispositivo) > 0 &&
                 getDispositivoAnterior(dispositivo) !== undefined &&
                 !((_a = getDispositivoAnterior(dispositivo)) === null || _a === void 0 ? void 0 : _a.hasAlteracao()) &&
-                !isOmissis(getDispositivoAnterior(dispositivo))) {
+                !isOmissis(getDispositivoAnterior(dispositivo)) &&
+                (!isDispositivoAlteracao(dispositivo) || !getDispositivoAnterior(dispositivo) || !isAgrupador(getDispositivoAnterior(dispositivo)))) {
                 acoes.push(transformarArtigoEmParagrafo);
             }
             if (dispositivo.pai && !isDispositivoAlteracao(dispositivo) && isArticulacao(dispositivo.pai) && dispositivo.pai.filhos.filter(d => isAgrupador(d)).length === 0) {
@@ -38340,9 +40016,10 @@ class AtivarDesativarRevisao {
     constructor() {
         this.descricao = 'Ativar/Desativar revisão';
     }
-    execute() {
+    execute(quantidade = 0) {
         return {
             type: ATIVAR_DESATIVAR_REVISAO,
+            quantidade: quantidade,
         };
     }
 }
@@ -38352,6 +40029,8 @@ var Modo;
 (function (Modo) {
     Modo["JUSTIFICATIVA"] = "justificativa";
     Modo["TEXTO_LIVRE"] = "textoLivre";
+    Modo["EMENDA"] = "emenda";
+    Modo["EMENDA_ARTIGO_ONDE_COUBER"] = "emendaArtigoOndeCouber";
 })(Modo || (Modo = {}));
 
 const getRevisoesElemento = (revisoes = []) => {
@@ -38584,21 +40263,30 @@ const mostrarDialogDisclaimerRevisao = () => {
 const getQuantidadeRevisoesTextoLivre = (revisoes = []) => {
     return revisoes.filter(e => e.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado).length;
 };
+const getQuantidadeRevisoesAll = (revisoesDispositivos = []) => {
+    var _a;
+    const cursorCode = 65279;
+    const listaRevisoes = document.querySelectorAll('ins, del') || [];
+    const revisoes = [];
+    for (let index = 0; index < listaRevisoes.length; index++) {
+        const revisao = listaRevisoes[index];
+        if (((_a = revisao.innerText) === null || _a === void 0 ? void 0 : _a.charCodeAt(0)) !== cursorCode) {
+            revisoes.push(revisao);
+        }
+    }
+    return revisoes.length + getQuantidadeRevisoes(revisoesDispositivos);
+};
 const salvaNoNavegadorOpcaoNaoMostrarNovamente = () => {
     const checkbox = document.getElementById('chk-nao-mostrar-modal-novamente');
     if (checkbox) {
         localStorage.setItem('naoMostrarNovamenteDisclaimerMarcaAlteracao', checkbox.checked ? 'true' : 'false');
     }
 };
-const ativarDesativarMarcaDeRevisao = (rootStore) => {
-    rootStore.dispatch(ativarDesativarRevisaoAction.execute());
+const ativarDesativarMarcaDeRevisao = (rootStore, quantidade) => {
+    rootStore.dispatch(ativarDesativarRevisaoAction.execute(quantidade));
 };
 const atualizaQuantidadeRevisao = (revisoes = [], element, modo) => {
-    const quantidade = modo === Modo.JUSTIFICATIVA
-        ? getQuantidadeRevisoesJustificativa(revisoes)
-        : modo === 'textoLivre'
-            ? getQuantidadeRevisoesTextoLivre(revisoes)
-            : getQuantidadeRevisoes(revisoes);
+    const quantidade = modo === Modo.EMENDA ? getQuantidadeRevisoes(revisoes) : 0;
     if (element) {
         element.innerHTML = quantidade;
     }
@@ -39710,7 +41398,11 @@ class DispositivoModificado {
 }
 
 const aplicaAlteracoesEmenda = (state, action) => {
-    var _a;
+    var _a, _b, _c;
+    let alertas = [];
+    if (((_b = (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas) === null || _b === void 0 ? void 0 : _b.length) > 0) {
+        alertas = state.ui.alertas;
+    }
     const retorno = {
         articulacao: state.articulacao,
         modo: state.modo,
@@ -39719,7 +41411,7 @@ const aplicaAlteracoesEmenda = (state, action) => {
         future: [],
         ui: {
             events: [],
-            alertas: [],
+            alertas: alertas,
         },
         revisoes: [],
         emRevisao: state.emRevisao,
@@ -39754,7 +41446,7 @@ const aplicaAlteracoesEmenda = (state, action) => {
     if (action.alteracoesEmenda.dispositivosAdicionados) {
         eventos.eventos.push(...processaDispositivosAdicionados(state, action.alteracoesEmenda));
     }
-    if ((_a = action.revisoes) === null || _a === void 0 ? void 0 : _a.length) {
+    if ((_c = action.revisoes) === null || _c === void 0 ? void 0 : _c.length) {
         eventos.eventos.push(...processaRevisoes$1(retorno, action.revisoes));
         retorno.emRevisao = true;
     }
@@ -39813,7 +41505,7 @@ const criaEventosParaDispositivoAgrupador = (state, dea) => {
             posicao = 'antes';
         }
         const atual = createElemento(ref);
-        const manterNoMesmoGrupoDeAspas = !dea.abreAspas || !dea.fechaAspas;
+        const manterNoMesmoGrupoDeAspas = dea.abreAspas ? false : !dea.fechaAspas;
         const tempState = agrupaElemento(state, { atual, novo: { tipo: dea.tipo, posicao, manterNoMesmoGrupoDeAspas, rotulo: dea.rotulo }, isAbrindoEmenda: true });
         const events = tempState.ui.events.filter(ev => ev.stateType !== StateType.ElementoMarcado);
         const elementosIncluidos = events.find(e => e.stateType === StateType.ElementoIncluido).elementos;
@@ -40360,6 +42052,10 @@ const informaExistenciaDoElementoNaNorma = (state, action) => {
                 stateType: StateType.ElementoModificado,
                 elementos: [original, alterado],
             });
+            eventos.push({
+                stateType: StateType.SituacaoElementoModificada,
+                elementos: getElementos(dispositivo),
+            });
         });
     }
     else {
@@ -40403,12 +42099,18 @@ const validaAlteracaoNovoParaExistente = (dispositivo) => {
     if (isDispositivoPossuiPaiNovoNaNormaAlterada(dispositivo)) {
         return {
             tipo: TipoMensagem.INFO,
-            descricao: 'Não é permitido mudar a indicação de dispositivo "Novo" para "Existente" quando dispositivo hierarquicamente superior é novo na norma alteradao.',
+            descricao: 'Não é permitido mudar a indicação de dispositivo "Novo" para "Existente" quando dispositivo hierarquicamente superior é novo na norma alterada.',
         };
     }
 };
 const validaAlteracaoExistenteParaNovo = (dispositivo) => {
-    const dispositivos = getDispositivoAndFilhosAsLista(dispositivo).filter(d => !isAgrupador(dispositivo) || !isArtigo(d));
+    const dispositivos = getDispositivoAndFilhosAsLista(dispositivo);
+    if (isAgrupador(dispositivo) && existeSubordinadoComStatusExistente(dispositivo.filhos.filter(d => !isOmissis(d)))) {
+        return {
+            tipo: TipoMensagem.INFO,
+            descricao: `Não é permitido mudar a indicação de dispositivo "Existente" para "Novo" quando existe dispositivo subordinado com status "Existente".`,
+        };
+    }
     if (existeDispositivoSemNumeroNaoOmissis(dispositivos.slice(1))) {
         return {
             tipo: TipoMensagem.INFO,
@@ -40431,7 +42133,10 @@ const validaAlteracaoExistenteParaNovo = (dispositivo) => {
 const isDispositivoPossuiPaiNovoNaNormaAlterada = (dispositivo) => {
     var _a;
     const existe = ((_a = dispositivo.pai) === null || _a === void 0 ? void 0 : _a.situacao).existeNaNormaAlterada;
-    return !isArtigo(dispositivo) && !isDispositivoCabecaAlteracao(dispositivo) && !(existe !== null && existe !== void 0 ? existe : true);
+    return !isDispositivoCabecaAlteracao(dispositivo) && !(existe !== null && existe !== void 0 ? existe : true);
+};
+const existeSubordinadoComStatusExistente = (dispositivos) => {
+    return dispositivos.some(d => !isDispositivoNovoNaNormaAlterada(d));
 };
 const existeDispositivoSemNumeroNaoOmissis = (dispositivos) => {
     return dispositivos.some(d => { var _a; return (((_a = d.mensagens) === null || _a === void 0 ? void 0 : _a.some(m => { var _a; return (_a = m.descricao) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes('numere o dispositivo'); })) || d.numero === undefined) && !isOmissis(d); });
@@ -40441,7 +42146,7 @@ const existeOmissis = (dispositivo) => {
     return dispositivos.some(d => { var _a; return d.tipo === 'Omissis' || ((_a = d.texto) === null || _a === void 0 ? void 0 : _a.includes(TEXTO_OMISSIS)); });
 };
 const existeNecessidadeDeOmissis = (dispositivos) => {
-    return dispositivos.some(d => { var _a; return (_a = d.mensagens) === null || _a === void 0 ? void 0 : _a.some(m => { var _a; return (_a = m.descricao) === null || _a === void 0 ? void 0 : _a.includes('omissis antes'); }); });
+    return dispositivos.some(d => validaDispositivo(d).find(m => { var _a; return (_a = m.descricao) === null || _a === void 0 ? void 0 : _a.includes('linha pontilhada antes'); }));
 };
 
 const limparAlertas = (state) => {
@@ -42332,6 +44037,7 @@ const colarDispositivos = (articulacao, articulacaoColada, atual, referencia, po
     let refAux = referencia;
     const adicionados = [];
     const modificados = [];
+    const suprimidos = [];
     articulacaoColada.filhos.forEach(f => {
         if (isColandoEmAlteracaoDeNorma || !isOmissis(f)) {
             const d = buscarDispositivoByIdTratandoParagrafoUnico(articulacao, f.id);
@@ -42339,12 +44045,14 @@ const colarDispositivos = (articulacao, articulacaoColada, atual, referencia, po
                 const d2 = colarDispositivoSubstituindo(d, f, modo, isColandoEmAlteracaoDeNorma);
                 modificados.push(...getDispositivoAndFilhosAsLista(d2).filter(isModificado));
                 adicionados.push(...getDispositivoAndFilhosAsLista(d2).filter(isAdicionado));
+                suprimidos.push(...getDispositivoAndFilhosAsLista(d2).filter(isSuprimido));
                 refAux = d2;
             }
             else {
                 refAux = d && isUsarDispositivoDeMesmoRotuloComoReferenciaDuranteAdicao ? d : refAux;
                 const d2 = colarDispositivoAdicionando(refAux, f, isColandoEmAlteracaoDeNorma, false, modo, posicao === 'antes' && refAux === referencia ? posicao : undefined);
                 adicionados.push(...getDispositivoAndFilhosAsLista(d2));
+                suprimidos.push(...getDispositivoAndFilhosAsLista(d2).filter(isSuprimido));
                 refAux = d2;
             }
         }
@@ -42361,7 +44069,7 @@ const colarDispositivos = (articulacao, articulacaoColada, atual, referencia, po
     eventoElementoRemovido && eventos.push(eventoElementoRemovido);
     eventos.push(...buildEventosElementoModificado(modificados));
     eventos.push(buildEventoElementosRenumerados(adicionados, referencia, tipoColado));
-    processaEventosSuprimidos(eventos, modificados);
+    processaEventosSuprimidos(eventos, modificados, suprimidos);
     eventos.push(buildEventoSituacaoElementoModificada(adicionados, isColandoEmAlteracaoDeNorma));
     adicionados[0] && eventos.push(buildEventoElementoMarcado([adicionados[0], atual]));
     return eventos.filter(ev => { var _a; return (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.length; });
@@ -42418,10 +44126,21 @@ const buildEventosElementoModificado = (modificados) => {
     });
     return eventos;
 };
-const processaEventosSuprimidos = (eventos, modificados) => {
-    if (modificados.length > 0) {
+const processaEventosSuprimidos = (eventos, modificados, suprimidos) => {
+    const dispositivosProcessar = [];
+    // if(modificados.length > 0){
+    //   modificados.forEach(m => {
+    //     dispositivosProcessar.push(m);
+    //   });
+    // }
+    if (suprimidos.length > 0) {
+        suprimidos.forEach(s => {
+            dispositivosProcessar.push(s);
+        });
+    }
+    if (dispositivosProcessar.length > 0) {
         const suprimidos = [];
-        modificados.forEach(d => {
+        dispositivosProcessar.forEach(d => {
             getDispositivosToElementoSuprimido(d).forEach(d => {
                 if (suprimidos.filter(s => s.id === d.id).length === 0) {
                     suprimidos.push(d);
@@ -42659,10 +44378,10 @@ const getDispositivosEmAlteracaoDeNormaASeremAtualizados = (dispositivos) => {
         .filter(d => d.situacao.descricaoSituacao !== DescricaoSituacao.DISPOSITIVO_ADICIONADO);
 };
 
-const ativaDesativaRevisao = (state) => {
-    var _a, _b;
+const ativaDesativaRevisao = (state, action) => {
+    var _a;
     const isActive = !state.emRevisao;
-    if (!isActive && ((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.length)) {
+    if (!isActive && action.quantidade > 0) {
         return {
             ...retornaEstadoAtualComMensagem(state, {
                 tipo: TipoMensagem.INFO,
@@ -42676,7 +44395,7 @@ const ativaDesativaRevisao = (state) => {
         emRevisao: isActive,
         ui: {
             events: [{ stateType: isActive ? StateType.RevisaoAtivada : StateType.RevisaoDesativada }],
-            alertas: (_b = state.ui) === null || _b === void 0 ? void 0 : _b.alertas,
+            alertas: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.alertas,
         },
     };
 };
@@ -43502,7 +45221,7 @@ const elementoReducer = (state = {}, action) => {
             tempState = limparAlertas(state);
             break;
         case ATIVAR_DESATIVAR_REVISAO:
-            tempState = ativaDesativaRevisao(state);
+            tempState = ativaDesativaRevisao(state, action);
             emRevisao = tempState.emRevisao;
             numEventosPassadosAntesDaRevisao = ((_a = tempState.past) === null || _a === void 0 ? void 0 : _a.length) || 0;
             break;
@@ -44611,233 +46330,6 @@ EtaBlotAbreAspas.blotName = 'EtaBlotAbreAspas';
 EtaBlotAbreAspas.tagName = 'abre-aspas';
 EtaBlotAbreAspas.className = 'abre-aspas';
 
-class EtaBlotConteudo extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotConteudo.create(elemento));
-        this._htmlAnt = '';
-    }
-    get instanceBlotName() {
-        return EtaBlotConteudo.blotName;
-    }
-    static create(elemento) {
-        var _a, _b;
-        const node = super.create();
-        const conteudo = normalizaSeForOmissis((_b = (_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '').trim();
-        node.setAttribute('class', EtaBlotConteudo.getClasseCSS(elemento));
-        node.setAttribute('contenteditable', (elemento === null || elemento === void 0 ? void 0 : elemento.editavel) ? 'true' : 'false');
-        node.setAttribute('id', 'texto__dispositivo' + elemento.uuid);
-        if (elemento.notaAlteracao) {
-            node.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
-        }
-        if (elemento.fechaAspas) {
-            node.setAttribute('fecha-aspas', 'true');
-        }
-        if (elemento.tipo === 'Omissis' || conteudo.indexOf(TEXTO_OMISSIS) >= 0) {
-            node.innerHTML = '<span class="texto__omissis">' + TEXTO_OMISSIS + '</span>';
-        }
-        else {
-            node.innerHTML = conteudo !== '' ? conteudo : '<br>';
-        }
-        return node;
-    }
-    set htmlAnt(htmlAnt) {
-        this._htmlAnt = htmlAnt;
-    }
-    get htmlAnt() {
-        return this._htmlAnt;
-    }
-    get alterado() {
-        return this._htmlAnt !== this.html;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    static getClasseCSS(elemento) {
-        return 'texto__dispositivo';
-    }
-    atualizarAtributos(elemento) {
-        this.htmlAnt = this.html;
-        if (elemento.notaAlteracao) {
-            this.domNode.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
-        }
-        else {
-            this.domNode.removeAttribute('nota-alteracao');
-        }
-        if (elemento.fechaAspas) {
-            this.domNode.setAttribute('fecha-aspas', 'true');
-        }
-        else {
-            this.domNode.removeAttribute('fecha-aspas');
-        }
-    }
-}
-EtaBlotConteudo.blotName = 'EtaBlotConteudo';
-EtaBlotConteudo.tagName = 'P';
-EtaBlotConteudo.className = 'texto__dispositivo';
-
-class EtaBlotEspaco extends EtaBlot {
-    constructor() {
-        super(EtaBlotEspaco.create());
-    }
-    get instanceBlotName() {
-        return EtaBlotEspaco.blotName;
-    }
-    static create() {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.innerHTML = '&nbsp;';
-        return node;
-    }
-}
-EtaBlotEspaco.blotName = 'EtaBlotEspaco';
-EtaBlotEspaco.tagName = 'ESPACO';
-EtaBlotEspaco.className = 'espaco';
-
-class EtaBlotExistencia extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotExistencia.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaBlotExistencia.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('id', 'blot-existencia' + elemento.uuid);
-        node.classList.add(EtaBlotExistencia.className);
-        EtaBlotExistencia._atualizarAtributos(elemento, node);
-        return node;
-    }
-    static formats() {
-        return true;
-    }
-    atualizarElemento(elemento) {
-        this.atualizarAtributos(elemento);
-    }
-    atualizarAtributos(elemento) {
-        EtaBlotExistencia._atualizarAtributos(elemento, this.domNode);
-    }
-    static _atualizarAtributos(elemento, node) {
-        node.innerHTML = EtaBlotExistencia.montarHTML(elemento);
-        node.onclick = onclick$1(node, elemento);
-        if (podeAdicionarAtributoDeExistencia(elemento)) {
-            node.classList.add('existencia');
-            node.title = elemento.existeNaNormaAlterada ? 'Dispositivo existente na norma alterada' : 'Dispositivo a ser adicionado à norma';
-        }
-        else {
-            node.classList.remove('existencia');
-        }
-    }
-    static montarHTML(elemento) {
-        if (podeAdicionarAtributoDeExistencia(elemento)) {
-            return elemento.existeNaNormaAlterada ? 'Existente' : 'Novo';
-        }
-        else {
-            return '';
-        }
-    }
-}
-EtaBlotExistencia.blotName = 'EtaBlotExistencia';
-EtaBlotExistencia.tagName = 'blot-existencia';
-EtaBlotExistencia.className = 'blot-existencia';
-const onclick$1 = (node, elemento) => {
-    if (podeAdicionarAtributoDeExistencia(elemento)) {
-        return () => node.dispatchEvent(new CustomEvent('toggle-existencia', { bubbles: true, cancelable: true, detail: { elemento } }));
-    }
-    else {
-        return () => false;
-    }
-};
-
-class EtaBlotFechaAspas extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotFechaAspas.create(elemento));
-        this.elemento = elemento;
-    }
-    get instanceBlotName() {
-        return EtaBlotFechaAspas.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaBlotFechaAspas.className);
-        node.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
-        return node;
-    }
-    static formats() {
-        return true;
-    }
-    atualizarAtributos(elemento) {
-        this.elemento = elemento;
-        this.domNode.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
-    }
-    static montarHTML(elemento) {
-        return elemento.fechaAspas ? '” ' : ' ';
-    }
-}
-EtaBlotFechaAspas.blotName = 'EtaBlotFechaAspas';
-EtaBlotFechaAspas.tagName = 'fecha-aspas';
-EtaBlotFechaAspas.className = 'fecha-aspas';
-
-class EtaBlotNotaAlteracao extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotNotaAlteracao.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaBlotNotaAlteracao.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaBlotNotaAlteracao.className);
-        EtaBlotNotaAlteracao._atualizarAtributos(elemento, node);
-        return node;
-    }
-    static formats() {
-        return true;
-    }
-    atualizarAtributos(elemento) {
-        EtaBlotNotaAlteracao._atualizarAtributos(elemento, this.domNode);
-    }
-    static _atualizarAtributos(elemento, node) {
-        node.innerHTML = EtaBlotNotaAlteracao.montarHTML(elemento);
-        node.onclick = onclick(node, elemento);
-        if (elemento.notaAlteracao) {
-            node.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
-        }
-        else {
-            node.removeAttribute('nota-alteracao');
-        }
-        if (elemento.podeEditarNotaAlteracao) {
-            node.classList.add('nota-alteracao-editavel');
-        }
-        else {
-            node.classList.remove('nota-alteracao-editavel');
-        }
-    }
-    static montarHTML(elemento) {
-        return elemento.notaAlteracao ? '(' + elemento.notaAlteracao + ')' : ' ';
-        // if (!elemento.notaAlteracao) {
-        //   return '';
-        // } else {
-        //   if (elemento.podeEditarNotaAlteracao) {
-        //     return '” <span class="nota-alteracao-editavel">(' + elemento.notaAlteracao + ')</span>';
-        //   } else {
-        //     return '” (' + elemento.notaAlteracao + ')';
-        //   }
-        // }
-    }
-}
-EtaBlotNotaAlteracao.blotName = 'EtaBlotNotaAlteracao';
-EtaBlotNotaAlteracao.tagName = 'nota-alteracao';
-EtaBlotNotaAlteracao.className = 'nota-alteracao';
-const onclick = (node, elemento) => {
-    if (elemento.podeEditarNotaAlteracao) {
-        return () => node.dispatchEvent(new CustomEvent('nota-alteracao', { bubbles: true, cancelable: true, detail: { elemento } }));
-    }
-    else {
-        return () => false;
-    }
-};
-
 var AlinhamentoMenu$3;
 (function (AlinhamentoMenu) {
     AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
@@ -45042,6 +46534,555 @@ class EtaContainerRevisao extends EtaContainer {
 EtaContainerRevisao.blotName = 'EtaContainerRevisao';
 EtaContainerRevisao.tagName = 'DIV';
 EtaContainerRevisao.className = 'container__revisao';
+
+class EtaBlotQuebraLinha extends EtaBlot {
+    constructor() {
+        super(EtaBlotQuebraLinha.create());
+    }
+    // static className = 'espaco';
+    get instanceBlotName() {
+        return EtaBlotQuebraLinha.blotName;
+    }
+    static create() {
+        const node = super.create();
+        //node.setAttribute('contenteditable', 'false');
+        //node.innerHTML = '&nbsp;';
+        return node;
+    }
+}
+EtaBlotQuebraLinha.blotName = 'EtaBlotQuebraLinha';
+EtaBlotQuebraLinha.tagName = 'BR';
+
+class EtaBlotTipoOmissis extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotTipoOmissis.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotTipoOmissis.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.classList.add(EtaBlotTipoOmissis.className);
+        EtaBlotTipoOmissis._atualizarAtributos(elemento, node);
+        return node;
+    }
+    static formats() {
+        return true;
+    }
+    atualizarElemento(elemento) {
+        this.atualizarAtributos(elemento);
+    }
+    atualizarAtributos(elemento) {
+        EtaBlotTipoOmissis._atualizarAtributos(elemento, this.domNode);
+    }
+    static _atualizarAtributos(elemento, node) {
+        node.innerHTML = EtaBlotTipoOmissis.getDescricaoTipoOmissis(elemento);
+        if (elemento.tipo === 'Omissis') {
+            node.classList.add('tipo-omissis');
+        }
+        else {
+            node.classList.remove('tipo-omissis');
+        }
+    }
+    static getDescricaoTipoOmissis(elemento) {
+        switch (elemento.tipoOmissis) {
+            case 'inciso-caput':
+            case 'inciso-paragrafo':
+                return ' Incisos omitidos ';
+            case 'paragrafo':
+                return ' Parágrafos omitidos ';
+            case 'alinea':
+                return ' Alíneas omitidas ';
+            case 'item':
+                return ' Itens omitidos ';
+            default:
+                return '';
+        }
+    }
+}
+EtaBlotTipoOmissis.blotName = 'EtaBlotTipoOmissis';
+EtaBlotTipoOmissis.tagName = 'blot-tipo-omissis';
+EtaBlotTipoOmissis.className = 'blot-tipo-omissis';
+
+class EtaBlotExistencia extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotExistencia.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotExistencia.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('id', 'blot-existencia' + elemento.uuid);
+        node.classList.add(EtaBlotExistencia.className);
+        EtaBlotExistencia._atualizarAtributos(elemento, node);
+        return node;
+    }
+    static formats() {
+        return true;
+    }
+    atualizarElemento(elemento) {
+        this.atualizarAtributos(elemento);
+    }
+    atualizarAtributos(elemento) {
+        EtaBlotExistencia._atualizarAtributos(elemento, this.domNode);
+    }
+    static _atualizarAtributos(elemento, node) {
+        node.innerHTML = EtaBlotExistencia.montarHTML(elemento);
+        node.onclick = onclick$1(node, elemento);
+        if (podeAdicionarAtributoDeExistencia(elemento)) {
+            node.classList.add('existencia');
+            node.title = elemento.existeNaNormaAlterada ? 'Dispositivo existente na norma alterada' : 'Dispositivo a ser adicionado à norma';
+        }
+        else {
+            node.classList.remove('existencia');
+        }
+    }
+    static montarHTML(elemento) {
+        if (podeAdicionarAtributoDeExistencia(elemento)) {
+            return elemento.existeNaNormaAlterada ? 'Existente' : 'Novo';
+        }
+        else {
+            return '';
+        }
+    }
+}
+EtaBlotExistencia.blotName = 'EtaBlotExistencia';
+EtaBlotExistencia.tagName = 'blot-existencia';
+EtaBlotExistencia.className = 'blot-existencia';
+const onclick$1 = (node, elemento) => {
+    if (podeAdicionarAtributoDeExistencia(elemento)) {
+        return () => node.dispatchEvent(new CustomEvent('toggle-existencia', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+    else {
+        return () => false;
+    }
+};
+
+class EtaBlotFechaAspas extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotFechaAspas.create(elemento));
+        this.elemento = elemento;
+    }
+    get instanceBlotName() {
+        return EtaBlotFechaAspas.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotFechaAspas.className);
+        node.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
+        return node;
+    }
+    static formats() {
+        return true;
+    }
+    atualizarAtributos(elemento) {
+        this.elemento = elemento;
+        this.domNode.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
+    }
+    static montarHTML(elemento) {
+        return elemento.fechaAspas ? '” ' : ' ';
+    }
+}
+EtaBlotFechaAspas.blotName = 'EtaBlotFechaAspas';
+EtaBlotFechaAspas.tagName = 'fecha-aspas';
+EtaBlotFechaAspas.className = 'fecha-aspas';
+
+class EtaBlotNotaAlteracao extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotNotaAlteracao.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotNotaAlteracao.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotNotaAlteracao.className);
+        EtaBlotNotaAlteracao._atualizarAtributos(elemento, node);
+        return node;
+    }
+    static formats() {
+        return true;
+    }
+    atualizarAtributos(elemento) {
+        EtaBlotNotaAlteracao._atualizarAtributos(elemento, this.domNode);
+    }
+    static _atualizarAtributos(elemento, node) {
+        node.innerHTML = EtaBlotNotaAlteracao.montarHTML(elemento);
+        node.onclick = onclick(node, elemento);
+        if (elemento.notaAlteracao) {
+            node.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
+        }
+        else {
+            node.removeAttribute('nota-alteracao');
+        }
+        if (elemento.podeEditarNotaAlteracao) {
+            node.classList.add('nota-alteracao-editavel');
+        }
+        else {
+            node.classList.remove('nota-alteracao-editavel');
+        }
+    }
+    static montarHTML(elemento) {
+        return elemento.notaAlteracao ? '(' + elemento.notaAlteracao + ')' : ' ';
+        // if (!elemento.notaAlteracao) {
+        //   return '';
+        // } else {
+        //   if (elemento.podeEditarNotaAlteracao) {
+        //     return '” <span class="nota-alteracao-editavel">(' + elemento.notaAlteracao + ')</span>';
+        //   } else {
+        //     return '” (' + elemento.notaAlteracao + ')';
+        //   }
+        // }
+    }
+}
+EtaBlotNotaAlteracao.blotName = 'EtaBlotNotaAlteracao';
+EtaBlotNotaAlteracao.tagName = 'nota-alteracao';
+EtaBlotNotaAlteracao.className = 'nota-alteracao';
+const onclick = (node, elemento) => {
+    if (elemento.podeEditarNotaAlteracao) {
+        return () => node.dispatchEvent(new CustomEvent('nota-alteracao', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+    else {
+        return () => false;
+    }
+};
+
+class EtaBlotEspaco extends EtaBlot {
+    constructor() {
+        super(EtaBlotEspaco.create());
+    }
+    get instanceBlotName() {
+        return EtaBlotEspaco.blotName;
+    }
+    static create() {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.innerHTML = '&nbsp;';
+        return node;
+    }
+}
+EtaBlotEspaco.blotName = 'EtaBlotEspaco';
+EtaBlotEspaco.tagName = 'ESPACO';
+EtaBlotEspaco.className = 'espaco';
+
+class EtaBlotMensagem extends EtaBlot {
+    constructor(mensagem) {
+        super(EtaBlotMensagem.create(mensagem));
+    }
+    get instanceBlotName() {
+        return EtaBlotMensagem.blotName;
+    }
+    static create(mensagem) {
+        const node = super.create();
+        let classe = '';
+        if (mensagem.nomeEvento !== '') {
+            node.setAttribute('id', mensagem.nomeEvento);
+        }
+        if (mensagem.tipo === TipoMensagem.INFO) {
+            classe = 'mensagem--info';
+        }
+        else if (mensagem.tipo === TipoMensagem.WARNING) {
+            classe = 'mensagem--warning';
+        }
+        else {
+            classe = 'mensagem--danger';
+        }
+        node.setAttribute('contenteditable', 'false');
+        node.classList.add(classe);
+        node.innerHTML = mensagem.descricao ? mensagem.descricao : '';
+        if (mensagem.fix) {
+            node.innerHTML += `. <span class="mensagem__fix">Corrigir agora.</span>`;
+            node.onclick = () => node.dispatchEvent(new CustomEvent('mensagem', { bubbles: true, cancelable: true, detail: { mensagem } }));
+        }
+        if (mensagem.nomeEvento && mensagem.nomeEvento !== '') {
+            node.innerHTML += `. <span class="mensagem__fix">Saiba mais</span>`;
+            node.onclick = () => node.dispatchEvent(new CustomEvent(mensagem.nomeEvento, { bubbles: true, cancelable: true, detail: { mensagem } }));
+        }
+        return node;
+    }
+}
+EtaBlotMensagem.blotName = 'EtaBlotMensagem';
+EtaBlotMensagem.tagName = 'div';
+EtaBlotMensagem.className = 'mensagem';
+
+class EtaContainerTdDireito extends EtaContainer {
+    constructor(alinhamentoMenu) {
+        super(EtaContainerTdDireito.create());
+        this.alinhamentoMenu = alinhamentoMenu;
+    }
+    get instanceBlotName() {
+        return EtaContainerTdDireito.blotName;
+    }
+    static create() {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaContainerTdDireito.className);
+        return node;
+    }
+}
+EtaContainerTdDireito.blotName = 'EtaContainerTdDireito';
+EtaContainerTdDireito.tagName = 'DIV';
+EtaContainerTdDireito.className = 'container__menu';
+
+class EtaContainerTdEsquerdo extends EtaContainer {
+    constructor(elemento) {
+        super(EtaContainerTdEsquerdo.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaContainerTdEsquerdo.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        // node.setAttribute('contenteditable', 'false');
+        // node.setAttribute('contenteditable', elemento.editavel ? 'true' : 'false');
+        node.setAttribute('class', EtaContainerTdEsquerdo.className + ' container__texto--nivel' + elemento.nivel);
+        const fator = Number(getComputedStyle(document.documentElement).getPropertyValue('--elemento-padding-factor'));
+        if (fator) {
+            const padding = (elemento.agrupador || elemento.tipo === 'Ementa' ? 0 : elemento.nivel) * fator + 5;
+            node.setAttribute('style', `padding-left: ${padding}px;`);
+        }
+        if (elemento.tipoOmissis) {
+            node.setAttribute('tipo-omissis', elemento.tipoOmissis);
+        }
+        return node;
+    }
+}
+EtaContainerTdEsquerdo.blotName = 'EtaContainerTdEsquerdo';
+EtaContainerTdEsquerdo.tagName = 'DIV';
+EtaContainerTdEsquerdo.className = 'container__texto';
+EtaContainerTdEsquerdo.classLevel = 'level';
+
+class EtaContainerTr extends EtaContainer {
+    constructor(editavel, alinhamentoMenu) {
+        super(EtaContainerTr.create(editavel, alinhamentoMenu));
+    }
+    get instanceBlotName() {
+        return EtaContainerTr.blotName;
+    }
+    static create(editavel, alinhamentoMenu) {
+        const node = super.create();
+        const classeAdicional = alinhamentoMenu === AlinhamentoMenu$4.Esquerda ? ' container__linha--reverse' : '';
+        // node.setAttribute('contenteditable', editavel ? 'true' : 'false');
+        node.setAttribute('class', EtaContainerTr.className + classeAdicional);
+        return node;
+    }
+}
+EtaContainerTr.blotName = 'EtaContainerTr';
+EtaContainerTr.tagName = 'DIV';
+EtaContainerTr.className = 'container__linha';
+
+var AlinhamentoMenu;
+(function (AlinhamentoMenu) {
+    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
+    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
+})(AlinhamentoMenu || (AlinhamentoMenu = {}));
+class EtaBlotOpcoesDiff extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotOpcoesDiff.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaBlotOpcoesDiff.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.innerHTML = ' ';
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaBlotOpcoesDiff.className);
+        node.setAttribute('title', 'Exibir diferenças');
+        EtaBlotOpcoesDiff.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaBlotOpcoesDiff.atualizarAtributos(elemento, this.domNode);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', 'buttonExibirDiferencas' + elemento.uuid);
+        node.onclick = () => node.dispatchEvent(new CustomEvent('exibir-diferencas', { bubbles: true, cancelable: true, detail: { elemento } }));
+    }
+}
+EtaBlotOpcoesDiff.blotName = 'EtaBlotOpcoesDiff';
+EtaBlotOpcoesDiff.className = 'blot__opcoes_diff';
+EtaBlotOpcoesDiff.tagName = 'button';
+
+class EtaContainerOpcoes extends EtaContainer {
+    constructor(elemento) {
+        super(EtaContainerOpcoes.create(elemento));
+    }
+    get instanceBlotName() {
+        return EtaContainerOpcoes.blotName;
+    }
+    static create(elemento) {
+        const node = super.create();
+        node.setAttribute('contenteditable', 'false');
+        node.setAttribute('class', EtaContainerOpcoes.className);
+        EtaContainerOpcoes.atualizarAtributos(elemento, node);
+        return node;
+    }
+    atualizarElemento(elemento) {
+        EtaContainerOpcoes.atualizarAtributos(elemento, this.domNode);
+        this.atualizarBlots(elemento);
+    }
+    atualizarBlots(elemento) {
+        var _a;
+        (_a = this.blotBotaoExibirDiferencas) === null || _a === void 0 ? void 0 : _a.atualizarElemento(elemento);
+    }
+    static atualizarAtributos(elemento, node) {
+        node.setAttribute('id', EtaContainerOpcoes.className + elemento.uuid);
+    }
+    get blotBotaoExibirDiferencas() {
+        return this.findBlot(EtaBlotOpcoesDiff.blotName);
+    }
+}
+EtaContainerOpcoes.blotName = 'EtaContainerOpcoes';
+EtaContainerOpcoes.tagName = 'DIV';
+EtaContainerOpcoes.className = 'container__opcoes';
+
+class EtaQuillUtil {
+    static criarContainerLinha(elemento) {
+        const etaTable = new EtaContainerTable(elemento);
+        const etaTrContainer = new EtaContainerTr(elemento.editavel, this.alinhamentoMenu);
+        const etaTdTexto = new EtaContainerTdEsquerdo(elemento);
+        const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
+        if (elemento.abreAspas) {
+            new EtaBlotAbreAspas(elemento).insertInto(etaTdTexto);
+        }
+        new EtaBlotRotulo(elemento).insertInto(etaTdTexto);
+        if (elemento.dispositivoAlteracao === true && elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+            new EtaBlotExistencia(elemento).insertInto(etaTdTexto);
+        }
+        if (elemento.tipo === 'Omissis') {
+            new EtaBlotTipoOmissis(elemento).insertInto(etaTdTexto);
+        }
+        if (elemento.agrupador) {
+            new EtaBlotQuebraLinha().insertInto(etaTdTexto);
+        }
+        new EtaBlotConteudo(elemento).insertInto(etaTdTexto);
+        // new EtaBlotFechaAspas(elemento).insertInto(etaTdTexto);
+        // new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
+        if (elemento.fechaAspas !== undefined && elemento.fechaAspas) {
+            new EtaBlotFechaAspas(elemento).insertInto(etaTdTexto);
+            new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
+        }
+        new EtaBlotEspaco().insertInto(etaTdEspaco);
+        if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO ||
+            (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.revisao && elemento.revisao.descricao === 'Texto do dispositivo foi alterado')) {
+            EtaQuillUtil.criarContainerOpcoes(elemento).insertInto(etaTrContainer);
+        }
+        if (elemento.revisao && isRevisaoPrincipal(elemento.revisao)) {
+            EtaQuillUtil.criarContainerRevisao(elemento).insertInto(etaTrContainer);
+        }
+        etaTdTexto.insertInto(etaTrContainer);
+        etaTdEspaco.insertInto(etaTrContainer);
+        etaTrContainer.insertInto(etaTable);
+        return etaTable;
+    }
+    static criarContainerRevisao(elemento) {
+        const etaContainerRevisao = new EtaContainerRevisao(elemento);
+        new EtaBlotRevisaoAceitar(elemento).insertInto(etaContainerRevisao);
+        new EtaBlotRevisaoRecusar(elemento).insertInto(etaContainerRevisao);
+        new EtaBlotRevisao(elemento).insertInto(etaContainerRevisao);
+        return etaContainerRevisao;
+    }
+    static criarContainerOpcoes(elemento) {
+        const etaContainerOpcoes = new EtaContainerOpcoes(elemento);
+        new EtaBlotOpcoesDiff(elemento).insertInto(etaContainerOpcoes);
+        return etaContainerOpcoes;
+    }
+    static criarContainerMensagens(elemento) {
+        const etaTrContainer = new EtaContainerTr(false, this.alinhamentoMenu);
+        const etaTdMensagens = new EtaContainerTdEsquerdo(elemento);
+        const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
+        if (elemento.mensagens && elemento.mensagens.length > 0) {
+            elemento.mensagens.forEach((mensagem) => {
+                if (!mensagem.nomeEvento || mensagem.nomeEvento === '') {
+                    new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                }
+                else {
+                    const avisoJaExiste = document.getElementById('onmodalsufixos');
+                    if (mensagem.nomeEvento && mensagem.nomeEvento !== '' && !avisoJaExiste) {
+                        new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
+                    }
+                }
+            });
+        }
+        new EtaBlotEspaco().insertInto(etaTdEspaco);
+        etaTdMensagens.domNode.classList.add('container__texto--mensagem');
+        etaTdMensagens.insertInto(etaTrContainer);
+        etaTdEspaco.insertInto(etaTrContainer);
+        return etaTrContainer;
+    }
+    static montarSpanOmissisAsString() {
+        return '<span class="texto__omissis">' + TEXTO_OMISSIS + '</span>';
+    }
+}
+EtaQuillUtil.alinhamentoMenu = AlinhamentoMenu$4.Esquerda;
+
+class EtaBlotConteudo extends EtaBlot {
+    constructor(elemento) {
+        super(EtaBlotConteudo.create(elemento));
+        this._htmlAnt = '';
+    }
+    get instanceBlotName() {
+        return EtaBlotConteudo.blotName;
+    }
+    static create(elemento) {
+        var _a, _b;
+        const node = super.create();
+        const conteudo = normalizaSeForOmissis((_b = (_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '').trim();
+        node.setAttribute('class', EtaBlotConteudo.getClasseCSS(elemento));
+        node.setAttribute('contenteditable', (elemento === null || elemento === void 0 ? void 0 : elemento.editavel) ? 'true' : 'false');
+        node.setAttribute('id', 'texto__dispositivo' + elemento.uuid);
+        if (elemento.notaAlteracao) {
+            node.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
+        }
+        if (elemento.fechaAspas) {
+            node.setAttribute('fecha-aspas', 'true');
+        }
+        if (elemento.tipo === 'Omissis' || conteudo.indexOf(TEXTO_OMISSIS) >= 0) {
+            node.innerHTML = EtaQuillUtil.montarSpanOmissisAsString();
+        }
+        else {
+            node.innerHTML = conteudo !== '' ? conteudo : '<br>';
+        }
+        return node;
+    }
+    set htmlAnt(htmlAnt) {
+        this._htmlAnt = htmlAnt;
+    }
+    get htmlAnt() {
+        return this._htmlAnt;
+    }
+    get alterado() {
+        return this._htmlAnt !== this.html;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    static getClasseCSS(elemento) {
+        return 'texto__dispositivo';
+    }
+    atualizarAtributos(elemento) {
+        this.htmlAnt = this.html;
+        if (elemento.notaAlteracao) {
+            this.domNode.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
+        }
+        else {
+            this.domNode.removeAttribute('nota-alteracao');
+        }
+        if (elemento.fechaAspas) {
+            this.domNode.setAttribute('fecha-aspas', 'true');
+        }
+        else {
+            this.domNode.removeAttribute('fecha-aspas');
+        }
+    }
+}
+EtaBlotConteudo.blotName = 'EtaBlotConteudo';
+EtaBlotConteudo.tagName = 'P';
+EtaBlotConteudo.className = 'texto__dispositivo';
 
 class EtaContainerTable extends EtaContainer {
     constructor(elemento) {
@@ -45838,46 +47879,6 @@ EtaBlotConteudoOmissis.blotName = 'EtaBlotConteudoOmissis';
 EtaBlotConteudoOmissis.tagName = 'span';
 EtaBlotConteudoOmissis.className = 'texto__omissis';
 
-class EtaBlotMensagem extends EtaBlot {
-    constructor(mensagem) {
-        super(EtaBlotMensagem.create(mensagem));
-    }
-    get instanceBlotName() {
-        return EtaBlotMensagem.blotName;
-    }
-    static create(mensagem) {
-        const node = super.create();
-        let classe = '';
-        if (mensagem.nomeEvento !== '') {
-            node.setAttribute('id', mensagem.nomeEvento);
-        }
-        if (mensagem.tipo === TipoMensagem.INFO) {
-            classe = 'mensagem--info';
-        }
-        else if (mensagem.tipo === TipoMensagem.WARNING) {
-            classe = 'mensagem--warning';
-        }
-        else {
-            classe = 'mensagem--danger';
-        }
-        node.setAttribute('contenteditable', 'false');
-        node.classList.add(classe);
-        node.innerHTML = mensagem.descricao ? mensagem.descricao : '';
-        if (mensagem.fix) {
-            node.innerHTML += `. <span class="mensagem__fix">Corrigir agora.</span>`;
-            node.onclick = () => node.dispatchEvent(new CustomEvent('mensagem', { bubbles: true, cancelable: true, detail: { mensagem } }));
-        }
-        if (mensagem.nomeEvento && mensagem.nomeEvento !== '') {
-            node.innerHTML += `. <span class="mensagem__fix">Saiba mais</span>`;
-            node.onclick = () => node.dispatchEvent(new CustomEvent(mensagem.nomeEvento, { bubbles: true, cancelable: true, detail: { mensagem } }));
-        }
-        return node;
-    }
-}
-EtaBlotMensagem.blotName = 'EtaBlotMensagem';
-EtaBlotMensagem.tagName = 'div';
-EtaBlotMensagem.className = 'mensagem';
-
 class EtaBlotMensagens extends EtaBlot {
     constructor() {
         super(EtaBlotMensagens.create());
@@ -45894,91 +47895,6 @@ class EtaBlotMensagens extends EtaBlot {
 }
 EtaBlotMensagens.blotName = 'mensagens';
 EtaBlotMensagens.tagName = 'MENSAGENS';
-
-var AlinhamentoMenu;
-(function (AlinhamentoMenu) {
-    AlinhamentoMenu[AlinhamentoMenu["Esquerda"] = 0] = "Esquerda";
-    AlinhamentoMenu[AlinhamentoMenu["Direita"] = 1] = "Direita";
-})(AlinhamentoMenu || (AlinhamentoMenu = {}));
-class EtaBlotOpcoesDiff extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotOpcoesDiff.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaBlotOpcoesDiff.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.innerHTML = ' ';
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaBlotOpcoesDiff.className);
-        node.setAttribute('title', 'Exibir diferenças');
-        EtaBlotOpcoesDiff.atualizarAtributos(elemento, node);
-        return node;
-    }
-    atualizarElemento(elemento) {
-        EtaBlotOpcoesDiff.atualizarAtributos(elemento, this.domNode);
-    }
-    static atualizarAtributos(elemento, node) {
-        node.setAttribute('id', 'buttonExibirDiferencas' + elemento.uuid);
-        node.onclick = () => node.dispatchEvent(new CustomEvent('exibir-diferencas', { bubbles: true, cancelable: true, detail: { elemento } }));
-    }
-}
-EtaBlotOpcoesDiff.blotName = 'EtaBlotOpcoesDiff';
-EtaBlotOpcoesDiff.className = 'blot__opcoes_diff';
-EtaBlotOpcoesDiff.tagName = 'button';
-
-class EtaBlotTipoOmissis extends EtaBlot {
-    constructor(elemento) {
-        super(EtaBlotTipoOmissis.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaBlotTipoOmissis.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.classList.add(EtaBlotTipoOmissis.className);
-        EtaBlotTipoOmissis._atualizarAtributos(elemento, node);
-        return node;
-    }
-    static formats() {
-        return true;
-    }
-    atualizarElemento(elemento) {
-        this.atualizarAtributos(elemento);
-    }
-    atualizarAtributos(elemento) {
-        EtaBlotTipoOmissis._atualizarAtributos(elemento, this.domNode);
-    }
-    static _atualizarAtributos(elemento, node) {
-        node.innerHTML = EtaBlotTipoOmissis.getDescricaoTipoOmissis(elemento);
-        if (elemento.tipo === 'Omissis') {
-            node.classList.add('tipo-omissis');
-        }
-        else {
-            node.classList.remove('tipo-omissis');
-        }
-    }
-    static getDescricaoTipoOmissis(elemento) {
-        switch (elemento.tipoOmissis) {
-            case 'inciso-caput':
-            case 'inciso-paragrafo':
-                return ' Incisos omitidos ';
-            case 'paragrafo':
-                return ' Parágrafos omitidos ';
-            case 'alinea':
-                return ' Alíneas omitidas ';
-            case 'item':
-                return ' Itens omitidos ';
-            default:
-                return '';
-        }
-    }
-}
-EtaBlotTipoOmissis.blotName = 'EtaBlotTipoOmissis';
-EtaBlotTipoOmissis.tagName = 'blot-tipo-omissis';
-EtaBlotTipoOmissis.className = 'blot-tipo-omissis';
 
 const Clipboard = Quill.import('modules/clipboard');
 class EtaClipboard extends connect(rootStore)(Clipboard) {
@@ -46062,105 +47978,6 @@ class EtaClipboard extends connect(rootStore)(Clipboard) {
         this.onPasteTextoArticulado.notify({ textoColadoOriginal, textoColadoAjustado, range });
     }
 }
-
-class EtaContainerOpcoes extends EtaContainer {
-    constructor(elemento) {
-        super(EtaContainerOpcoes.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaContainerOpcoes.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaContainerOpcoes.className);
-        EtaContainerOpcoes.atualizarAtributos(elemento, node);
-        return node;
-    }
-    atualizarElemento(elemento) {
-        EtaContainerOpcoes.atualizarAtributos(elemento, this.domNode);
-        this.atualizarBlots(elemento);
-    }
-    atualizarBlots(elemento) {
-        var _a;
-        (_a = this.blotBotaoExibirDiferencas) === null || _a === void 0 ? void 0 : _a.atualizarElemento(elemento);
-    }
-    static atualizarAtributos(elemento, node) {
-        node.setAttribute('id', EtaContainerOpcoes.className + elemento.uuid);
-    }
-    get blotBotaoExibirDiferencas() {
-        return this.findBlot(EtaBlotOpcoesDiff.blotName);
-    }
-}
-EtaContainerOpcoes.blotName = 'EtaContainerOpcoes';
-EtaContainerOpcoes.tagName = 'DIV';
-EtaContainerOpcoes.className = 'container__opcoes';
-
-class EtaContainerTdDireito extends EtaContainer {
-    constructor(alinhamentoMenu) {
-        super(EtaContainerTdDireito.create());
-        this.alinhamentoMenu = alinhamentoMenu;
-    }
-    get instanceBlotName() {
-        return EtaContainerTdDireito.blotName;
-    }
-    static create() {
-        const node = super.create();
-        node.setAttribute('contenteditable', 'false');
-        node.setAttribute('class', EtaContainerTdDireito.className);
-        return node;
-    }
-}
-EtaContainerTdDireito.blotName = 'EtaContainerTdDireito';
-EtaContainerTdDireito.tagName = 'DIV';
-EtaContainerTdDireito.className = 'container__menu';
-
-class EtaContainerTdEsquerdo extends EtaContainer {
-    constructor(elemento) {
-        super(EtaContainerTdEsquerdo.create(elemento));
-    }
-    get instanceBlotName() {
-        return EtaContainerTdEsquerdo.blotName;
-    }
-    static create(elemento) {
-        const node = super.create();
-        // node.setAttribute('contenteditable', 'false');
-        // node.setAttribute('contenteditable', elemento.editavel ? 'true' : 'false');
-        node.setAttribute('class', EtaContainerTdEsquerdo.className + ' container__texto--nivel' + elemento.nivel);
-        const fator = Number(getComputedStyle(document.documentElement).getPropertyValue('--elemento-padding-factor'));
-        if (fator) {
-            const padding = (elemento.agrupador || elemento.tipo === 'Ementa' ? 0 : elemento.nivel) * fator + 5;
-            node.setAttribute('style', `padding-left: ${padding}px;`);
-        }
-        if (elemento.tipoOmissis) {
-            node.setAttribute('tipo-omissis', elemento.tipoOmissis);
-        }
-        return node;
-    }
-}
-EtaContainerTdEsquerdo.blotName = 'EtaContainerTdEsquerdo';
-EtaContainerTdEsquerdo.tagName = 'DIV';
-EtaContainerTdEsquerdo.className = 'container__texto';
-EtaContainerTdEsquerdo.classLevel = 'level';
-
-class EtaContainerTr extends EtaContainer {
-    constructor(editavel, alinhamentoMenu) {
-        super(EtaContainerTr.create(editavel, alinhamentoMenu));
-    }
-    get instanceBlotName() {
-        return EtaContainerTr.blotName;
-    }
-    static create(editavel, alinhamentoMenu) {
-        const node = super.create();
-        const classeAdicional = alinhamentoMenu === AlinhamentoMenu$4.Esquerda ? ' container__linha--reverse' : '';
-        // node.setAttribute('contenteditable', editavel ? 'true' : 'false');
-        node.setAttribute('class', EtaContainerTr.className + classeAdicional);
-        return node;
-    }
-}
-EtaContainerTr.blotName = 'EtaContainerTr';
-EtaContainerTr.tagName = 'DIV';
-EtaContainerTr.className = 'container__linha';
 
 class EtaQuillBuffer extends Quill {
     constructor(editorHtml, op) {
@@ -46588,101 +48405,6 @@ class EtaQuill extends Quill {
 EtaQuill.UNDO = 'undo';
 EtaQuill.REDO = 'redo';
 
-class EtaBlotQuebraLinha extends EtaBlot {
-    constructor() {
-        super(EtaBlotQuebraLinha.create());
-    }
-    // static className = 'espaco';
-    get instanceBlotName() {
-        return EtaBlotQuebraLinha.blotName;
-    }
-    static create() {
-        const node = super.create();
-        //node.setAttribute('contenteditable', 'false');
-        //node.innerHTML = '&nbsp;';
-        return node;
-    }
-}
-EtaBlotQuebraLinha.blotName = 'EtaBlotQuebraLinha';
-EtaBlotQuebraLinha.tagName = 'BR';
-
-class EtaQuillUtil {
-    static criarContainerLinha(elemento) {
-        const etaTable = new EtaContainerTable(elemento);
-        const etaTrContainer = new EtaContainerTr(elemento.editavel, this.alinhamentoMenu);
-        const etaTdTexto = new EtaContainerTdEsquerdo(elemento);
-        const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
-        if (elemento.abreAspas) {
-            new EtaBlotAbreAspas(elemento).insertInto(etaTdTexto);
-        }
-        new EtaBlotRotulo(elemento).insertInto(etaTdTexto);
-        if (elemento.dispositivoAlteracao === true && elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-            new EtaBlotExistencia(elemento).insertInto(etaTdTexto);
-        }
-        if (elemento.tipo === 'Omissis') {
-            new EtaBlotTipoOmissis(elemento).insertInto(etaTdTexto);
-        }
-        if (elemento.agrupador) {
-            new EtaBlotQuebraLinha().insertInto(etaTdTexto);
-        }
-        new EtaBlotConteudo(elemento).insertInto(etaTdTexto);
-        // new EtaBlotFechaAspas(elemento).insertInto(etaTdTexto);
-        // new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
-        if (elemento.fechaAspas !== undefined && elemento.fechaAspas) {
-            new EtaBlotFechaAspas(elemento).insertInto(etaTdTexto);
-            new EtaBlotNotaAlteracao(elemento).insertInto(etaTdTexto);
-        }
-        new EtaBlotEspaco().insertInto(etaTdEspaco);
-        if (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_MODIFICADO ||
-            (elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO && elemento.revisao && elemento.revisao.descricao === 'Texto do dispositivo foi alterado')) {
-            EtaQuillUtil.criarContainerOpcoes(elemento).insertInto(etaTrContainer);
-        }
-        if (elemento.revisao && isRevisaoPrincipal(elemento.revisao)) {
-            EtaQuillUtil.criarContainerRevisao(elemento).insertInto(etaTrContainer);
-        }
-        etaTdTexto.insertInto(etaTrContainer);
-        etaTdEspaco.insertInto(etaTrContainer);
-        etaTrContainer.insertInto(etaTable);
-        return etaTable;
-    }
-    static criarContainerRevisao(elemento) {
-        const etaContainerRevisao = new EtaContainerRevisao(elemento);
-        new EtaBlotRevisaoAceitar(elemento).insertInto(etaContainerRevisao);
-        new EtaBlotRevisaoRecusar(elemento).insertInto(etaContainerRevisao);
-        new EtaBlotRevisao(elemento).insertInto(etaContainerRevisao);
-        return etaContainerRevisao;
-    }
-    static criarContainerOpcoes(elemento) {
-        const etaContainerOpcoes = new EtaContainerOpcoes(elemento);
-        new EtaBlotOpcoesDiff(elemento).insertInto(etaContainerOpcoes);
-        return etaContainerOpcoes;
-    }
-    static criarContainerMensagens(elemento) {
-        const etaTrContainer = new EtaContainerTr(false, this.alinhamentoMenu);
-        const etaTdMensagens = new EtaContainerTdEsquerdo(elemento);
-        const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
-        if (elemento.mensagens && elemento.mensagens.length > 0) {
-            elemento.mensagens.forEach((mensagem) => {
-                if (!mensagem.nomeEvento || mensagem.nomeEvento === '') {
-                    new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
-                }
-                else {
-                    const avisoJaExiste = document.getElementById('onmodalsufixos');
-                    if (mensagem.nomeEvento && mensagem.nomeEvento !== '' && !avisoJaExiste) {
-                        new EtaBlotMensagem(mensagem).insertInto(etaTdMensagens);
-                    }
-                }
-            });
-        }
-        new EtaBlotEspaco().insertInto(etaTdEspaco);
-        etaTdMensagens.domNode.classList.add('container__texto--mensagem');
-        etaTdMensagens.insertInto(etaTrContainer);
-        etaTdEspaco.insertInto(etaTrContainer);
-        return etaTrContainer;
-    }
-}
-EtaQuillUtil.alinhamentoMenu = AlinhamentoMenu$4.Esquerda;
-
 class Norma {
     constructor(urn = '', nomePreferido = '', nomePorExtenso = '', nomes = [], nomesAlternativos = [], ementa = '') {
         this.urn = '';
@@ -47079,6 +48801,12 @@ let AutocompleteNorma = class AutocompleteNorma extends s {
         if (this.urnInicial) {
             this._getNormaByURN(this.urnInicial);
         }
+        this.focusAutoComplete();
+    }
+    focusAutoComplete() {
+        setTimeout(() => {
+            this._autoCompleteAsync.focus();
+        }, 100);
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _handleChange(value) {
@@ -47097,6 +48825,10 @@ let AutocompleteNorma = class AutocompleteNorma extends s {
           height: 85px;
           margin-top: 10px;
           overflow-y: auto;
+          border: 1px solid var(--sl-color-gray-300);
+          padding: 5px;
+          border-radius: var(--sl-border-radius-small);
+          background-color: var(--sl-color-gray-100);
         }
         .wp-ementa p {
           margin: 0;
@@ -47325,7 +49057,9 @@ const editarNotaAlteracaoDialog = (elemento, quill, store) => {
         quill.blur();
         dialogElem.appendChild(content);
         dialogElem.show();
-        // opcoes[elemento.notaAlteracao || 'VZ'].focus();
+        setTimeout(() => {
+            opcoes[elemento.notaAlteracao || 'VZ'].focus();
+        }, 0);
     }
 };
 const podeMostrarDialog = (elemento) => {
@@ -47390,7 +49124,7 @@ async function informarNormaDialog(elemento, quill, store, action, urlAutocomple
     quill.blur();
     await dialogElem.appendChild(content);
     await dialogElem.show();
-    autocompleteNorma.focus();
+    autocompleteNorma.focusAutoComplete();
 }
 
 const transformarAction = (elemento, novoTipo) => {
@@ -48036,9 +49770,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         input.addEventListener('keyup', validarInput);
         input.addEventListener('sl-clear', validarInput);
         dialogElem.appendChild(content);
-        await (dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.show());
+        dialogElem === null || dialogElem === void 0 ? void 0 : dialogElem.show();
         ok.disabled = Boolean(validar());
-        input.focus();
+        setTimeout(() => input.focus(), 0);
     }
     toggleExistencia() {
         var _a, _b, _c;
@@ -48367,9 +50101,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
             if (elemento.dispositivoAlteracao) {
                 linha = this.quill.getLinha((_a = elemento.uuid) !== null && _a !== void 0 ? _a : 0, linha);
                 if (linha && normalizaSeForOmissis((_b = linha.blotConteudo) === null || _b === void 0 ? void 0 : _b.html).indexOf(TEXTO_OMISSIS) >= 0) {
-                    linha.blotConteudo.html = '';
-                    const index = this.quill.getIndex(linha.blotConteudo);
-                    this.quill.insertText(index, TEXTO_OMISSIS, { EtaBlotConteudoOmissis: true });
+                    linha.blotConteudo.html = EtaQuillUtil.montarSpanOmissisAsString();
                 }
                 if (((_c = elemento.conteudo) === null || _c === void 0 ? void 0 : _c.texto) !== (linha === null || linha === void 0 ? void 0 : linha.blotConteudo.html)) {
                     const texto = normalizaSeForOmissis((_e = (_d = elemento.conteudo) === null || _d === void 0 ? void 0 : _d.texto) !== null && _e !== void 0 ? _e : '');
@@ -48411,7 +50143,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
                 // Substituir o texto apenas quando precisa evita retorno do cursor para o início da linha.
                 const novoTexto = (_g = (_f = elemento.conteudo) === null || _f === void 0 ? void 0 : _f.texto) !== null && _g !== void 0 ? _g : '';
                 if (linha.blotConteudo.html !== novoTexto) {
-                    linha.blotConteudo.html = novoTexto;
+                    linha.blotConteudo.html = elemento.tipo === 'Omissis' ? EtaQuillUtil.montarSpanOmissisAsString() : novoTexto;
                 }
                 if (elemento.descricaoSituacao !== linha.descricaoSituacao) {
                     linha.descricaoSituacao = elemento.descricaoSituacao;
@@ -49202,44 +50934,6 @@ AtalhosComponent = __decorate([
     n$1('lexml-eta-atalhos')
 ], AtalhosComponent);
 
-const atualizaRevisaoJustificativa = (state, removeAllRevisoesJustificativa = false) => {
-    if (!state.emRevisao) {
-        return state;
-    }
-    if (!removeAllRevisoesJustificativa) {
-        let revisoes = [];
-        revisoes = criaRevisaoJustificativa(state);
-        if (revisoes.length > 0) {
-            state.revisoes.push(...revisoes);
-        }
-    }
-    else {
-        remove$1(state);
-    }
-    return state;
-};
-const remove$1 = (state) => {
-    var _a;
-    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoJustificativaEnum.JustificativaAlterada);
-};
-const criaRevisaoJustificativa = (state) => {
-    const result = [];
-    if (!jaExisteRevisaoUsuarioAtual$1(state)) {
-        result.push(new RevisaoJustificativa(state.usuario, formatDateTime(new Date()), RevisaoJustificativaEnum.JustificativaAlterada));
-    }
-    return result;
-};
-const jaExisteRevisaoUsuarioAtual$1 = (state) => {
-    var _a;
-    const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoJustificativaEnum.JustificativaAlterada; });
-    if (revisoesUsuarioAtual.length > 0) {
-        const revisaoDataHoraModificada = revisoesUsuarioAtual[0];
-        revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
-        return true;
-    }
-    return false;
-};
-
 async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     const dialogElem = document.createElement('sl-dialog');
     editorTextoRico.appendChild(dialogElem);
@@ -49433,6 +51127,9 @@ async function uploadAnexoDialog(anexos, atualizaAnexo, editorTextoRico) {
     conteudoDinamico();
     await dialogElem.appendChild(content);
     await dialogElem.show();
+    setTimeout(() => {
+        inputUpload.focus();
+    }, 0);
 }
 
 async function showMenuImagem(editorTextoRico, img, top, left) {
@@ -49466,44 +51163,6 @@ async function showMenuImagem(editorTextoRico, img, top, left) {
     await editorTextoRico.appendChild(content);
 }
 
-const atualizaRevisaoTextoLivre = (state, removeAllRevisoesTextoLivre = false) => {
-    if (!state.emRevisao) {
-        return state;
-    }
-    if (!removeAllRevisoesTextoLivre) {
-        let revisoes = [];
-        revisoes = criaRevisaoTextoLivre(state);
-        if (revisoes.length > 0) {
-            state.revisoes.push(...revisoes);
-        }
-    }
-    else {
-        remove(state);
-    }
-    return state;
-};
-const remove = (state) => {
-    var _a;
-    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoTextoLivreEnum.TextoLivreAlterado);
-};
-const criaRevisaoTextoLivre = (state) => {
-    const result = [];
-    if (!jaExisteRevisaoUsuarioAtual(state)) {
-        result.push(new RevisaoTextoLivre(state.usuario, formatDateTime(new Date()), RevisaoTextoLivreEnum.TextoLivreAlterado));
-    }
-    return result;
-};
-const jaExisteRevisaoUsuarioAtual = (state) => {
-    var _a;
-    const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado; });
-    if (revisoesUsuarioAtual.length > 0) {
-        const revisaoDataHoraModificada = revisoesUsuarioAtual[0];
-        revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
-        return true;
-    }
-    return false;
-};
-
 const editorTextoRicoCss = $ `
   <style>
     .editor-texto-rico {
@@ -49521,6 +51180,23 @@ const editorTextoRicoCss = $ `
     .ql-toolbar.ql-snow .ql-formats {
       margin-right: 8px;
     }
+    .editor-texto-rico.ql-snow .ql-tooltip.ql-editing a.ql-action::after {
+      content: 'Salvar';
+    }
+    .editor-texto-rico.ql-snow .ql-tooltip a.ql-action::after {
+      display: inline;
+      content: 'Editar';
+    }
+
+    .editor-texto-rico.ql-snow .ql-tooltip a.ql-remove::before {
+      display: inline;
+      content: 'Remover';
+    }
+
+    .editor-texto-rico.ql-snow .ql-tooltip::before {
+      content: 'Insira o link:';
+    }
+
     .editor-texto-rico .estilo-ementa {
       text-indent: 0 !important;
       text-align: justify;
@@ -49575,6 +51251,7 @@ const editorTextoRicoCss = $ `
     #chk-em-revisao-texto-livre[checked] {
       background-color: var(--sl-color-blue-100);
     }
+
     #toolbar {
       padding: 1.5px 0 1.5px 8px;
     }
@@ -49712,6 +51389,37 @@ const editorTextoRicoCss = $ `
       margin-bottom: 0;
     }
 
+    .ql-editor ins {
+      text-decoration: none;
+      background-color: #b2e6be;
+      /* #d4edda; */
+    }
+
+    .ql-editor del {
+      text-decoration: strikethrough;
+      background-color: #f4a9b0;
+      /* #f8d7da; */
+    }
+
+    .editor-texto-rico .ql-tooltip input:invalid {
+      color: red;
+    }
+
+    .editor-texto-rico .ql-tooltip div.tooltip-invalid-message {
+      color: red;
+      display: none;
+      font-family: Helvetica, sans-serif;
+      font-size: 0.9rem;
+    }
+
+    .editor-texto-rico .ql-tooltip[data-mode='link'] div.tooltip-invalid-message::after {
+      content: 'Digite uma URL válida, iniciando com http:// ou https://';
+    }
+
+    .editor-texto-rico .ql-tooltip[data-mode='link'] input:invalid ~ div.tooltip-invalid-message {
+      display: block;
+    }
+
     @media (max-width: 768px) {
       .mobile-buttons {
         display: inline-block !important;
@@ -49725,13 +51433,6 @@ const editorTextoRicoCss = $ `
     }
   </style>
 `;
-
-const Parchment$9 = Quill.import('parchment');
-const config$2 = {
-    scope: Parchment$9.Scope.BLOCK,
-    whitelist: ['ementa', 'norma-alterada'],
-};
-const EstiloTextoClass = new Parchment$9.Attributor.Class('estilo', 'estilo', config$2);
 
 const quillTableCss = $ `<style>
   .ql-editor table {
@@ -50012,7 +51713,7 @@ const quillTableCss = $ `<style>
 const Container$3 = Quill.import('blots/container');
 const Block$1 = Quill.import('blots/block');
 const BlockEmbed$1 = Quill.import('blots/block/embed');
-const Parchment$8 = Quill.import('parchment');
+const Parchment$6 = Quill.import('parchment');
 
 class ContainBlot extends Container$3 {
   static create(value) {
@@ -50029,7 +51730,7 @@ class ContainBlot extends Container$3 {
 
 ContainBlot.blotName = 'contain';
 ContainBlot.tagName = 'contain';
-ContainBlot.scope = Parchment$8.Scope.BLOCK_BLOT;
+ContainBlot.scope = Parchment$6.Scope.BLOCK_BLOT;
 ContainBlot.defaultChild = 'block';
 ContainBlot.allowedChildren = [Block$1, BlockEmbed$1, Container$3];
 
@@ -50038,7 +51739,7 @@ ContainBlot.allowedChildren = [Block$1, BlockEmbed$1, Container$3];
 const Container$2 = Quill.import('blots/container');
 const Block = Quill.import('blots/block');
 const BlockEmbed = Quill.import('blots/block/embed');
-const Parchment$7 = Quill.import('parchment');
+const Parchment$5 = Quill.import('parchment');
 
 class TableCell extends ContainBlot {
   static create(value) {
@@ -50088,10 +51789,10 @@ class TableCell extends ContainBlot {
         return;
       } else if (parent.statics.blotName !== 'tr') {
         // we will mark td position, put in table and replace mark
-        let mark = Parchment$7.create('block');
+        let mark = Parchment$5.create('block');
         this.parent.insertBefore(mark, this.next);
-        let table = Parchment$7.create('table', this.domNode.getAttribute('table_id'));
-        let tr = Parchment$7.create('tr', this.domNode.getAttribute('row_id'));
+        let table = Parchment$5.create('table', this.domNode.getAttribute('table_id'));
+        let tr = Parchment$5.create('tr', this.domNode.getAttribute('row_id'));
         table.appendChild(tr);
         tr.appendChild(this);
         table.replace(mark);
@@ -50114,7 +51815,7 @@ class TableCell extends ContainBlot {
     if (this.statics.allowedChildren != null && !this.statics.allowedChildren.some(function (child) {
       return childBlot instanceof child;
     })) {
-      let newChild = Parchment$7.create(this.statics.defaultChild);
+      let newChild = Parchment$5.create(this.statics.defaultChild);
       newChild.appendChild(childBlot);
       childBlot = newChild;
     }
@@ -50123,7 +51824,7 @@ class TableCell extends ContainBlot {
 
   replace(target) {
     if (target.statics.blotName !== this.statics.blotName) {
-      let item = Parchment$7.create(this.statics.defaultChild);
+      let item = Parchment$5.create(this.statics.defaultChild);
       target.moveChildren(item);
       this.appendChild(item);
     }
@@ -50141,12 +51842,12 @@ class TableCell extends ContainBlot {
 TableCell.blotName = 'td';
 TableCell.tagName = 'td';
 TableCell.className = 'td-q';
-TableCell.scope = Parchment$7.Scope.BLOCK_BLOT;
+TableCell.scope = Parchment$5.Scope.BLOCK_BLOT;
 TableCell.allowedChildren = [Block, BlockEmbed, Container$2];
 
 // import Quill from 'quill';
 
-const Parchment$6 = Quill.import('parchment');
+const Parchment$4 = Quill.import('parchment');
 
 class TableHistory {
   // Register DOM change into current table history entry
@@ -50269,11 +51970,11 @@ class TableHistory {
   static insert(change) {
     const parentNode = change.parentNode || change.nextNode.parentNode;
     if (parentNode) {
-      const _parentNode = Parchment$6.find(parentNode);
+      const _parentNode = Parchment$4.find(parentNode);
       if (_parentNode) {
-        const _node = Parchment$6.create(change.node);
+        const _node = Parchment$4.create(change.node);
         if (change.nextNode) {
-          const _nextNode = Parchment$6.find(change.nextNode);
+          const _nextNode = Parchment$4.find(change.nextNode);
           if (_nextNode) {
             _parentNode.insertBefore(_node, _nextNode);
           }
@@ -50605,7 +52306,7 @@ TableSelection.cellSelectionOnClick = true;
 
 // import Quill from 'quill';
 
-const Parchment$5 = Quill.import('parchment');
+const Parchment$3 = Quill.import('parchment');
 const Container$1 = Quill.import('blots/container');
 const Scroll = Quill.import('blots/scroll');
 
@@ -50677,19 +52378,19 @@ class TableTrick {
 
   static insertTable(quill, col_count, row_count) {
     const table_id = TableTrick.random_id();
-    const table = Parchment$5.create('table', table_id);
+    const table = Parchment$3.create('table', table_id);
     for (let ri = 0; ri < row_count; ri++) {
       const row_id = TableTrick.random_id();
-      const tr = Parchment$5.create('tr', row_id);
+      const tr = Parchment$3.create('tr', row_id);
       table.appendChild(tr);
       for (let ci = 0; ci < col_count; ci++) {
         const cell_id = TableTrick.random_id();
         const value = [table_id, row_id, cell_id].join('|');
-        const td = Parchment$5.create('td', value);
+        const td = Parchment$3.create('td', value);
         tr.appendChild(td);
-        const p = Parchment$5.create('block');
+        const p = Parchment$3.create('block');
         td.appendChild(p);
-        const br = Parchment$5.create('break');
+        const br = Parchment$3.create('break');
         p.appendChild(br);
       }
     }
@@ -50710,7 +52411,7 @@ class TableTrick {
     let table;
     if (coords) {
       const _table = TableSelection.selectionStartElement.closest('table');
-      table = Parchment$5.find(_table);
+      table = Parchment$3.find(_table);
     } else {
       const td = TableTrick.find_td(quill);
       if (td) {
@@ -50747,7 +52448,7 @@ class TableTrick {
     if (coords) {
       const cell = TableSelection.getCellAt(coords.maxX, coords.minY) || TableSelection.getCellAt(coords.maxX, coords.maxY);
       if (cell) {
-        td = Parchment$5.find(cell);
+        td = Parchment$3.find(cell);
       }
     }
 
@@ -50758,7 +52459,7 @@ class TableTrick {
           Array.prototype.indexOf.call(td.parent.domNode.children, td.domNode) + Number.parseInt(td.domNode.getAttribute('colspan')) - 1
         ];
         if (endCell) {
-          td = Parchment$5.find(endCell);
+          td = Parchment$3.find(endCell);
         }
       }
 
@@ -50773,14 +52474,14 @@ class TableTrick {
       table.children.forEach(function (tr) {
         const row_id = tr.domNode.getAttribute('row_id');
         const cell_id = TableTrick.random_id();
-        const new_td = Parchment$5.create('td', [table_id, row_id, cell_id].join('|'));
+        const new_td = Parchment$3.create('td', [table_id, row_id, cell_id].join('|'));
         // do not add the cell for this row if selected cell is the last cell and if this row has more or less cells
         if (!last_cell || index === tr.domNode.children.length) {
           if (typeof tr.domNode.children[index] === 'undefined') {
             tr.appendChild(new_td);
             TableHistory.register('insert', { node: new_td.domNode, parentNode: tr.domNode });
           } else {
-            const td = Parchment$5.find(tr.domNode.children[index]);
+            const td = Parchment$3.find(tr.domNode.children[index]);
             if (td) {
               // manage merged cells
               if (td.domNode.previousSibling) {
@@ -50821,7 +52522,7 @@ class TableTrick {
     if (coords) {
       const cell = TableSelection.getCellAt(coords.minX, coords.maxY) || TableSelection.getCellAt(coords.maxX, coords.maxY);
       if (cell) {
-        td = Parchment$5.find(cell);
+        td = Parchment$3.find(cell);
       }
     }
 
@@ -50852,7 +52553,7 @@ class TableTrick {
       for (let i = 0; i < col_count; i++) {
         const prev_cell = tr.domNode.children[i];
         const cell_id = TableTrick.random_id();
-        const td = Parchment$5.create('td', [table_id, row_id, cell_id].join('|'));
+        const td = Parchment$3.create('td', [table_id, row_id, cell_id].join('|'));
         if (prev_cell && manage_merged_cells) {
           // manage merged cells
           let merge_id, merged_cell;
@@ -50885,9 +52586,9 @@ class TableTrick {
         }
 
         new_row.appendChild(td);
-        const p = Parchment$5.create('block');
+        const p = Parchment$3.create('block');
         td.appendChild(p);
-        const br = Parchment$5.create('break');
+        const br = Parchment$3.create('break');
         p.appendChild(br);
       }
 
@@ -50895,7 +52596,7 @@ class TableTrick {
         table.appendChild(new_row);
         TableHistory.register('insert', { node: new_row.domNode, parentNode: table.domNode });
       } else {
-        const row = Parchment$5.find(table.domNode.children[index]);
+        const row = Parchment$3.find(table.domNode.children[index]);
         if (row) {
           table.insertBefore(new_row, row);
           TableHistory.register('insert', { node: new_row.domNode, nextNode: row.domNode });
@@ -50912,7 +52613,7 @@ class TableTrick {
     if (coords) {
       // if we have a selection, remove all selected columns
       const _table = TableSelection.selectionStartElement.closest('table');
-      table = Parchment$5.find(_table);
+      table = Parchment$3.find(_table);
       colIndex = coords.minX;
       colsToRemove = coords.maxX - coords.minX + 1;
     } else {
@@ -50947,7 +52648,7 @@ class TableTrick {
             }
 
             TableHistory.register('remove', { node: td, nextNode: td.nextSibling, parentNode: tr.domNode });
-            const _td = Parchment$5.find(td);
+            const _td = Parchment$3.find(td);
             if (_td) { // remove node this way in order to update delta
               _td.remove();
             }
@@ -50966,7 +52667,7 @@ class TableTrick {
     if (coords) {
       // if we have a selection, remove all selected columns
       const _table = TableSelection.selectionStartElement.closest('table');
-      table = Parchment$5.find(_table);
+      table = Parchment$3.find(_table);
       colIndex = coords.minX;
       colsToRemove = coords.maxX - coords.minX + 1;
     } else {
@@ -51031,7 +52732,7 @@ class TableTrick {
         if (tr) {
           manageMergedCells(tr);
           TableHistory.register('remove', { node: tr, nextNode: tr.nextSibling, parentNode: table });
-          const _tr = Parchment$5.find(tr);
+          const _tr = Parchment$3.find(tr);
           if (_tr) { // remove node this way in order to update delta
             _tr.remove();
           }
@@ -51044,7 +52745,7 @@ class TableTrick {
         const tr = td.parent;
         manageMergedCells(tr.domNode);
         TableHistory.register('remove', { node: tr.domNode, nextNode: tr.next ? tr.next.domNode : null, parentNode: tr.parent.domNode });
-        const _tr = Parchment$5.find(tr.domNode);
+        const _tr = Parchment$3.find(tr.domNode);
         if (_tr) { // remove node this way in order to update delta
           _tr.remove();
         }
@@ -51061,7 +52762,7 @@ class TableTrick {
     let td = TableTrick.find_td(quill);
     if (coords && coords.maxX - coords.minX === 0 && coords.maxY - coords.minY === 0) {
       const _td = TableSelection.getCellAt(coords.minX, coords.minY);
-      td = Parchment$5.find(_td);
+      td = Parchment$3.find(_td);
     }
 
     if (td && TableTrick._split(td.domNode)) {
@@ -51146,7 +52847,7 @@ class TableTrick {
     let td = TableTrick.find_td(quill);
     if (coords && coords.maxX - coords.minX === 0 && coords.maxY - coords.minY === 0) {
       const _td = TableSelection.getCellAt(coords.minX, coords.minY);
-      td = Parchment$5.find(_td);
+      td = Parchment$3.find(_td);
     }
 
     if (td && TableTrick._removeCell(td.domNode)) {
@@ -51198,7 +52899,7 @@ class TableTrick {
       }
 
       nodesToRemove.forEach(node => {
-        const _node = Parchment$5.find(node);
+        const _node = Parchment$3.find(node);
         if (_node) { // remove node this way in order to update delta
           _node.remove();
         }
@@ -51245,7 +52946,7 @@ class TableTrick {
         }
       }
 
-      const _node = Parchment$5.find(node);
+      const _node = Parchment$3.find(node);
       if (_node) { // remove node this way in order to update delta
         _node.remove();
       }
@@ -51397,7 +53098,7 @@ class TableTrick {
 
 // import Quill from 'quill';
 
-const Parchment$4 = Quill.import('parchment');
+const Parchment$2 = Quill.import('parchment');
 
 class TableRow extends ContainBlot {
   static create(value) {
@@ -51460,19 +53161,19 @@ class TableRow extends ContainBlot {
       table_id = this.domNode.parent.getAttribute('table_id');
     }
 
-    return Parchment$4.create(this.statics.defaultChild, [table_id, this.domNode.getAttribute('row_id'), TableTrick.random_id()].join('|'));
+    return Parchment$2.create(this.statics.defaultChild, [table_id, this.domNode.getAttribute('row_id'), TableTrick.random_id()].join('|'));
   }
 }
 
 TableRow.blotName = 'tr';
 TableRow.tagName = 'tr';
-TableRow.scope = Parchment$4.Scope.BLOCK_BLOT;
+TableRow.scope = Parchment$2.Scope.BLOCK_BLOT;
 TableRow.defaultChild = 'td';
 TableRow.allowedChildren = [TableCell];
 
 // import Quill from 'quill';
 
-const Parchment$3 = Quill.import('parchment');
+const Parchment$1 = Quill.import('parchment');
 
 class Table extends ContainBlot {
   static create(value) {
@@ -51556,7 +53257,7 @@ class Table extends ContainBlot {
     if (this.statics.allowedChildren != null && !this.statics.allowedChildren.some(function (child) {
       return childBlot instanceof child;
     })) {
-      let newChild = Parchment$3.create(this.statics.defaultChild, TableTrick.random_id());
+      let newChild = Parchment$1.create(this.statics.defaultChild, TableTrick.random_id());
       newChild.appendChild(childBlot);
       childBlot = newChild;
     }
@@ -51566,14 +53267,14 @@ class Table extends ContainBlot {
 
 Table.blotName = 'table';
 Table.tagName = 'table';
-Table.scope = Parchment$3.Scope.BLOCK_BLOT;
+Table.scope = Parchment$1.Scope.BLOCK_BLOT;
 Table.defaultChild = 'tr';
 Table.allowedChildren = [TableRow];
 
 // import Quill from 'quill';
 
 const Container = Quill.import('blots/container');
-const Parchment$2 = Quill.import('parchment');
+const Parchment = Quill.import('parchment');
 const Delta$1 = Quill.import("delta");
 
 const nodeListToArray = collection => {
@@ -51857,7 +53558,7 @@ class TableModule {
 
     let node = quill.selection.getNativeRange().start.node;
     if (!node) return false;
-    let blot = Parchment$2.find(node);
+    let blot = Parchment.find(node);
 
     if (
       key === 'delete' && blot &&
@@ -51915,36 +53616,151 @@ const removeElementosTDOcultos = (html = '') => {
     return tempDiv.innerHTML;
 };
 
-const Parchment$1 = Quill.import('parchment');
-const config$1 = {
-    scope: Parchment$1.Scope.BLOCK,
-    whitelist: ['0px'],
-};
-// const NoIndentStyle = new Parchment.Attributor.Style('text-indent', 'text-indent', config);
-const NoIndentClass = new Parchment$1.Attributor.Class('text-indent', 'ql-text-indent', config$1);
-
-const Parchment = Quill.import('parchment');
-const config = {
-    scope: Parchment.Scope.BLOCK,
-    whitelist: ['0px'],
-};
-// const MarginBottomStyle = new Parchment.Attributor.Style('margin-bottom', 'margin-bottom', config);
-const MarginBottomClass = new Parchment.Attributor.Class('margin-bottom', 'ql-margin-bottom', config);
-
 const notaRodapeCss = $ `
   <style>
     .nota-rodape {
-      vertical-align: super; /* Ajusta para sobrescrito */
-      font-size: 0.8em; /* Tamanho da fonte pode ser ajustado conforme necessário */
-      line-height: 1; /* Garante que o espaçamento entre linhas não seja afetado */
-      cursor: pointer; /* Muda o cursor para o padrão de link */
+      position: relative;
+      cursor: pointer;
+      font-size: 0.8em;
+      line-height: 1;
+      vertical-align: super;
+      z-index: 1;
+      margin-left: 0.1em;
+    }
+
+    .nota-rodape::after {
+      content: attr(data-nota);
+      color: transparent;
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      opacity: 0;
+      background-color: var(--sl-color-red-300);
+      color: black;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 50%;
+      font-size: 0.7em;
+      text-indent: 0;
+      z-index: -1;
+      transition: transform opacity 0.3s ease;
+    }
+
+    .nota-rodape:hover::after {
+      animation: pulseAnimation 1s infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes pulseAnimation {
+      0% {
+        transform: translate(-50%, 50%) scale(0.8);
+        opacity: 0;
+      }
+      50% {
+        transform: translate(-50%, 50%) scale(1.2);
+        opacity: 0.5;
+      }
+      100% {
+        transform: translate(-50%, 50%) scale(1.6);
+        opacity: 0;
+      }
+    }
+
+    .nota-rodape.pulse::after {
+      animation: pulseAnimation 1s infinite;
     }
   </style>
 `;
 
+const atualizaRevisaoJustificativa = (state, removeAllRevisoesJustificativa = false) => {
+    if (!state.emRevisao) {
+        return state;
+    }
+    if (!removeAllRevisoesJustificativa) {
+        let revisoes = [];
+        revisoes = criaRevisaoJustificativa(state);
+        if (revisoes.length > 0) {
+            state.revisoes.push(...revisoes);
+        }
+    }
+    else {
+        remove$1(state);
+    }
+    return state;
+};
+const remove$1 = (state) => {
+    var _a;
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoJustificativaEnum.JustificativaAlterada);
+};
+const criaRevisaoJustificativa = (state) => {
+    const result = [];
+    if (!jaExisteRevisaoUsuarioAtual(state)) {
+        result.push(new RevisaoJustificativa(state.usuario, formatDateTime(new Date()), RevisaoJustificativaEnum.JustificativaAlterada));
+    }
+    return result;
+};
+const jaExisteRevisaoUsuarioAtual = (state) => {
+    var _a;
+    const revisoesUsuarioAtual = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => { var _a; return r.usuario.nome === ((_a = state.usuario) === null || _a === void 0 ? void 0 : _a.nome) && r.descricao === RevisaoJustificativaEnum.JustificativaAlterada; });
+    if (revisoesUsuarioAtual.length > 0) {
+        const revisaoDataHoraModificada = revisoesUsuarioAtual[0];
+        revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
+        return true;
+    }
+    return false;
+};
+
+const atualizaRevisaoTextoLivre = (state, removeAllRevisoesTextoLivre = false) => {
+    if (!state.emRevisao) {
+        return state;
+    }
+    if (!removeAllRevisoesTextoLivre) {
+        let revisoes = [];
+        revisoes = criaRevisaoTextoLivre(state);
+        if (revisoes.length > 0) {
+            state.revisoes.push(...revisoes);
+        }
+    }
+    else {
+        remove(state);
+    }
+    return state;
+};
+const remove = (state) => {
+    var _a;
+    state.revisoes = (_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao !== RevisaoTextoLivreEnum.TextoLivreAlterado);
+};
+const criaRevisaoTextoLivre = (state) => {
+    const result = [];
+    //if (!jaExisteRevisaoUsuarioAtual(state)) {
+    if (!jaExisteRevisao(state)) {
+        result.push(new RevisaoTextoLivre(state.usuario, formatDateTime(new Date()), RevisaoTextoLivreEnum.TextoLivreAlterado));
+    }
+    return result;
+};
+const jaExisteRevisao = (state) => {
+    var _a;
+    const revisaoUtil = ((_a = state.revisoes) === null || _a === void 0 ? void 0 : _a.filter(r => r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado)) || [];
+    return revisaoUtil.length > 0;
+};
+// const jaExisteRevisaoUsuarioAtual = (state: State): boolean => {
+//   const revisoesUsuarioAtual = state.revisoes?.filter(r => r.usuario.nome === state.usuario?.nome && r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado);
+//   if (revisoesUsuarioAtual!.length > 0) {
+//     const revisaoDataHoraModificada = revisoesUsuarioAtual![0];
+//     revisaoDataHoraModificada.dataHora = formatDateTime(new Date());
+//     return true;
+//   }
+//   return false;
+// };
+
 const DefaultKeyboardModule = Quill.import('modules/keyboard');
 const DefaultClipboardModule = Quill.import('modules/clipboard');
 const Delta = Quill.import('delta');
+const CLASS_BUTTON_ACEITAR_REVISAO = 'aceitar-revisao';
+const CLASS_BUTTON_REJEITAR_REVISAO = 'rejeitar-revisao';
 let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(rootStore)(s) {
     constructor() {
         super();
@@ -51956,6 +53772,14 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.modo = '';
         this.onChange = new Observable();
         this.icons = Quill.import('ui/icons');
+        this.existeRevisaoByModo = () => {
+            if (this.modo === Modo.TEXTO_LIVRE) {
+                return getQuantidadeRevisoesTextoLivre(rootStore.getState().elementoReducer.revisoes) > 0;
+            }
+            else {
+                return getQuantidadeRevisoesJustificativa(rootStore.getState().elementoReducer.revisoes) > 0;
+            }
+        };
         this.labelAnexo = () => {
             var _a;
             const lengthAnexos = (_a = this.anexos) === null || _a === void 0 ? void 0 : _a.length;
@@ -51965,15 +53789,9 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             clearTimeout(this.timerAlerta);
             this.timerAlerta = setTimeout(() => this.alertar('Não é permitido inserir uma tabela dentro de outra tabela.'), 100);
         };
-        this.getIdTooltip = () => {
-            return this.modo === Modo.JUSTIFICATIVA ? 'revisoes-justificativa-icon' : 'revisoes-texto-livre-icon';
-        };
-        this.getIdButtonAceitarRevisoes = () => {
-            return this.modo === Modo.JUSTIFICATIVA ? 'aceita-revisao-justificativa' : 'aceita-revisao-texto-livre';
-        };
         this.init = () => {
-            var _a, _b;
-            const quillContainer = document.querySelector(`#${this.id}-inner`);
+            var _a, _b, _c;
+            const quillContainer = this.querySelector(`#${this.id}-inner`);
             if (quillContainer) {
                 Quill.register('modules/keyboard', DefaultKeyboardModule, true);
                 Quill.register('modules/clipboard', DefaultClipboardModule, true);
@@ -51982,27 +53800,15 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 Quill.register('formats/text-indent', NoIndentClass, true);
                 Quill.register('formats/margin-bottom', MarginBottomClass, true);
                 const customToolbarOptions = toolbarOptions;
-                this.modo === Modo.JUSTIFICATIVA && customToolbarOptions.push(['nota-rodape']);
+                const customFormatsOptions = formatsOptions;
+                if (this.modo === Modo.JUSTIFICATIVA) {
+                    customToolbarOptions.push(['nota-rodape']);
+                    customToolbarOptions[1] = ['bold', 'italic', 'underline', 'link'];
+                    customFormatsOptions.push('nota-rodape');
+                    customFormatsOptions.push('link');
+                }
                 this.quill = new Quill(quillContainer, {
-                    formats: [
-                        'estilo',
-                        'bold',
-                        'italic',
-                        'image',
-                        'underline',
-                        'align',
-                        'list',
-                        'script',
-                        'image',
-                        'table',
-                        'tr',
-                        'td',
-                        'text-indent',
-                        'margin-bottom',
-                        'width',
-                        // this.modo === Modo.JUSTIFICATIVA ? 'nota-rodape' : '',
-                        'nota-rodape',
-                    ],
+                    formats: customFormatsOptions,
                     modules: {
                         toolbar: {
                             container: customToolbarOptions,
@@ -52016,6 +53822,13 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                         notaRodape: true,
                         table: {
                             cellSelectionOnClick: false,
+                        },
+                        revisao: {
+                            usuario: ((_a = rootStore.getState().elementoReducer.usuario) === null || _a === void 0 ? void 0 : _a.nome) || 'Anônimo',
+                            emRevisao: false,
+                            gerenciarKeydown: true,
+                            tableModule: TableModule,
+                            tableTrick: TableTrick,
                         },
                         history: {
                             delay: 1000,
@@ -52111,8 +53924,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 this.addBotoesExtra();
                 this.configureTooltip();
                 this.elTableManagerButton = this.querySelectorAll('span.ql-table')[1];
-                (_a = this.quill) === null || _a === void 0 ? void 0 : _a.on('text-change', this.updateTexto);
-                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('selection-change', this.onSelectionChange);
+                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.on('text-change', this.updateTexto);
+                (_c = this.quill) === null || _c === void 0 ? void 0 : _c.on('selection-change', this.onSelectionChange);
                 this.alterarLarguraColunaModal.callback = this.alterarLarguraDaColuna;
                 this.alterarLarguraTabelaModal.callback = this.alterarLarguraDaTabela;
                 this.alterarLarguraImagemModal.callback = this.alterarLarguraDaImagem;
@@ -52135,6 +53948,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 });
                 this.quill.root.addEventListener(NOTA_RODAPE_CHANGE_EVENT, this.updateNotasRodape);
                 this.quill.root.addEventListener(NOTA_RODAPE_REMOVE_EVENT, this.updateNotasRodape);
+                this.buildRevisoes();
+                QuillUtil.configurarAcoesLink(this.quill);
             }
         };
         this.menuContextImagem = (ev) => {
@@ -52261,6 +54076,7 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 .replace(/align-center/g, 'ql-align-center')
                 .replace(/align-right/g, 'ql-align-right');
             this.quill.history.clear(); // Não remover: isso é um workaround para o bug que ocorre ao limpar conteúdo depois de alguma inserção de tabela
+            this.quill.revisao.modo = this.modo;
             this.configAbrindoTexto(true);
             this.quill.setContents(this.quill.clipboard.convert(textoAjustado), 'silent');
             this.configAbrindoTexto(false);
@@ -52269,9 +54085,23 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 this.quill.history.clear();
                 this.quill.notasRodape.associar(notasRodape);
             }, 100); // A linha anterior gera um history, então é necessário limpar novamente.
+            this.atualizaStatusElementosRevisao();
         };
         this.configAbrindoTexto = (valor) => {
+            this.quill.revisao.isAbrindoTexto = valor;
             this.quill.notasRodape.isAbrindoTexto = valor;
+            const emRevisao = this.quill.revisao.emRevisao;
+            if (!valor) {
+                if (this.getQuantidadeDeRevisoes() > 0 && !emRevisao) {
+                    if (this.switchRevisaoComponent) {
+                        this.switchRevisaoComponent.ativarDesativarMarcaDeRevisao(false);
+                        setTimeout(() => {
+                            this.alertaGlobalRevisao();
+                        }, 0);
+                    }
+                }
+            }
+            this.atualizaQuantidadeRevisao(this.getQuantidadeDeRevisoes());
         };
         this.updateApenasTexto = () => {
             var _a;
@@ -52283,8 +54113,10 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             const texto = this.ajustaHtml((_a = this.quill) === null || _a === void 0 ? void 0 : _a.root.innerHTML);
             this.texto = texto === '<p><br></p>' ? '' : texto;
             this.agendarEmissaoEventoOnChange();
-            this.buildRevisoes();
             this.onSelectionChange((_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection());
+            this.atualizaStatusElementosRevisao(false);
+            this.buildRevisoes();
+            this.alertaGlobalRevisao();
         };
         this.updateNotasRodape = () => {
             this.notasRodape = this.quill.notasRodape.getNotasRodape();
@@ -52299,26 +54131,20 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
             result = removeElementosTDOcultos(result);
             return this.quill.notasRodape.ajustarConteudoTagsNotaRodape(result);
         };
-        this.buildRevisoes = () => {
-            if (this.modo === Modo.JUSTIFICATIVA) {
-                atualizaRevisaoJustificativa(rootStore.getState().elementoReducer);
-            }
-            else {
-                atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer);
-            }
-            this.atualizaRevisaoIcon();
-            this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
-        };
         this.undo = () => {
-            var _a, _b;
-            if (TableModule.keyboardHandler(this.quill, 'undo', (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection(true), undefined)) {
-                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.history.undo();
+            var _a, _b, _c;
+            (_a = this.quill) === null || _a === void 0 ? void 0 : _a.focus();
+            if (this.quill.revisao.handleUndo((_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection(), undefined)) {
+                (_c = this.quill) === null || _c === void 0 ? void 0 : _c.history.undo();
+                this.atualizaStatusElementosRevisao();
             }
         };
         this.redo = () => {
-            var _a, _b;
-            if (TableModule.keyboardHandler(this.quill, 'redo', (_a = this.quill) === null || _a === void 0 ? void 0 : _a.getSelection(true), undefined)) {
-                (_b = this.quill) === null || _b === void 0 ? void 0 : _b.history.redo();
+            var _a, _b, _c;
+            (_a = this.quill) === null || _a === void 0 ? void 0 : _a.focus();
+            if (this.quill.revisao.handleRedo((_b = this.quill) === null || _b === void 0 ? void 0 : _b.getSelection(), undefined)) {
+                (_c = this.quill) === null || _c === void 0 ? void 0 : _c.history.redo();
+                this.atualizaStatusElementosRevisao();
             }
         };
         this.atualizaAnexo = (anexo) => {
@@ -52330,76 +54156,50 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.getNomeBadge = () => {
             return this.modo === Modo.JUSTIFICATIVA ? 'badge-marca-alteracao-justificativa' : 'badge-marca-alteracao-texto-livre';
         };
-        this.atualizaRevisaoIcon = () => {
-            const idIcon = '#' + this.getIdTooltip() + '>';
-            const contentRevisoes = document.querySelector(idIcon + 'div[slot=content]');
-            const iconRevisoes = document.querySelector(idIcon + 'sl-icon');
-            if (contentRevisoes && iconRevisoes) {
-                if (this.getRevisoes().length !== 0) {
-                    contentRevisoes.innerHTML = this.getMensagemRevisoes();
-                    iconRevisoes.classList.add(this.getIdTooltip() + '__ativo');
-                    iconRevisoes.removeAttribute('disabled');
-                }
-                else {
-                    contentRevisoes.innerHTML = this.getTitle();
-                    iconRevisoes.classList.remove(this.getIdTooltip() + '__ativo');
-                    this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
-                }
-            }
-        };
-        this.getTitle = () => {
-            return this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificação' : 'Revisões no texto livre';
-        };
-        this.getMensagemRevisoes = () => {
-            let revisoes;
-            if (this.modo === Modo.JUSTIFICATIVA) {
-                revisoes = this.getRevisoesJustificativa();
-            }
-            else {
-                revisoes = this.getRevisoesTextoLivre();
-            }
-            let mensagem = '<ul class="lista-revisoes-justificativa">';
-            if (revisoes.length > 0) {
-                revisoes.forEach((revisao) => {
-                    const pipe = ' | ';
-                    mensagem = mensagem + '<li>' + revisao.usuario.nome + pipe + revisao.dataHora + '</li>';
-                });
-            }
-            return mensagem + '</ul>';
-        };
         this.aceitarRevisoes = () => {
-            if (this.modo === Modo.JUSTIFICATIVA) {
-                this.aceitaRevisoesJustificativa();
+            this.quill.revisao.revisarTodos(true);
+            this.setTextoAntesRevisao(undefined);
+            this.atualizaStatusElementosRevisao();
+            this.removeRevisoes();
+        };
+        this.getQuantidadeDeRevisoes = () => {
+            var _a, _b, _c;
+            return (_c = (_b = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.revisao) === null || _b === void 0 ? void 0 : _b.getQuantidadeRevisoes()) !== null && _c !== void 0 ? _c : 0;
+        };
+        this.rejeitarRevisoes = () => {
+            this.quill.revisao.revisarTodos(false);
+            this.setTextoAntesRevisao(undefined);
+            this.atualizaStatusElementosRevisao();
+            this.removeRevisoes();
+        };
+        this.atualizaStatusElementosRevisao = (immediate = true) => {
+            const fnUpdate = () => {
+                const quantidade = this.getQuantidadeDeRevisoes();
+                if (quantidade > 0 && !rootStore.getState().elementoReducer.emRevisao) {
+                    if (this.switchRevisaoComponent) {
+                        this.switchRevisaoComponent.ativarDesativarMarcaDeRevisao(false);
+                    }
+                }
+                if (quantidade === 0) {
+                    this.removeRevisoes();
+                }
+                else if (quantidade > 0) {
+                    this.buildRevisoes();
+                }
+                this.desabilitaBtn(quantidade === 0, CLASS_BUTTON_REJEITAR_REVISAO);
+                this.desabilitaBtn(quantidade === 0, CLASS_BUTTON_ACEITAR_REVISAO);
+                this.atualizaQuantidadeRevisao(quantidade);
+            };
+            if (immediate) {
+                fnUpdate();
             }
             else {
-                this.aceitaRevisoesTextoLivre();
+                clearTimeout(this.timerAtualizaStatusElementosRevisao);
+                this.timerAtualizaStatusElementosRevisao = setTimeout(fnUpdate, 100);
             }
-        };
-        this.aceitaRevisoesJustificativa = () => {
-            atualizaRevisaoJustificativa(rootStore.getState().elementoReducer, true);
-            this.atualizaRevisaoIcon();
-            this.desabilitaBtn(this.getRevisoesJustificativa().length === 0, 'aceita-revisao-justificativa');
-            this.atualizaQuantidadeRevisao();
-        };
-        this.aceitaRevisoesTextoLivre = () => {
-            atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer, true);
-            this.atualizaRevisaoIcon();
-            this.desabilitaBtn(this.getRevisoesTextoLivre().length === 0, 'aceita-revisao-texto-livre');
-            this.atualizaQuantidadeRevisao();
-        };
-        this.getRevisoes = () => {
-            return this.modo === Modo.JUSTIFICATIVA ? this.getRevisoesJustificativa() : this.getRevisoesTextoLivre();
-        };
-        this.getRevisoesJustificativa = () => {
-            const revisoes = rootStore.getState().elementoReducer.revisoes;
-            return revisoes.filter(r => r.descricao === RevisaoJustificativaEnum.JustificativaAlterada);
-        };
-        this.getRevisoesTextoLivre = () => {
-            const revisoes = rootStore.getState().elementoReducer.revisoes;
-            return revisoes.filter(r => r.descricao === RevisaoTextoLivreEnum.TextoLivreAlterado);
         };
         this.desabilitaBtn = (desabilita, button) => {
-            const contadorView = document.getElementById(button);
+            const contadorView = this.querySelector(`.${button}`);
             if (contadorView) {
                 if (desabilita) {
                     contadorView.setAttribute('disabled', desabilita);
@@ -52409,8 +54209,23 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 }
             }
         };
-        this.atualizaQuantidadeRevisao = () => {
-            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.getNomeBadge()), this.modo);
+        this.buildRevisoes = () => {
+            if (this.modo === Modo.JUSTIFICATIVA) {
+                atualizaRevisaoJustificativa(rootStore.getState().elementoReducer);
+            }
+            else {
+                atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer);
+            }
+        };
+        this.removeRevisoes = () => {
+            atualizaRevisaoJustificativa(rootStore.getState().elementoReducer, true);
+            atualizaRevisaoTextoLivre(rootStore.getState().elementoReducer, true);
+        };
+        this.atualizaQuantidadeRevisao = (quantidade) => {
+            const elemento = this.querySelector(`#${this.getNomeBadge()}`);
+            if (elemento) {
+                elemento.innerHTML = quantidade;
+            }
         };
         this.icons['undo'] = `<svg viewbox="0 0 18 18">
     <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
@@ -52427,6 +54242,14 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         this.icons['margin-bottom'] = iconeMarginBottom;
         this.icons['nota-rodape'] = iconeNotaDeRodape;
     }
+    get textoAntesRevisao() {
+        // TODO: se contém revisão e texto antes da revisão for igual ao texto atual, ainda assim retorna texto antes da revisão
+        //return (!this.existeRevisaoByModo() && this._textoAntesRevisao === this.texto) || !this._textoAntesRevisao ? undefined : this._textoAntesRevisao;
+        return !this.existeRevisaoByModo() ? undefined : this._textoAntesRevisao;
+    }
+    setTextoAntesRevisao(texto) {
+        this._textoAntesRevisao = texto;
+    }
     showAlterarLarguraColunaModal(width) {
         this.alterarLarguraColunaModal.show(width);
     }
@@ -52435,9 +54258,6 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     }
     showAlterarLarguraTabelaModal(width) {
         this.alterarLarguraTabelaModal.show(width);
-    }
-    showAlterarLarguraImagemModal(img, width) {
-        this.alterarLarguraImagemModal.show(img, width);
     }
     hideAlterarLarguraTabelaModal() {
         this.alterarLarguraTabelaModal.hide();
@@ -52462,10 +54282,23 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         return this;
     }
     stateChanged(state) {
-        var _a;
-        if ((_a = state.elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.events) {
-            this.atualizaRevisaoIcon();
-            this.desabilitaBtn(this.getRevisoes().length === 0, this.getIdButtonAceitarRevisoes());
+        var _a, _b, _c;
+        const moduloRevisao = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.revisao;
+        const events = (_b = state.elementoReducer.ui) === null || _b === void 0 ? void 0 : _b.events;
+        if (events) {
+            if (events.some(ev => ev.stateType === StateType.RevisaoAtivada)) {
+                moduloRevisao && (moduloRevisao.emRevisao = true);
+                if (!this._textoAntesRevisao) {
+                    this._textoAntesRevisao = this.texto;
+                }
+            }
+            else if (events.some(ev => ev.stateType === StateType.RevisaoDesativada)) {
+                moduloRevisao && (moduloRevisao.emRevisao = false);
+                this._textoAntesRevisao = undefined;
+            }
+            if (events.some(ev => ev.stateType === StateType.AtualizaUsuario) && moduloRevisao) {
+                moduloRevisao.usuario = ((_c = state.elementoReducer.usuario) === null || _c === void 0 ? void 0 : _c.nome) || 'Anônimo';
+            }
         }
     }
     render() {
@@ -52473,18 +54306,20 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
       ${quillTableCss} ${editorTextoRicoCss} ${notaRodapeCss} ${this.modo === Modo.TEXTO_LIVRE ? this.renderBotaoAnexo() : ''}
 
       <div class="panel-revisao">
-        <lexml-switch-revisao modo="${this.modo}" class="revisao-container" .nomeSwitch="${this.getNomeSwitch()}" .nomeBadgeQuantidadeRevisao="${this.getNomeBadge()}">
+        <lexml-switch-revisao
+          id="lexml-switch-revisao-component"
+          modo="${this.modo}"
+          class="revisao-container"
+          .nomeSwitch="${this.getNomeSwitch()}"
+          .nomeBadgeQuantidadeRevisao="${this.getNomeBadge()}"
+        >
         </lexml-switch-revisao>
 
-        <sl-tooltip id="${this.getIdTooltip()}" placement="bottom-end">
-          <div slot="content">
-            <div>${this.modo === Modo.JUSTIFICATIVA ? 'Revisões na justificação' : 'Revisões no texto livre'}</div>
-          </div>
-          <sl-icon name="person-check-fill"></sl-icon>
-        </sl-tooltip>
-
-        <sl-button id="${this.getIdButtonAceitarRevisoes()}" variant="default" size="small" title="Limpar revisões" @click=${() => this.aceitarRevisoes()} disabled circle>
+        <sl-button class="aceitar-revisao" variant="default" size="small" title="Aceitar revisões" @click=${() => this.aceitarRevisoes()} disabled circle>
           <sl-icon name="check-lg"></sl-icon>
+        </sl-button>
+        <sl-button class="rejeitar-revisao" variant="default" size="small" title="Rejeitar revisões" @click=${() => this.rejeitarRevisoes()} disabled circle>
+          <sl-icon name="x"></sl-icon>
         </sl-button>
       </div>
       <div id="${this.id}-inner" class="editor-texto-rico" @onTableInTable=${this.onTableInTable}></div>
@@ -52531,6 +54366,27 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         (_b = this.quill) === null || _b === void 0 ? void 0 : _b.off('selection-change', this.onSelectionChange);
         super.disconnectedCallback();
     }
+    alertaGlobalRevisao() {
+        var _a, _b, _c, _d;
+        const id = 'alerta-global-revisao';
+        if (this.getQuantidadeDeRevisoes() > 0 || getQuantidadeRevisoes(rootStore.getState().elementoReducer.revisoes) > 0) {
+            if (((_b = (_a = rootStore.getState().elementoReducer.ui) === null || _a === void 0 ? void 0 : _a.alertas) === null || _b === void 0 ? void 0 : _b.filter(a => a.id === id).length) === 0) {
+                const alerta = {
+                    id: id,
+                    tipo: 'info',
+                    mensagem: 'Este documento contém marcas de revisão e não deve ser protocolado até que estas sejam removidas.',
+                    podeFechar: true,
+                    exibirComandoEmenda: true,
+                };
+                setTimeout(() => {
+                    rootStore.dispatch(adicionarAlerta$1(alerta));
+                }, 0);
+            }
+        }
+        else if ((_d = (_c = rootStore.getState().elementoReducer.ui) === null || _c === void 0 ? void 0 : _c.alertas) === null || _d === void 0 ? void 0 : _d.some(alerta => alerta.id === id)) {
+            rootStore.dispatch(removerAlerta(id));
+        }
+    }
     editarNotaRodape(idNotaRodape) {
         this.quill.notasRodape.editar(idNotaRodape);
     }
@@ -52565,9 +54421,32 @@ __decorate([
 __decorate([
     i$1('#lexml-alterar-largura-img-modal')
 ], EditorTextoRicoComponent.prototype, "alterarLarguraImagemModal", void 0);
+__decorate([
+    i$1('#lexml-switch-revisao-component')
+], EditorTextoRicoComponent.prototype, "switchRevisaoComponent", void 0);
 EditorTextoRicoComponent = __decorate([
     n$1('editor-texto-rico')
 ], EditorTextoRicoComponent);
+const formatsOptions = [
+    'estilo',
+    'bold',
+    'italic',
+    'image',
+    'underline',
+    'align',
+    'list',
+    'script',
+    'image',
+    'table',
+    'tr',
+    'td',
+    'link',
+    'text-indent',
+    'margin-bottom',
+    'width',
+    'added',
+    'removed',
+];
 const toolbarOptions = [
     [{ estilo: [false, 'ementa', 'norma-alterada'] }],
     ['bold', 'italic', 'underline'],
@@ -52615,6 +54494,10 @@ let AlterarLarguraTabelaColunaModalComponent = class AlterarLarguraTabelaColunaM
         this.valorLargura = width ? width.replace('%', '') : '';
         this.slAlert.hide();
         this.slDialog.show();
+        setTimeout(() => {
+            var _a, _b;
+            (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('sl-input')) === null || _b === void 0 ? void 0 : _b.focus();
+        }, 0);
     }
     hide() {
         this.slDialog.hide();
@@ -52687,6 +54570,10 @@ let AlterarLarguraImagemModalComponent = class AlterarLarguraImagemModalComponen
         this.img = img;
         this.slAlert.hide();
         this.slDialog.show();
+        setTimeout(() => {
+            var _a, _b;
+            (_b = (_a = this.shadowRoot) === null || _a === void 0 ? void 0 : _a.querySelector('sl-input')) === null || _b === void 0 ? void 0 : _b.focus();
+        }, 0);
     }
     hide() {
         this.slDialog.hide();
@@ -53381,7 +55268,7 @@ class CitacaoComandoMultiplaAlteracaoNormaVigente {
     buscaDispositivosAdjacentesAsOmissis(dispositivos) {
         const ret = new Array();
         for (const d of dispositivos) {
-            if (isOmissis(d)) {
+            if (isOmissis(d) && !isAgrupadorNaoArticulacao(d.pai)) {
                 // TODO - Verificar necessidade de tratamento de bloco de alteração com omissis como primeiro elemento.
                 //    if (!d.isAbreAspas()) {
                 const anterior = CmdEmdUtil.getDispositivoAnteriorDireto(d);
@@ -53551,7 +55438,7 @@ class CitacaoComandoDeNormaVigente {
         let dispositivosDaCabeca = new Array();
         let cabeca, cabecaAtual;
         for (const d of dispositivos) {
-            cabeca = isArtigo(d) || isAgrupadorNaoArticulacao(d) ? d : getArtigo(d);
+            cabeca = this.getCabeca(d);
             if (cabeca !== cabecaAtual) {
                 if (dispositivosDaCabeca.length) {
                     this.getCitacaoMultipla(sb, dispositivosDaCabeca);
@@ -53566,6 +55453,12 @@ class CitacaoComandoDeNormaVigente {
         if (dispositivosDaCabeca.length) {
             this.getCitacaoMultipla(sb, dispositivosDaCabeca);
         }
+    }
+    getCabeca(d) {
+        if (isArticulacaoAlteracao(d.pai) || isArtigo(d) || isAgrupadorNaoArticulacao(d) || (isOmissis(d) && isAgrupadorNaoArticulacao(d.pai))) {
+            return d;
+        }
+        return getArtigo(d);
     }
     getCitacaoMultipla(sb, dispositivos) {
         const cit = new CitacaoComandoMultiplaAlteracaoNormaVigente();
@@ -55103,7 +56996,8 @@ class CmdEmdSubstituicaoTermo {
     getTexto() {
         const { tipo, termo, novoTermo, flexaoGenero, flexaoNumero } = this.substituicaoTermo;
         const refProjeto = getRefGenericaProjeto(this.urn);
-        return `Substitua-se n${refProjeto.genero.artigoDefinido} ${refProjeto.nome} a/o ${tipo.toLowerCase()} “${termo}” por “${novoTermo}”${this.getComplementoFlexoes(flexaoGenero, flexaoNumero)}.`;
+        const artigoDefinido = tipo.toLowerCase() == 'número' ? 'o' : 'a';
+        return `Substitua-se n${refProjeto.genero.artigoDefinido} ${refProjeto.nome} ${artigoDefinido} ${tipo.toLowerCase()} “${termo}” por “${novoTermo}”${this.getComplementoFlexoes(flexaoGenero, flexaoNumero)}.`;
     }
 }
 
@@ -55337,22 +57231,20 @@ class DispositivosEmendaBuilder {
             da.existeNaNormaAlterada = (_c = d.situacao) === null || _c === void 0 ? void 0 : _c.existeNaNormaAlterada;
             this.preencheAtributosAlteracao(d, da);
         }
-        if (!isAgrupadorNaoArticulacao(d)) {
-            // Adiciona filhos
-            const filhos = CmdEmdUtil.getFilhosEstiloLexML(d);
-            // TODO - As alterações deveriam estar listadas nos getFilhosEstiloLexML (tem que rever todo o código que usa esse método)
-            if (isCaput(d) && d.pai.alteracoes) {
-                filhos.push(d.pai.alteracoes);
-            }
-            if (filhos.length) {
-                da.filhos = [];
-                filhos.forEach(f => {
-                    // Pode ocorrer do filho nao ser um dispositivo adicionado no caso de filho de agrupador de artigo.
-                    if (isCaput(f) || isArticulacaoAlteracao(f) || f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
-                        da.filhos.push(this.criaDispositivoEmendaAdicionado(f, false));
-                    }
-                });
-            }
+        // Adiciona filhos
+        const filhos = CmdEmdUtil.getFilhosEstiloLexML(d);
+        // TODO - As alterações deveriam estar listadas nos getFilhosEstiloLexML (tem que rever todo o código que usa esse método)
+        if (isCaput(d) && d.pai.alteracoes) {
+            filhos.push(d.pai.alteracoes);
+        }
+        if (filhos.length) {
+            da.filhos = [];
+            filhos.forEach(f => {
+                // Pode ocorrer do filho nao ser um dispositivo adicionado no caso de filho de agrupador de artigo.
+                if (isCaput(f) || isArticulacaoAlteracao(f) || f.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+                    da.filhos.push(this.criaDispositivoEmendaAdicionado(f, false));
+                }
+            });
         }
         return da;
     }
@@ -58531,962 +60423,6 @@ const editorStyles = $ `
   </style>
 `;
 
-// Foi utilizado TemplateResult porque o editor.component.ts não usa ShadowDom
-const quillSnowStyles = $ `
-  <style>
-    /*!
-    * Quill Editor v1.3.7
-    * https://quilljs.com/
-    * Copyright (c) 2014, Jason Chen
-    * Copyright (c) 2013, salesforce.com
-    */
-    .ql-container {
-      box-sizing: border-box;
-      /* font-family: Helvetica, Arial, sans-serif; */
-      font-family: var(--eta-font-serif);
-      font-size: 13px;
-      height: 100%;
-      margin: 0px;
-      position: relative;
-    }
-    .ql-container.ql-disabled .ql-tooltip {
-      visibility: hidden;
-    }
-    .ql-container.ql-disabled .ql-editor ul[data-checked] > li::before {
-      pointer-events: none;
-    }
-    .ql-clipboard {
-      left: -100000px;
-      height: 1px;
-      overflow-y: hidden;
-      position: absolute;
-      top: 50%;
-    }
-    .ql-clipboard p {
-      margin: 0;
-      padding: 0;
-    }
-    .ql-editor {
-      box-sizing: border-box;
-      line-height: 1.42;
-      height: 100%;
-      outline: none;
-      overflow-y: auto;
-      padding: 12px 15px;
-      tab-size: 4;
-      -moz-tab-size: 4;
-      text-align: left;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    .ql-editor > * {
-      cursor: text;
-    }
-    .ql-editor p,
-    .ql-editor ol,
-    .ql-editor ul,
-    .ql-editor pre,
-    .ql-editor blockquote,
-    .ql-editor h1,
-    .ql-editor h2,
-    .ql-editor h3,
-    .ql-editor h4,
-    .ql-editor h5,
-    .ql-editor h6 {
-      margin: 0;
-      padding: 0;
-      counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
-    }
-    .ql-editor p {
-      line-height: 1.42;
-      font-size: 18px;
-    }
-    .ql-editor ol,
-    .ql-editor ul {
-      padding-left: 1.5em;
-    }
-    .ql-editor ol > li,
-    .ql-editor ul > li {
-      list-style-type: none;
-    }
-    .ql-editor ul > li::before {
-      content: '\\2022';
-    }
-    .ql-editor ul[data-checked='true'],
-    .ql-editor ul[data-checked='false'] {
-      pointer-events: none;
-    }
-    .ql-editor ul[data-checked='true'] > li *,
-    .ql-editor ul[data-checked='false'] > li * {
-      pointer-events: all;
-    }
-    .ql-editor ul[data-checked='true'] > li::before,
-    .ql-editor ul[data-checked='false'] > li::before {
-      color: #777;
-      cursor: pointer;
-      pointer-events: all;
-    }
-    .ql-editor ul[data-checked='true'] > li::before {
-      content: '\\2611';
-    }
-    .ql-editor ul[data-checked='false'] > li::before {
-      content: '\\2610';
-    }
-    .ql-editor li::before {
-      display: inline-block;
-      white-space: nowrap;
-      width: 1.2em;
-    }
-    .ql-editor li:not(.ql-direction-rtl)::before {
-      margin-left: -1.5em;
-      margin-right: 0.3em;
-      text-align: right;
-    }
-    .ql-editor li.ql-direction-rtl::before {
-      margin-left: 0.3em;
-      margin-right: -1.5em;
-    }
-    .ql-editor ol li:not(.ql-direction-rtl),
-    .ql-editor ul li:not(.ql-direction-rtl) {
-      padding-left: 1.5em;
-    }
-    .ql-editor ol li.ql-direction-rtl,
-    .ql-editor ul li.ql-direction-rtl {
-      padding-right: 1.5em;
-    }
-    .ql-editor ol li {
-      counter-reset: list-1 list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
-      counter-increment: list-0;
-    }
-    .ql-editor ol li:before {
-      content: counter(list-0, decimal) '. ';
-    }
-    .ql-editor ol li.ql-indent-1 {
-      counter-increment: list-1;
-    }
-    .ql-editor ol li.ql-indent-1:before {
-      content: counter(list-1, lower-alpha) '. ';
-    }
-    .ql-editor ol li.ql-indent-1 {
-      counter-reset: list-2 list-3 list-4 list-5 list-6 list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-2 {
-      counter-increment: list-2;
-    }
-    .ql-editor ol li.ql-indent-2:before {
-      content: counter(list-2, lower-roman) '. ';
-    }
-    .ql-editor ol li.ql-indent-2 {
-      counter-reset: list-3 list-4 list-5 list-6 list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-3 {
-      counter-increment: list-3;
-    }
-    .ql-editor ol li.ql-indent-3:before {
-      content: counter(list-3, decimal) '. ';
-    }
-    .ql-editor ol li.ql-indent-3 {
-      counter-reset: list-4 list-5 list-6 list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-4 {
-      counter-increment: list-4;
-    }
-    .ql-editor ol li.ql-indent-4:before {
-      content: counter(list-4, lower-alpha) '. ';
-    }
-    .ql-editor ol li.ql-indent-4 {
-      counter-reset: list-5 list-6 list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-5 {
-      counter-increment: list-5;
-    }
-    .ql-editor ol li.ql-indent-5:before {
-      content: counter(list-5, lower-roman) '. ';
-    }
-    .ql-editor ol li.ql-indent-5 {
-      counter-reset: list-6 list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-6 {
-      counter-increment: list-6;
-    }
-    .ql-editor ol li.ql-indent-6:before {
-      content: counter(list-6, decimal) '. ';
-    }
-    .ql-editor ol li.ql-indent-6 {
-      counter-reset: list-7 list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-7 {
-      counter-increment: list-7;
-    }
-    .ql-editor ol li.ql-indent-7:before {
-      content: counter(list-7, lower-alpha) '. ';
-    }
-    .ql-editor ol li.ql-indent-7 {
-      counter-reset: list-8 list-9;
-    }
-    .ql-editor ol li.ql-indent-8 {
-      counter-increment: list-8;
-    }
-    .ql-editor ol li.ql-indent-8:before {
-      content: counter(list-8, lower-roman) '. ';
-    }
-    .ql-editor ol li.ql-indent-8 {
-      counter-reset: list-9;
-    }
-    .ql-editor ol li.ql-indent-9 {
-      counter-increment: list-9;
-    }
-    .ql-editor ol li.ql-indent-9:before {
-      content: counter(list-9, decimal) '. ';
-    }
-    .ql-editor .ql-indent-1:not(.ql-direction-rtl) {
-      padding-left: 3em;
-    }
-    .ql-editor li.ql-indent-1:not(.ql-direction-rtl) {
-      padding-left: 4.5em;
-    }
-    .ql-editor .ql-indent-1.ql-direction-rtl.ql-align-right {
-      padding-right: 3em;
-    }
-    .ql-editor li.ql-indent-1.ql-direction-rtl.ql-align-right {
-      padding-right: 4.5em;
-    }
-    .ql-editor .ql-indent-2:not(.ql-direction-rtl) {
-      padding-left: 6em;
-    }
-    .ql-editor li.ql-indent-2:not(.ql-direction-rtl) {
-      padding-left: 7.5em;
-    }
-    .ql-editor .ql-indent-2.ql-direction-rtl.ql-align-right {
-      padding-right: 6em;
-    }
-    .ql-editor li.ql-indent-2.ql-direction-rtl.ql-align-right {
-      padding-right: 7.5em;
-    }
-    .ql-editor .ql-indent-3:not(.ql-direction-rtl) {
-      padding-left: 9em;
-    }
-    .ql-editor li.ql-indent-3:not(.ql-direction-rtl) {
-      padding-left: 10.5em;
-    }
-    .ql-editor .ql-indent-3.ql-direction-rtl.ql-align-right {
-      padding-right: 9em;
-    }
-    .ql-editor li.ql-indent-3.ql-direction-rtl.ql-align-right {
-      padding-right: 10.5em;
-    }
-    .ql-editor .ql-indent-4:not(.ql-direction-rtl) {
-      padding-left: 12em;
-    }
-    .ql-editor li.ql-indent-4:not(.ql-direction-rtl) {
-      padding-left: 13.5em;
-    }
-    .ql-editor .ql-indent-4.ql-direction-rtl.ql-align-right {
-      padding-right: 12em;
-    }
-    .ql-editor li.ql-indent-4.ql-direction-rtl.ql-align-right {
-      padding-right: 13.5em;
-    }
-    .ql-editor .ql-indent-5:not(.ql-direction-rtl) {
-      padding-left: 15em;
-    }
-    .ql-editor li.ql-indent-5:not(.ql-direction-rtl) {
-      padding-left: 16.5em;
-    }
-    .ql-editor .ql-indent-5.ql-direction-rtl.ql-align-right {
-      padding-right: 15em;
-    }
-    .ql-editor li.ql-indent-5.ql-direction-rtl.ql-align-right {
-      padding-right: 16.5em;
-    }
-    .ql-editor .ql-indent-6:not(.ql-direction-rtl) {
-      padding-left: 18em;
-    }
-    .ql-editor li.ql-indent-6:not(.ql-direction-rtl) {
-      padding-left: 19.5em;
-    }
-    .ql-editor .ql-indent-6.ql-direction-rtl.ql-align-right {
-      padding-right: 18em;
-    }
-    .ql-editor li.ql-indent-6.ql-direction-rtl.ql-align-right {
-      padding-right: 19.5em;
-    }
-    .ql-editor .ql-indent-7:not(.ql-direction-rtl) {
-      padding-left: 21em;
-    }
-    .ql-editor li.ql-indent-7:not(.ql-direction-rtl) {
-      padding-left: 22.5em;
-    }
-    .ql-editor .ql-indent-7.ql-direction-rtl.ql-align-right {
-      padding-right: 21em;
-    }
-    .ql-editor li.ql-indent-7.ql-direction-rtl.ql-align-right {
-      padding-right: 22.5em;
-    }
-    .ql-editor .ql-indent-8:not(.ql-direction-rtl) {
-      padding-left: 24em;
-    }
-    .ql-editor li.ql-indent-8:not(.ql-direction-rtl) {
-      padding-left: 25.5em;
-    }
-    .ql-editor .ql-indent-8.ql-direction-rtl.ql-align-right {
-      padding-right: 24em;
-    }
-    .ql-editor li.ql-indent-8.ql-direction-rtl.ql-align-right {
-      padding-right: 25.5em;
-    }
-    .ql-editor .ql-indent-9:not(.ql-direction-rtl) {
-      padding-left: 27em;
-    }
-    .ql-editor li.ql-indent-9:not(.ql-direction-rtl) {
-      padding-left: 28.5em;
-    }
-    .ql-editor .ql-indent-9.ql-direction-rtl.ql-align-right {
-      padding-right: 27em;
-    }
-    .ql-editor li.ql-indent-9.ql-direction-rtl.ql-align-right {
-      padding-right: 28.5em;
-    }
-    .ql-editor .ql-video {
-      display: block;
-      max-width: 100%;
-    }
-    .ql-editor .ql-video.ql-align-center {
-      margin: 0 auto;
-    }
-    .ql-editor .ql-video.ql-align-right {
-      margin: 0 0 0 auto;
-    }
-    .ql-editor .ql-bg-black {
-      background-color: #000;
-    }
-    .ql-editor .ql-bg-red {
-      background-color: #e60000;
-    }
-    .ql-editor .ql-bg-orange {
-      background-color: #f90;
-    }
-    .ql-editor .ql-bg-yellow {
-      background-color: #ff0;
-    }
-    .ql-editor .ql-bg-green {
-      background-color: #008a00;
-    }
-    .ql-editor .ql-bg-blue {
-      background-color: #06c;
-    }
-    .ql-editor .ql-bg-purple {
-      background-color: #93f;
-    }
-    .ql-editor .ql-color-white {
-      color: #fff;
-    }
-    .ql-editor .ql-color-red {
-      color: #e60000;
-    }
-    .ql-editor .ql-color-orange {
-      color: #f90;
-    }
-    .ql-editor .ql-color-yellow {
-      color: #ff0;
-    }
-    .ql-editor .ql-color-green {
-      color: #008a00;
-    }
-    .ql-editor .ql-color-blue {
-      color: #06c;
-    }
-    .ql-editor .ql-color-purple {
-      color: #93f;
-    }
-    .ql-editor .ql-font-serif {
-      font-family: Georgia, Times New Roman, serif;
-    }
-    .ql-editor .ql-font-monospace {
-      font-family: Monaco, Courier New, monospace;
-    }
-    .ql-editor .ql-size-small {
-      font-size: 0.75em;
-    }
-    .ql-editor .ql-size-large {
-      font-size: 1.5em;
-    }
-    .ql-editor .ql-size-huge {
-      font-size: 2.5em;
-    }
-    .ql-editor .ql-direction-rtl {
-      direction: rtl;
-      text-align: inherit;
-    }
-    .ql-editor .ql-align-center {
-      text-align: center;
-    }
-    .ql-editor .ql-align-justify {
-      text-align: justify;
-    }
-    .ql-editor .ql-align-right {
-      text-align: right;
-    }
-    .ql-editor.ql-blank::before {
-      color: rgba(0, 0, 0, 0.6);
-      content: attr(data-placeholder);
-      font-style: italic;
-      left: 15px;
-      pointer-events: none;
-      position: absolute;
-      right: 15px;
-    }
-    .ql-snow.ql-toolbar:after,
-    .ql-snow .ql-toolbar:after {
-      clear: both;
-      content: '';
-      display: table;
-    }
-    .ql-snow.ql-toolbar button,
-    .ql-snow .ql-toolbar button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      display: inline-block;
-      float: left;
-      height: 24px;
-      padding: 3px 5px;
-      width: 28px;
-    }
-    .ql-snow.ql-toolbar button svg,
-    .ql-snow .ql-toolbar button svg {
-      float: left;
-      height: 100%;
-    }
-    .ql-snow.ql-toolbar button:active:hover,
-    .ql-snow .ql-toolbar button:active:hover {
-      outline: none;
-    }
-    .ql-snow.ql-toolbar input.ql-image[type='file'],
-    .ql-snow .ql-toolbar input.ql-image[type='file'] {
-      display: none;
-    }
-    .ql-snow.ql-toolbar button:hover,
-    .ql-snow .ql-toolbar button:hover,
-    .ql-snow.ql-toolbar button:focus,
-    .ql-snow .ql-toolbar button:focus,
-    .ql-snow.ql-toolbar button.ql-active,
-    .ql-snow .ql-toolbar button.ql-active,
-    .ql-snow.ql-toolbar .ql-picker-label:hover,
-    .ql-snow .ql-toolbar .ql-picker-label:hover,
-    .ql-snow.ql-toolbar .ql-picker-label.ql-active,
-    .ql-snow .ql-toolbar .ql-picker-label.ql-active,
-    .ql-snow.ql-toolbar .ql-picker-item:hover,
-    .ql-snow .ql-toolbar .ql-picker-item:hover,
-    .ql-snow.ql-toolbar .ql-picker-item.ql-selected,
-    .ql-snow .ql-toolbar .ql-picker-item.ql-selected {
-      color: #06c;
-    }
-    .ql-snow.ql-toolbar button:hover .ql-fill,
-    .ql-snow .ql-toolbar button:hover .ql-fill,
-    .ql-snow.ql-toolbar button:focus .ql-fill,
-    .ql-snow .ql-toolbar button:focus .ql-fill,
-    .ql-snow.ql-toolbar button.ql-active .ql-fill,
-    .ql-snow .ql-toolbar button.ql-active .ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-fill,
-    .ql-snow.ql-toolbar button:hover .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar button:hover .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar button:focus .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar button:focus .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar button.ql-active .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar button.ql-active .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke.ql-fill,
-    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill,
-    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke.ql-fill {
-      fill: #06c;
-    }
-    .ql-snow.ql-toolbar button:hover .ql-stroke,
-    .ql-snow .ql-toolbar button:hover .ql-stroke,
-    .ql-snow.ql-toolbar button:focus .ql-stroke,
-    .ql-snow .ql-toolbar button:focus .ql-stroke,
-    .ql-snow.ql-toolbar button.ql-active .ql-stroke,
-    .ql-snow .ql-toolbar button.ql-active .ql-stroke,
-    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke,
-    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke,
-    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke,
-    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke,
-    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke,
-    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke,
-    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
-    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke,
-    .ql-snow.ql-toolbar button:hover .ql-stroke-miter,
-    .ql-snow .ql-toolbar button:hover .ql-stroke-miter,
-    .ql-snow.ql-toolbar button:focus .ql-stroke-miter,
-    .ql-snow .ql-toolbar button:focus .ql-stroke-miter,
-    .ql-snow.ql-toolbar button.ql-active .ql-stroke-miter,
-    .ql-snow .ql-toolbar button.ql-active .ql-stroke-miter,
-    .ql-snow.ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
-    .ql-snow .ql-toolbar .ql-picker-label:hover .ql-stroke-miter,
-    .ql-snow.ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
-    .ql-snow .ql-toolbar .ql-picker-label.ql-active .ql-stroke-miter,
-    .ql-snow.ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
-    .ql-snow .ql-toolbar .ql-picker-item:hover .ql-stroke-miter,
-    .ql-snow.ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter,
-    .ql-snow .ql-toolbar .ql-picker-item.ql-selected .ql-stroke-miter {
-      stroke: #06c;
-    }
-    @media (pointer: coarse) {
-      .ql-snow.ql-toolbar button:hover:not(.ql-active),
-      .ql-snow .ql-toolbar button:hover:not(.ql-active) {
-        color: #444;
-      }
-      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-fill,
-      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-fill,
-      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill,
-      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke.ql-fill {
-        fill: #444;
-      }
-      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke,
-      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke,
-      .ql-snow.ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter,
-      .ql-snow .ql-toolbar button:hover:not(.ql-active) .ql-stroke-miter {
-        stroke: #444;
-      }
-    }
-    .ql-snow {
-      box-sizing: border-box;
-    }
-    .ql-snow * {
-      box-sizing: border-box;
-    }
-    .ql-snow .ql-hidden {
-      display: none;
-    }
-    .ql-snow .ql-out-bottom,
-    .ql-snow .ql-out-top {
-      visibility: hidden;
-    }
-    .ql-snow .ql-tooltip {
-      position: absolute;
-      transform: translateY(10px);
-    }
-    .ql-snow .ql-tooltip a {
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .ql-snow .ql-tooltip.ql-flip {
-      transform: translateY(-10px);
-    }
-    .ql-snow .ql-formats {
-      display: inline-block;
-      vertical-align: middle;
-    }
-    .ql-snow .ql-formats:after {
-      clear: both;
-      content: '';
-      display: table;
-    }
-    .ql-snow .ql-stroke {
-      fill: none;
-      stroke: #444;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 2;
-    }
-    .ql-snow .ql-stroke-miter {
-      fill: none;
-      stroke: #444;
-      stroke-miterlimit: 10;
-      stroke-width: 2;
-    }
-    .ql-snow .ql-fill,
-    .ql-snow .ql-stroke.ql-fill {
-      fill: #444;
-    }
-    .ql-snow .ql-empty {
-      fill: none;
-    }
-    .ql-snow .ql-even {
-      fill-rule: evenodd;
-    }
-    .ql-snow .ql-thin,
-    .ql-snow .ql-stroke.ql-thin {
-      stroke-width: 1;
-    }
-    .ql-snow .ql-transparent {
-      opacity: 0.4;
-    }
-    .ql-snow .ql-direction svg:last-child {
-      display: none;
-    }
-    .ql-snow .ql-direction.ql-active svg:last-child {
-      display: inline;
-    }
-    .ql-snow .ql-direction.ql-active svg:first-child {
-      display: none;
-    }
-    .ql-snow .ql-editor h1 {
-      font-size: 2em;
-    }
-    .ql-snow .ql-editor h2 {
-      font-size: 1.5em;
-    }
-    .ql-snow .ql-editor h3 {
-      font-size: 1.17em;
-    }
-    .ql-snow .ql-editor h4 {
-      font-size: 1em;
-    }
-    .ql-snow .ql-editor h5 {
-      font-size: 0.83em;
-    }
-    .ql-snow .ql-editor h6 {
-      font-size: 0.67em;
-    }
-    .ql-snow .ql-editor a {
-      text-decoration: underline;
-    }
-    .ql-snow .ql-editor blockquote {
-      border-left: 4px solid #ccc;
-      margin-bottom: 5px;
-      margin-top: 5px;
-      padding-left: 16px;
-    }
-    .ql-snow .ql-editor code,
-    .ql-snow .ql-editor pre {
-      background-color: #f0f0f0;
-      border-radius: 3px;
-    }
-    .ql-snow .ql-editor pre {
-      white-space: pre-wrap;
-      margin-bottom: 5px;
-      margin-top: 5px;
-      padding: 5px 10px;
-    }
-    .ql-snow .ql-editor code {
-      font-size: 85%;
-      padding: 2px 4px;
-    }
-    .ql-snow .ql-editor pre.ql-syntax {
-      background-color: #23241f;
-      color: #f8f8f2;
-      overflow: visible;
-    }
-    .ql-snow .ql-editor img {
-      max-width: 100%;
-    }
-    .ql-snow .ql-picker {
-      color: #444;
-      display: inline-block;
-      float: left;
-      font-size: 14px;
-      font-weight: 500;
-      height: 24px;
-      position: relative;
-      vertical-align: middle;
-    }
-    .ql-snow .ql-picker-label {
-      cursor: pointer;
-      display: inline-block;
-      height: 100%;
-      padding-left: 8px;
-      padding-right: 2px;
-      position: relative;
-      width: 100%;
-    }
-    .ql-snow .ql-picker-label::before {
-      display: inline-block;
-      line-height: 22px;
-    }
-    .ql-snow .ql-picker-options {
-      background-color: #fff;
-      display: none;
-      min-width: 100%;
-      padding: 4px 8px;
-      position: absolute;
-      white-space: nowrap;
-    }
-    .ql-snow .ql-picker-options .ql-picker-item {
-      cursor: pointer;
-      display: block;
-      padding-bottom: 5px;
-      padding-top: 5px;
-    }
-    .ql-snow .ql-picker.ql-expanded .ql-picker-label {
-      color: #ccc;
-      z-index: 2;
-    }
-    .ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-fill {
-      fill: #ccc;
-    }
-    .ql-snow .ql-picker.ql-expanded .ql-picker-label .ql-stroke {
-      stroke: #ccc;
-    }
-    .ql-snow .ql-picker.ql-expanded .ql-picker-options {
-      display: block;
-      margin-top: -1px;
-      top: 100%;
-      z-index: 1;
-    }
-    .ql-snow .ql-color-picker,
-    .ql-snow .ql-icon-picker {
-      width: 28px;
-    }
-    .ql-snow .ql-color-picker .ql-picker-label,
-    .ql-snow .ql-icon-picker .ql-picker-label {
-      padding: 2px 4px;
-    }
-    .ql-snow .ql-color-picker .ql-picker-label svg,
-    .ql-snow .ql-icon-picker .ql-picker-label svg {
-      right: 4px;
-    }
-    .ql-snow .ql-icon-picker .ql-picker-options {
-      padding: 4px 0px;
-    }
-    .ql-snow .ql-icon-picker .ql-picker-item {
-      height: 24px;
-      width: 24px;
-      padding: 2px 4px;
-    }
-    .ql-snow .ql-color-picker .ql-picker-options {
-      padding: 3px 5px;
-      width: 152px;
-    }
-    .ql-snow .ql-color-picker .ql-picker-item {
-      border: 1px solid transparent;
-      float: left;
-      height: 16px;
-      margin: 2px;
-      padding: 0px;
-      width: 16px;
-    }
-    .ql-snow .ql-picker:not(.ql-color-picker):not(.ql-icon-picker) svg {
-      position: absolute;
-      margin-top: -9px;
-      right: 0;
-      top: 50%;
-      width: 18px;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-label]:not([data-label=''])::before,
-    .ql-snow .ql-picker.ql-font .ql-picker-label[data-label]:not([data-label=''])::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-label[data-label]:not([data-label=''])::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-label]:not([data-label=''])::before,
-    .ql-snow .ql-picker.ql-font .ql-picker-item[data-label]:not([data-label=''])::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-label]:not([data-label=''])::before {
-      content: attr(data-label);
-    }
-    .ql-snow .ql-picker.ql-header {
-      width: 98px;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item::before {
-      content: 'Normal';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='1']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='1']::before {
-      content: 'Heading 1';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='2']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before {
-      content: 'Heading 2';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='3']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before {
-      content: 'Heading 3';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='4']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='4']::before {
-      content: 'Heading 4';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='5']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='5']::before {
-      content: 'Heading 5';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-label[data-value='6']::before,
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='6']::before {
-      content: 'Heading 6';
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='1']::before {
-      font-size: 2em;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='2']::before {
-      font-size: 1.5em;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='3']::before {
-      font-size: 1.17em;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='4']::before {
-      font-size: 1em;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='5']::before {
-      font-size: 0.83em;
-    }
-    .ql-snow .ql-picker.ql-header .ql-picker-item[data-value='6']::before {
-      font-size: 0.67em;
-    }
-    .ql-snow .ql-picker.ql-font {
-      width: 108px;
-    }
-    .ql-snow .ql-picker.ql-font .ql-picker-label::before,
-    .ql-snow .ql-picker.ql-font .ql-picker-item::before {
-      content: 'Sans Serif';
-    }
-    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='serif']::before,
-    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='serif']::before {
-      content: 'Serif';
-    }
-    .ql-snow .ql-picker.ql-font .ql-picker-label[data-value='monospace']::before,
-    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='monospace']::before {
-      content: 'Monospace';
-    }
-    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='serif']::before {
-      font-family: Georgia, Times New Roman, serif;
-    }
-    .ql-snow .ql-picker.ql-font .ql-picker-item[data-value='monospace']::before {
-      font-family: Monaco, Courier New, monospace;
-    }
-    .ql-snow .ql-picker.ql-size {
-      width: 98px;
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-label::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-item::before {
-      content: 'Normal';
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='small']::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='small']::before {
-      content: 'Small';
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='large']::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='large']::before {
-      content: 'Large';
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-label[data-value='huge']::before,
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before {
-      content: 'Huge';
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='small']::before {
-      font-size: 10px;
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='large']::before {
-      font-size: 18px;
-    }
-    .ql-snow .ql-picker.ql-size .ql-picker-item[data-value='huge']::before {
-      font-size: 32px;
-    }
-    .ql-snow .ql-color-picker.ql-background .ql-picker-item {
-      background-color: #fff;
-    }
-    .ql-snow .ql-color-picker.ql-color .ql-picker-item {
-      background-color: #000;
-    }
-    .ql-toolbar.ql-snow {
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      font-family: 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
-      padding: 8px;
-    }
-    .ql-toolbar.ql-snow .ql-formats {
-      margin-right: 15px;
-    }
-    .ql-toolbar.ql-snow .ql-picker-label {
-      border: 1px solid transparent;
-    }
-    .ql-toolbar.ql-snow .ql-picker-options {
-      border: 1px solid transparent;
-      box-shadow: rgba(0, 0, 0, 0.2) 0 2px 8px;
-    }
-    .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-label {
-      border-color: #ccc;
-    }
-    .ql-toolbar.ql-snow .ql-picker.ql-expanded .ql-picker-options {
-      border-color: #ccc;
-    }
-    .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item.ql-selected,
-    .ql-toolbar.ql-snow .ql-color-picker .ql-picker-item:hover {
-      border-color: #000;
-    }
-    .ql-toolbar.ql-snow + .ql-container.ql-snow {
-      border-top: 0px;
-    }
-    .ql-snow .ql-tooltip {
-      background-color: #fff;
-      border: 1px solid #ccc;
-      box-shadow: 0px 0px 5px #ddd;
-      color: #444;
-      padding: 5px 12px;
-      white-space: nowrap;
-    }
-    .ql-snow .ql-tooltip::before {
-      content: 'Visit URL:';
-      line-height: 26px;
-      margin-right: 8px;
-    }
-    .ql-snow .ql-tooltip input[type='text'] {
-      display: none;
-      border: 1px solid #ccc;
-      font-size: 13px;
-      height: 26px;
-      margin: 0px;
-      padding: 3px 5px;
-      width: 170px;
-    }
-    .ql-snow .ql-tooltip a.ql-preview {
-      display: inline-block;
-      max-width: 200px;
-      overflow-x: hidden;
-      text-overflow: ellipsis;
-      vertical-align: top;
-    }
-    .ql-snow .ql-tooltip a.ql-action::after {
-      border-right: 1px solid #ccc;
-      content: 'Edit';
-      margin-left: 16px;
-      padding-right: 8px;
-    }
-    .ql-snow .ql-tooltip a.ql-remove::before {
-      content: 'Remove';
-      margin-left: 8px;
-    }
-    .ql-snow .ql-tooltip a {
-      line-height: 26px;
-    }
-    .ql-snow .ql-tooltip.ql-editing a.ql-preview,
-    .ql-snow .ql-tooltip.ql-editing a.ql-remove {
-      display: none;
-    }
-    .ql-snow .ql-tooltip.ql-editing input[type='text'] {
-      display: inline-block;
-    }
-    .ql-snow .ql-tooltip.ql-editing a.ql-action::after {
-      border-right: 0px;
-      content: 'Save';
-      padding-right: 0px;
-    }
-    .ql-snow .ql-tooltip[data-mode='link']::before {
-      content: 'Enter link:';
-    }
-    .ql-snow .ql-tooltip[data-mode='formula']::before {
-      content: 'Enter formula:';
-    }
-    .ql-snow .ql-tooltip[data-mode='video']::before {
-      content: 'Enter video:';
-    }
-    .ql-snow a {
-      color: #06c;
-    }
-    .ql-container.ql-snow {
-      border: 1px solid #ccc;
-    }
-  </style>
-`;
-
 /**
  * Parâmetros de inicialização de edição de documento
  */
@@ -59519,7 +60455,10 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.autoria = new Autoria();
         this.desativarMarcaRevisao = () => {
             if (rootStore.getState().elementoReducer.emRevisao) {
-                rootStore.dispatch(ativarDesativarRevisaoAction.execute());
+                const quantidade = getQuantidadeRevisoesAll(rootStore.getState().elementoReducer.revisoes);
+                if (quantidade === 0) {
+                    rootStore.dispatch(ativarDesativarRevisaoAction.execute(quantidade));
+                }
             }
         };
         this.MOBILE_WIDTH = 768;
@@ -59643,15 +60582,16 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         else if (this.isEmendaTextoLivre()) {
             emenda.comandoEmendaTextoLivre.motivo = this.motivo;
-            emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto;
+            emenda.comandoEmendaTextoLivre.texto = this._lexmlEmendaTextoRico.texto; // visualizar ? this.removeRevisaoFormat(this._lexmlEmendaTextoRico.texto) : this._lexmlEmendaTextoRico.texto;
             emenda.anexos = this._lexmlEmendaTextoRico.anexos;
+            emenda.comandoEmendaTextoLivre.textoAntesRevisao = this._lexmlEmendaTextoRico.textoAntesRevisao;
         }
         else {
             emenda.comandoEmendaTextoLivre.texto = '';
             emenda.componentes[0].dispositivos = this._lexmlEta.getDispositivosEmenda();
             emenda.comandoEmenda = this._lexmlEta.getComandoEmenda();
         }
-        emenda.justificativa = this._lexmlJustificativa.texto;
+        emenda.justificativa = this._lexmlJustificativa.texto; // visualizar ? this.removeRevisaoFormat(this._lexmlJustificativa.texto) : this._lexmlJustificativa.texto;
         emenda.notasRodape = this._lexmlJustificativa.notasRodape;
         emenda.autoria = this._lexmlAutoria.getAutoriaAtualizada();
         emenda.data = this._lexmlData.data || undefined;
@@ -59666,7 +60606,17 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         emenda.epigrafe.complemento = `(${generoProposicao.artigoDefinidoPrecedidoPreposicaoASingular.trim()} ${emenda.proposicao.sigla} ${numeroProposicao}/${emenda.proposicao.ano})`;
         emenda.local = this.montarLocalFromColegiadoApreciador(emenda.colegiadoApreciador);
         emenda.revisoes = this.getRevisoes();
+        emenda.justificativaAntesRevisao = this._lexmlJustificativa.textoAntesRevisao;
         return emenda;
+    }
+    removeRevisaoFormat(texto) {
+        let novoTexto = '';
+        if (texto !== '') {
+            texto = texto.replace(/<ins\b[^>]*>(.*?)<\/ins>/s, '');
+            texto = texto.replace(/<del\b[^>]*>(.*?)<\/del>/s, '');
+            novoTexto = texto;
+        }
+        return novoTexto;
     }
     getRevisoes() {
         const revisoes = ordernarRevisoes([...rootStore.getState().elementoReducer.revisoes]);
@@ -59712,7 +60662,16 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
         this._tabsEsquerda.show('lexml-eta');
         if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
-            this._tabsDireita.show('comando');
+            setTimeout(() => {
+                var _a;
+                (_a = this._tabsDireita) === null || _a === void 0 ? void 0 : _a.show('comando');
+            });
+        }
+        else {
+            setTimeout(() => {
+                var _a;
+                (_a = this._tabsDireita) === null || _a === void 0 ? void 0 : _a.show('notas');
+            });
         }
         this.updateView();
     }
@@ -59769,11 +60728,13 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         rootStore.dispatch(atualizarUsuarioAction.execute(usuario));
     }
     setEmenda(emenda) {
+        rootStore.dispatch(limparAlertas$1());
         if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
             this._lexmlEta.setDispositivosERevisoesEmenda(emenda.componentes[0].dispositivos, emenda.revisoes);
         }
         this._lexmlAutoria.autoria = emenda.autoria;
         this._lexmlOpcoesImpressao.opcoesImpressao = emenda.opcoesImpressao;
+        this._lexmlJustificativa.setTextoAntesRevisao(emenda.justificativaAntesRevisao);
         this._lexmlDestino.colegiadoApreciador = emenda.colegiadoApreciador;
         this._lexmlDestino.proposicao = emenda.proposicao;
         this.notasRodape = emenda.notasRodape || [];
@@ -59781,6 +60742,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         if (this.isEmendaTextoLivre()) {
             this._lexmlEmendaTextoRico.setContent((emenda === null || emenda === void 0 ? void 0 : emenda.comandoEmendaTextoLivre.texto) || '');
             this._lexmlEmendaTextoRico.anexos = emenda.anexos || [];
+            this._lexmlEmendaTextoRico.setTextoAntesRevisao(emenda.comandoEmendaTextoLivre.textoAntesRevisao);
             rootStore.dispatch(aplicarAlteracoesEmendaAction.execute(emenda.componentes[0].dispositivos, emenda.revisoes));
         }
         else if (this.isEmendaSubstituicaoTermo()) {
@@ -59845,7 +60807,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         super.disconnectedCallback();
     }
     firstUpdated() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c;
         // this.habilitarBotoes();
         setTimeout(() => this.atualizaListaParlamentares(), 0);
         setTimeout(() => this.atualizaListaComissoes(), 0);
@@ -59885,12 +60847,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                 localStorage.setItem('naoPulsarBadgeAtalhos', 'true');
             }
         });
-        if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
-            (_d = this._tabsDireita) === null || _d === void 0 ? void 0 : _d.show('comando');
-        }
-        else {
-            (_e = this._tabsDireita) === null || _e === void 0 ? void 0 : _e.show('notas');
-        }
     }
     updated() {
         // if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
@@ -60141,7 +61097,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         }
 
         .notas-rodape li {
-          padding: 4px;
+          padding: 0px;
           position: relative;
           cursor: pointer;
           display: flex;
@@ -60172,6 +61128,9 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
 
         .notas-texto {
           flex-grow: 1;
+          cursor: pointer;
+          padding: 5px;
+          color: var(--sl-color-gray-500);
         }
 
         .notas-acoes {
@@ -60184,6 +61143,17 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           margin-left: 5px;
           visibility: var(--visibilityNotasAcao);
           cursor: pointer;
+        }
+
+        .notas-checkbox {
+          appearance: none;
+          background: transparent;
+          display: none;
+        }
+
+        .notas-checkbox:checked + .notas-texto {
+          color: black;
+          font-style: italic;
         }
 
         @media (max-width: 768px) {
@@ -60246,7 +61216,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         </div>
         <div slot="end">
           <sl-tab-group id="tabs-direita">
-            ${this.tabIsVisible()
+            ${this.tabIsVisible('comando')
             ? $ `
                   <sl-tab slot="nav" panel="comando">
                     <sl-icon name="code"></sl-icon>
@@ -60254,13 +61224,17 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                   </sl-tab>
                 `
             : ''}
-            <sl-tab slot="nav" panel="notas" title="Notas de rodapé">
-              <sl-badge variant="primary" id="badgeAtalhos" pill>
-                <sl-icon name="footnote"></sl-icon>
-                Notas
-              </sl-badge>
-            </sl-tab>
-            ${this.tabIsVisible()
+            ${this.tabIsVisible('notas')
+            ? $ `
+                  <sl-tab slot="nav" panel="notas" title="Notas de rodapé">
+                    <sl-badge variant="primary" id="badgeAtalhos" pill>
+                      <sl-icon name="footnote"></sl-icon>
+                      Notas
+                    </sl-badge>
+                  </sl-tab>
+                `
+            : ''}
+            ${this.tabIsVisible('dicas')
             ? $ `
                   <sl-tab slot="nav" panel="dicas">
                     <sl-icon name="lightbulb"></sl-icon>
@@ -60268,7 +61242,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
                   </sl-tab>
                 `
             : ''}
-            ${this.tabIsVisible()
+            ${this.tabIsVisible('atalhos')
             ? $ `
                   <sl-tab slot="nav" panel="atalhos">
                     <sl-badge variant="primary" id="badgeAtalhos" pill>
@@ -60299,7 +61273,13 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
       <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
-    tabIsVisible() {
+    tabIsVisible(tab) {
+        if ((tab === 'atalhos' || tab === 'dicas') && this.modo === 'emendaSubstituicaoTermo') {
+            return false;
+        }
+        else if (tab === 'notas' && (this.isEmendaTextoLivre() || this.modo === 'edicao')) {
+            return true;
+        }
         return this.modo.startsWith('emenda') && !this.isEmendaTextoLivre();
     }
     onChangeNotasRodape() {
@@ -60313,7 +61293,8 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           <ol>
             ${this._lexmlJustificativa.notasRodape.map((nr) => $ `
                   <li>
-                    <span class="notas-texto" idNotaRodape="${nr.id}" @click=${this.localizarNotaRodape}>${nr.texto}</span>
+                    <input type="checkbox" idNotaRodape="${nr.id}" class="notas-checkbox" id="checkbox-${nr.id}" @change=${() => this.selecionarNotaRodape(nr.id)} />
+                    <label for="checkbox-${nr.id}" class="notas-texto">${o(nr.texto)}</label>
                     <span class="notas-acoes">
                       <sl-button
                         class="notas-acao"
@@ -60363,12 +61344,42 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
             }
         }
     }
-    localizarNotaRodape(event) {
-        const idNotaRodape = event.target.getAttribute('idNotaRodape');
+    localizarNotaRodape(idNotaRodape) {
+        // const idNotaRodape = event.target.getAttribute('idNotaRodape');
         const notaRodapeElement = this.querySelector(`.ql-editor nota-rodape[id-nota-rodape="${idNotaRodape}"]`);
         const tab = this.getTabFromElement(notaRodapeElement);
         this.focusOnTab(tab.getAttribute('name'));
         notaRodapeElement && setTimeout(() => notaRodapeElement.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+        const notasRodape = this.querySelectorAll('.ql-editor nota-rodape');
+        notasRodape.forEach(nr => {
+            if (nr.attributes['id-nota-rodape'].value === idNotaRodape) {
+                nr === null || nr === void 0 ? void 0 : nr.classList.add('pulse');
+            }
+            else {
+                nr.classList.remove('pulse');
+            }
+        });
+    }
+    selecionarNotaRodape(idNotaRodape) {
+        const checkbox = document.getElementById(`checkbox-${idNotaRodape}`);
+        if (checkbox) {
+            if (checkbox.checked) {
+                const checkboxes = document.querySelectorAll('.notas-checkbox');
+                checkboxes.forEach(cb => {
+                    if (cb.id !== checkbox.id) {
+                        cb.checked = false;
+                    }
+                });
+                this.localizarNotaRodape(idNotaRodape);
+            }
+            else {
+                this.removerPulsarNotaRodape(idNotaRodape);
+            }
+        }
+    }
+    removerPulsarNotaRodape(idNotaRodape) {
+        const notaRodapeElement = this.querySelector(`.ql-editor nota-rodape[id-nota-rodape="${idNotaRodape}"]`);
+        notaRodapeElement === null || notaRodapeElement === void 0 ? void 0 : notaRodapeElement.classList.remove('pulse');
     }
     editarNotaRodape(event) {
         const idNotaRodape = event.target.getAttribute('idNotaRodape');
@@ -60389,6 +61400,18 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     }
     getTabFromElement(element) {
         return element.closest('sl-tab-panel');
+    }
+    getRestricoesConhecidas() {
+        return [
+            'Emendamento ou adição de anexos.',
+            'Emendamento ou adição de pena, penalidade etc.',
+            'Emendamento ou adição de especificação temática do dispositivo (usado para nome do tipo penal e outros).',
+            'Alteração de anexo de MP de crédito extraordinário.',
+            'Alteração do texto da proposição e proposta de adição de dispositivos onde couber na mesma emenda.',
+            'Alteração de norma que não segue a LC nº 95 de 98 (ex: norma com alíneas em parágrafos).',
+            'Casos especiais de numeração de parte (PARTE GERAL, PARTE ESPECIAL e uso de numeral ordinal por extenso).',
+            'Tabelas e imagens no texto da proposição.',
+        ];
     }
 };
 __decorate([
@@ -60927,6 +61950,11 @@ let SufixosModalComponent = class SufixosModalComponent extends s {
     }
     render() {
         return $ `
+      <style>
+        :host {
+          font-family: var(--sl-font-sans);
+        }
+      </style>
       <sl-dialog>
         <span slot="label">Sufixos de posicionamento</span>
 
@@ -61173,12 +62201,12 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
         this.checkedRevisao = false;
         this.modo = '';
         this.onChange = new Observable();
+        this.atualizaQuantidadeRevisao = () => {
+            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.nomeBadgeQuantidadeRevisao), this.modo);
+        };
         this.checkedSwitchMarcaAlteracao = () => {
             const switchMarcaAlteracaoView = document.getElementById(this.nomeSwitch);
             setCheckedElement(switchMarcaAlteracaoView, rootStore.getState().elementoReducer.emRevisao);
-        };
-        this.atualizaQuantidadeRevisao = () => {
-            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.nomeBadgeQuantidadeRevisao), this.modo);
         };
     }
     update(changedProperties) {
@@ -61207,7 +62235,6 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
                     break;
             }
             this.atualizaQuantidadeRevisao();
-            // this.atualiazaRevisaoJusutificativaIcon();
         });
     }
     render() {
@@ -61265,8 +62292,9 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
       </div>
     `;
     }
-    ativarDesativarMarcaDeRevisao() {
-        ativarDesativarMarcaDeRevisao(rootStore);
+    ativarDesativarMarcaDeRevisao(consideraQuantidade = true) {
+        const quantidade = getQuantidadeRevisoesAll(rootStore.getState().elementoReducer.revisoes);
+        ativarDesativarMarcaDeRevisao(rootStore, consideraQuantidade ? quantidade : 0);
         this.checkedSwitchMarcaAlteracao();
     }
 };
@@ -61431,6 +62459,7 @@ SubstituicaoTermoComponent = __decorate([
 
 // ---------------------------------------------------
 Quill.register('modules/aspasCurvas', ModuloAspasCurvas, true);
+Quill.register('modules/revisao', ModuloRevisao, true);
 Quill.register('modules/notaRodape', ModuloNotaRodape, true);
 
 export { AjudaComponent, AjudaModalComponent, AlertasComponent, AlterarLarguraImagemModalComponent, AlterarLarguraTabelaColunaModalComponent, ArticulacaoComponent, AtalhosModalComponent, AutoriaComponent, ComandoEmendaComponent, ComandoEmendaModalComponent, DataComponent, DestinoComponent, EditorComponent, EditorTextoRicoComponent, ElementoComponent, AtalhosComponent as HelpComponent, LexmlAutocomplete, LexmlEmendaComponent, LexmlEmendaConfig, LexmlEmendaParametrosEdicao, LexmlEtaComponent, OpcoesImpressaoComponent, SubstituicaoTermoComponent, SufixosModalComponent, SwitchRevisaoComponent, Usuario };

@@ -1,17 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { LitElement, html, css, TemplateResult } from 'lit';
 
 @customElement('edt-modal-orientacoes')
 export class EdtModalOrientacoes extends LitElement {
   @property({ type: Number }) private step = 1;
   @query('sl-dialog') private slDialog!: any;
-
-  @query('edt-modal-ajuda')
-  private modalAjuda!: any;
-
-  @query('edt-app')
-  private edtApp!: any;
 
   private stepsData = [
     { step: 1, title: 'Elementos do Editor de Emendas' },
@@ -124,6 +117,13 @@ export class EdtModalOrientacoes extends LitElement {
       margin-bottom: 10px;
     }
   `;
+
+  private motivosEmendaTextoLivre: string[] = [];
+
+  protected firstUpdated(): void {
+    const elLexmlEmenda = this.parentElement?.querySelector('lexml-emenda') as any;
+    elLexmlEmenda && this.motivosEmendaTextoLivre.push(...elLexmlEmenda.getRestricoesConhecidas().concat('Outro motivo.'));
+  }
 
   public show(): void {
     const noShowAgain = localStorage.getItem('wizardOrientacoes');
@@ -315,15 +315,7 @@ export class EdtModalOrientacoes extends LitElement {
                       emenda de dispositivo "onde couber". Ao optar por uma emenda de texto livre, é essencial especificar o motivo:
                     </p>
                     <ul>
-                      <li>Emendamento ou adição de pena, penalidade etc.</li>
-                      <li>Emendamento ou adição de especificação temática do dispositivo (usado para nome do tipo penal e outros).</li>
-                      <li>Alteração de anexo de MP de crédito extraordinário.</li>
-                      <li>Emendamento ou adição de anexos.</li>
-                      <li>Alteração do texto da proposição e proposta de adição de dispositivos "onde couber" na mesma emenda.</li>
-                      <li>Alteração de norma que não segue a LC nº 95 de 98 (ex: norma com alíneas em parágrafos).</li>
-                      <li>Casos especiais de numeração de parte (PARTE GERAL, PARTE ESPECIAL e uso de numeral ordinal por extenso).</li>
-                      <li>Tabelas e imagens no texto da proposição.</li>
-                      <li>Outro motivo.</li>
+                      ${this.motivosEmendaTextoLivre.map(s => html`<li>${s}</li>`)}
                     </ul>
                   </li>
                 </ol>
