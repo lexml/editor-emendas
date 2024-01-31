@@ -62,17 +62,21 @@ export class EdtModalAjuda extends LitElement {
     this.shadowRoot?.addEventListener('click', (e: Event) => {
       if ((e.target as HTMLElement).classList.contains('fullscreen-btn')) {
         const { videoIndex } = (e.target as HTMLElement).dataset;
-        if (videoIndex !== undefined) {
+        const videoTipo = (e.target as HTMLElement).dataset.videoTipo;
+
+        if (videoIndex !== undefined && videoTipo !== undefined) {
           const index = parseInt(videoIndex);
-          this.toggleFullscreen(index);
+          this.toggleFullscreen(index, videoTipo);
         }
       }
     });
   }
 
-  private toggleFullscreen(index: number): void {
-    const iframe = this.shadowRoot?.querySelector(`#youtube-player-${index}`);
+  private toggleFullscreen(index: number, tipo: string): void {
+    const iframe = this.shadowRoot?.querySelector(`#youtube-player-${tipo}-${index}`) as any;
+    console.log('iframe', iframe);
     if (iframe?.requestFullscreen) {
+      iframe.allowFullscreen = true;
       iframe.requestFullscreen();
     }
   }
@@ -91,18 +95,21 @@ export class EdtModalAjuda extends LitElement {
     );
   }
 
-  private videoTemplate(video: Video, index: number): any {
+  private videoTemplate(video: Video, index: number, tipo: string): any {
     return html`
       <div class="video-container">
+        <div class="container-fullscreen-btn">
+          <button class="fullscreen-btn" data-video-index="${index}" data-video-tipo="${tipo}">Ver em tela cheia</button>
+        </div>
         <iframe
-          id="youtube-player-${index}"
+          id="youtube-player-${tipo}-${index}"
           class="youtube-player-iframe"
           tabindex="-1"
           src="https://www.youtube.com/embed/${video.codigo}?enablejsapi=1&version=3&playerapiid=ytplayer"
           frameborder="0"
-          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-        ></iframe>
-        <button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button>
+          allowfullscreen
+        >
+        </iframe>
       </div>
     `;
   }
@@ -110,7 +117,7 @@ export class EdtModalAjuda extends LitElement {
   private tabPanelVideoTemplate(video: Video, i: number): any {
     return html`
       <sl-tab-panel name="video${i}">
-        ${this.selecionado === i ? html` <div class="video-container">${this.videoTemplate(video, i)}</div> ` : ``}
+        ${this.selecionado === i ? html` <div class="video-container">${this.videoTemplate(video, i, 'tab')}</div> ` : ``}
       </sl-tab-panel>
     `;
   }
@@ -127,7 +134,7 @@ export class EdtModalAjuda extends LitElement {
   private detailsVideoTemplate(video: Video, i: number): any {
     return html`
       <sl-details summary="${video.titulo}" name="video${i}" .open=${this.selecionado === i}>
-        ${this.selecionado === i ? this.videoTemplate(video, i) : ``}
+        ${this.selecionado === i ? this.videoTemplate(video, i, 'details') : ``}
       </sl-details>
     `;
   }

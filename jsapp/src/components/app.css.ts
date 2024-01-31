@@ -797,14 +797,56 @@ export const ajudaStyles = html`
     sl-dialog {
       --width: 80vw;
       height: 80vh;
+      animation-fill-mode: none !important;
     }
 
     sl-tab-group {
       display: block;
+      animation-fill-mode: none !important;
     }
     sl-details {
       display: none;
+      animation-fill-mode: none !important;
     }
+
+    .video-container {
+      position: sticky;
+      top: 0;
+      width: 100%;
+      animation-fill-mode: none !important;
+    }
+
+    .video-container::after {
+      padding-top: 56.25%;
+      display: block;
+      content: '';
+    }
+
+    .youtube-player-iframe {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      animation-fill-mode: none !important;
+    }
+
+    .fullscreen-btn {
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      cursor: pointer;
+      z-index: 2; /* This will place the button above the iframe */
+      border-radius: 3px;
+    }
+
+    .container-fullscreen-btn {
+      position: relative;
+      display: none;
+      justify-content: center;
+      padding: 0.5rem;
+    }
+
     @media (max-width: 1024px) {
       sl-dialog {
         --width: 70vw;
@@ -815,50 +857,21 @@ export const ajudaStyles = html`
       sl-details {
         display: block;
       }
+      .container-fullscreen-btn {
+        display: flex;
+      }
     }
+
     @media (max-width: 768px) {
       sl-dialog {
         --width: 100vw;
       }
     }
+
     @media (max-width: 576px) {
       sl-dialog {
         --width: 100vw;
       }
-    }
-
-    .video-container {
-      position: sticky;
-      top: 0;
-      width: 100%;
-    }
-
-    .video-container::after {
-      padding-top: 56.25%;
-      display: block;
-      content: '';
-    }
-
-    .video-container iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1; /* This ensures the iframe stays on top */
-    }
-
-    .fullscreen-btn {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 5px 15px;
-      border: none;
-      cursor: pointer;
-      z-index: 2; /* This will place the button above the iframe */
     }
   </style>
 `;
