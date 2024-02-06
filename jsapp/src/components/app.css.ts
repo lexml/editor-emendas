@@ -795,25 +795,17 @@ export const landingPageStyles = html`
 export const ajudaStyles = html`
   <style>
     sl-dialog {
-      --width: 80vw;
+      --width: 720px;
       height: 80vh;
     }
 
-    sl-tab-group {
-      display: block;
-    }
-    sl-details {
+    .fullscreen-btn {
       display: none;
     }
+
     @media (max-width: 1024px) {
       sl-dialog {
         --width: 70vw;
-      }
-      sl-tab-group {
-        display: none;
-      }
-      sl-details {
-        display: block;
       }
     }
     @media (max-width: 768px) {
@@ -825,10 +817,13 @@ export const ajudaStyles = html`
       sl-dialog {
         --width: 100vw;
       }
+      .fullscreen-btn {
+        display: block;
+      }
     }
 
     .video-container {
-      position: sticky;
+      position: relative;
       top: 0;
       width: 100%;
     }
@@ -848,17 +843,19 @@ export const ajudaStyles = html`
       z-index: 1; /* This ensures the iframe stays on top */
     }
 
+    .fullscreen-content {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
+    }
+
     .fullscreen-btn {
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.7);
       color: white;
-      padding: 5px 15px;
+      padding: 10px 15px;
       border: none;
       cursor: pointer;
-      z-index: 2; /* This will place the button above the iframe */
+      border-radius: 20px;
     }
   </style>
 `;

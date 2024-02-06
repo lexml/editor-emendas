@@ -44,10 +44,6 @@ export class EdtModalAjuda extends LitElement {
       this.visivel = false;
     });
 
-    this.slDialog.addEventListener('sl-tab-show', (e: CustomEvent) => {
-      this.selecionado = Number(e.detail.name.replace('video', ''));
-    });
-
     this.detailsGroup.addEventListener('sl-show', (e: CustomEvent) => {
       if (e.target) {
         [...this.detailsGroup.querySelectorAll('sl-details')].forEach((details, i) => {
@@ -102,25 +98,8 @@ export class EdtModalAjuda extends LitElement {
           frameborder="0"
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         ></iframe>
-        <button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button>
       </div>
-    `;
-  }
-
-  private tabPanelVideoTemplate(video: Video, i: number): any {
-    return html`
-      <sl-tab-panel name="video${i}">
-        ${this.selecionado === i ? html` <div class="video-container">${this.videoTemplate(video, i)}</div> ` : ``}
-      </sl-tab-panel>
-    `;
-  }
-
-  tabGroupTemplate(): any {
-    return html`
-      <sl-tab-group placement="start">
-        ${videos.map((v, i) => html`<sl-tab slot="nav" panel="video${i}">${v.titulo}</sl-tab>`)}
-        ${videos.map((v, i) => this.tabPanelVideoTemplate(v, i))}
-      </sl-tab-group>
+      <div class="fullscreen-content"><button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button></div>
     `;
   }
 
@@ -138,9 +117,6 @@ export class EdtModalAjuda extends LitElement {
     return html`
       ${ajudaStyles}
       <sl-dialog label=${tituloModal} @sl-hide=${this.emitirEvento}>
-        <!-- Desktop e tablet -->
-        ${this.visivel ? this.tabGroupTemplate() : html``}
-        <!-- Celular -->
         <div class="details-group">${this.visivel ? videos.map((v, i) => this.detailsVideoTemplate(v, i)) : html``}</div>
         <sl-button
           slot="footer"
