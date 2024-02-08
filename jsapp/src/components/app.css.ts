@@ -795,25 +795,37 @@ export const landingPageStyles = html`
 export const ajudaStyles = html`
   <style>
     sl-dialog {
-      --width: 80vw;
+      --width: 720px;
       height: 80vh;
-      animation-fill-mode: none !important;
     }
 
-    sl-tab-group {
-      display: block;
-      animation-fill-mode: none !important;
-    }
-    sl-details {
+    .fullscreen-btn {
       display: none;
-      animation-fill-mode: none !important;
+    }
+
+    @media (max-width: 1024px) {
+      sl-dialog {
+        --width: 70vw;
+      }
+    }
+    @media (max-width: 768px) {
+      sl-dialog {
+        --width: 100vw;
+      }
+    }
+    @media (max-width: 576px) {
+      sl-dialog {
+        --width: 100vw;
+      }
+      .fullscreen-btn {
+        display: block;
+      }
     }
 
     .video-container {
-      position: sticky;
+      position: relative;
       top: 0;
       width: 100%;
-      animation-fill-mode: none !important;
     }
 
     .video-container::after {
@@ -822,12 +834,19 @@ export const ajudaStyles = html`
       content: '';
     }
 
-    .youtube-player-iframe {
+    .video-container iframe {
       position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      z-index: 1;
-      animation-fill-mode: none !important;
+      z-index: 1; /* This ensures the iframe stays on top */
+    }
+
+    .fullscreen-content {
+      display: flex;
+      justify-content: center;
+      margin: 10px 0;
     }
 
     .fullscreen-btn {
@@ -836,42 +855,7 @@ export const ajudaStyles = html`
       padding: 10px 15px;
       border: none;
       cursor: pointer;
-      z-index: 2; /* This will place the button above the iframe */
-      border-radius: 3px;
-    }
-
-    .container-fullscreen-btn {
-      position: relative;
-      display: none;
-      justify-content: center;
-      padding: 0.5rem;
-    }
-
-    @media (max-width: 1024px) {
-      sl-dialog {
-        --width: 70vw;
-      }
-      sl-tab-group {
-        display: none;
-      }
-      sl-details {
-        display: block;
-      }
-      .container-fullscreen-btn {
-        display: flex;
-      }
-    }
-
-    @media (max-width: 768px) {
-      sl-dialog {
-        --width: 100vw;
-      }
-    }
-
-    @media (max-width: 576px) {
-      sl-dialog {
-        --width: 100vw;
-      }
+      border-radius: 20px;
     }
   </style>
 `;
