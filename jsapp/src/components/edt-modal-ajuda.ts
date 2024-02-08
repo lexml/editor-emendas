@@ -99,7 +99,7 @@ export class EdtModalAjuda extends LitElement {
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         ></iframe>
       </div>
-      <div class="fullscreen-content"><button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button></div>
+      <!-- <div class="fullscreen-content"><button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button></div> -->
     `;
   }
 
