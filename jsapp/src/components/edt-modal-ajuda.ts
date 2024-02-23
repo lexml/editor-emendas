@@ -20,7 +20,7 @@ const videos: Array<Video> = [
   new Video('Copiar e colar dispositivos existentes - Introdução', 'tP8zgonhQtk'),
   new Video('Copiar e colar dispositivos existentes - 2º tutorial', 'K-w-At7hv_k'),
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
-  new Video('Marcas de revisão', '4zmICnwq3HQ'),
+  new Video('Marcas de revisão', 'Zvv0oPVREz0'),
   new Video('Emenda de texto livre', '_i1jDNEBNRw'),
   new Video('Uso de linhas pontilhadas ao colar dispositivos', 'uYXsH-F-AQM'),
 ];
