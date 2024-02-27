@@ -843,7 +843,7 @@ export class EdtApp extends LitElement {
                   <b>Prazo de emenda:</b> ${`${this.getDataPrazoEmenda(this.proposicao)} (${this.getTextoComplementarPrazoEmenda(this.proposicao)})`}
                 </div>
                 <div><b>Tramitação:</b> ${this.proposicao.labelTramitacao ?? ''}</div>
-                <div><b>Data de Publicação da MP:</b> ${this.getDataPublicacaoMP(this.proposicao) ?? ''}</div>
+                <div><b>Data de Publicação:</b> ${this.getDataPublicacaoMP(this.proposicao) ?? ''}</div>
               </div>
               <sl-tag class="detalhe-emenda--prazo" variant="primary" size="small" title="" pill><sl-icon name="alarm"></sl-icon> </sl-tag>
             </sl-tooltip>
@@ -943,7 +943,7 @@ export class EdtApp extends LitElement {
         <label>Tramitação:</label>
         <sl-badge variant="neutral" title="${this.proposicao?.labelTramitacao ?? ''}">${this.proposicao?.labelTramitacao}</sl-badge>
         <br /><br />
-        <label>Data de publicação da MP:</label>
+        <label>Data de publicação:</label>
         <sl-badge variant="neutral" title="${this.getDataPublicacaoMP(this.proposicao) ?? ''}">${this.getDataPublicacaoMP(this.proposicao)}</sl-badge>
         <br /><br />
         <sl-button href="" variant="primary" outline @click=${(): void => this.abrirQuadroDeEmendas()}>
