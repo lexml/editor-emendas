@@ -44,24 +44,15 @@ export class EdtModalAjuda extends LitElement {
       this.visivel = false;
     });
 
-    this.detailsGroup.addEventListener('sl-show', (e: CustomEvent) => {
+    this.detailsGroup.addEventListener('sl-after-show', (e: CustomEvent) => {
       if (e.target) {
         [...this.detailsGroup.querySelectorAll('sl-details')].forEach((details, i) => {
           details.open = e.target === details;
           if (details.open) {
+            details.scrollIntoView({ behavior: 'smooth', block: 'center' });
             this.selecionado = i;
           }
         });
-      }
-    });
-
-    this.shadowRoot?.addEventListener('click', (e: Event) => {
-      if ((e.target as HTMLElement).classList.contains('fullscreen-btn')) {
-        const { videoIndex } = (e.target as HTMLElement).dataset;
-        if (videoIndex !== undefined) {
-          const index = parseInt(videoIndex);
-          this.toggleFullscreen(index);
-        }
       }
     });
   }
@@ -99,7 +90,6 @@ export class EdtModalAjuda extends LitElement {
           allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
         ></iframe>
       </div>
-      <!-- <div class="fullscreen-content"><button class="fullscreen-btn" data-video-index="${index}">Ver em tela cheia</button></div> -->
     `;
   }
 
