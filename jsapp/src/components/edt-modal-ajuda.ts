@@ -49,7 +49,9 @@ export class EdtModalAjuda extends LitElement {
         [...this.detailsGroup.querySelectorAll('sl-details')].forEach((details, i) => {
           details.open = e.target === details;
           if (details.open) {
-            details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => {
+              details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 0);
             this.selecionado = i;
           }
         });
