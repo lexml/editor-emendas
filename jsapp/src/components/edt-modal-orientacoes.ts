@@ -1,17 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { customElement, property, query, state } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { LitElement, html, css, TemplateResult } from 'lit';
 
 @customElement('edt-modal-orientacoes')
 export class EdtModalOrientacoes extends LitElement {
   @property({ type: Number }) private step = 1;
   @query('sl-dialog') private slDialog!: any;
-
-  @query('edt-modal-ajuda')
-  private modalAjuda!: any;
-
-  @query('edt-app')
-  private edtApp!: any;
 
   private stepsData = [
     { step: 1, title: 'Elementos do Editor de Emendas' },
@@ -125,6 +118,13 @@ export class EdtModalOrientacoes extends LitElement {
     }
   `;
 
+  private motivosEmendaTextoLivre: string[] = [];
+
+  protected firstUpdated(): void {
+    const elLexmlEmenda = this.parentElement?.querySelector('lexml-emenda') as any;
+    elLexmlEmenda && this.motivosEmendaTextoLivre.push(...elLexmlEmenda.getRestricoesConhecidas().concat('Outro motivo.'));
+  }
+
   public show(): void {
     const noShowAgain = localStorage.getItem('wizardOrientacoes');
     const noShowAgainSwitch = this.shadowRoot?.querySelector('#noShowAgain') as any;
@@ -133,6 +133,10 @@ export class EdtModalOrientacoes extends LitElement {
     }
     this.step = 1;
     this.slDialog.show();
+    setTimeout(() => {
+      const btnAvancar = this.shadowRoot?.querySelector('#btnAvancar') as any;
+      btnAvancar.focus();
+    }, 0);
   }
 
   private handleNextStep(): void {
@@ -182,10 +186,10 @@ export class EdtModalOrientacoes extends LitElement {
                     nome do usuário.
                   </li>
                   <li>
-                    <strong>Editor:</strong> Esse é a principal área do editor, contendo abas como Texto e Justificativa, onde você fará a maior parte
+                    <strong>Editor:</strong> Esse é a principal área do editor, contendo abas como Texto e Justificação, onde você fará a maior parte
                     de suas edições.
                   </li>
-                  <li><strong>Emenda:</strong> Um painel com comandos da emenda, dicas e atalhos para facilitar sua experiência.</li>
+                  <li><strong>Emenda:</strong> Um painel com comandos da emenda, dicas e atalhos de teclado para facilitar sua experiência.</li>
                   <li><strong>Rodapé:</strong> Mantenha-se informado sobre a versão atual do aplicativo.</li>
                 </ol>
               </div>
@@ -199,10 +203,10 @@ export class EdtModalOrientacoes extends LitElement {
               <div class="col" id="col1">
                 <p>O <strong>Cabeçalho</strong> serve como sua primeira orientação no editor. Nele, você encontrará:</p>
                 <ol>
-                  <li><strong>Número e ano da MPV:</strong> Uma identificação rápida da Medida Provisória que você está editando.</li>
+                  <li><strong>Nome do arquivo:</strong> O nome do arquivo da emenda que está sendo editada.</li>
                   <li>
                     <strong>Sinalizador de arquivo não salvo:</strong>
-                    Aparece quando a emenda tem alterações que não foram salvas.
+                    Aparece, ao lado do nome do arquivo, quando a emenda tem alterações que não foram salvas.
                     <br />
                     <img class="image" style="margin-top: 5px;" src="./assets/jpg/orientacoes-2-1.jpg" alt="Sinalizador de arquivo não salvo" />
                   </li>
@@ -229,11 +233,10 @@ export class EdtModalOrientacoes extends LitElement {
                   </li>
                   <li><strong>Avisos:</strong> Área com alertas de erros, omissões ou sugestões referentes à emenda em elaboração.</li>
                   <li><strong>Menu de contexto:</strong> Ações que podem ser realizadas a partir do dispositivo selecionado.</li>
-                  <li>
-                    <strong>Marcas de revisão:</strong> Opção para ativar/desativar o modo de revisão. (só aparecerá quando existirem revisões na
-                    emenda)
+                  <li><strong>Marcas de revisão:</strong> Opção para ativar/desativar o modo de revisão.</li>
                   </li>
-                  <li><strong>Ações de revisão:</strong> Botões para ações relacionadas com as marcas de revisão.</li>
+                  <li><strong>Ações de revisão:</strong> Botões para ações relacionadas com as marcas de revisão. (só aparecerão quando existirem revisões na
+                    emenda)</li>
                 </ol>
               </div>
               <div class="col" id="col2">
@@ -291,7 +294,7 @@ export class EdtModalOrientacoes extends LitElement {
                   <li>
                     <strong>"Onde couber":</strong>
                     <p>
-                      Esse tipo de emenda permite propor alterações sem especificar a localização exata na medida provisória. No entanto, orienta-se o
+                      Esse tipo de emenda permite propor novos dispositivos sem especificar a localização exata na medida provisória. No entanto, orienta-se o
                       uso preferencial de emendas padrão, com posicionamento dos novos dispositivos propostos, em vez de emendas de dispositivos "onde
                       couber".
                     </p>
@@ -312,15 +315,7 @@ export class EdtModalOrientacoes extends LitElement {
                       emenda de dispositivo "onde couber". Ao optar por uma emenda de texto livre, é essencial especificar o motivo:
                     </p>
                     <ul>
-                      <li>Emendamento ou adição de pena, penalidade etc.</li>
-                      <li>Emendamento ou adição de especificação temática do dispositivo (usado para nome do tipo penal e outros).</li>
-                      <li>Alteração de anexo de MP de crédito extraordinário.</li>
-                      <li>Emendamento ou adição de anexos.</li>
-                      <li>Alteração do texto da proposição e proposta de adição de dispositivos "onde couber" na mesma emenda.</li>
-                      <li>Alteração de norma que não segue a LC nº 95 de 98 (ex: norma com alíneas em parágrafos).</li>
-                      <li>Casos especiais de numeração de parte (PARTE GERAL, PARTE ESPECIAL e uso de numeral ordinal por extenso).</li>
-                      <li>Tabelas e imagens no texto da proposição.</li>
-                      <li>Outro motivo.</li>
+                      ${this.motivosEmendaTextoLivre.map(s => html`<li>${s}</li>`)}
                     </ul>
                   </li>
                 </ol>
@@ -357,9 +352,8 @@ export class EdtModalOrientacoes extends LitElement {
           <div class="wizard-controls">
             <sl-button @click=${this.handlePreviousStep} ?disabled=${this.step === 1}> Voltar </sl-button>
             ${this.step} / ${this.stepsData.length}
-            <sl-button @click=${this.handleNextStep} ?disabled="${this.step === this.stepsData.length}"> Avançar </sl-button>
+            <sl-button id="btnAvancar" @click=${this.handleNextStep} ?disabled="${this.step === this.stepsData.length}"> Avançar </sl-button>
           </div>
-
           <!-- Botão de fechar à direita -->
           <sl-button slot="footer" variant="default" @click=${(): void => this.slDialog.hide()}>Fechar</sl-button>
         </div>

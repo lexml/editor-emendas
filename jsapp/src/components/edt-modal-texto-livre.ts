@@ -4,29 +4,9 @@ import { ondeCouberStyles } from './app.css';
 
 @customElement('edt-modal-texto-livre')
 export class EdtModalTextoLivre extends LitElement {
-  private motivos = [
-    { id: 1, desc: 'Emendamento ou adição de pena, penalidade etc.' },
-    {
-      id: 2,
-      desc: 'Emendamento ou adição de especificação temática do dispositivo (usado para nome do tipo penal e outros).',
-    },
-    { id: 3, desc: 'Alteração de anexo de MP de crédito extraordinário.' },
-    { id: 4, desc: 'Emendamento ou adição de anexos.' },
-    {
-      id: 5,
-      desc: 'Alteração do texto da proposição e proposta de adição de dispositivos onde couber na mesma emenda.',
-    },
-    {
-      id: 6,
-      desc: 'Alteração de norma que não segue a LC nº 95 de 98 (ex: norma com alíneas em parágrafos).',
-    },
-    {
-      id: 7,
-      desc: 'Casos especiais de numeração de parte (PARTE GERAL, PARTE ESPECIAL e uso de numeral ordinal por extenso);',
-    },
-    { id: 8, desc: 'Tabelas e imagens no texto da proposição.' },
-    { id: 9, desc: 'Outro motivo:' },
-  ];
+  private ID_OUTRO_MOTIVO = 9999;
+
+  private motivos: { id: number; desc: string }[] = [];
 
   private idMotivo = 0;
 
@@ -44,6 +24,17 @@ export class EdtModalTextoLivre extends LitElement {
   @queryAll('#radioMotivo sl-radio')
   private radioMotivo!: HTMLInputElement[];
 
+  connectedCallback(): void {
+    const elLexmlEmenda = this.parentElement?.querySelector('lexml-emenda') as any;
+    if (elLexmlEmenda) {
+      this.motivos = elLexmlEmenda
+        .getRestricoesConhecidas()
+        .map((s: string, i: number) => ({ id: i + 1, desc: s }))
+        .concat({ id: this.ID_OUTRO_MOTIVO, desc: 'Outro motivo:' });
+    }
+    super.connectedCallback();
+  }
+
   public show(): void {
     this.hideAlerta();
     this.idMotivo = 0;
@@ -51,6 +42,11 @@ export class EdtModalTextoLivre extends LitElement {
     this.inputMotivo.value = '';
     this.radioMotivo.forEach((r: HTMLInputElement) => (r.checked = false));
     this.slDialog.show();
+    const radio = this.radioMotivo[0];
+    setTimeout(() => {
+      radio.click();
+      radio.focus();
+    }, 100);
   }
 
   private showAlerta(mensagem: string): void {
@@ -69,7 +65,7 @@ export class EdtModalTextoLivre extends LitElement {
       return '';
     }
 
-    if (this.idMotivo === 9) {
+    if (this.idMotivo === this.ID_OUTRO_MOTIVO) {
       return `${motivo.desc} ${this.descMotivo}`;
     }
     return motivo.desc;
@@ -90,7 +86,7 @@ export class EdtModalTextoLivre extends LitElement {
     this.hideAlerta();
     if (!this.idMotivo) {
       this.showAlerta('Selecione um motivo');
-    } else if (this.idMotivo === 9 && !this.descMotivo) {
+    } else if (this.idMotivo === this.ID_OUTRO_MOTIVO && !this.descMotivo) {
       this.showAlerta('Especifique o Motivo');
     } else {
       this.emitirEvento('nova-emenda-texto-livre');

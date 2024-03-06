@@ -333,12 +333,6 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private showModalSufixos(): void {
-    if (this.modalSufixos !== null) {
-      this.modalSufixos.show();
-    }
-  }
-
   private showModalEmendaSemTexto(proposicaoSelecionada: Proposicao): void {
     if (this.modalEmendaSemTexto !== null) {
       this.modalEmendaSemTexto.show(proposicaoSelecionada);
@@ -815,10 +809,14 @@ export class EdtApp extends LitElement {
     return proposicao?.dataLimiteRecebimentoEmendas?.split('-').reverse().join('/');
   }
 
+  private getDataPublicacaoMP(proposicao: Proposicao): string | undefined {
+    return proposicao?.dataPublicacao?.split('-').reverse().join('/');
+  }
+
   private getTextoComplementarPrazoEmenda(proposicao: Proposicao): string | undefined {
     if (!proposicao) return undefined;
     if (proposicao.labelPrazoRecebimentoEmendas?.match(/^\d+\/\d+\/\d+/)) {
-      return proposicao.labelPrazoRecebimentoEmendas?.substring(11);
+      return proposicao.labelPrazoRecebimentoEmendas?.substring(11).replace(/\(|\)/g, '');
     }
     return proposicao.labelPrazoRecebimentoEmendas;
   }
@@ -839,6 +837,7 @@ export class EdtApp extends LitElement {
 
             <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
               <div slot="content">
+                <div><b>Data de publicação (DOU):</b> ${this.getDataPublicacaoMP(this.proposicao) ?? ''}</div>
                 <div>
                   <b>Prazo de emenda:</b> ${`${this.getDataPrazoEmenda(this.proposicao)} (${this.getTextoComplementarPrazoEmenda(this.proposicao)})`}
                 </div>
@@ -883,7 +882,7 @@ export class EdtApp extends LitElement {
           modo=${this.modo}
           @onchange=${this.onChange}
           @onrevisao=${this.onRevisao}
-          @onmodalsufixos=${(): void => this.showModalSufixos()}
+          @onexibirsufixos=${(): void => this.abreModalSufixos()}
         ></lexml-emenda>
       </div>
 
@@ -932,6 +931,9 @@ export class EdtApp extends LitElement {
     return html`
       <sl-dialog label="${this.proposicao.nomeProposicao} - Ementa" class="dialog-emenda">
         ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
+        <br /><br />
+        <label>Data de publicação (DOU):</label>
+        ${this.getDataPublicacaoMP(this.proposicao)}
         <br /><br />
         <label>Prazo para apresentar emenda:</label>
         ${this.getDataPrazoEmenda(this.proposicao)}
