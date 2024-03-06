@@ -839,7 +839,7 @@ export class EdtApp extends LitElement {
 
             <sl-tooltip id="detalhe-emenda--tooltip" placement="bottom">
               <div slot="content">
-                <div><b>Data de Publicação:</b> ${this.getDataPublicacaoMP(this.proposicao) ?? ''}</div>
+                <div><b>Data de publicação (DOU):</b> ${this.getDataPublicacaoMP(this.proposicao) ?? ''}</div>
                 <div>
                   <b>Prazo de emenda:</b> ${`${this.getDataPrazoEmenda(this.proposicao)} (${this.getTextoComplementarPrazoEmenda(this.proposicao)})`}
                 </div>
@@ -934,7 +934,7 @@ export class EdtApp extends LitElement {
       <sl-dialog label="${this.proposicao.nomeProposicao} - Ementa" class="dialog-emenda">
         ${this.getEmentaSemTags(this.proposicao.ementa ?? '')}
         <br /><br />
-        <label>Data de publicação:</label>
+        <label>Data de publicação (DOU):</label>
         ${this.getDataPublicacaoMP(this.proposicao)}
         <br /><br />
         <label>Prazo para apresentar emenda:</label>
