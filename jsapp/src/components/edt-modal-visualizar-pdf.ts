@@ -33,6 +33,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       const fileName = await resp.text();
       console.log(fileName);
       this.pdfUrl = `./api/emenda/pdfFile/${fileName}`;
+      //this.pdfUrl = `http://localhost:8000/assets/exemplo.pdf`;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(`Erro inesperado ao gerar o PDF`);
@@ -77,7 +78,8 @@ export class EdtModalVisualizarPdf extends LitElement {
       ${visualizarPdfStyles}
       <sl-dialog label=${`Visualizar ${tituloModal}`} style="--width: 80vw">
         <div class="pdf-area">
-          <embed src=${this.pdfUrl} type="application/pdf" frameborder="0" width="100%" />
+          <!--<embed src=${this.pdfUrl} type="application/pdf" frameborder="0" width="100%" />-->
+          <iframe src="${'./assets/pdfjs/web/viewer.html?file=' + this.pdfUrl}" width="100%" height="80%"></iframe>
         </div>
       </sl-dialog>
     `;
