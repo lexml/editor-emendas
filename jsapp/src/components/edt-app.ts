@@ -6,7 +6,7 @@ import { customElement, query, state } from 'lit/decorators.js';
 import { Proposicao } from '../model/proposicao';
 import { errorInPromise, errorToBeIgnored, getHttpError, isUserAbortException } from '../utils/error-utils';
 import { buildContent, getUrn } from '../model/lexml/jsonixUtil';
-import { getProposicaoJsonix, pesquisarProposicoes, sendEmailMotivoEmendaTextoLivre } from '../servicos/proposicoes';
+import { getProposicaoJsonix, pesquisarProposicoes } from '../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
@@ -560,7 +560,6 @@ export class EdtApp extends LitElement {
     } else {
       this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
     }
-    sendEmailMotivoEmendaTextoLivre(motivo);
   }
 
   private async criarNovaEmendaTextoLivreSemTexto(proposicaoSelecionada?: Proposicao): Promise<void> {
@@ -592,7 +591,6 @@ export class EdtApp extends LitElement {
         params.motivo = 'Medida provisória sem articulação';
         this.showEditor = true;
         this.lexmlEmenda.inicializarEdicao(params);
-        sendEmailMotivoEmendaTextoLivre(params.motivo);
         // this.lexmlEmenda.style.display = 'block';
 
         this.atualizarTituloEditor();
