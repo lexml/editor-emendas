@@ -16,8 +16,8 @@ public class MotivoEmendaTextoLivreServiceImpl implements MotivoEmendaTextoLivre
     public void sendEmail(MotivoEmendaTextoLivre message) {
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
 
-        simpleMailMessage.setFrom("ls_sesap@senado.leg.br");
-        simpleMailMessage.setTo("editoremenda@camara.leg.br");
+        simpleMailMessage.setFrom("lexedit@senado.leg.br");
+        simpleMailMessage.setTo("lexedit@senado.leg.br");
         simpleMailMessage.setSubject(message.ASSUNTO);
         simpleMailMessage.setText(message.getMensagem());
         
