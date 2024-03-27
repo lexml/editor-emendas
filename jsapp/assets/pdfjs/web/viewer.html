@@ -41,7 +41,7 @@ See https://github.com/adobe-type-tools/cmap-resources
     <script>
       PDFJS.locale = 'pt-BR';
     </script>
-    
+
   </head>
 
   <body tabindex="1" class="loadingInProgress">
@@ -361,6 +361,7 @@ See https://github.com/adobe-type-tools/cmap-resources
   <script>
     try {
       setTimeout(window.parent.notifyPdfViewerReady, 500);
+      document.body.innerHTML = document.body.innerHTML.replace(/\uFEFF/g, "");
     }
     catch(e) {
       console.log(e);
