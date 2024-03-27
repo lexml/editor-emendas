@@ -649,10 +649,16 @@ export const visualizarPdfStyles = html`
     }
     sl-dialog {
       --body-spacing: 0;
+      --width: 80vw;
     }
     sl-dialog::part(body) {
       overflow: hidden;
       padding: 0;
+    }
+    @media (max-width: 768px) {
+      sl-dialog {
+        --width: 100vw;
+      }
     }
   </style>
 `;

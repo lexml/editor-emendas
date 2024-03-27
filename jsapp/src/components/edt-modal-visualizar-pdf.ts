@@ -76,7 +76,7 @@ export class EdtModalVisualizarPdf extends LitElement {
     const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
     return html`
       ${visualizarPdfStyles}
-      <sl-dialog label=${`Visualizar ${tituloModal}`} style="--width: 80vw">
+      <sl-dialog label=${`Visualizar ${tituloModal}`}>
         <div class="pdf-area">
           <iframe src="${'./assets/pdfjs/web/viewer.html?file=' + this.pdfUrl}" width="100%" height="100%"></iframe>
         </div>
