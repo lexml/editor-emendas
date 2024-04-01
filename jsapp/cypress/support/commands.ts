@@ -140,7 +140,28 @@ const fnChecarDadosEmendaAbaTextoPadrao = (emenda: any): void => {
   // TODO: tornar genérico
   const rotulo = emenda.componentes[0].dispositivos.dispositivosAdicionados[0].rotulo;
   cy.get('edt-app lexml-eta-editor').find('label').contains(rotulo);
+
+  // Verificar mensagem alerta de identificação de sufixo
   cy.get('#onmodalsufixos.mensagem.mensagem--warning').should('have.text', 'Como interpretar sufixos (-1, -2,...)?. Saiba mais');
+
+  // Verificar a identificação do link Saiba mais e clicar nele
+  cy.get('span.mensagem__fix').should('have.text', 'Saiba mais');
+  cy.get('#onmodalsufixos').click();
+
+  // Exibir a janela modal de Sufixos de posicionamento
+  cy.get('#onmodalsufixos').should('be.visible');
+
+  // Verificando o título da janela modal
+  cy.get('lexml-sufixos-modal').shadow().find('sl-dialog').find('span').should('have.text', 'Sufixos de posicionamento');
+
+  // Verificando parte do texto do parágrafo da janela modal
+  cy.get('lexml-sufixos-modal').shadow().find('sl-dialog').find('div').find('p').should('contain', 'Os sufixos na numeração');
+
+  // Verificando o clique no botão não mostrar novamente
+  cy.get('lexml-sufixos-modal').shadow().find('sl-dialog').find('div.footer-container').find('sl-switch#noShowAgain').click();
+
+  // Verificando o clique no botão fechar da janela modal
+  cy.get('lexml-sufixos-modal').shadow().find('sl-dialog').find('div.footer-container').find('sl-button').click();
 };
 
 const fnChecarDadosEmendaAbaTextoOndeCouber = (emenda: any): void => {
