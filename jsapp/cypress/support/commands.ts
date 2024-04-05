@@ -162,6 +162,9 @@ const fnChecarDadosEmendaAbaTextoPadrao = (emenda: any): void => {
 
   // Verificando o clique no botão fechar da janela modal
   cy.get('lexml-sufixos-modal').shadow().find('sl-dialog').find('div.footer-container').find('sl-button').click();
+
+  // Verificar o link da lei citada no artigo 1-1 e clicar no link
+  cy.get('#lx-eta-editor > .ql-tooltip > .ql-preview').click({ force: true });
 };
 
 const fnChecarDadosEmendaAbaTextoOndeCouber = (emenda: any): void => {
@@ -185,7 +188,8 @@ const fnChecarDadosEmendaAbaTextoTextoLivre = (emenda: any): void => {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const fnChecarDadosEmendaAbaJustificativa = (emenda: any): void => {
-  // TODO: Verificar se a aparece o texto completo da justificação
+  cy.get('#sl-tab-2').click();
+  cy.get('#editor-texto-rico-justificativa-inner > .ql-editor > p').contains('É preciso consolidar na Lei de Mobilidade Urbana');
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
