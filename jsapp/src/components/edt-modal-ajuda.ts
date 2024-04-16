@@ -23,6 +23,7 @@ const videos: Array<Video> = [
   new Video('Marcas de revisão', 'Zvv0oPVREz0'),
   new Video('Emenda de texto livre', '_i1jDNEBNRw'),
   new Video('Uso de linhas pontilhadas ao colar dispositivos', 'uYXsH-F-AQM'),
+  new Video('Copiar texto de PDF sem perder a formatação', 'Pe5zRMli2xc'),
 ];
 
 @customElement('edt-modal-ajuda')
