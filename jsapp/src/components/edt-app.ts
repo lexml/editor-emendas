@@ -498,11 +498,13 @@ export class EdtApp extends LitElement {
       this.modalVisualizarPdf.show();
       this.toggleCarregando();
     } else if (ev.detail.itemMenu === 'padrao') {
-      this.checkDirtyAndExecuteNextFunction(() => this.criarNovaEmendaPadrao(this.proposicao));
+      this.checkDirtyAndExecuteNextFunction(() => {
+        this.trocarTipoEmenda('emenda');
+      });
     } else if (ev.detail.itemMenu === 'onde-couber') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaOndeCouber());
     } else if (ev.detail.itemMenu === 'substituicao-termo') {
-      this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaSubstituicaoTermo());
+      this.checkDirtyAndExecuteNextFunction((): void => this.trocarTipoEmenda('emendaSubstituicaoTermo'));
     } else if (ev.detail.itemMenu === 'texto-livre') {
       this.checkDirtyAndExecuteNextFunction(() => this.novaEmendaTextoLivre());
     } else if (ev.detail.itemMenu === 'download') {
@@ -559,85 +561,68 @@ export class EdtApp extends LitElement {
     }
   }
 
-  private async criarNovaEmendaTextoLivreSemTexto(proposicaoSelecionada?: Proposicao): Promise<void> {
+  private async criarNovaEmendaTextoLivreSemTexto(proposicaoSelecionada: Proposicao): Promise<void> {
     this.modo = 'emendaTextoLivre';
 
     setTimeout(() => {
-      if (
-        proposicaoSelecionada &&
-        proposicaoSelecionada.sigla &&
-        proposicaoSelecionada.numero &&
-        proposicaoSelecionada.ano &&
-        proposicaoSelecionada.ementa
-      ) {
-        const params = new LexmlEmendaParametrosEdicao();
-        params.modo = this.modo;
-        // this.tituloEmenda =
-        //   'Emenda ' +
-        //   (proposicaoSelecionada.nomeProposicao ?? '').replace('/', ' ');
-        params.proposicao = {
-          sigla: proposicaoSelecionada.sigla!,
-          numero: proposicaoSelecionada.numero!,
-          ano: proposicaoSelecionada.ano!,
-          ementa: proposicaoSelecionada.ementa!,
-        };
+      const params = new LexmlEmendaParametrosEdicao();
+      params.modo = this.modo;
+      params.proposicao = {
+        sigla: proposicaoSelecionada.sigla!,
+        numero: proposicaoSelecionada.numero!,
+        ano: proposicaoSelecionada.ano!,
+        ementa: proposicaoSelecionada.ementa!,
+      };
 
-        this.proposicao = { ...proposicaoSelecionada };
+      params.isMateriaOrcamentaria = !!proposicaoSelecionada.tipoMateriaOrcamentaria;
 
-        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
-        params.motivo = 'Medida provisória sem articulação';
-        this.showEditor = true;
-        this.lexmlEmenda.inicializarEdicao(params);
-        // this.lexmlEmenda.style.display = 'block';
+      this.proposicao = { ...proposicaoSelecionada };
 
-        this.atualizarTituloEditor();
-        setTimeout(() => {
-          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
-          this.isDirty = false;
-          this.isOpenFile = false;
-          this.wasSaved = false;
-          this.updateStateElements();
-        }, 0);
-      }
+      this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
+      params.motivo = 'Medida provisória sem articulação';
+      this.showEditor = true;
+      this.lexmlEmenda.inicializarEdicao(params);
+
+      this.atualizarTituloEditor();
+      setTimeout(() => {
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
+        this.isDirty = false;
+        this.isOpenFile = false;
+        this.wasSaved = false;
+        this.updateStateElements();
+      }, 0);
     }, 0);
   }
 
-  private async criarNovaEmendaSubstituicaoTermoSemTexto(proposicaoSelecionada?: Proposicao): Promise<void> {
+  private async criarNovaEmendaSubstituicaoTermoSemTexto(proposicaoSelecionada: Proposicao): Promise<void> {
     this.modo = 'emendaSubstituicaoTermo';
 
     setTimeout(() => {
-      if (
-        proposicaoSelecionada &&
-        proposicaoSelecionada.sigla &&
-        proposicaoSelecionada.numero &&
-        proposicaoSelecionada.ano &&
-        proposicaoSelecionada.ementa
-      ) {
-        const params = new LexmlEmendaParametrosEdicao();
-        params.modo = this.modo;
-        params.proposicao = {
-          sigla: proposicaoSelecionada.sigla!,
-          numero: proposicaoSelecionada.numero!,
-          ano: proposicaoSelecionada.ano!,
-          ementa: proposicaoSelecionada.ementa!,
-        };
+      const params = new LexmlEmendaParametrosEdicao();
+      params.modo = this.modo;
+      params.proposicao = {
+        sigla: proposicaoSelecionada.sigla!,
+        numero: proposicaoSelecionada.numero!,
+        ano: proposicaoSelecionada.ano!,
+        ementa: proposicaoSelecionada.ementa!,
+      };
 
-        this.proposicao = { ...proposicaoSelecionada };
+      params.isMateriaOrcamentaria = !!proposicaoSelecionada.tipoMateriaOrcamentaria;
 
-        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
-        this.showEditor = true;
-        this.lexmlEmenda.inicializarEdicao(params);
-        // this.lexmlEmenda.style.display = 'block';
+      this.proposicao = { ...proposicaoSelecionada };
 
-        this.atualizarTituloEditor();
-        setTimeout(() => {
-          this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
-          this.isDirty = false;
-          this.isOpenFile = false;
-          this.wasSaved = false;
-          this.updateStateElements();
-        }, 0);
-      }
+      this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
+      this.showEditor = true;
+      this.lexmlEmenda.inicializarEdicao(params);
+
+      this.atualizarTituloEditor();
+      setTimeout(() => {
+        this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
+        this.isDirty = false;
+        this.isOpenFile = false;
+        this.wasSaved = false;
+        this.updateStateElements();
+      }, 0);
     }, 0);
   }
 
@@ -668,6 +653,7 @@ export class EdtApp extends LitElement {
       modo: this.modo,
       projetoNorma: this.jsonixProposicao,
       motivo: this.motivo,
+      isMateriaOrcamentaria: !!proposicao.tipoMateriaOrcamentaria,
     });
     setTimeout(() => {
       this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
@@ -678,42 +664,30 @@ export class EdtApp extends LitElement {
     }, 200);
   }
 
-  private criarNovaEmendaArtigoOndeCouber(proposicaoSelecionada?: Proposicao): void {
+  private criarNovaEmendaArtigoOndeCouber(proposicaoSelecionada: Proposicao): void {
     this.modo = 'emendaArtigoOndeCouber';
     this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao}`;
     this.labelTipoEmenda = this.getTipoEmenda(this.modo); // 'Emenda onde couber';
 
     setTimeout(() => {
-      if (
-        proposicaoSelecionada &&
-        proposicaoSelecionada.sigla &&
-        proposicaoSelecionada.numero &&
-        proposicaoSelecionada.ano &&
-        proposicaoSelecionada.ementa
-      ) {
-        const params = new LexmlEmendaParametrosEdicao();
-        params.modo = this.modo;
+      const params = new LexmlEmendaParametrosEdicao();
+      params.modo = this.modo;
 
-        params.proposicao = {
-          sigla: proposicaoSelecionada.sigla!,
-          numero: proposicaoSelecionada.numero!,
-          ano: proposicaoSelecionada.ano!,
-          ementa: proposicaoSelecionada.ementa!,
-        };
+      params.proposicao = {
+        sigla: proposicaoSelecionada.sigla!,
+        numero: proposicaoSelecionada.numero!,
+        ano: proposicaoSelecionada.ano!,
+        ementa: proposicaoSelecionada.ementa!,
+      };
 
-        this.proposicao = { ...proposicaoSelecionada };
+      params.isMateriaOrcamentaria = !!proposicaoSelecionada.tipoMateriaOrcamentaria;
 
-        this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
+      this.proposicao = { ...proposicaoSelecionada };
 
-        this.showEditor = true;
-        this.lexmlEmenda.inicializarEdicao(params);
-        // this.lexmlEmenda.style.display = 'block';
-      } else {
-        this.lexmlEmenda.inicializarEdicao({
-          modo: this.modo,
-          projetoNorma: this.jsonixProposicao,
-        });
-      }
+      this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
+
+      this.showEditor = true;
+      this.lexmlEmenda.inicializarEdicao(params);
       this.atualizarTituloEditor();
       setTimeout(() => {
         this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
@@ -723,6 +697,20 @@ export class EdtApp extends LitElement {
         this.updateStateElements();
       }, 0);
     }, 0);
+  }
+
+  private trocarTipoEmenda(modo: string, motivo = ''): void {
+    this.modo = modo;
+    this.motivo = motivo;
+    this.labelTipoEmenda = this.getTipoEmenda(this.modo);
+
+    this.lexmlEmenda.trocarModoEdicao(this.modo, motivo);
+
+    setTimeout(() => {
+      this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(this.lexmlEmenda.getEmenda()));
+      this.isDirty = true;
+      this.updateStateElements();
+    }, 200);
   }
 
   private atualizarTituloEmenda(evt: Event): void {
@@ -888,13 +876,10 @@ export class EdtApp extends LitElement {
 
       <edt-modal-visualizar-pdf tituloEmenda=${this.tituloEmenda}></edt-modal-visualizar-pdf>
 
-      <edt-modal-onde-couber
-        @nova-emenda-padrao=${(): any => this.criarNovaEmendaPadrao({ ...this.proposicao })}
-        @nova-emenda-artigo-onde-couber=${this.criarNovaEmendaArtigoOndeCouber}
-      ></edt-modal-onde-couber>
+      <edt-modal-onde-couber @nova-emenda-artigo-onde-couber=${(): void => this.trocarTipoEmenda('emendaArtigoOndeCouber')}></edt-modal-onde-couber>
 
       <edt-modal-texto-livre
-        @nova-emenda-texto-livre=${(ev: CustomEvent): any => this.criarNovaEmendaTextoLivre({ ...this.proposicao }, ev.detail.motivo)}
+        @nova-emenda-texto-livre=${(ev: CustomEvent): void => this.trocarTipoEmenda('emendaTextoLivre', ev.detail.motivo)}
       ></edt-modal-texto-livre>
 
       <edt-modal-confirmacao-salvar @confirm-result=${this.processarResultadoConfirmacao}></edt-modal-confirmacao-salvar>
