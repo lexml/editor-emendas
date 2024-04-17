@@ -85,6 +85,14 @@ export class EdtModalNovaEmenda extends LitElement {
           return;
         }
         this.proposicoes = await pesquisarProposicoesEmTramitacao(this.sigla);
+
+        // Para testar proposição sem texto lexml
+        // this.proposicoes.forEach(p => {
+        //   if (p.numero === '01209') {
+        //     delete p.idSdlegDocumentoItemDigital;
+        //   }
+        // });
+
       } else {
         if (!(this.sigla && this.ano)) {
           return;

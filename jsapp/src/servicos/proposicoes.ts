@@ -30,6 +30,7 @@ const buscarProposicoes = async (url: string): Promise<Proposicao[]> => {
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
       labelTramitacao: p.labelTramitacao,
       codMateriaMigradaMATE: p.codMateriaMigradaMATE,
+      tipoMateriaOrcamentaria: p.tipoMateriaOrcamentaria,
     }))
     .sort(compareProposicoesDesc);
 };
