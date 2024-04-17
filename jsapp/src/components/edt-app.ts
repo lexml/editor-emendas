@@ -59,11 +59,11 @@ export class EdtApp extends LitElement {
   @query('edt-modal-orientacoes')
   private modalOrientacoes!: any;
 
-  @query('edt-modal-sufixos')
-  private modalSufixos!: any;
-
   @query('edt-modal-emenda-sem-texto')
   private modalEmendaSemTexto!: any;
+
+  @query('lexml-sufixos-modal')
+  private modalSufixos!: any;
 
   private jsonixProposicao: any = {};
 
@@ -326,13 +326,6 @@ export class EdtApp extends LitElement {
     this.modalOrientacoes.show();
   }
 
-  private checkAndShowSufixos(): void {
-    const orientationShown = localStorage.getItem('naoMostrarExplicacaoSufixo');
-    if (!orientationShown) {
-      this.modalSufixos.show();
-    }
-  }
-
   private showModalEmendaSemTexto(proposicaoSelecionada: Proposicao): void {
     if (this.modalEmendaSemTexto !== null) {
       this.modalEmendaSemTexto.show(proposicaoSelecionada);
@@ -541,7 +534,9 @@ export class EdtApp extends LitElement {
   }
 
   private abreModalSufixos(): void {
-    this.lexmlEmenda.openModalSufixos();
+    if (this.modalSufixos !== null) {
+      this.modalSufixos.show();
+    }
   }
 
   private onBotaoNotasVersaoSelecionado(ev: CustomEvent): void {
@@ -870,7 +865,6 @@ export class EdtApp extends LitElement {
           modo=${this.modo}
           @onchange=${this.onChange}
           @onrevisao=${this.onRevisao}
-          @onexibirsufixos=${(): void => this.abreModalSufixos()}
         ></lexml-emenda>
       </div>
 
@@ -893,7 +887,6 @@ export class EdtApp extends LitElement {
       <edt-modal-usuario @atualizar-usuario=${(ev: CustomEvent): any => this.atualizarUsuario(ev.detail.usuario)}></edt-modal-usuario>
 
       <edt-modal-orientacoes @open-modal-videos=${(): void => this.abrirVideos()}> </edt-modal-orientacoes>
-      <edt-modal-sufixos></edt-modal-sufixos>
       <edt-modal-emenda-sem-texto
         @cria-artigo-onde-couber=${(ev: CustomEvent): any =>
           this.criarNovaEmendaArtigoOndeCouber({
