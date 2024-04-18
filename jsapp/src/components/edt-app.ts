@@ -579,7 +579,7 @@ export class EdtApp extends LitElement {
       this.proposicao = { ...proposicaoSelecionada };
 
       this.tituloEmenda = `Emenda ${this.proposicao.nomeProposicao!.replace('/', ' ')}`;
-      params.motivo = 'Medida provisória sem articulação';
+      params.motivo = 'Texto para emendamento indisponível';
       this.showEditor = true;
       this.lexmlEmenda.inicializarEdicao(params);
 
