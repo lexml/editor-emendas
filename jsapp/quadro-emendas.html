@@ -97,23 +97,24 @@
       const sigla = url.searchParams.get("sigla");
       const numero = url.searchParams.get("numero");
       const ano = url.searchParams.get("ano");
+      const exibirTipo = url.searchParams.get("exibirTipo");
 
-      return { sigla, numero, ano };
+      return { sigla, numero, ano, exibirTipo };
     }
 
     function setIframeUrl(iframe) {
-      const { sigla, numero, ano } = extractParamsFromUrl(window.location.href);
+      const { sigla, numero, ano, exibirTipo } = extractParamsFromUrl(window.location.href);
 
       if (!sigla || !numero || !ano) {
         iframe.src = `${baseUrl}?origem=${origem}&embedded=${embedded}`;
       } else {
-        iframe.src = `${baseUrl}quadroEmendas?sigla=${sigla}&numero=${numero}&ano=${ano}&origem=${origem}&embedded=${embedded}`;
+        iframe.src = `${baseUrl}quadroEmendas?sigla=${sigla}&numero=${numero}&ano=${ano}&origem=${origem}&embedded=${embedded}${exibirTipo ? `&exibirTipo=${exibirTipo}` : ''}`;
       }
     }
 
     function sincronizarUrl(urlIframe) {
-      const { sigla, numero, ano } = extractParamsFromUrl(urlIframe);
-      const parametros = [`sigla=${sigla}`, `numero=${numero}`, `ano=${ano}`].filter(s => !s.includes('null')).join('&');
+      const { sigla, numero, ano, exibirTipo } = extractParamsFromUrl(urlIframe);
+      const parametros = [`sigla=${sigla}`, `numero=${numero}`, `ano=${ano}`].filter(s => !s.includes('null')).join('&') + (exibirTipo ? `&exibirTipo=${exibirTipo}` : '');
 
       let complemento = parametros;
       if (complemento) {
