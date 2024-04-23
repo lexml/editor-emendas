@@ -183,9 +183,10 @@ public class EditorApiController {
     @GetMapping(path = "/proposicoesEmTramitacao-novo", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
-            @RequestParam(required = false) Boolean carregarDatasDeMPs) {
-    	
-    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs);
+            @RequestParam(required = false) Boolean carregarDatasDeMPs,
+            @RequestParam(required = false, defaultValue = "false") Boolean preferirSubstitutivo ) {
+
+    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs, preferirSubstitutivo);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
