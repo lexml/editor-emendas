@@ -162,7 +162,10 @@ export const appStyles = html`
 
     .dialog-emenda {
       --width: 60vw;
-      @media (max-width: 768px) {
+    }
+
+    @media (max-width: 768px) {
+      .dialog-emenda {
         --width: 100vw;
       }
     }
@@ -649,7 +652,16 @@ export const visualizarPdfStyles = html`
     }
     sl-dialog {
       --body-spacing: 0;
-      border: 1px solid red;
+      --width: 80vw;
+    }
+    sl-dialog::part(body) {
+      overflow: hidden;
+      padding: 0;
+    }
+    @media (max-width: 768px) {
+      sl-dialog {
+        --width: 100vw;
+      }
     }
   </style>
 `;

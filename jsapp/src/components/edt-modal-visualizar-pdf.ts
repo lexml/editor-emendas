@@ -32,7 +32,7 @@ export class EdtModalVisualizarPdf extends LitElement {
       });
       const fileName = await resp.text();
       console.log(fileName);
-      this.pdfUrl = `./api/emenda/pdfFile/${fileName}`;
+      this.pdfUrl = `../../../api/emenda/pdfFile/${fileName}`;
       //this.pdfUrl = `http://localhost:8000/assets/exemplo.pdf`;
     } catch (err) {
       console.log(err);
@@ -76,10 +76,9 @@ export class EdtModalVisualizarPdf extends LitElement {
     const tituloModal = !this.tituloEmenda ? 'emenda' : this.tituloEmenda;
     return html`
       ${visualizarPdfStyles}
-      <sl-dialog label=${`Visualizar ${tituloModal}`} style="--width: 80vw">
+      <sl-dialog label=${`Visualizar ${tituloModal}`}>
         <div class="pdf-area">
-          <!--<embed src=${this.pdfUrl} type="application/pdf" frameborder="0" width="100%" />-->
-          <iframe src="${'./assets/pdfjs/web/viewer.html?file=' + this.pdfUrl}" width="100%" height="80%"></iframe>
+          <iframe src="${'./assets/pdfjs/web/viewer.html?file=' + this.pdfUrl}" width="100%" height="100%"></iframe>
         </div>
       </sl-dialog>
     `;
