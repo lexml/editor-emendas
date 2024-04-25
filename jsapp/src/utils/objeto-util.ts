@@ -36,3 +36,12 @@ export const objetosIguais = (obj1: any, obj2: any): boolean => {
 
   return true;
 };
+
+export const removeAtributoUndefined = (obj: any): any => {
+  for (const key in obj) {
+    if (obj[key] === undefined) {
+      delete obj[key];
+    }
+  }
+  return obj;
+};

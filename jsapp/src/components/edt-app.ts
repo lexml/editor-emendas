@@ -12,7 +12,7 @@ import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
 import { Usuario } from '../model/usuario';
 import { LexmlEmendaParametrosEdicao } from '../model/lexml/parametros';
-import { objetosIguais } from '../utils/objeto-util';
+import { objetosIguais, removeAtributoUndefined } from '../utils/objeto-util';
 
 @customElement('edt-app')
 export class EdtApp extends LitElement {
@@ -774,10 +774,13 @@ export class EdtApp extends LitElement {
       ...this.emendaComAlteracoesSalvas,
       dataUltimaModificacao: null,
     };
-    const emenda = {
+
+    let emenda = {
       ...this.lexmlEmenda.getEmenda(),
       dataUltimaModificacao: null,
     };
+
+    emenda = removeAtributoUndefined(emenda);
 
     emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto = emendaComAlteracoesSalvas.comandoEmendaTextoLivre.texto.trim();
     emenda.comandoEmendaTextoLivre.texto = emenda.comandoEmendaTextoLivre.texto.trim();
