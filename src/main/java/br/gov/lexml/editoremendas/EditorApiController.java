@@ -157,7 +157,7 @@ public class EditorApiController {
             @RequestParam(required = false) String numero,
             @RequestParam(required = false) Boolean carregarDatasDeMPs) {
 
-    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs, false);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -209,7 +209,7 @@ public class EditorApiController {
     		return IOUtils.toString(is, StandardCharsets.UTF_8);
     	}
 
-    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
+    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero, false);
     	
     	if(json.contains("LEXML_URN_ID")) {
 		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
