@@ -199,7 +199,7 @@ export class EdtApp extends LitElement {
 
         this.toggleCarregando();
 
-        return fetch('api/emenda/pdf2json-novo/', {
+        return fetch('api/emenda/pdf2json/', {
           method: 'POST',
           body: fileData,
           headers: {

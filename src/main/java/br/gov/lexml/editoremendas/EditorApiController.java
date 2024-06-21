@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -122,13 +121,7 @@ public class EditorApiController {
         return os.toByteArray();
     }
     
-    // TODO - Apagar método em 2024 :)
     @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmenda(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        throw new EditorEmendasException("Tecle CTRL+SHIFT+R para atualizar a aplicação.");
-    }
-    
-    @PostMapping(path = "/emenda/pdf2json-novo", produces = MediaType.APPLICATION_JSON_VALUE)
     public void abreEmendaNovo(HttpServletRequest request, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     		jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
@@ -140,18 +133,8 @@ public class EditorApiController {
         return listaParlamentaresService.parlamentares();
     }
     
-    // TODO - Apagar método em 2024 :)
     @GetMapping(path = "/proposicoes", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoes(
-            @RequestParam String sigla,
-            @RequestParam int ano,
-            @RequestParam(required = false) String numero) {
-
-    	return listaProposicoes(sigla);
-    }
-    
-    @GetMapping(path = "/proposicoes-novo", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
             @RequestParam int ano,
             @RequestParam(required = false) String numero,
@@ -166,22 +149,8 @@ public class EditorApiController {
     			.collect(Collectors.toList());
     }
     
-    // TODO - Apagar método em 2024 :)
     @GetMapping(path = "/proposicoesEmTramitacao", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoes(
-            @RequestParam String sigla) {
-
-    	Proposicao p = new Proposicao();
-    	p.setSigla("XXX");
-    	p.setNumero("!!!!!!");
-    	p.setAno(2023);
-    	p.setEmenta("Aplicação desatualizada! Tecle CTRL+SHIFT+R para atualizar.");
-    	
-    	return Arrays.asList(p);
-    }
-    
-    @GetMapping(path = "/proposicoesEmTramitacao-novo", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
             @RequestParam(required = false) Boolean carregarDatasDeMPs,
             @RequestParam(required = false, defaultValue = "false") Boolean preferirSubstitutivo ) {

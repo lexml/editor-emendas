@@ -39,12 +39,12 @@ export const pesquisarProposicoes = async (sigla: string, numero: string, ano: n
   const searchParams = new URLSearchParams(
     numero ? { sigla, numero, ano: ano.toString(), carregarDatasDeMPs: 'true' } : { sigla, ano: ano.toString(), carregarDatasDeMPs: 'true' }
   ).toString();
-  const url = `api/proposicoes-novo?${searchParams}`;
+  const url = `api/proposicoes?${searchParams}`;
   return buscarProposicoes(url);
 };
 
 export const pesquisarProposicoesEmTramitacao = async (sigla: string): Promise<Proposicao[]> => {
-  const url = `api/proposicoesEmTramitacao-novo?carregarDatasDeMPs=true&sigla=${sigla}`;
+  const url = `api/proposicoesEmTramitacao?carregarDatasDeMPs=true&sigla=${sigla}`;
   return buscarProposicoes(url);
 };
 
