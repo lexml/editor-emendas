@@ -162,7 +162,10 @@ export const appStyles = html`
 
     .dialog-emenda {
       --width: 60vw;
-      @media (max-width: 768px) {
+    }
+
+    @media (max-width: 768px) {
+      .dialog-emenda {
         --width: 100vw;
       }
     }

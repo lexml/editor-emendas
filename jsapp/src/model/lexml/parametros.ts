@@ -16,6 +16,9 @@ export class LexmlEmendaParametrosEdicao {
   // Preenchido automaticamente se for informada a emenda ou o projetoNorma
   ementa = '';
 
+  // Indicação de matéria orçamentária. Utilizado inicalmente para definir destino de emenda a MP
+  isMateriaOrcamentaria = false;
+
   // Texto json da proposição para emenda ou edição estruturada (modo 'emenda' ou 'edicao')
   // Obrigatório para modo 'emenda'
   // Opcional para modo 'edicao'

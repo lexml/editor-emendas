@@ -30,6 +30,7 @@ const buscarProposicoes = async (url: string): Promise<Proposicao[]> => {
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
       labelTramitacao: p.labelTramitacao,
       codMateriaMigradaMATE: p.codMateriaMigradaMATE,
+      tipoMateriaOrcamentaria: p.tipoMateriaOrcamentaria,
     }))
     .sort(compareProposicoesDesc);
 };
@@ -51,16 +52,3 @@ function compareProposicoesDesc(a: any, b: any): number {
   const s = b.ano - a.ano;
   return s || b.numero - a.numero;
 }
-
-export const sendEmailMotivoEmendaTextoLivre = (motivo: string): void => {
-  if (ambiente === Ambiente.PRODUCAO) {
-    fetch('api/motivo-emenda-texo-livre', {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-      body: JSON.stringify({ motivo }),
-    });
-  }
-};

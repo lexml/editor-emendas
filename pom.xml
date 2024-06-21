@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.5.1-SNAPSHOT</version>
+	<version>1.6.4</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
 			<artifactId>eta-backend-services</artifactId>
-			<version>0.2.22</version>
+			<version>0.2.24-SNAPSHOT</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
@@ -54,7 +54,7 @@
 		<dependency>
 			<groupId>br.gov.lexml</groupId>
 			<artifactId>lexml-jsonix-spring-boot-starter</artifactId>
-			<version>0.1.9</version>
+			<version>0.1.14-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 

@@ -30271,7 +30271,7 @@ const Delta$3 = Quill.import('delta');
 const Parchment$b = Quill.import('parchment');
 const Module$1 = Quill.import('core/module');
 const Inline$1 = Quill.import('blots/inline');
-// const clipboard = Quill.import("modules/clipboard");
+const Clipboard$1 = Quill.import('modules/clipboard');
 const Keyboard$1 = Quill.import('modules/keyboard');
 // --------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------------
@@ -30325,6 +30325,17 @@ class InlineRevisionBaseFormat extends Inline$1 {
             return super.format(name, value);
         RevisaoUtil.valueToAttributes(value, this.domNode);
     }
+    optimize(context) {
+        var _a, _b;
+        const blotName = this.statics.blotName;
+        if (blotName === ((_b = (_a = this.next) === null || _a === void 0 ? void 0 : _a.statics) === null || _b === void 0 ? void 0 : _b.blotName)) {
+            const formatoAtual = this.formats();
+            this.next.domNode.setAttribute('date', this.domNode.getAttribute('date'));
+            this.next.domNode.setAttribute('usuario', this.domNode.getAttribute('usuario'));
+            this.next.format(blotName, formatoAtual[blotName]);
+        }
+        super.optimize(context);
+    }
 }
 InlineRevisionBaseFormat.blotName = 'revisionBaseFormat';
 InlineRevisionBaseFormat.tagName = '';
@@ -30336,6 +30347,12 @@ class DelBlot extends InlineRevisionBaseFormat {
 }
 DelBlot.blotName = 'removed';
 DelBlot.tagName = 'del';
+const cursorEstaSobreBlotDel = quill => {
+    var _a;
+    const range = quill.getSelection();
+    const blot = range && quill.getLeaf(range.index)[0];
+    return (blot === null || blot === void 0 ? void 0 : blot.statics.blotName) === DelBlot.blotName || ((_a = blot === null || blot === void 0 ? void 0 : blot.parent) === null || _a === void 0 ? void 0 : _a.statics.blotName) === DelBlot.blotName;
+};
 // --------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------------
@@ -30344,12 +30361,70 @@ DelBlot.tagName = 'del';
 class CustomKeyboard extends Keyboard$1 {
     listen() {
         this.quill.root.addEventListener('keydown', this.onKeyDown.bind(this));
+        this.quill.root.addEventListener('keypress', this.onKeyPress.bind(this));
         super.listen();
     }
     onKeyDown(e) {
         var _a, _b, _c, _d;
         if (((_b = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.revisao) === null || _b === void 0 ? void 0 : _b.gerenciarKeydown) && ((_d = (_c = this.quill) === null || _c === void 0 ? void 0 : _c.revisao) === null || _d === void 0 ? void 0 : _d.emRevisao)) {
             this.quill.revisao.handleKeyDown(e);
+        }
+    }
+    onKeyPress(e) {
+        if (cursorEstaSobreBlotDel(this.quill)) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }
+}
+class CustomClipboard extends Clipboard$1 {
+    constructor(quill, options) {
+        super(quill, options);
+        this.quill.root.addEventListener('cut', this.onCut.bind(this));
+    }
+    onCut(e) {
+        var _a, _b, _c, _d;
+        if ((_b = (_a = this.quill) === null || _a === void 0 ? void 0 : _a.revisao) === null || _b === void 0 ? void 0 : _b.emRevisao) {
+            e.preventDefault();
+            e.stopPropagation();
+            const range = this.quill.getSelection();
+            if (range === null || range === void 0 ? void 0 : range.length) {
+                this.copiarSelecaoParaClipboard();
+                (_d = (_c = this.quill) === null || _c === void 0 ? void 0 : _c.revisao) === null || _d === void 0 ? void 0 : _d.handleRemove(range, null, null);
+            }
+        }
+    }
+    onPaste(e) {
+        if (cursorEstaSobreBlotDel(this.quill)) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        super.onPaste(e);
+    }
+    copiarSelecaoParaClipboard() {
+        const selection = window.getSelection();
+        if (selection) {
+            if (navigator.clipboard) {
+                // Cria um elemento div temporário para armazenar a seleção
+                const tempElement = document.createElement('div');
+                // Clona a seleção e a insere no elemento div temporário
+                for (let i = 0; i < selection.rangeCount; i++) {
+                    tempElement.appendChild(selection.getRangeAt(i).cloneContents());
+                }
+                // Copia o conteúdo do elemento div temporário para a área de transferência
+                navigator.clipboard
+                    .write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([tempElement.innerText], { type: 'text/plain' }),
+                        'text/html': new Blob([tempElement.outerHTML], { type: 'text/html' }),
+                    }),
+                ])
+                    .finally(() => tempElement.remove());
+            }
+            else {
+                console.log('Clipboard API não suportada');
+                document.execCommand('copy'); // Alternativa para o caso de não suportar a Clipboard API
+            }
         }
     }
 }
@@ -30393,6 +30468,7 @@ class ModuloRevisao extends Module$1 {
     }
     static register() {
         Quill.register('modules/keyboard', CustomKeyboard, true);
+        Quill.register('modules/clipboard', CustomClipboard, true);
         Quill.register(InsBlot, true);
         Quill.register(DelBlot, true);
     }
@@ -30624,7 +30700,6 @@ class ModuloRevisao extends Module$1 {
         // Handle para tratar colagem de trechos com tag <del>
         this.quill.clipboard.addMatcher('DEL', (node, delta) => {
             if (this.isAbrindoTexto) {
-                console.log('abrindo texto');
                 return delta;
             }
             else {
@@ -30683,7 +30758,6 @@ class ModuloRevisao extends Module$1 {
         if (this.emRevisao) {
             this.ignorarEventoTextChange = true;
         }
-        // console.log(11111, 'REDO', this.quill.history.stack.redo[this.quill.history.stack.redo.length - 1]);
         if (hasModuloTabela) {
             return this.tableModule.keyboardHandler(this.quill, 'redo', range, context);
         }
@@ -30734,7 +30808,6 @@ class ModuloRevisao extends Module$1 {
             index && ops.unshift({ retain: index });
             this.ignorarEventoTextChange = true;
             quill.updateContents({ ops }, 'user');
-            // quill.setSelection(deslocamento === 1 ? index + length : index);
             quill.setSelection(posicao);
             return false;
         }
@@ -30744,11 +30817,11 @@ class ModuloRevisao extends Module$1 {
         var _a, _b, _c;
         const isInsertJaFormatadoEmModoDeRevisao = (_b = (_a = delta.ops.find(op => op.insert)) === null || _a === void 0 ? void 0 : _a.attributes) === null || _b === void 0 ? void 0 : _b.added;
         const apenasNovaLinha = delta.ops.length === 2 && delta.ops[0].retain && delta.ops[1].insert === '\n';
+        const quill = this.quill;
         if (this.ignorarEventoTextChange || !this.emRevisao || isInsertJaFormatadoEmModoDeRevisao || !delta.ops.length || apenasNovaLinha) {
             this.ignorarEventoTextChange = false;
             return;
         }
-        const quill = this.quill;
         if (quill.history.stack.undo.length === 0)
             return;
         let numCaracteresRemovidos = 0;
@@ -30809,11 +30882,7 @@ class ModuloRevisao extends Module$1 {
         quill.history.cutoff();
         quill.updateContents(rev, 'user');
         setTimeout(() => {
-            // TODO: Corrigir setSelection (falhando em vários casos)
             quill.setSelection(idx - numCaracteresRemovidos, 0);
-            // quill.format('added', true, 'silent');
-            quill.format('added', this.buildAttributes(id), 'silent');
-            quill.format('removed', false, 'silent');
             this.ignorarEventoTextChange = false;
         }, 0);
     }
@@ -30836,7 +30905,7 @@ class ModuloRevisao extends Module$1 {
     getRevisoesSemDuplicidade(listElements) {
         const revisoesSemDuplicidade = [];
         listElements.forEach(element => {
-            if (!revisoesSemDuplicidade.find(r => r.getAttribute('id-revisao') === element.getAttribute('id-revisao'))) {
+            if (!revisoesSemDuplicidade.find(r => r.getAttribute('id-revisao') === element.getAttribute('id-revisao') && r.nodeName === element.nodeName)) {
                 revisoesSemDuplicidade.push(element);
             }
         });
@@ -31346,11 +31415,11 @@ function isValidHTML(html) {
     doc.innerHTML = html;
     return doc.innerHTML === html;
 }
-function getTextoSemHtml(html) {
+function getTextoSemHtml$1(html) {
     return removeEspacosDuplicados(html.replace(/(<([^>]+)>)/gi, '').trim());
 }
 function endsWithWord(texto, indicadores) {
-    return indicadores.map(word => new RegExp(addSpaceRegex(escapeRegex(word)) + '\\s*$').test(texto)).filter(r => r)[0] === true;
+    return indicadores.map(word => new RegExp(addSpaceRegex(escapeRegex(word)) + '\\s*$').test(getTextoSemHtml$1(texto))).filter(r => r)[0] === true;
 }
 function converteIndicadorParaTexto(indicadores) {
     switch (indicadores[0].trim()) {
@@ -32528,25 +32597,25 @@ class NotaRodapeModal {
         this.modalElement.classList.add('modal');
         this.modalElement.classList.add('modal-nota-rodape');
         this.shadowRoot = document.createElement('div');
+        this.shadowRoot.classList.add('d-flex');
         this.modalElement.appendChild(this.shadowRoot);
         this.shadowRoot.innerHTML = `
       ${quillSnowStyles.strings.join('')}
       <style>
 
         .modal-nota-rodape {
+          display: inline-table;
           position: absolute;
           top: 50%;
           left: 50%;
-          min-width: 400px;
+          min-width: 100px;
           max-width: 640px;
+          width: 80%;
           background-color: white;
           padding: 20px;
           border-radius: 10px;
           box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
           z-index: 1010;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
           opacity: 0;
           transform: translate(-50%, -50%) scale(0.95);
           transition: opacity 0.3s, transform 0.3s;
@@ -32563,7 +32632,8 @@ class NotaRodapeModal {
 
         .modal-title {
           margin: 0;
-          font-size: 20px;
+          width: 100%;
+          font-size: var(--sl-font-size-large);
         }
 
         .modal-footer {
@@ -32619,27 +32689,58 @@ class NotaRodapeModal {
             min-width: 0;
           }
         }
+
+        .ql-snow .ql-tooltip {
+          font-family: var(--eta-font-sans);
+          font-size: 0.9rem;
+        }
+        .ql-tooltip .ql-action,
+        .ql-tooltip .ql-remove {
+          background-color: var(--sl-color-gray-100);
+          border: 1px solid var(--sl-color-gray-500);
+          border-radius: 3px;
+          color: var(--sl-color-gray-900);
+          width: fit-content !important;
+          padding: 0 15px;
+          margin: 0 0 0 10px;
+        }
         .ql-snow .ql-tooltip.ql-editing a.ql-action::after {
           content: 'Salvar';
+          margin: 0 !important;
+          padding: 0 !important;
         }
         .ql-snow .ql-tooltip a.ql-action::after {
           display: inline;
           content: 'Editar';
+          margin: 0 !important;
+          padding: 0 !important;
         }
-
         .ql-snow .ql-tooltip a.ql-remove::before {
           display: inline;
           content: 'Remover';
+          margin: 0 !important;
+          padding: 0 !important;
         }
-
-        .ql-snow .ql-tooltip[data-mode='link']::before  {
+        .ql-snow .ql-tooltip[data-mode='link']::before {
           content: 'Insira o link:';
         }
-
         .ql-snow .ql-tooltip::before {
-          content: 'Visite a URL:';
+          content: 'Visite o link:';
         }
-
+        @media (max-width: 600px) {
+          .ql-snow .ql-tooltip {
+            display: flex;
+            gap: 5px;
+            flex-direction: column;
+          }
+          .ql-tooltip .ql-action,
+          .ql-tooltip .ql-remove {
+            margin: 0;
+          }
+          .ql-snow .ql-tooltip.ql-hidden {
+            display: none;
+          }
+        }
 
         .modal-nota-rodape .ql-tooltip input:invalid {
           color: red;
@@ -32648,16 +32749,21 @@ class NotaRodapeModal {
         .modal-nota-rodape .ql-tooltip div.tooltip-invalid-message {
           color: red;
           display: none;
-          font-family: Helvetica, sans-serif;
+          font-family: var(--eta-font-sans);
           font-size: 0.9rem;
         }
 
         .modal-nota-rodape .ql-tooltip[data-mode='link'] div.tooltip-invalid-message::after {
-          content: 'Digite uma URL válida, iniciando com http:// ou https://';
+          content: 'A URL deve iniciar com http:// ou https://';
         }
 
         .modal-nota-rodape .ql-tooltip[data-mode='link'] input:invalid ~ div.tooltip-invalid-message {
           display: block;
+        }
+        .d-flex {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
         }
 
       </style>
@@ -32721,6 +32827,7 @@ class NotaRodapeModal {
             this.modalElement.style.transform = 'translate(-50%, -50%) scale(1)';
         }, 10);
         this.quill.root.innerHTML = (_a = this.textoInicialNotaRodape) !== null && _a !== void 0 ? _a : '';
+        this.quill.root.focus();
         const modalTitle = this.shadowRoot.querySelector('.modal-title');
         if (modalTitle) {
             modalTitle.innerHTML = (_b = this.tituloModal) !== null && _b !== void 0 ? _b : modalTitle.innerHTML;
@@ -34355,6 +34462,7 @@ const transformarEmOmissisAlinea = new TransformarElemento(TipoDispositivo.omiss
 const transformarEmOmissisIncisoCaput = new TransformarElemento(TipoDispositivo.omissis, 'Omitir Incisos', 'transformarIncisoCaputEmOmissisIncisoCaput', '(Ctrl+Alt+O)');
 const transformarEmOmissisItem = new TransformarElemento(TipoDispositivo.omissis, 'Omitir Itens', 'transformarItemEmOmissisItem', '(Ctrl+Alt+O)');
 const transformarEmOmissisParagrafo = new TransformarElemento(TipoDispositivo.omissis, 'Omitir Parágrafos', 'transformarParagrafoEmOmissisParagrafo', '(Ctrl+Alt+O)');
+const transformarEmOmissisArtigo = new TransformarElemento(TipoDispositivo.omissis, 'Omitir Artigos', 'transformarArtigoEmOmissisArtigo', '(Ctrl+Alt+O)');
 const transformarEmOmissisIncisoParagrafo = new TransformarElemento(TipoDispositivo.omissis, 'Omitir Incisos', 'transformarIncisoParagrafoEmOmissisIncisoParagrafo', '(Ctrl+Alt+O)');
 const transformarAlineaEmIncisoCaput = new TransformarElemento(TipoDispositivo.inciso, 'Transformar em Inciso', 'transformarAlineaEmIncisoCaput', '(Shift+Tab)');
 const transformarAlineaEmIncisoParagrafo = new TransformarElemento(TipoDispositivo.inciso, 'Transformar em Inciso', 'transformarAlineaEmIncisoParagrafo', '(Shift+Tab)');
@@ -34556,6 +34664,15 @@ function getArticulacao(dispositivo) {
         throw new Error('Não foi encontrada a articulação');
     }
     return getArticulacao(dispositivo.pai);
+}
+function getArticulacaoAlteracao(dispositivo) {
+    if (isArticulacaoAlteracao(dispositivo)) {
+        return dispositivo;
+    }
+    if (dispositivo.pai === undefined) {
+        throw new Error('Não foi encontrada a articulação alteração');
+    }
+    return getArticulacaoAlteracao(dispositivo.pai);
 }
 function getDispositivo(uuid, dispositivo) {
     if (dispositivo.uuid === uuid) {
@@ -36037,7 +36154,7 @@ const validaTextoDispositivo = (dispositivo) => {
     if (isDispositivoDeArtigo(dispositivo) &&
         !isParagrafo(dispositivo) &&
         dispositivo.texto &&
-        /^[A-ZÀ-Ú]/.test(getTextoSemHtml(dispositivo.texto)) &&
+        /^[A-ZÀ-Ú]/.test(getTextoSemHtml$1(dispositivo.texto)) &&
         dispositivo.texto.indexOf('R$') !== 0) {
         addMensagem(mensagens, TipoMensagem.WARNING, `${dispositivo.descricao} deveria iniciar com letra minúscula, a não ser que se trate de uma situação especial, como nome próprio.`);
     }
@@ -36061,7 +36178,7 @@ const validaTextoDispositivo = (dispositivo) => {
         dispositivo.texto.indexOf(TEXTO_OMISSIS) === -1 &&
         !/^[.]+$/.test(dispositivo.texto) &&
         !/^[...]{3,}/.test(dispositivo.texto) &&
-        !/^[A-ZÀ-Ú]/.test(getTextoSemHtml(dispositivo.texto))) {
+        !/^[A-ZÀ-Ú]/.test(getTextoSemHtml$1(dispositivo.texto))) {
         addMensagem(mensagens, TipoMensagem.ERROR, `${dispositivo.descricao} deveria iniciar com letra maiúscula.`);
     }
     //
@@ -36424,6 +36541,11 @@ const VOCABULARIO = {
             genero: 'M',
         },
         {
+            urn: 'projeto.lei.complementar;pl',
+            descricao: 'Projeto de Lei Complementar',
+            genero: 'M',
+        },
+        {
             urn: 'projeto.lei.complementar;pls',
             descricao: 'Projeto de Lei Complementar do Senado',
             genero: 'M',
@@ -36642,9 +36764,12 @@ const getTipo$1 = (urn) => {
     return VOCABULARIO.tiposDocumento.filter(t => t.urn === tipo[1])[0];
 };
 const getNumero = (urn) => {
-    var _a, _b, _c;
+    var _a;
+    // urn:lex:br:federal:medida.provisoria:2019-11-11;905
+    // urn:lex:br:senado.federal:proposta.emenda.constitucional;pec:2019;16@data.evento;leitura;2019-03-19t14.00
     const partes = (_a = urn.replace('urn:lex:br:', '')) === null || _a === void 0 ? void 0 : _a.split(':');
-    return ((_b = partes[2]) === null || _b === void 0 ? void 0 : _b.indexOf(';')) > -1 ? (_c = partes[2]) === null || _c === void 0 ? void 0 : _c.substring(partes[2].indexOf(';') + 1) : '';
+    const anoNumero = partes[2].replace(/@.+$/, '').split(';');
+    return anoNumero.length > 1 ? anoNumero[1] : '';
 };
 const formataNumero = (numero) => {
     return new Intl.NumberFormat('pt-BR', { style: 'decimal' }).format(+numero);
@@ -37383,6 +37508,11 @@ const buildIdAlteracao = (dispositivo) => {
     buildHierarquia(dispositivo, idArray);
     return idArray.join('_') + '_alt1';
 };
+const buildIdCaputEAlteracao = (dispositivo) => {
+    const caput = dispositivo.caput;
+    caput && (caput.id = buildId(caput));
+    dispositivo.alteracoes && (dispositivo.alteracoes.id = buildId(dispositivo.alteracoes));
+};
 /* export const gHref = (dispositivo: Dispositivo): string => {
   if (!dispositivo.numero && dispositivo.rotulo) {
     dispositivo.createNumeroFromRotulo(dispositivo.rotulo);
@@ -37479,6 +37609,8 @@ const createElemento = (dispositivo, acoes = true, procurarElementoAnterior = fa
         tiposAgrupadoresQuePodemSerInseridosDepois: getTiposAgrupadoresQuePodemSerInseridosDepois(dispositivo),
         artigoDefinido: dispositivo.artigoDefinido,
         elementoAnteriorNaSequenciaDeLeitura,
+        manterNoMesmoGrupoDeAspas: isDispositivoAlteracao(dispositivo) && isAgrupador(dispositivo) && isAgrupador(dispositivo.pai) && !isArticulacaoAlteracao(dispositivo.pai),
+        ultimoFilhoDireto: isAgrupador(dispositivo) && isDispositivoAlteracao(dispositivo) && dispositivo.filhos.length ? createElemento(dispositivo.filhos[dispositivo.filhos.length - 1]) : undefined,
     };
 };
 const createElementoValidado = (dispositivo, procurarElementoAnterior = false) => {
@@ -38543,6 +38675,7 @@ acoesMenu.push(transformarEmOmissisIncisoCaput);
 acoesMenu.push(transformarEmOmissisItem);
 acoesMenu.push(transformarEmOmissisParagrafo);
 acoesMenu.push(transformarEmOmissisIncisoParagrafo);
+acoesMenu.push(transformarEmOmissisArtigo);
 acoesMenu.push(transformarAlineaEmIncisoCaput);
 acoesMenu.push(transformarAlineaEmIncisoParagrafo);
 acoesMenu.push(transformaAlineaEmItem);
@@ -38640,7 +38773,7 @@ const buildFuture = (state, events) => {
     return future;
 };
 const retornaEstadoAtualComMensagem = (state, mensagem) => {
-    var _a;
+    var _a, _b;
     return {
         articulacao: state.articulacao,
         modo: state.modo,
@@ -38649,6 +38782,7 @@ const retornaEstadoAtualComMensagem = (state, mensagem) => {
         future: state.future,
         ui: {
             events: (_a = state.ui) === null || _a === void 0 ? void 0 : _a.events,
+            alertas: (_b = state.ui) === null || _b === void 0 ? void 0 : _b.alertas,
             message: mensagem,
         },
         emRevisao: state.emRevisao,
@@ -38916,6 +39050,9 @@ function RegrasArtigo(Base) {
                 const pos = (_f = (_e = dispositivo.tiposPermitidosPai) === null || _e === void 0 ? void 0 : _e.indexOf(dispositivo.pai.tipo)) !== null && _f !== void 0 ? _f : 0;
                 const tiposExistentes = getAgrupadoresAcima(dispositivo.pai.pai, dispositivo.pai, []).reduce((lista, dispositivo) => lista.includes(dispositivo.tipo) && getAgrupadorPosterior(dispositivo) !== undefined ? lista : lista.concat(dispositivo.tipo), []);
                 (_g = dispositivo.tiposPermitidosPai) === null || _g === void 0 ? void 0 : _g.filter(() => pos > 0).filter(t => tiposExistentes.includes(t)).forEach(t => acoes.push(getAcaoAgrupamento(t)));
+            }
+            if (podeConverterEmOmissis(dispositivo) && !isArticulacao(dispositivo.pai)) {
+                acoes.push(transformarEmOmissisArtigo);
             }
             if (isDispositivoAlteracao(dispositivo) && dispositivo.situacao.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
                 dispositivo.situacao.existeNaNormaAlterada ? acoes.push(considerarElementoNovoNaNorma) : acoes.push(considerarElementoExistenteNaNorma);
@@ -39251,6 +39388,9 @@ function RegrasOmissis(Base) {
             if (isArticulacao(dispositivo.pai) && getDispositivoAnterior(dispositivo) !== undefined) {
                 acoes.push(transformarOmissisEmArtigo);
             }
+            if (isDispositivoAlteracao(dispositivo.pai) && isDispositivoAlteracao(dispositivo) && isAgrupador(dispositivo.pai) && !isArticulacao(dispositivo.pai)) {
+                acoes.push(transformarOmissisEmArtigo);
+            }
             if (isCaput(dispositivo.pai)) {
                 acoes.push(transformarOmissisEmIncisoCaput);
             }
@@ -39538,6 +39678,7 @@ const converteDispositivo = (atual, action) => {
         case 'transformarAlineaEmOmissisAlinea':
         case 'transformarItemEmOmissisItem':
         case 'transformarParagrafoEmOmissisParagrafo':
+        case 'transformarArtigoEmOmissisArtigo':
         case 'transformarIncisoCaputEmOmissisIncisoCaput':
         case 'transformarIncisoParagrafoEmOmissisIncisoParagrafo':
             paiNovo = paiAtual;
@@ -40291,6 +40432,11 @@ const atualizaQuantidadeRevisao = (revisoes = [], element, modo) => {
         element.innerHTML = quantidade;
     }
 };
+const atualizaQuantidadeRevisaoTextoRico = (quantidade, element) => {
+    if (element) {
+        element.innerHTML = quantidade;
+    }
+};
 const setCheckedElement = (element, checked) => {
     if (element) {
         if (checked) {
@@ -40447,9 +40593,10 @@ const textoFoiModificado = (atual, action, state) => {
     return (atual.texto !== '' && ((_e = (_d = action.atual) === null || _d === void 0 ? void 0 : _d.conteudo) === null || _e === void 0 ? void 0 : _e.texto) === '') || (((_g = (_f = action.atual) === null || _f === void 0 ? void 0 : _f.conteudo) === null || _g === void 0 ? void 0 : _g.texto) && atual.texto.localeCompare((_j = (_h = action.atual) === null || _h === void 0 ? void 0 : _h.conteudo) === null || _j === void 0 ? void 0 : _j.texto) !== 0);
 };
 const resetUuidTodaArvore = (dispositivo) => {
-    var _a;
+    var _a, _b, _c;
     dispositivo.uuid = Counter.next();
     (_a = dispositivo.filhos) === null || _a === void 0 ? void 0 : _a.forEach(f => resetUuidTodaArvore(f));
+    (_c = (_b = dispositivo.alteracoes) === null || _b === void 0 ? void 0 : _b.filhos) === null || _c === void 0 ? void 0 : _c.forEach(f => resetUuidTodaArvore(f));
 };
 const copiaDispositivosParaOutroPai = (pai, dispositivos) => {
     return dispositivos.map(d => {
@@ -40618,6 +40765,7 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
     const paiOriginal = atual.pai;
     const removido = createElemento(atual, false, true);
     const irmaoAnterior = getDispositivoAnteriorMesmoTipo(atual);
+    const notaAlteracao = isDispositivoAlteracao(atual) && isDispositivoCabecaAlteracao(atual) ? atual.notaAlteracao : undefined;
     const agrupadorAntes = getAgrupadorAntes(atual);
     const pai = (agrupadoresAnteriorMesmoTipo === null || agrupadoresAnteriorMesmoTipo === void 0 ? void 0 : agrupadoresAnteriorMesmoTipo.length) > 0 ? agrupadoresAnteriorMesmoTipo.reverse()[0] : atual.pai;
     const dispositivoAnterior = (agrupadoresAnteriorMesmoTipo === null || agrupadoresAnteriorMesmoTipo === void 0 ? void 0 : agrupadoresAnteriorMesmoTipo.length) > 0 ? agrupadoresAnteriorMesmoTipo.reverse()[0] : pos > 0 ? getUltimoFilho(pai.filhos[pos - 1]) : pai;
@@ -40628,7 +40776,7 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
         var _a, _b;
         let novoPai;
         if (isArtigo(d)) {
-            novoPai = agrupadorAntes !== null && agrupadorAntes !== void 0 ? agrupadorAntes : articulacao;
+            novoPai = agrupadorAntes !== null && agrupadorAntes !== void 0 ? agrupadorAntes : (isDispositivoAlteracao(d) ? getArticulacaoAlteracao(d) : articulacao);
         }
         else if ((_a = pai.tiposPermitidosFilhos) === null || _a === void 0 ? void 0 : _a.includes(d.tipo)) {
             novoPai = pai;
@@ -40640,6 +40788,9 @@ const removeAgrupadorAndBuildEvents = (articulacao, atual) => {
             novoPai = getPaiQuePodeReceberFilhoDoTipo(atual.pai, d.tipo, []);
         }
         d.pai = novoPai;
+        if (isDispositivoAlteracao(d) && isArtigo(d) && isArticulacaoAlteracao(d.pai)) {
+            d.notaAlteracao = notaAlteracao;
+        }
         atual.removeFilho(d);
         if ((agrupadoresAnteriorMesmoTipo === null || agrupadoresAnteriorMesmoTipo === void 0 ? void 0 : agrupadoresAnteriorMesmoTipo.length) > 0) {
             // TODO: revisar valor de "posNoPaiNovo" e "pos" (novoPai pode variar, como fica a posição???)
@@ -41451,6 +41602,7 @@ const aplicaAlteracoesEmenda = (state, action) => {
         retorno.emRevisao = true;
     }
     retorno.ui.events = eventos.build();
+    state.articulacao && renumeraParagrafosUnicos(retorno);
     const elementosInseridos = [];
     retorno.ui.events.filter(stateEvent => stateEvent.stateType === StateType.ElementoIncluido).forEach(se => elementosInseridos.push(...se.elementos));
     retorno.ui.events.push({
@@ -41467,6 +41619,15 @@ const aplicaAlteracoesEmenda = (state, action) => {
         }
     }
     return retorno;
+};
+const renumeraParagrafosUnicos = (state) => {
+    // Trata renumeração de parágrafo único
+    let paragrafosUnicos = getDispositivoAndFilhosAsLista(state.articulacao)
+        .filter(d => { var _a; return isAdicionado(d) && isParagrafo(d) && ((_a = d.pai) === null || _a === void 0 ? void 0 : _a.filhos.find(f => { var _a; return (_a = f.id) === null || _a === void 0 ? void 0 : _a.endsWith('par1u'); })); })
+        .map(d => d.pai.filhos.find(f => { var _a; return (_a = f.id) === null || _a === void 0 ? void 0 : _a.endsWith('par1u'); }));
+    paragrafosUnicos = [...new Set(paragrafosUnicos)];
+    paragrafosUnicos.map(d => d.pai).forEach(d => d.renumeraFilhos());
+    return paragrafosUnicos;
 };
 const processaDispositivosAdicionados = (state, alteracoesEmenda) => {
     const tiposAgrupadorArtigo = getTiposAgrupadorArtigoOrdenados();
@@ -41974,6 +42135,7 @@ const autoFixElemento = (state, action) => {
             const anterior = getDispositivoAnterior(atual);
             const novo = criaDispositivo(atual.pai, TipoDispositivo.omissis.tipo, anterior, anterior ? undefined : 0);
             novo.situacao = new DispositivoAdicionado();
+            novo.situacao.existeNaNormaAlterada = true;
             novo.mensagens = validaDispositivo(novo);
             const elementoNovo = createElemento(novo, true);
             atual.mensagens = validaDispositivo(atual);
@@ -42291,9 +42453,16 @@ const moveElementoAbaixo = (state, action) => {
     if (paiAntigo !== novoPai) {
         paiAntigo.renumeraFilhos();
     }
-    getDispositivoAndFilhosAsLista(atual).forEach(d => (d.id = buildId(d)));
+    getDispositivoAndFilhosAsLista(atual).forEach(d => {
+        d.id = buildId(d);
+        isArtigo(d) && buildIdCaputEAlteracao(d);
+    });
     const dAnterior = atual.pai.filhos[atual.pai.indexOf(atual) - 1];
-    dAnterior && getDispositivoAndFilhosAsLista(dAnterior).forEach(d => (d.id = buildId(d)));
+    dAnterior &&
+        getDispositivoAndFilhosAsLista(dAnterior).forEach(d => {
+            d.id = buildId(d);
+            isArtigo(d) && buildIdCaputEAlteracao(d);
+        });
     const referencia = movendoArtigoParaAgrupador ? proximo : getUltimoFilho(proximo);
     const eventos = new Eventos();
     eventos.setReferencia(createElemento(ajustaReferencia(referencia, atual)));
@@ -42384,9 +42553,16 @@ const moveElementoAcima = (state, action) => {
     if (paiAntigo !== novoPai) {
         paiAntigo.renumeraFilhos();
     }
-    getDispositivoAndFilhosAsLista(atual).forEach(d => (d.id = buildId(d)));
+    getDispositivoAndFilhosAsLista(atual).forEach(d => {
+        d.id = buildId(d);
+        isArtigo(d) && buildIdCaputEAlteracao(d);
+    });
     const dPosterior = atual.pai.filhos[atual.pai.indexOf(atual) + 1];
-    dPosterior && getDispositivoAndFilhosAsLista(dPosterior).forEach(d => (d.id = buildId(d)));
+    dPosterior &&
+        getDispositivoAndFilhosAsLista(dPosterior).forEach(d => {
+            d.id = buildId(d);
+            isArtigo(d) && buildIdCaputEAlteracao(d);
+        });
     const referencia = getDispositivoAnteriorNaSequenciaDeLeitura(atual, d => !isCaput(d) && !isArticulacaoAlteracao(d));
     const eventos = new Eventos();
     eventos.add(StateType.ElementoRemovido, removidos);
@@ -42543,6 +42719,7 @@ const redodDispositivoExcluido = (elemento, pai, modo) => {
             novo.alteracoes.base = elemento.norma;
             novo.alteracoes.situacao = new DispositivoAdicionado();
             novo.alteracoes.situacao.tipoEmenda = modo;
+            novo.alteracoes.id = buildId(novo.alteracoes);
         }
     }
     return novo;
@@ -42728,6 +42905,31 @@ const ajustarAtributosAgrupadorIncluidoPorUndoRedo = (articulacao, eventosFonte,
     eventosResultantes[0].elementos.length = 0;
     eventosResultantes[0].elementos.push(createElemento(dispositivo));
 };
+const ajustarHierarquivoAgrupadorIncluidoPorUndoRedo = (articulacao, eventosFonte, eventosResultantes) => {
+    const elAgrupador = eventosFonte[0].elementos[0];
+    if (!elAgrupador.dispositivoAlteracao || !elAgrupador.ultimoFilhoDireto) {
+        return;
+    }
+    const agrupador = getDispositivoFromElemento(articulacao, elAgrupador);
+    const pai = agrupador.pai;
+    const ultimoFilhoDireto = getDispositivoFromElemento(articulacao, elAgrupador.ultimoFilhoDireto);
+    let index = pai.filhos.indexOf(agrupador) + 1;
+    while (index < pai.filhos.length) {
+        const d = pai.filhos[index];
+        if (isAdicionado(d)) {
+            pai.removeFilho(d);
+            d.pai = agrupador;
+            agrupador.addFilho(d);
+            if (d.uuid === ultimoFilhoDireto.uuid) {
+                break;
+            }
+        }
+        else {
+            index++;
+        }
+    }
+    eventosResultantes.push({ stateType: StateType.SituacaoElementoModificada, elementos: getDispositivoAndFilhosAsLista(agrupador).map(d => createElemento(d)) });
+};
 const processarRestaurados = (state, evento, acao) => {
     var _a, _b, _c, _d;
     const elementoDeReferencia = evento.elementos[acao === 'UNDO' ? 0 : 1];
@@ -42839,17 +43041,19 @@ const redo = (state) => {
         tempState.past = [];
         tempState.present = [];
         tempState.future = [];
-        if (eventos[0].stateType === StateType.ElementoIncluido) {
-            const ref = eventos.find((ev) => ev.stateType === StateType.ElementoReferenciado).elementos[0];
-            const elementoASerIncluido = eventos[0].elementos[0];
+        const listaSemEventosDeRevisao = eventos.filter((se) => ![StateType.RevisaoAceita, StateType.RevisaoRejeitada, StateType.RevisaoAdicionalRejeitada].includes(se.stateType));
+        if (listaSemEventosDeRevisao[0].stateType === StateType.ElementoIncluido) {
+            const ref = listaSemEventosDeRevisao.find((ev) => ev.stateType === StateType.ElementoReferenciado).elementos[0];
+            const elementoASerIncluido = listaSemEventosDeRevisao[0].elementos[0];
             tempState = agrupaElemento(tempState, {
                 atual: ref,
                 novo: { tipo: elementoASerIncluido.tipo, uuid: elementoASerIncluido.uuid, posicao: 'antes', manterNoMesmoGrupoDeAspas: elementoASerIncluido.manterNoMesmoGrupoDeAspas },
             });
-            ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, eventos, tempState.ui.events);
+            ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, listaSemEventosDeRevisao, tempState.ui.events);
+            ajustarHierarquivoAgrupadorIncluidoPorUndoRedo(state.articulacao, listaSemEventosDeRevisao, tempState.ui.events);
         }
         else {
-            tempState = removeElemento(tempState, { atual: eventos[0].elementos[0] });
+            tempState = removeElemento(tempState, { atual: listaSemEventosDeRevisao[0].elementos[0] });
         }
         const eventosRevisao = getEventosDeRevisao(eventos);
         if (eventosRevisao.length) {
@@ -43195,6 +43399,7 @@ const undo = (state) => {
                 novo: { tipo: elementoASerIncluido.tipo, uuid: elementoASerIncluido.uuid, posicao: 'antes', manterNoMesmoGrupoDeAspas: elementoASerIncluido.manterNoMesmoGrupoDeAspas },
             });
             ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, eventosFiltrados, tempState.ui.events);
+            ajustarHierarquivoAgrupadorIncluidoPorUndoRedo(state.articulacao, eventosFiltrados, tempState.ui.events);
         }
         const eventosRevisao = [
             ...processarRevisoesAceitasOuRejeitadas(retorno, eventos, StateType.RevisaoAceita),
@@ -43367,10 +43572,11 @@ const getMetadado = (documento) => {
     };
 };
 const getParteInicial = (documento) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
-    const epigrafe = (_f = (_e = (_d = (_c = (_b = (_a = documento === null || documento === void 0 ? void 0 : documento.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial) === null || _d === void 0 ? void 0 : _d.epigrafe) === null || _e === void 0 ? void 0 : _e.content[0]) !== null && _f !== void 0 ? _f : '';
-    const ementa = buildContent$1((_k = (_j = (_h = (_g = documento === null || documento === void 0 ? void 0 : documento.value) === null || _g === void 0 ? void 0 : _g.projetoNorma) === null || _h === void 0 ? void 0 : _h.norma) === null || _j === void 0 ? void 0 : _j.parteInicial) === null || _k === void 0 ? void 0 : _k.ementa.content);
-    const preambulo = (_r = (_q = (_p = (_o = (_m = (_l = documento === null || documento === void 0 ? void 0 : documento.value) === null || _l === void 0 ? void 0 : _l.projetoNorma) === null || _m === void 0 ? void 0 : _m.norma) === null || _o === void 0 ? void 0 : _o.parteInicial) === null || _p === void 0 ? void 0 : _p.preambulo) === null || _q === void 0 ? void 0 : _q.p[0].content[0]) !== null && _r !== void 0 ? _r : '';
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    const parteInicial = (_c = (_b = (_a = documento === null || documento === void 0 ? void 0 : documento.value) === null || _a === void 0 ? void 0 : _a.projetoNorma) === null || _b === void 0 ? void 0 : _b.norma) === null || _c === void 0 ? void 0 : _c.parteInicial;
+    const epigrafe = (_e = (_d = parteInicial === null || parteInicial === void 0 ? void 0 : parteInicial.epigrafe) === null || _d === void 0 ? void 0 : _d.content[0]) !== null && _e !== void 0 ? _e : '';
+    const ementa = buildContent$1(parteInicial === null || parteInicial === void 0 ? void 0 : parteInicial.ementa.content);
+    const preambulo = ((_g = (_f = parteInicial === null || parteInicial === void 0 ? void 0 : parteInicial.preambulo) === null || _f === void 0 ? void 0 : _f.p) === null || _g === void 0 ? void 0 : _g.length) ? (_h = parteInicial === null || parteInicial === void 0 ? void 0 : parteInicial.preambulo) === null || _h === void 0 ? void 0 : _h.p[0].content[0] : '';
     return {
         epigrafe: retiraCaracteresDesnecessarios(epigrafe),
         ementa: buildDispositivoEmenta(retiraCaracteresDesnecessarios(ementa)),
@@ -43515,15 +43721,28 @@ const buildDispositivo$1 = (pai, el, cabecasAlteracao) => {
 //   return `<a href="${value.href}"> ${value.content[0]} </a>`;
 // };
 const buildContentDispositivo = (el) => {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d;
     let texto = '';
     if ((_a = el.value) === null || _a === void 0 ? void 0 : _a.nomeAgrupador) {
-        return (_b = el.value.nomeAgrupador.content[0]) !== null && _b !== void 0 ? _b : '';
+        return getTextoSemHtml(el.value.nomeAgrupador.content);
     }
     else {
-        (_e = (_d = (_c = el.value) === null || _c === void 0 ? void 0 : _c.p) === null || _d === void 0 ? void 0 : _d.map((p) => p)) === null || _e === void 0 ? void 0 : _e.map((a) => a.content).forEach((content) => (texto += buildContent$1(content)));
+        (_d = (_c = (_b = el.value) === null || _b === void 0 ? void 0 : _b.p) === null || _c === void 0 ? void 0 : _c.map((p) => p)) === null || _d === void 0 ? void 0 : _d.map((a) => a.content).forEach((content) => (texto += buildContent$1(content)));
     }
     return substituiAspasRetasPorCurvas(texto);
+};
+const getTextoSemHtml = (c) => {
+    let ret = '';
+    c.forEach(ci => {
+        if (ci.value) {
+            ret += getTextoSemHtml(ci.value.content);
+        }
+        else {
+            ret += ci !== null && ci !== void 0 ? ci : '';
+        }
+        ret += ' ';
+    });
+    return ret.trim();
 };
 const substituiAspasRetasPorCurvas = (html) => {
     const div = document.createElement('div');
@@ -43637,7 +43856,7 @@ class InfoTextoColado {
         }
     }
     static async newInstanceFromTexto(textoColadoOriginal, textoColadoAjustado, articulacaoProposicao, atual) {
-        let textoColadoAjustadoParaParser = removeAspasENRSeNecessario(hasArtigoOndeCouber(textoColadoAjustado) ? numerarArtigosOndeCouber(textoColadoAjustado) : textoColadoAjustado);
+        let textoColadoAjustadoParaParser = converterSufixoDosRotulos(ajustarRotuloArtigo(removeAspasENRSeNecessario(hasArtigoOndeCouber(textoColadoAjustado) ? numerarArtigosOndeCouber(textoColadoAjustado) : textoColadoAjustado)));
         let jsonix = await getJsonixFromTexto(textoColadoAjustadoParaParser);
         let projetoNorma = buildDispositivoFromJsonix(jsonix);
         const dispositivos = getDispositivoAndFilhosAsLista(projetoNorma.articulacao);
@@ -43701,6 +43920,10 @@ const removeAspasENRSeNecessario = (texto) => {
     // Grupo 1 do regex abaixo corresponde ao texto do artigo sem aspas iniciais e finais e sem o (NR)
     const regexMatchTextoArtigoEntreAspasOuNaoComCapturaDeGrupo = /(?<=\n|^)\s*["“‘']?(art(?:\.|\s|\d)(?:.|\n)+?)(["”’]\s*(?:\(NR\))?[\s]*)?(?:(?=\n\s*["“‘']?art(?:\.|\s|\d))|$)/gi;
     return textoAux.replace(regexMatchTextoArtigoEntreAspasOuNaoComCapturaDeGrupo, '\n$1').trim();
+};
+const ajustarRotuloArtigo = (texto) => removeEspacosExcendentesEntreRotuloENumeracao(texto, 'Art');
+const removeEspacosExcendentesEntreRotuloENumeracao = (texto, rotulo, newChar = ' ') => {
+    return texto.replace(new RegExp(`(^${rotulo}\\.?)([^\\S\\n\\r]+)`, 'gim'), `$1${newChar}`);
 };
 const comecaComAspas = (texto) => !!texto.match(/^["“‘']/);
 const getJsonixFromTexto = async (texto) => {
@@ -43951,7 +44174,7 @@ const ajustarId = (dispositivo, prefixo) => {
 const getRegexRotuloArtigoOndeCouber = () => /^(["“‘'])?(art\.\s+(?!\d+)[x. ]*[º0]?)/gim;
 const hasArtigoOndeCouber = (texto) => {
     var _a;
-    const t = (_a = removeAllHtmlTags(texto)) === null || _a === void 0 ? void 0 : _a.replace(/&nbsp;/g, ' ').replace(/["“']/g, '').trim();
+    const t = (_a = removeAllHtmlTags(texto)) === null || _a === void 0 ? void 0 : _a.replace(/&nbsp;/g, ' ').replace(/["“']/g, '').replace(/(^Art\.?)([^\S\n\r]+)/gim, '$1 ').trim();
     return getRegexRotuloArtigoOndeCouber().test(t);
 };
 const numerarArtigosOndeCouber = (texto) => {
@@ -44000,6 +44223,23 @@ const ajustaHtmlParaColagem = (htmlInicial) => {
         .replace(/\n *<i>(Parágrafo único\. *)<\/i>/gi, '\n$1') // Remove itálico de rótulo de parágrafo único
         .trim();
     return html;
+};
+const converterSufixoDosRotulos = (texto) => {
+    const regexRotulo = /^((?:(?:art\.?|§|par[aá]grafo [uú]nico)\s*\d+º?)|(?:[IVXMDC]{1,3}|[a-z]{1,2}|\d{1,3}))-(\d+)/gim;
+    const fnSubstituicao = (match, grupo1, grupo2) => {
+        const numero = parseInt(grupo2);
+        let letra = '';
+        if (numero <= 26) {
+            letra = String.fromCharCode(65 + numero - 1);
+        }
+        else {
+            const primeiraLetra = String.fromCharCode(65 + Math.floor((numero - 1) / 26) - 1);
+            const segundaLetra = String.fromCharCode(65 + ((numero - 1) % 26));
+            letra = primeiraLetra + segundaLetra;
+        }
+        return `${grupo1}-${letra}`;
+    };
+    return texto.replace(regexRotulo, fnSubstituicao);
 };
 
 const REGEX_OMISSIS = /^\.{2,}/;
@@ -44785,7 +45025,9 @@ const atualizarLexmlIdEmElementosDeRevisoes = (state) => {
     revisoes = getRevisoesElemento(state.revisoes || []).filter(r => isRevisaoPrincipal(r) && isRevisaoDeExclusao(r));
     revisoes.forEach(r => {
         const d = getDispositivoFromElemento(state.articulacao, r.elementoAposRevisao.hierarquia.pai);
-        r.elementoAposRevisao.hierarquia.pai.lexmlId = d.id;
+        if (d) {
+            r.elementoAposRevisao.hierarquia.pai.lexmlId = d.id;
+        }
     });
 };
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -45025,6 +45267,25 @@ const rejeitaExclusao = (state, revisao) => {
                 manterNoMesmoGrupoDeAspas: elementoASerIncluido.manterNoMesmoGrupoDeAspas,
             },
         });
+        const ev = { stateType: StateType.SituacaoElementoModificada, elementos: [elementoASerIncluido] };
+        ajustarAtributosAgrupadorIncluidoPorUndoRedo(state.articulacao, [ev], tempState.ui.events);
+        ajustarHierarquivoAgrupadorIncluidoPorUndoRedo(state.articulacao, [ev], tempState.ui.events);
+        // Atualiza elemento que seja agrupador de artigo em alteração de norma em eventos de inclusão
+        // Isso é necessário porque a rejeição da exclusão desse tipo de dispositivo pode ter alterado a hierarquia
+        tempState
+            .ui.events.filter(ev => ev.stateType === StateType.ElementoIncluido)
+            .forEach(ev => {
+            var _a;
+            ev.elementos = (_a = ev.elementos) === null || _a === void 0 ? void 0 : _a.map(e => {
+                if (e.agrupador && e.dispositivoAlteracao) {
+                    const d = getDispositivoFromElemento(tempState.articulacao, e);
+                    return createElemento(d);
+                }
+                else {
+                    return e;
+                }
+            });
+        });
         result.push(...tempState.ui.events);
     }
     else {
@@ -45107,6 +45368,29 @@ const limpaRevisao = (state) => {
         revisoes: [],
         emRevisao: false,
         usuario: state.usuario,
+    };
+};
+
+const ERROR_INICIALIZAR_EDICAO = 'ERROR_INICIALIZAR_EDICAO';
+class ErrorInicializarEdicao {
+    constructor() {
+        this.descricao = 'Erro inicializar edição';
+    }
+    execute(err) {
+        return {
+            type: ERROR_INICIALIZAR_EDICAO,
+            erro: err,
+        };
+    }
+}
+const errorInicializarEdicaoAction = new ErrorInicializarEdicao();
+
+const erroInicializaEdicao = (state) => {
+    return {
+        ...retornaEstadoAtualComMensagem(state, {
+            tipo: TipoMensagem.INFO,
+            descricao: 'Ocorreu algum erro ao abrir a emenda',
+        }),
     };
 };
 
@@ -45237,6 +45521,9 @@ const elementoReducer = (state = {}, action) => {
             break;
         case LIMPAR_REVISAO:
             tempState = limpaRevisao(state);
+            break;
+        case ERROR_INICIALIZAR_EDICAO:
+            tempState = erroInicializaEdicao(state);
             break;
         default:
             actionType = undefined;
@@ -45805,7 +46092,7 @@ const fecharDialog = (dialogElem, dialogColagem) => {
     if (document.body.contains(dialogElem)) {
         document.body.removeChild(dialogElem);
     }
-    setTimeout(() => dialogColagem.quill.focus(), 0);
+    dialogColagem.quill.focus();
 };
 const buildMessages = (mensagens) => mensagens.join('<br><br>');
 const getRadioGroup = (dialogColagem) => {
@@ -46312,7 +46599,7 @@ class EtaBlotAbreAspas extends EtaBlot {
         const node = super.create();
         node.setAttribute('contenteditable', 'false');
         node.setAttribute('class', EtaBlotAbreAspas.className);
-        node.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
+        EtaBlotAbreAspas.__atualizarAtributos(elemento, node);
         return node;
     }
     static formats() {
@@ -46320,7 +46607,16 @@ class EtaBlotAbreAspas extends EtaBlot {
     }
     atualizarAtributos(elemento) {
         this.elemento = elemento;
-        this.domNode.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
+        EtaBlotAbreAspas.__atualizarAtributos(elemento, this.domNode);
+    }
+    static __atualizarAtributos(elemento, node) {
+        if (elemento.abreAspas) {
+            node.setAttribute('exibir', '');
+        }
+        else {
+            node.removeAttribute('exibir');
+        }
+        node.innerHTML = EtaBlotAbreAspas.montarHTML(elemento);
     }
     static montarHTML(elemento) {
         return elemento.abreAspas ? '“' : '';
@@ -46673,7 +46969,7 @@ class EtaBlotFechaAspas extends EtaBlot {
         const node = super.create();
         node.setAttribute('contenteditable', 'false');
         node.setAttribute('class', EtaBlotFechaAspas.className);
-        node.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
+        EtaBlotFechaAspas.__atualizarAtributos(elemento, node);
         return node;
     }
     static formats() {
@@ -46681,7 +46977,16 @@ class EtaBlotFechaAspas extends EtaBlot {
     }
     atualizarAtributos(elemento) {
         this.elemento = elemento;
-        this.domNode.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
+        EtaBlotFechaAspas.__atualizarAtributos(elemento, this.domNode);
+    }
+    static __atualizarAtributos(elemento, node) {
+        if (elemento.fechaAspas) {
+            node.setAttribute('exibir', '');
+        }
+        else {
+            node.removeAttribute('exibir');
+        }
+        node.innerHTML = EtaBlotFechaAspas.montarHTML(elemento);
     }
     static montarHTML(elemento) {
         return elemento.fechaAspas ? '” ' : ' ';
@@ -46716,9 +47021,11 @@ class EtaBlotNotaAlteracao extends EtaBlot {
         node.onclick = onclick(node, elemento);
         if (elemento.notaAlteracao) {
             node.setAttribute('nota-alteracao', elemento.notaAlteracao || '');
+            node.setAttribute('exibir', '');
         }
         else {
             node.removeAttribute('nota-alteracao');
+            node.removeAttribute('exibir');
         }
         if (elemento.podeEditarNotaAlteracao) {
             node.classList.add('nota-alteracao-editavel');
@@ -46728,6 +47035,9 @@ class EtaBlotNotaAlteracao extends EtaBlot {
         }
     }
     static montarHTML(elemento) {
+        if (!elemento.dispositivoAlteracao) {
+            return '';
+        }
         return elemento.notaAlteracao ? '(' + elemento.notaAlteracao + ')' : ' ';
         // if (!elemento.notaAlteracao) {
         //   return '';
@@ -46948,11 +47258,12 @@ class EtaQuillUtil {
         const etaTrContainer = new EtaContainerTr(elemento.editavel, this.alinhamentoMenu);
         const etaTdTexto = new EtaContainerTdEsquerdo(elemento);
         const etaTdEspaco = new EtaContainerTdDireito(this.alinhamentoMenu);
-        if (elemento.abreAspas) {
+        const isDispositivoAlteracaoAdicionado = elemento.dispositivoAlteracao && elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO;
+        if (elemento.abreAspas || isDispositivoAlteracaoAdicionado) {
             new EtaBlotAbreAspas(elemento).insertInto(etaTdTexto);
         }
         new EtaBlotRotulo(elemento).insertInto(etaTdTexto);
-        if (elemento.dispositivoAlteracao === true && elemento.descricaoSituacao === DescricaoSituacao.DISPOSITIVO_ADICIONADO) {
+        if (isDispositivoAlteracaoAdicionado) {
             new EtaBlotExistencia(elemento).insertInto(etaTdTexto);
         }
         if (elemento.tipo === 'Omissis') {
@@ -47107,17 +47418,13 @@ class EtaContainerTable extends EtaContainer {
         return `lxEtaId${uuid !== null && uuid !== void 0 ? uuid : 0}`;
     }
     static create(elemento) {
-        var _a, _b;
         const node = super.create();
-        const conteudo = normalizaSeForOmissis((_b = (_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '').trim();
         // node.setAttribute('contenteditable', 'false'); //elemento?.editavel ? 'true' : 'false');
         node.setAttribute('class', EtaContainerTable.className + ' ' + EtaContainerTable.getClasseCSS(elemento));
         node.setAttribute('id', EtaContainerTable.criarId(elemento.uuid));
         EtaContainerTable.atualizarAtributoRevisao(elemento, node);
         EtaContainerTable.atualizarAtributoExistenciaNormaAlterada(elemento, node);
-        if (elemento.tipo === 'Omissis' || conteudo.indexOf(TEXTO_OMISSIS) >= 0) {
-            node.classList.add('container_elemento--omissis');
-        }
+        EtaContainerTable.atualizarAtributoOmissis(elemento, node);
         return node;
     }
     findBlot(blotName) {
@@ -47166,7 +47473,9 @@ class EtaContainerTable extends EtaContainer {
         return this.findBlot(EtaBlotConteudo.blotName);
     }
     get blotAbreAspas() {
-        return this.findBlot(EtaBlotAbreAspas.blotName);
+        var _a;
+        const blot = (_a = this.blotRotulo) === null || _a === void 0 ? void 0 : _a.prev;
+        return (blot === null || blot === void 0 ? void 0 : blot.instanceBlotName) === EtaBlotAbreAspas.blotName ? blot : undefined;
     }
     get blotFechaAspas() {
         return this.findBlot(EtaBlotFechaAspas.blotName);
@@ -47309,10 +47618,21 @@ class EtaContainerTable extends EtaContainer {
             node.removeAttribute('existenanormaalterada');
         }
     }
+    static atualizarAtributoOmissis(elemento, node) {
+        var _a, _b;
+        const conteudo = normalizaSeForOmissis((_b = (_a = elemento.conteudo) === null || _a === void 0 ? void 0 : _a.texto) !== null && _b !== void 0 ? _b : '').trim();
+        if (elemento.tipo === 'Omissis' || conteudo.indexOf(TEXTO_OMISSIS) >= 0) {
+            node.classList.add('container_elemento--omissis');
+        }
+        else {
+            node.classList.remove('container_elemento--omissis');
+        }
+    }
     atualizarAtributos(elemento) {
         var _a, _b, _c, _d, _e;
         EtaContainerTable.atualizarAtributoRevisao(elemento, this.domNode);
         EtaContainerTable.atualizarAtributoExistenciaNormaAlterada(elemento, this.domNode);
+        EtaContainerTable.atualizarAtributoOmissis(elemento, this.domNode);
         (_a = this.blotAbreAspas) === null || _a === void 0 ? void 0 : _a.atualizarAtributos(elemento);
         (_b = this.blotRotulo) === null || _b === void 0 ? void 0 : _b.atualizarAtributos(elemento);
         (_c = this.blotExistencia) === null || _c === void 0 ? void 0 : _c.atualizarAtributos(elemento);
@@ -47424,6 +47744,9 @@ class EtaKeyboard extends Keyboard {
                 this.onHotKeyToolbar();
                 return;
             }
+        });
+        this.quill.root.addEventListener('keypress', (ev) => {
+            this.bloqueiaAcentuacaoOmissis(ev);
         });
         this.quill.root.addEventListener('keydown', (ev) => {
             var _a;
@@ -47587,6 +47910,12 @@ class EtaKeyboard extends Keyboard {
         const teclasComCaracterGrafico = '123456=[]/';
         const DOM_KEY_LOCATION_NUMPAD = 3; //
         return ev.location !== DOM_KEY_LOCATION_NUMPAD && teclasComCaracterGrafico.includes(ev.key);
+    }
+    bloqueiaAcentuacaoOmissis(ev) {
+        if (this.quill.cursorDeTextoEstaSobreOmissis()) {
+            ev.preventDefault();
+            ev.stopPropagation();
+        }
     }
     isTeclaQueAlteraTexto(ev) {
         // Se teclas Ctrl, Alt ou Meta(?) estiverem pressionadas não faz nada
@@ -47931,7 +48260,7 @@ class EtaClipboard extends connect(rootStore)(Clipboard) {
     }
     onPaste(e) {
         var _a, _b;
-        if (this.quill.cursorDeTextoEstaSobreLink()) {
+        if (this.quill.cursorDeTextoEstaSobreLink() || this.quill.cursorDeTextoEstaSobreOmissis()) {
             cancelarPropagacaoDoEvento(e);
             return;
         }
@@ -49574,7 +49903,7 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
       <lexml-ajuda-modal></lexml-ajuda-modal>
       <lexml-emenda-comando-modal></lexml-emenda-comando-modal>
       <lexml-atalhos-modal></lexml-atalhos-modal>
-      <!-- <lexml-sufixos-modal></lexml-sufixos-modal> -->
+      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
     renderBotoesParaTratarTodasRevisoes() {
@@ -50339,11 +50668,9 @@ let EditorComponent = class EditorComponent extends connect(rootStore)(s) {
         this.configListenersEta();
     }
     exibirModalSufixos() {
-        this.dispatchEvent(new CustomEvent('onexibirsufixos', {
-            bubbles: true,
-            composed: true,
-            detail: {},
-        }));
+        if (this.sufixosModal !== null) {
+            this.sufixosModal.show();
+        }
     }
     exibirDiferencas(elemento) {
         var _a;
@@ -50752,6 +51079,9 @@ __decorate([
 __decorate([
     i$1('lexml-emenda-comando-modal')
 ], EditorComponent.prototype, "comandoEmendaModal", void 0);
+__decorate([
+    i$1('lexml-sufixos-modal')
+], EditorComponent.prototype, "sufixosModal", void 0);
 __decorate([
     i$1('#btnAceitarTodasRevisoes')
 ], EditorComponent.prototype, "btnAceitarTodasRevisoes", void 0);
@@ -51180,21 +51510,57 @@ const editorTextoRicoCss = $ `
     .ql-toolbar.ql-snow .ql-formats {
       margin-right: 8px;
     }
+    .editor-texto-rico.ql-snow .ql-tooltip {
+      font-family: var(--eta-font-sans);
+      font-size: 0.9rem;
+    }
+    .ql-tooltip .ql-action,
+    .ql-tooltip .ql-remove {
+      background-color: var(--sl-color-gray-100);
+      border: 1px solid var(--sl-color-gray-500);
+      border-radius: 3px;
+      color: var(--sl-color-gray-900);
+      width: fit-content !important;
+      padding: 0 15px;
+      margin: 0 0 0 10px;
+    }
     .editor-texto-rico.ql-snow .ql-tooltip.ql-editing a.ql-action::after {
       content: 'Salvar';
+      margin: 0 !important;
+      padding: 0 !important;
     }
     .editor-texto-rico.ql-snow .ql-tooltip a.ql-action::after {
       display: inline;
       content: 'Editar';
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0;
     }
-
     .editor-texto-rico.ql-snow .ql-tooltip a.ql-remove::before {
       display: inline;
       content: 'Remover';
+      margin: 0 !important;
+      padding: 0 !important;
     }
-
-    .editor-texto-rico.ql-snow .ql-tooltip::before {
+    .editor-texto-rico.ql-snow .ql-tooltip[data-mode='link']::before {
       content: 'Insira o link:';
+    }
+    .editor-texto-rico.ql-snow .ql-tooltip::before {
+      content: 'Visite o link:';
+    }
+    @media (max-width: 600px) {
+      .editor-texto-rico.ql-snow .ql-tooltip {
+        display: flex;
+        gap: 5px;
+        flex-direction: column;
+      }
+      .ql-tooltip .ql-action,
+      .ql-tooltip .ql-remove {
+        margin: 0;
+      }
+      .editor-texto-rico.ql-snow .ql-tooltip.ql-hidden {
+        display: none;
+      }
     }
 
     .editor-texto-rico .estilo-ementa {
@@ -51408,12 +51774,12 @@ const editorTextoRicoCss = $ `
     .editor-texto-rico .ql-tooltip div.tooltip-invalid-message {
       color: red;
       display: none;
-      font-family: Helvetica, sans-serif;
+      font-family: var(--eta-font-sans);
       font-size: 0.9rem;
     }
 
     .editor-texto-rico .ql-tooltip[data-mode='link'] div.tooltip-invalid-message::after {
-      content: 'Digite uma URL válida, iniciando com http:// ou https://';
+      content: 'A URL deve iniciar com http:// ou https://';
     }
 
     .editor-texto-rico .ql-tooltip[data-mode='link'] input:invalid ~ div.tooltip-invalid-message {
@@ -53045,11 +53411,11 @@ class TableTrick {
               // Table history entry
               TableHistory.undo(quill, entry.id);
               return false;
-            } else if (entry.undo?.ops.some(op => op.attributes?.td === null)) {
+            } else if (entry.undo && entry.undo.ops.some(op => op.attributes && op.attributes.td === null)) {
               // Ajusta histórico: operação de undo possui um item com atributo td=null que mantém uma célula vazia
-              const index = entry.undo.ops.findIndex(op => op.attributes?.td === null);
+              const index = entry.undo.ops.findIndex(op => op.attributes && op.attributes.td === null);
               entry.undo.ops.splice(index, 1);
-          }
+            }
             // Classic history entry
           }
           return true;
@@ -53799,8 +54165,8 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                 Quill.register('formats/estilo-texto', EstiloTextoClass, true);
                 Quill.register('formats/text-indent', NoIndentClass, true);
                 Quill.register('formats/margin-bottom', MarginBottomClass, true);
-                const customToolbarOptions = toolbarOptions;
-                const customFormatsOptions = formatsOptions;
+                const customToolbarOptions = [...toolbarOptions];
+                const customFormatsOptions = [...formatsOptions];
                 if (this.modo === Modo.JUSTIFICATIVA) {
                     customToolbarOptions.push(['nota-rodape']);
                     customToolbarOptions[1] = ['bold', 'italic', 'underline', 'link'];
@@ -54101,7 +54467,9 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
                     }
                 }
             }
-            this.atualizaQuantidadeRevisao(this.getQuantidadeDeRevisoes());
+            // setTimeout(() => {
+            //   this.atualizaQuantidadeRevisao(this.getQuantidadeDeRevisoes());
+            // }, 0);
         };
         this.updateApenasTexto = () => {
             var _a;
@@ -54223,9 +54591,10 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
         };
         this.atualizaQuantidadeRevisao = (quantidade) => {
             const elemento = this.querySelector(`#${this.getNomeBadge()}`);
-            if (elemento) {
-                elemento.innerHTML = quantidade;
-            }
+            atualizaQuantidadeRevisaoTextoRico(quantidade, elemento);
+            // if (elemento) {
+            //   elemento.innerHTML = quantidade;
+            // }
         };
         this.icons['undo'] = `<svg viewbox="0 0 18 18">
     <polygon class="ql-fill ql-stroke" points="6 10 4 12 2 10 6 10"></polygon>
@@ -54249,6 +54618,9 @@ let EditorTextoRicoComponent = class EditorTextoRicoComponent extends connect(ro
     }
     setTextoAntesRevisao(texto) {
         this._textoAntesRevisao = texto;
+    }
+    showAlterarLarguraImagemModal(img, width) {
+        this.alterarLarguraImagemModal.show(img, width);
     }
     showAlterarLarguraColunaModal(width) {
         this.alterarLarguraColunaModal.show(width);
@@ -54520,6 +54892,7 @@ let AlterarLarguraTabelaColunaModalComponent = class AlterarLarguraTabelaColunaM
         }
         sl-input::part(base) {
           width: 150px;
+          margin-top: 5px;
         }
         sl-alert {
           margin-top: 20px;
@@ -54534,8 +54907,8 @@ let AlterarLarguraTabelaColunaModalComponent = class AlterarLarguraTabelaColunaM
           <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
           Informe uma valor numérico de 1 a 100.
         </sl-alert>
-        <sl-button slot="footer" @click=${() => this.alterarLargura()}>Alterar</sl-button>
-        <sl-button slot="footer" variant="primary" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${() => this.alterarLargura()}>Alterar</sl-button>
+        <sl-button slot="footer" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
       </sl-dialog>
     `;
     }
@@ -54596,6 +54969,7 @@ let AlterarLarguraImagemModalComponent = class AlterarLarguraImagemModalComponen
         }
         sl-input::part(base) {
           width: 150px;
+          margin-top: 5px;
         }
         sl-alert {
           margin-top: 20px;
@@ -54610,8 +54984,8 @@ let AlterarLarguraImagemModalComponent = class AlterarLarguraImagemModalComponen
           <sl-icon slot="icon" name="exclamation-triangle"></sl-icon>
           Informe uma valor numérico de 1 a 100.
         </sl-alert>
-        <sl-button slot="footer" @click=${() => this.alterarLargura()}>Alterar</sl-button>
-        <sl-button slot="footer" variant="primary" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
+        <sl-button slot="footer" variant="primary" @click=${() => this.alterarLargura()}>Alterar</sl-button>
+        <sl-button slot="footer" @click=${() => this.slDialog.hide()}>Fechar</sl-button>
       </sl-dialog>
     `;
     }
@@ -58235,6 +58609,8 @@ let DestinoComponent = class DestinoComponent extends s {
         this.isMPV = false;
         this.isPlenario = false;
         this.tipoColegiadoPlenario = false;
+        this.isMateriaOrcamentaria = false;
+        this._comissoes = [];
         this._comissoesOptions = [];
     }
     set proposicao(value) {
@@ -58244,8 +58620,14 @@ let DestinoComponent = class DestinoComponent extends s {
         if (this._proposicao.sigla === 'MPV') {
             this._colegiadoApreciador.siglaCasaLegislativa = 'CN';
             this._colegiadoApreciador.tipoColegiado = 'Comissão';
-            this._colegiadoApreciador.siglaComissao = `CMMPV ${this._proposicao.numero}/${this._proposicao.ano}`;
-            this._autocomplete.value = `${this._colegiadoApreciador.siglaComissao} - COMISSÃO MISTA DA MEDIDA PROVISÓRIA N° ${this._proposicao.numero}, DE ${this._proposicao.ano}`;
+            if (this.isMateriaOrcamentaria) {
+                this._colegiadoApreciador.siglaComissao = 'CMO';
+                this._autocomplete.value = `${this._colegiadoApreciador.siglaComissao} - COMISSÃO MISTA DE PLANOS, ORÇAMENTOS PÚBLICOS E FISCALIZAÇÃO`;
+            }
+            else {
+                this._colegiadoApreciador.siglaComissao = `CMMPV ${this._proposicao.numero}/${this._proposicao.ano}`;
+                this._autocomplete.value = `${this._colegiadoApreciador.siglaComissao} - COMISSÃO MISTA DA MEDIDA PROVISÓRIA N° ${this._proposicao.numero}, DE ${this._proposicao.ano}`;
+            }
             this.isMPV = true;
         }
         this.requestUpdate();
@@ -60221,6 +60603,18 @@ const editorStyles = $ `
       font-weight: bold;
     }
 
+    .nota-alteracao[exibir],
+    .abre-aspas[exibir],
+    .fecha-aspas[exibir] {
+      display: inline;
+    }
+
+    .nota-alteracao:not([exibir]),
+    .abre-aspas:not([exibir]),
+    .fecha-aspas:not([exibir]) {
+      display: none;
+    }
+
     .nota-alteracao-editavel {
       text-decoration: underline;
       cursor: pointer;
@@ -60275,6 +60669,12 @@ const editorStyles = $ `
       }
       .button-navegacao-marca {
         display: none;
+      }
+      sl-dialog {
+        --sl-font-size-large: 1rem;
+      }
+      .modal {
+        --sl-font-size-large: 1rem;
       }
     }
 
@@ -60431,6 +60831,8 @@ class LexmlEmendaParametrosEdicao {
         this.modo = 'Emenda';
         // Preenchido automaticamente se for informada a emenda ou o projetoNorma
         this.ementa = '';
+        // Indicação de matéria orçamentária. Utilizado inicalmente para definir destino de emenda a MP
+        this.isMateriaOrcamentaria = false;
         // Motivo de uma nova emenda de texto livre
         // Preenchido automaticamente se for informada a emenda
         this.motivo = '';
@@ -60448,6 +60850,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         this.modo = ClassificacaoDocumento.EMENDA;
         this.urn = '';
         this.ementa = '';
+        this.isMateriaOrcamentaria = false;
         this.motivo = '';
         this.parlamentaresCarregados = false;
         this.comissoesCarregadas = false;
@@ -60497,7 +60900,7 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
     async getComissoes() {
         try {
             if (!this.lexmlEmendaConfig.urlComissoes) {
-                return Promise.resolve(undefined);
+                return Promise.resolve([]);
             }
             const _response = await fetch(this.lexmlEmendaConfig.urlComissoes);
             const _comissoes = await _response.json();
@@ -60627,39 +61030,88 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
         });
         return revisoes;
     }
-    openModalSufixos() {
-        if (this.sufixosModal !== null) {
-            this.sufixosModal.show();
-        }
-    }
     inicializarEdicao(params) {
         var _a, _b, _c;
+        try {
+            this._lexmlEmendaComando.emenda = [];
+            this.modo = params.modo;
+            this.projetoNorma = params.projetoNorma;
+            this.isMateriaOrcamentaria = params.isMateriaOrcamentaria || (!!params.emenda && params.emenda.colegiadoApreciador.siglaComissao === 'CMO');
+            this._lexmlDestino.isMateriaOrcamentaria = this.isMateriaOrcamentaria;
+            this.inicializaProposicao(params);
+            this.motivo = params.motivo;
+            if (this.isEmendaTextoLivre() && params.emenda) {
+                this.motivo = params.emenda.comandoEmendaTextoLivre.motivo || 'Motivo não informado na emenda';
+            }
+            this.setUsuario((_a = params.usuario) !== null && _a !== void 0 ? _a : rootStore.getState().elementoReducer.usuario);
+            if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
+                this._lexmlEta.inicializarEdicao(this.modo, this.urn, params.projetoNorma, !!params.emenda);
+            }
+            if (params.emenda) {
+                this.setEmenda(params.emenda);
+            }
+            else {
+                this.resetaEmenda(params);
+            }
+            this.limparAlertas();
+            if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
+                this.showAlertaEmendaTextoLivre();
+            }
+            setTimeout(this.handleResize, 0);
+            if (!((_c = (_b = params.emenda) === null || _b === void 0 ? void 0 : _b.revisoes) === null || _c === void 0 ? void 0 : _c.length)) {
+                this.desativarMarcaRevisao();
+            }
+            this._tabsEsquerda.show('lexml-eta');
+            if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
+                setTimeout(() => {
+                    var _a;
+                    (_a = this._tabsDireita) === null || _a === void 0 ? void 0 : _a.show('comando');
+                });
+            }
+            else {
+                setTimeout(() => {
+                    var _a;
+                    (_a = this._tabsDireita) === null || _a === void 0 ? void 0 : _a.show('notas');
+                });
+            }
+            this.updateView();
+        }
+        catch (err) {
+            setTimeout(() => {
+                rootStore.dispatch(errorInicializarEdicaoAction.execute(err));
+            }, 0);
+        }
+    }
+    trocarModoEdicao(modo, motivo = '') {
+        if (this.modo === modo) {
+            console.log('Ignorando tentativa de mudança para o mesmo modo de edição.');
+            return;
+        }
+        if (!this.projetoNorma && modo === 'emenda') {
+            throw 'Não é possível trocar para o modo "emenda" quando não há texto da proposição.';
+        }
         this._lexmlEmendaComando.emenda = [];
-        this.modo = params.modo;
-        this.projetoNorma = params.projetoNorma;
-        this.inicializaProposicao(params);
-        this.motivo = params.motivo;
-        if (this.isEmendaTextoLivre() && params.emenda) {
-            this.motivo = params.emenda.comandoEmendaTextoLivre.motivo || 'Motivo não informado na emenda';
+        this.modo = modo;
+        this.motivo = motivo;
+        if (this.isEmendaTextoLivre() && !this.motivo) {
+            throw 'Deve ser informado um motivo para a emenda de texto livre.';
         }
         if (!this.isEmendaTextoLivre() && !this.isEmendaSubstituicaoTermo()) {
-            this._lexmlEta.inicializarEdicao(this.modo, this.urn, params.projetoNorma, !!params.emenda);
+            this._lexmlEta.inicializarEdicao(this.modo, this.urn, this.projetoNorma, false);
         }
-        if (params.emenda) {
-            this.setEmenda(params.emenda);
+        rootStore.dispatch(limparAlertas$1());
+        if (this.isEmendaTextoLivre()) {
+            this._lexmlEmendaTextoRico.setContent('');
+            this._lexmlEmendaTextoRico.anexos = [];
         }
-        else {
-            this.resetaEmenda(params);
+        else if (this.isEmendaSubstituicaoTermo()) {
+            this._substituicaoTermo.setSubstituicaoTermo(new SubstituicaoTermo());
         }
         this.limparAlertas();
         if (this.isEmendaTextoLivre() && !this._lexmlEmendaTextoRico.texto) {
             this.showAlertaEmendaTextoLivre();
         }
-        this.setUsuario((_a = params.usuario) !== null && _a !== void 0 ? _a : rootStore.getState().elementoReducer.usuario);
         setTimeout(this.handleResize, 0);
-        if (!((_c = (_b = params.emenda) === null || _b === void 0 ? void 0 : _b.revisoes) === null || _c === void 0 ? void 0 : _c.length)) {
-            this.desativarMarcaRevisao();
-        }
         this._tabsEsquerda.show('lexml-eta');
         if (this.modo.startsWith('emenda') && !this.isEmendaTextoLivre()) {
             setTimeout(() => {
@@ -61133,6 +61585,11 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           color: var(--sl-color-gray-500);
         }
 
+        .notas-texto p {
+          margin-block-start: 0;
+          margin-block-end: 0;
+        }
+
         .notas-acoes {
           display: flex;
           flex-direction: row;
@@ -61270,7 +61727,6 @@ let LexmlEmendaComponent = class LexmlEmendaComponent extends connect(rootStore)
           </sl-tab-group>
         </div>
       </sl-split-panel>
-      <lexml-sufixos-modal></lexml-sufixos-modal>
     `;
     }
     tabIsVisible(tab) {
@@ -61480,9 +61936,6 @@ __decorate([
 __decorate([
     i$1('sl-split-panel')
 ], LexmlEmendaComponent.prototype, "slSplitPanel", void 0);
-__decorate([
-    i$1('lexml-sufixos-modal')
-], LexmlEmendaComponent.prototype, "sufixosModal", void 0);
 LexmlEmendaComponent = __decorate([
     n$1('lexml-emenda')
 ], LexmlEmendaComponent);
@@ -62202,7 +62655,9 @@ let SwitchRevisaoComponent = class SwitchRevisaoComponent extends connect(rootSt
         this.modo = '';
         this.onChange = new Observable();
         this.atualizaQuantidadeRevisao = () => {
-            atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.nomeBadgeQuantidadeRevisao), this.modo);
+            if (this.modo === Modo.EMENDA || this.modo === Modo.EMENDA_ARTIGO_ONDE_COUBER) {
+                atualizaQuantidadeRevisao(rootStore.getState().elementoReducer.revisoes, document.getElementById(this.nomeBadgeQuantidadeRevisao), this.modo);
+            }
         };
         this.checkedSwitchMarcaAlteracao = () => {
             const switchMarcaAlteracaoView = document.getElementById(this.nomeSwitch);

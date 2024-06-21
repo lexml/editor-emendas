@@ -62,7 +62,6 @@ public class EditorApiController {
     
     private final ConversorLexmlJsonix conversorLexmlJsonix;
     private final LandingPageMailService landingPageMailService;
-    private final MotivoEmendaTextoLivreService motivoEmendaTextoLivreService;
     private final ListaParlamentaresService listaParlamentaresService;
     private final AutoCompleteNormaService autoCompleteNormaService;
     
@@ -75,7 +74,6 @@ public class EditorApiController {
             LexmlParser lexmlParser,
             ConversorLexmlJsonix conversorLexmlJsonix,
             LandingPageMailService landingPageMailService,
-            MotivoEmendaTextoLivreService motivoEmendaTextoLivreService,
             ListaParlamentaresService listaParlamentaresService,
             InfoAppService infoAppService,
             AutoCompleteNormaService autoCompleteNormaService) {
@@ -88,7 +86,6 @@ public class EditorApiController {
         this.listaParlamentaresService = listaParlamentaresService;
         this.infoAppService = infoAppService;
         this.autoCompleteNormaService = autoCompleteNormaService;
-        this.motivoEmendaTextoLivreService = motivoEmendaTextoLivreService;
     }
 
     @GetMapping
@@ -160,7 +157,7 @@ public class EditorApiController {
             @RequestParam(required = false) String numero,
             @RequestParam(required = false) Boolean carregarDatasDeMPs) {
 
-    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs, false);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -186,9 +183,10 @@ public class EditorApiController {
     @GetMapping(path = "/proposicoesEmTramitacao-novo", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
-            @RequestParam(required = false) Boolean carregarDatasDeMPs) {
-    	
-    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs);
+            @RequestParam(required = false) Boolean carregarDatasDeMPs,
+            @RequestParam(required = false, defaultValue = "false") Boolean preferirSubstitutivo ) {
+
+    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs, preferirSubstitutivo);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -211,7 +209,7 @@ public class EditorApiController {
     		return IOUtils.toString(is, StandardCharsets.UTF_8);
     	}
 
-    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
+    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero, false);
     	
     	if(json.contains("LEXML_URN_ID")) {
 		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
@@ -236,12 +234,6 @@ public class EditorApiController {
     @PostMapping("contato")
     public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
         landingPageMailService.sendEmail(mensagem);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @PostMapping("/motivo-emenda-texo-livre")
-    public ResponseEntity<Void> emendaTextoLivre (@RequestBody @NotBlank MotivoEmendaTextoLivre body) {
-        motivoEmendaTextoLivreService.sendEmail(body);
         return ResponseEntity.noContent().build();
     }
     
