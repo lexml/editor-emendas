@@ -1,5 +1,5 @@
 FROM lexmlbr/lexml-linker:1.4.7 as linker-base
-FROM eclipse-temurin:17-jdk-focal
+FROM eclipse-temurin:17.0.10_7-jdk-focal
 EXPOSE 8080
 ARG uid
 ARG gid
