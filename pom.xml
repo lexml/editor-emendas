@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.7.0</version>
+	<version>1.7.1</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -43,7 +43,7 @@
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
 			<artifactId>eta-backend-services</artifactId>
-			<version>1.1.0</version>
+			<version>1.1.1</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
