@@ -72,8 +72,8 @@ pipeline {
             steps {
                 build job: 'stack-leg-editor-emendas',
                         parameters: [
-                                string(name: 'ambiente', value: 'desenvolvimento'),
-                                imageTag(imageName: 'leg/editor-emendas', imageTag: 'latest', name: 'image')]
+                                string(name: 'ambiente', value: 'desenvolvimento')
+                                ]
             }
         }
     }
