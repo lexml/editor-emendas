@@ -18,7 +18,7 @@ export const blobToBase64 = (blob: any): Promise<string | ArrayBuffer | null> =>
 export const base64ToBlob = (b64Data: string, contentType: string, sliceSize = 512): any => {
   const base64 = b64Data.startsWith('data:') ? b64Data.split(',')[1] : b64Data;
   const byteCharacters = window.atob(base64);
-  const byteArrays = [];
+  const byteArrays: Uint8Array[] = [];
 
   for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
     const slice = byteCharacters.slice(offset, offset + sliceSize);

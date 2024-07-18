@@ -20,9 +20,10 @@ const videos: Array<Video> = [
   new Video('Copiar e colar dispositivos existentes - Introdução', 'tP8zgonhQtk'),
   new Video('Copiar e colar dispositivos existentes - 2º tutorial', 'K-w-At7hv_k'),
   new Video('Agrupadores de artigos', 'Mt1ppqAIsNk'),
-  new Video('Marcas de revisão', '4zmICnwq3HQ'),
+  new Video('Marcas de revisão', 'Zvv0oPVREz0'),
   new Video('Emenda de texto livre', '_i1jDNEBNRw'),
   new Video('Uso de linhas pontilhadas ao colar dispositivos', 'uYXsH-F-AQM'),
+  new Video('Copiar texto de PDF sem perder a formatação', 'Pe5zRMli2xc'),
 ];
 
 @customElement('edt-modal-ajuda')
@@ -44,39 +45,24 @@ export class EdtModalAjuda extends LitElement {
       this.visivel = false;
     });
 
-    this.slDialog.addEventListener('sl-tab-show', (e: CustomEvent) => {
-      this.selecionado = Number(e.detail.name.replace('video', ''));
-    });
-
-    this.detailsGroup.addEventListener('sl-show', (e: CustomEvent) => {
+    this.detailsGroup.addEventListener('sl-after-show', (e: CustomEvent) => {
       if (e.target) {
         [...this.detailsGroup.querySelectorAll('sl-details')].forEach((details, i) => {
           details.open = e.target === details;
           if (details.open) {
+            setTimeout(() => {
+              details.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 0);
             this.selecionado = i;
           }
         });
       }
     });
-
-    this.shadowRoot?.addEventListener('click', (e: Event) => {
-      if ((e.target as HTMLElement).classList.contains('fullscreen-btn')) {
-        const { videoIndex } = (e.target as HTMLElement).dataset;
-        const videoTipo = (e.target as HTMLElement).dataset.videoTipo;
-
-        if (videoIndex !== undefined && videoTipo !== undefined) {
-          const index = parseInt(videoIndex);
-          this.toggleFullscreen(index, videoTipo);
-        }
-      }
-    });
   }
 
-  private toggleFullscreen(index: number, tipo: string): void {
-    const iframe = this.shadowRoot?.querySelector(`#youtube-player-${tipo}-${index}`) as any;
-    console.log('iframe', iframe);
+  private toggleFullscreen(index: number): void {
+    const iframe = this.shadowRoot?.querySelector(`#youtube-player-${index}`);
     if (iframe?.requestFullscreen) {
-      iframe.allowFullscreen = true;
       iframe.requestFullscreen();
     }
   }
@@ -95,46 +81,25 @@ export class EdtModalAjuda extends LitElement {
     );
   }
 
-  private videoTemplate(video: Video, index: number, tipo: string): any {
+  private videoTemplate(video: Video, index: number): any {
     return html`
       <div class="video-container">
-        <div class="container-fullscreen-btn">
-          <button class="fullscreen-btn" data-video-index="${index}" data-video-tipo="${tipo}">Ver em tela cheia</button>
-        </div>
         <iframe
-          id="youtube-player-${tipo}-${index}"
+          id="youtube-player-${index}"
           class="youtube-player-iframe"
           tabindex="-1"
           src="https://www.youtube.com/embed/${video.codigo}?enablejsapi=1&version=3&playerapiid=ytplayer"
           frameborder="0"
-          allowfullscreen
-        >
-        </iframe>
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+        ></iframe>
       </div>
-    `;
-  }
-
-  private tabPanelVideoTemplate(video: Video, i: number): any {
-    return html`
-      <sl-tab-panel name="video${i}">
-        ${this.selecionado === i ? html` <div class="video-container">${this.videoTemplate(video, i, 'tab')}</div> ` : ``}
-      </sl-tab-panel>
-    `;
-  }
-
-  tabGroupTemplate(): any {
-    return html`
-      <sl-tab-group placement="start">
-        ${videos.map((v, i) => html`<sl-tab slot="nav" panel="video${i}">${v.titulo}</sl-tab>`)}
-        ${videos.map((v, i) => this.tabPanelVideoTemplate(v, i))}
-      </sl-tab-group>
     `;
   }
 
   private detailsVideoTemplate(video: Video, i: number): any {
     return html`
       <sl-details summary="${video.titulo}" name="video${i}" .open=${this.selecionado === i}>
-        ${this.selecionado === i ? this.videoTemplate(video, i, 'details') : ``}
+        ${this.selecionado === i ? this.videoTemplate(video, i) : ``}
       </sl-details>
     `;
   }
@@ -145,9 +110,6 @@ export class EdtModalAjuda extends LitElement {
     return html`
       ${ajudaStyles}
       <sl-dialog data-cy="dialog-ajuda" label=${tituloModal} @sl-hide=${this.emitirEvento}>
-        <!-- Desktop e tablet -->
-        ${this.visivel ? this.tabGroupTemplate() : html``}
-        <!-- Celular -->
         <div class="details-group">${this.visivel ? videos.map((v, i) => this.detailsVideoTemplate(v, i)) : html``}</div>
         <sl-button
           slot="footer"

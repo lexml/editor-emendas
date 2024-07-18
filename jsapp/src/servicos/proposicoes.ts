@@ -1,4 +1,3 @@
-import { Ambiente, ambiente } from '../components/edt-ambiente';
 import { Proposicao } from '../model/proposicao';
 import { toggleCarregando } from '../components/edt-app';
 
@@ -30,6 +29,7 @@ const buscarProposicoes = async (url: string): Promise<Proposicao[]> => {
       labelPrazoRecebimentoEmendas: p.labelPrazoRecebimentoEmendas,
       labelTramitacao: p.labelTramitacao,
       codMateriaMigradaMATE: p.codMateriaMigradaMATE,
+      tipoMateriaOrcamentaria: p.tipoMateriaOrcamentaria,
     }))
     .sort(compareProposicoesDesc);
 };
@@ -38,12 +38,12 @@ export const pesquisarProposicoes = async (sigla: string, numero: string, ano: n
   const searchParams = new URLSearchParams(
     numero ? { sigla, numero, ano: ano.toString(), carregarDatasDeMPs: 'true' } : { sigla, ano: ano.toString(), carregarDatasDeMPs: 'true' }
   ).toString();
-  const url = `api/proposicoes-novo?${searchParams}`;
+  const url = `api/proposicoes?${searchParams}`;
   return buscarProposicoes(url);
 };
 
 export const pesquisarProposicoesEmTramitacao = async (sigla: string): Promise<Proposicao[]> => {
-  const url = `api/proposicoesEmTramitacao-novo?carregarDatasDeMPs=true&sigla=${sigla}`;
+  const url = `api/proposicoesEmTramitacao?carregarDatasDeMPs=true&sigla=${sigla}`;
   return buscarProposicoes(url);
 };
 
@@ -51,16 +51,3 @@ function compareProposicoesDesc(a: any, b: any): number {
   const s = b.ano - a.ano;
   return s || b.numero - a.numero;
 }
-
-export const sendEmailMotivoEmendaTextoLivre = (motivo: string): void => {
-  if (ambiente === Ambiente.PRODUCAO) {
-    fetch('api/motivo-emenda-texo-livre', {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-      body: JSON.stringify({ motivo }),
-    });
-  }
-};

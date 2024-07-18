@@ -11,4 +11,5 @@ export interface Proposicao {
   labelPrazoRecebimentoEmendas?: string;
   labelTramitacao?: string;
   codMateriaMigradaMATE?: string;
+  tipoMateriaOrcamentaria?: string;
 }

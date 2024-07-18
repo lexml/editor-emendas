@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +61,6 @@ public class EditorApiController {
     
     private final ConversorLexmlJsonix conversorLexmlJsonix;
     private final LandingPageMailService landingPageMailService;
-    private final MotivoEmendaTextoLivreService motivoEmendaTextoLivreService;
     private final ListaParlamentaresService listaParlamentaresService;
     private final AutoCompleteNormaService autoCompleteNormaService;
     
@@ -75,7 +73,6 @@ public class EditorApiController {
             LexmlParser lexmlParser,
             ConversorLexmlJsonix conversorLexmlJsonix,
             LandingPageMailService landingPageMailService,
-            MotivoEmendaTextoLivreService motivoEmendaTextoLivreService,
             ListaParlamentaresService listaParlamentaresService,
             InfoAppService infoAppService,
             AutoCompleteNormaService autoCompleteNormaService) {
@@ -88,7 +85,6 @@ public class EditorApiController {
         this.listaParlamentaresService = listaParlamentaresService;
         this.infoAppService = infoAppService;
         this.autoCompleteNormaService = autoCompleteNormaService;
-        this.motivoEmendaTextoLivreService = motivoEmendaTextoLivreService;
     }
 
     @GetMapping
@@ -125,13 +121,7 @@ public class EditorApiController {
         return os.toByteArray();
     }
     
-    // TODO - Apagar método em 2024 :)
     @PostMapping(path = "/emenda/pdf2json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public void abreEmenda(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        throw new EditorEmendasException("Tecle CTRL+SHIFT+R para atualizar a aplicação.");
-    }
-    
-    @PostMapping(path = "/emenda/pdf2json-novo", produces = MediaType.APPLICATION_JSON_VALUE)
     public void abreEmendaNovo(HttpServletRequest request, HttpServletResponse response) throws Exception {
     	response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     		jsonGenerator.extractJsonFromPdf(request.getInputStream(), response.getWriter());
@@ -143,24 +133,14 @@ public class EditorApiController {
         return listaParlamentaresService.parlamentares();
     }
     
-    // TODO - Apagar método em 2024 :)
     @GetMapping(path = "/proposicoes", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoes(
-            @RequestParam String sigla,
-            @RequestParam int ano,
-            @RequestParam(required = false) String numero) {
-
-    	return listaProposicoes(sigla);
-    }
-    
-    @GetMapping(path = "/proposicoes-novo", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
             @RequestParam int ano,
             @RequestParam(required = false) String numero,
             @RequestParam(required = false) Boolean carregarDatasDeMPs) {
 
-    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs);
+    	List<Proposicao> l = lexmlJsonixService.getProposicoes(sigla, ano, numero, carregarDatasDeMPs, false);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -169,26 +149,13 @@ public class EditorApiController {
     			.collect(Collectors.toList());
     }
     
-    // TODO - Apagar método em 2024 :)
     @GetMapping(path = "/proposicoesEmTramitacao", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Proposicao> listaProposicoes(
-            @RequestParam String sigla) {
-
-    	Proposicao p = new Proposicao();
-    	p.setSigla("XXX");
-    	p.setNumero("!!!!!!");
-    	p.setAno(2023);
-    	p.setEmenta("Aplicação desatualizada! Tecle CTRL+SHIFT+R para atualizar.");
-    	
-    	return Arrays.asList(p);
-    }
-    
-    @GetMapping(path = "/proposicoesEmTramitacao-novo", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Proposicao> listaProposicoesNovo(
             @RequestParam String sigla,
-            @RequestParam(required = false) Boolean carregarDatasDeMPs) {
-    	
-    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs);
+            @RequestParam(required = false) Boolean carregarDatasDeMPs,
+            @RequestParam(required = false, defaultValue = "false") Boolean preferirSubstitutivo ) {
+
+    	List<Proposicao> l = lexmlJsonixService.getProposicoesEmTramitacao(sigla, carregarDatasDeMPs, preferirSubstitutivo);
     	
     	Set<Integer> idsDoma = new HashSet<>();
     	
@@ -211,7 +178,7 @@ public class EditorApiController {
     		return IOUtils.toString(is, StandardCharsets.UTF_8);
     	}
 
-    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero);
+    	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero, false);
     	
     	if(json.contains("LEXML_URN_ID")) {
 		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
@@ -236,12 +203,6 @@ public class EditorApiController {
     @PostMapping("contato")
     public ResponseEntity<Void> contato(@RequestBody @NotBlank MensagemLandingPage mensagem) {
         landingPageMailService.sendEmail(mensagem);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @PostMapping("/motivo-emenda-texo-livre")
-    public ResponseEntity<Void> emendaTextoLivre (@RequestBody @NotBlank MotivoEmendaTextoLivre body) {
-        motivoEmendaTextoLivreService.sendEmail(body);
         return ResponseEntity.noContent().build();
     }
     
