@@ -31,9 +31,7 @@ export class EdtModalVisualizarPdf extends LitElement {
         },
       });
       const fileName = await resp.text();
-      console.log(fileName);
       this.pdfUrl = `../../../api/emenda/pdfFile/${fileName}`;
-      //this.pdfUrl = `http://localhost:8000/assets/exemplo.pdf`;
     } catch (err) {
       console.log(err);
       this.emitirAlerta(`Erro inesperado ao gerar o PDF`);

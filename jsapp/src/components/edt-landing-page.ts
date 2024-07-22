@@ -386,8 +386,11 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-file-earmark-plus fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Criar emenda</h2>
                   <p class="mb-3 text-muted fs-5">Pesquise medidas provisórias recentes e comece a editar.</p>
-                  <button data-cy="btnSelecionarMpvLandingPage" class="btn btn-primary btn-md rounded-pill px-4" @click=${(): void =>
-                    this.emitirEvento('nova')}>
+                  <button
+                    data-cy="btnSelecionarMpvLandingPage"
+                    class="btn btn-primary btn-md rounded-pill px-4"
+                    @click=${(): void => this.emitirEvento('nova')}
+                  >
                     Selecionar Medida Provisória
                   </button>
                 </div>
@@ -395,8 +398,11 @@ export class EdtLandingPage extends LitElement {
                   <i class="bi-pen fs-2 text-primary"></i>
                   <h2 class="mt-0 fs-5">Abrir emenda</h2>
                   <p class="mb-3 text-muted fs-5">Abra emendas em PDF do seu celular ou computador.</p>
-                  <button data-cy="btnAbrirEmendaLandingPage" class="btn btn-secondary btn-md rounded-pill px-4" @click=${(): void =>
-                    this.emitirEvento('abrir')}>
+                  <button
+                    data-cy="btnAbrirEmendaLandingPage"
+                    class="btn btn-secondary btn-md rounded-pill px-4"
+                    @click=${(): void => this.emitirEvento('abrir')}
+                  >
                     Abrir emenda do seu local
                   </button>
                 </div>
@@ -421,8 +427,11 @@ export class EdtLandingPage extends LitElement {
               <p class="text-white-75 mb-4 fs-4">
                 Assista a vídeos curtos e aprenda as funcionalidades do editor de emendas com demonstrações rápidas.
               </p>
-              <button data-cy="btnAcessarVideosLandingPage" class="btn btn-light btn-md rounded-pill px-4" @click=${(): void =>
-                this.emitirEvento('videos')}>
+              <button
+                data-cy="btnAcessarVideosLandingPage"
+                class="btn btn-light btn-md rounded-pill px-4"
+                @click=${(): void => this.emitirEvento('videos')}
+              >
                 Acessar os vídeos tutoriais
               </button>
             </div>
@@ -752,8 +761,8 @@ export class EdtLandingPage extends LitElement {
                     data-sb-validations="required"
                     @input=${this.handleMessageInput}
                     @blur=${this.handleMessageBlur}
-                  // eslint-disable-next-line prettier/prettier
-                  >${this.message}</textarea>
+                    .value="${this.message}"
+                  ></textarea>
                   <label for="message">Mensagem</label>
                   <div class="invalid-feedback" style="display: block" data-sb-feedback="message:required">
                     ${this.showMessageRequired() ? 'Uma mensagem é requerida.' : ''}
