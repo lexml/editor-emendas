@@ -21,6 +21,7 @@ import './commands';
 
 beforeEach(() => {
   cy.configurarInterceptadores(); // ver commands.ts
+  cy.ignorarErro('removeEventListener');
   cy.viewport(1920, 1080);
   cy.visit('/', {
     onBeforeLoad: win => {
