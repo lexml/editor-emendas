@@ -756,11 +756,14 @@ export class EdtApp extends LitElement {
       dataUltimaModificacao: null,
     };
 
+    emendaComAlteracoesSalvas.pendenciasPreenchimento = [];
+
     let emenda = {
       ...this.lexmlEmenda.getEmenda(),
       dataUltimaModificacao: null,
     };
 
+    emenda.pendenciasPreenchimento = [];
     emenda = removeAtributoUndefined(emenda);
 
     if (emendaComAlteracoesSalvas.comandoEmendaTextoLivre) {
@@ -769,7 +772,6 @@ export class EdtApp extends LitElement {
     emenda.comandoEmendaTextoLivre.texto = emenda.comandoEmendaTextoLivre.texto.trim();
 
     const _isDirty = !objetosIguais(emendaComAlteracoesSalvas, emenda);
-    // JSON.stringify(emendaComAlteracoesSalvas) !== JSON.stringify(emenda);
 
     return _isDirty;
   }
