@@ -66,16 +66,12 @@ export default {
     copy({
       targets: [
         {
-          src: 'dist/*',
+          src: ['dist/*', 'quadro-emendas.html', 'robots.txt'],
           dest: '../src/main/resources/static'
         },
         {
           src: ['assets/icons', 'assets/svg', 'assets/jpg', 'assets/img', 'assets/css', 'assets/pdf', 'assets/js-landing-page', 'assets/pdfjs'],
           dest: '../src/main/resources/static/assets'
-        },
-        {
-          src: 'quadro-emendas.html',
-          dest: '../src/main/resources/static'
         },
       ],
       hook: 'closeBundle'
