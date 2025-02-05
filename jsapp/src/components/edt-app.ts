@@ -296,7 +296,7 @@ export class EdtApp extends LitElement {
           this.emendaComAlteracoesSalvas = JSON.parse(JSON.stringify(emenda));
           this.isDirty = false;
           this.wasSaved = true;
-          this.updateStateElements(fileHandle!.name);
+          this.updateStateElements(fileHandle?.name);
           this.emitirAlerta('Arquivo salvo com sucesso!', 'success');
         })
         .catch(err => {
