@@ -1,5 +1,5 @@
 import SlAlert from '@shoelace-style/shoelace/dist/components/alert/alert';
-import { fileOpen, fileSave, FileWithHandle } from 'browser-fs-access';
+import { fileOpen, fileSave, FileWithHandle, supported } from 'browser-fs-access';
 import { html, LitElement, TemplateResult } from 'lit';
 import { customElement, query, state } from 'lit/decorators.js';
 
@@ -744,7 +744,7 @@ export class EdtApp extends LitElement {
     setTimeout(() => {
       if (this.edtMenu.btnSave !== null) {
         this.edtMenu.btnSave.disabled = !this.isDirty;
-        this.edtMenu.btnSaveAs.disabled = !this.wasSaved && !this.isOpenFile;
+        if (supported) this.edtMenu.btnSaveAs.disabled = !this.wasSaved && !this.isOpenFile;
       }
       this.atualizarTituloEditor(tituloEmenda ?? this.tituloEmenda);
     }, 0);
