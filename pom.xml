@@ -16,7 +16,33 @@
 		<java.version>11</java.version>
 		<sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
 		<sonar.host.url>https://sonar.senado.leg.br</sonar.host.url>
+
+		<base.site.deployment.url>file://${user.home}/.m2/local-site-deployment</base.site.deployment.url>
+		<release.deployment.url>http://www20.senado.gov.br/artifactory/libs-releases-local</release.deployment.url>
+		<snapshot.deployment.url>http://www20.senado.gov.br/artifactory/libs-snapshots-local</snapshot.deployment.url>
 	</properties>
+
+	<!-- configuracoes usadas para deployment de artefatos -->
+	<distributionManagement>
+		<!-- repositorio de releases oficiais -->
+		<repository>
+			<id>sfmvnrepo</id>
+			<name>sfmvnrepo-releases</name>
+			<url>${release.deployment.url}</url>
+		</repository>
+		<!-- repositorio para snapshots -->
+		<snapshotRepository>
+			<id>sfmvnrepo</id>
+			<name>sfmvnrepo-snapshots</name>
+			<url>${snapshot.deployment.url}</url>
+		</snapshotRepository>
+		<site>
+			<id>maven-site</id>
+			<name>Componentes Java</name>
+			<url>${base.site.deployment.url}</url>
+		</site>
+	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -85,6 +111,23 @@
 			            </manifest>
 			        </archive>
 			    </configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.amashchenko.maven.plugin</groupId>
+				<artifactId>gitflow-maven-plugin</artifactId>
+				<version>1.21.0</version>
+				<configuration>
+					<verbose>true</verbose>
+					<argLine>-Pdocker</argLine>
+					<skipTestProject>true</skipTestProject>
+					<preFeatureFinishGoals>test</preFeatureFinishGoals>
+					<postHotfixGoals>test</postHotfixGoals>
+					<postReleaseGoals>test</postReleaseGoals>
+					<allowSnapshots>false</allowSnapshots>
+					<useSnapshotInRelease>true</useSnapshotInRelease>
+					<useSnapshotInHotfix>true</useSnapshotInHotfix>
+					<commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
