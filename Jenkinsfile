@@ -8,5 +8,6 @@ dockerBuildStandardPipeline {
     skipUnitTestOnIC=true
     buildNpmFrontend=true
     npmFrontendDirs = ['jsapp']
-    nodejs = 'nodejs14-lts'
+    nodejs = 'nodejs16-lts'
+    productionBranch = 'main'
 }
