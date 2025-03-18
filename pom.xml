@@ -18,7 +18,7 @@
 		<sonar.host.url>https://sonar.senado.leg.br</sonar.host.url>
 
 		<maven.build.timestamp.format>dd/MM/yyyy HH:mm:ss</maven.build.timestamp.format>
-		<buildTimestamp>${maven.build.timestamp}</buildTimestamp>
+		<buildtimestamp>${maven.build.timestamp}</buildtimestamp>
 
 		<base.site.deployment.url>file://${user.home}/.m2/local-site-deployment</base.site.deployment.url>
 		<release.deployment.url>http://www20.senado.gov.br/artifactory/libs-releases-local</release.deployment.url>
@@ -112,6 +112,14 @@
 			                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 			                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 			            </manifest>
+						<manifestEntries>
+							<Build-Number>${env.BUILD_NUMBER}</Build-Number>
+							<Build-Id>${env.BUILD_ID}</Build-Id>
+							<Build-Timestamp>${buildtimestamp}</Build-Timestamp>
+							<Job-Name>${env.JOB_NAME}</Job-Name>
+							<Environment>${ambiente}</Environment>
+							<Implementation-Version>${project.version}</Implementation-Version>
+						</manifestEntries>
 			        </archive>
 			    </configuration>
 			</plugin>
