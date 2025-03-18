@@ -17,6 +17,9 @@
 		<sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
 		<sonar.host.url>https://sonar.senado.leg.br</sonar.host.url>
 
+		<maven.build.timestamp.format>dd/MM/yyyy HH:mm:ss</maven.build.timestamp.format>
+		<buildTimestamp>${maven.build.timestamp}</buildTimestamp>
+
 		<base.site.deployment.url>file://${user.home}/.m2/local-site-deployment</base.site.deployment.url>
 		<release.deployment.url>http://www20.senado.gov.br/artifactory/libs-releases-local</release.deployment.url>
 		<snapshot.deployment.url>http://www20.senado.gov.br/artifactory/libs-snapshots-local</snapshot.deployment.url>

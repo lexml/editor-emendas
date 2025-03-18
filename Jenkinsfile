@@ -2,7 +2,7 @@
 @Library('senado-build-library') _
 dockerBuildStandardPipeline {
     email = 'ls_sesap@senado.leg.br'
-    jdk = 'java-17-lts'
+    jdk = 'java11lts'
     environmentToCI = 'desenvolvimento'
     skipIntegrationTestOnIC=true
     skipUnitTestOnIC=true
