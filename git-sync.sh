@@ -42,8 +42,15 @@ echo "===> Verificando sincronização do remote '$remote', branch develop"
 sincronizar_branch "$remote" "develop"
 echo ""
 
-git checkout -b "$remote-main" "$remote"/main
-git pull -f "$remote" main
+# Verifica se a branch existe na lista de branches locais
+if ! git branch --list | grep -q "^  $remote-main$"; then
+  echo "===> Criando branch '$remote-main'."
+  git checkout -b "$remote-main" "$remote"/main
+else
+  echo "===> Checkout da branch '$remote-main'."
+  git checkout "$remote-main"
+fi
+git pull -f
 
 echo ""
 echo "===> Verificando sincronização do origin, branch main"
