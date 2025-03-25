@@ -50,7 +50,7 @@ sincronizar_branch "$remote" "develop"
 
 echo ""
 
-git checkout "$remote"/main
+git checkout -b "$remote-main" "$remote"/main
 git pull -f "$remote" main
 
 echo ""
