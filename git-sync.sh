@@ -61,4 +61,4 @@ sincronizar_branch "origin" "main"
 
 echo ""
 echo "Sincronização finalizada. Retornando para a branch origin/develop."
-git checkout origin/develop
+git checkout develop
