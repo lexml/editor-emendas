@@ -4,7 +4,7 @@ inicializar_ssh_agent() {
   eval "$(ssh-agent -s)"
   ssh-add ~/.ssh/id_rsa
 
-  echo "===> SSH agent iniciado e chave privada adicionada."
+  echo "=> SSH agent iniciado e chave privada adicionada."
 }
 
 sincronizar_branch() {
@@ -20,8 +20,8 @@ sincronizar_branch() {
   if [ "$origin_hash" == "$remote_hash" ]; then
     echo "===> Não há commits para sincronizar entre $branch e '$remote/$branch'." #: '$origin_hash' e '$remote_hash'."
   else
-    echo "===> Os commits estão diferentes entre $branch e $remote/$branch." #: '$origin_hash' e '$remote_hash'."
-    #git push -f $remote $branch
+    echo "=> Os commits estão diferentes entre $branch e $remote/$branch." #: '$origin_hash' e '$remote_hash'."
+    git push -f $remote $branch
     echo "===> Sincronização $remote $branch concluída."
   fi
 }
@@ -37,26 +37,26 @@ inicializar_ssh_agent
 echo ""
 
 git checkout develop
-echo "===> Verificando sincronização do remote '$remote', branch develop"
+echo "=> Verificando sincronização do remote '$remote', branch develop"
 
 sincronizar_branch "$remote" "develop"
 echo ""
 
 # Verifica se a branch existe na lista de branches locais
 if ! git branch --list | grep -q "^  $remote-main$"; then
-  echo "===> Criando branch '$remote-main'."
+  echo "=> Criando branch '$remote-main'."
   git checkout -b "$remote-main" "$remote"/main
 else
-  echo "===> Checkout da branch '$remote-main'."
+  echo "=> Checkout da branch '$remote-main'."
   git checkout "$remote-main"
 fi
 git pull -f
 
 echo ""
-echo "===> Verificando sincronização do origin, branch main"
+echo "=> Verificando sincronização do origin, branch main"
 
 sincronizar_branch "origin" "main"
 
 echo ""
-echo "===> Sincronização finalizada. Retornando para a branch origin/develop."
+echo "=> Sincronização finalizada. Retornando para a branch origin/develop."
 git checkout develop
