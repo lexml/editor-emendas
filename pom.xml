@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.8.5</version>
+	<version>1.8.6-SNAPSHOT</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -138,6 +138,9 @@
 					<useSnapshotInRelease>true</useSnapshotInRelease>
 					<useSnapshotInHotfix>true</useSnapshotInHotfix>
 					<commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+					<gitFlowConfig>
+						<productionBranch>main</productionBranch>
+					</gitFlowConfig>
 				</configuration>
 			</plugin>
 		</plugins>
