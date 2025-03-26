@@ -9,14 +9,43 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.8.2</version>
+	<version>1.8.9</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
 		<java.version>11</java.version>
 		<sonar-maven-plugin.version>3.9.1.2184</sonar-maven-plugin.version>
 		<sonar.host.url>https://sonar.senado.leg.br</sonar.host.url>
+
+		<maven.build.timestamp.format>dd/MM/yyyy HH:mm:ss</maven.build.timestamp.format>
+		<buildtimestamp>${maven.build.timestamp}</buildtimestamp>
+
+		<base.site.deployment.url>file://${user.home}/.m2/local-site-deployment</base.site.deployment.url>
+		<release.deployment.url>http://www20.senado.gov.br/artifactory/libs-releases-local</release.deployment.url>
+		<snapshot.deployment.url>http://www20.senado.gov.br/artifactory/libs-snapshots-local</snapshot.deployment.url>
 	</properties>
+
+	<!-- configuracoes usadas para deployment de artefatos -->
+	<distributionManagement>
+		<!-- repositorio de releases oficiais -->
+		<repository>
+			<id>sfmvnrepo</id>
+			<name>sfmvnrepo-releases</name>
+			<url>${release.deployment.url}</url>
+		</repository>
+		<!-- repositorio para snapshots -->
+		<snapshotRepository>
+			<id>sfmvnrepo</id>
+			<name>sfmvnrepo-snapshots</name>
+			<url>${snapshot.deployment.url}</url>
+		</snapshotRepository>
+		<site>
+			<id>maven-site</id>
+			<name>Componentes Java</name>
+			<url>${base.site.deployment.url}</url>
+		</site>
+	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -83,10 +112,84 @@
 			                <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 			                <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
 			            </manifest>
+						<manifestEntries>
+							<Build-Number>${env.BUILD_NUMBER}</Build-Number>
+							<Build-Id>${env.BUILD_ID}</Build-Id>
+							<Build-Timestamp>${buildtimestamp}</Build-Timestamp>
+							<Job-Name>${env.JOB_NAME}</Job-Name>
+							<Environment>${ambiente}</Environment>
+							<Implementation-Version>${project.version}</Implementation-Version>
+						</manifestEntries>
 			        </archive>
 			    </configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.amashchenko.maven.plugin</groupId>
+				<artifactId>gitflow-maven-plugin</artifactId>
+				<version>1.21.0</version>
+				<configuration>
+					<verbose>true</verbose>
+					<argLine>-Pdocker</argLine>
+					<skipTestProject>true</skipTestProject>
+					<preFeatureFinishGoals>test</preFeatureFinishGoals>
+					<postHotfixGoals>test</postHotfixGoals>
+					<postReleaseGoals>test</postReleaseGoals>
+					<allowSnapshots>false</allowSnapshots>
+					<useSnapshotInRelease>true</useSnapshotInRelease>
+					<useSnapshotInHotfix>true</useSnapshotInHotfix>
+					<commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<properties>
+				<sf.docker.registry>registry.senado.leg.br</sf.docker.registry>
+				<sf.docker.image.name>leg/${project.build.finalName}</sf.docker.image.name>
+				<sf.docker.image.version>latest-local</sf.docker.image.version>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.10</version>
+						<configuration>
+							<repository>${sf.docker.registry}/${sf.docker.image.name}</repository>
+							<skipDockerInfo>true</skipDockerInfo>
+							<buildArgs>
+								<WAR_NAME>${project.build.finalName}</WAR_NAME>
+								<uid>2000</uid>
+								<gid>2000</gid>
+							</buildArgs>
+						</configuration>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+								</goals>
+								<configuration>
+									<tag>${sf.docker.image.version}</tag>
+								</configuration>
+							</execution>
+							<execution>
+								<id>deploy</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>push</goal>
+								</goals>
+								<configuration>
+									<tag>${sf.docker.image.version}</tag>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
