@@ -2,9 +2,8 @@
 @Library('senado-build-library') _
 dockerBuildStandardPipeline {
     email = 'ls_sesap@senado.leg.br'
-    jdk = 'java11lts'
+    jdk = 'java-17-lts'
     environmentToCI = 'desenvolvimento'
-    helmDeliveryJobName = 'lexml/helm-leg-editor-emendas/main'
     skipIntegrationTestOnIC=true
     skipUnitTestOnIC=true
     buildNpmFrontend=true

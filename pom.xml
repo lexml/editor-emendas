@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.8.5</version>
+	<version>1.8.8</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -143,4 +143,53 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>docker</id>
+			<properties>
+				<sf.docker.registry>registry.senado.leg.br</sf.docker.registry>
+				<sf.docker.image.name>leg/${project.build.finalName}</sf.docker.image.name>
+				<sf.docker.image.version>latest-local</sf.docker.image.version>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>com.spotify</groupId>
+						<artifactId>dockerfile-maven-plugin</artifactId>
+						<version>1.4.10</version>
+						<configuration>
+							<repository>${sf.docker.registry}/${sf.docker.image.name}</repository>
+							<skipDockerInfo>true</skipDockerInfo>
+							<buildArgs>
+								<WAR_NAME>${project.build.finalName}</WAR_NAME>
+								<uid>2000</uid>
+								<gid>2000</gid>
+							</buildArgs>
+						</configuration>
+						<executions>
+							<execution>
+								<id>default</id>
+								<goals>
+									<goal>build</goal>
+								</goals>
+								<configuration>
+									<tag>${sf.docker.image.version}</tag>
+								</configuration>
+							</execution>
+							<execution>
+								<id>deploy</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>push</goal>
+								</goals>
+								<configuration>
+									<tag>${sf.docker.image.version}</tag>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
