@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.8.10</version>
+	<version>1.8.11</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -92,7 +92,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>${project.artifactId}</finalName>
+		<finalName>editor-emendas</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
