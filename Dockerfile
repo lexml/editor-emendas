@@ -1,11 +1,11 @@
 FROM lexmlbr/lexml-linker:1.4.7 as linker-base
 FROM eclipse-temurin:17.0.10_7-jdk-focal
 EXPOSE 8080
-ARG uid
-ARG gid
+ARG uid=2000
+ARG gid=2000
 
 RUN mkdir -p /usr/local/editor-emendas && \
-    groupadd -g $gid -r editoremendas && \
+    groupadd -g $gid editoremendas && \
     useradd -u $uid -r -g editoremendas -d /usr/local/editor-emendas editoremendas && \
     chown editoremendas:editoremendas /usr/local/editor-emendas && \
     apt-get -y update && \
