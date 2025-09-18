@@ -92,7 +92,7 @@
 	</dependencies>
 
 	<build>
-		<finalName>${project.artifactId}</finalName>
+		<finalName>editor-emendas</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
