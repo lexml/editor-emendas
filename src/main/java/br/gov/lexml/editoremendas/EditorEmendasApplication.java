@@ -20,9 +20,12 @@ public class EditorEmendasApplication {
 			System.setProperty("lexml-jsonix.cli", "./jsonix-lexml-linux");
 		}
 
-        if (System.getProperty("spring.profiles.active") == null) {
+        if (System.getenv().get("LEXEDITWEB_URL") == null) {
             log.info("Using lexeditweb production url");
             System.setProperty("LEXEDITWEB_URL", "https://legis.senado.leg.br/lexeditweb");
+        } else {
+            log.info("Using custom lexeditweb url: {}", System.getenv().get("LEXEDITWEB_URL"));
+            System.setProperty("LEXEDITWEB_URL", System.getenv().get("LEXEDITWEB_URL"));
         }
 		SpringApplication.run(EditorEmendasApplication.class, args);
 	}
