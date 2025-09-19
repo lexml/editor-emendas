@@ -51,3 +51,13 @@ function compareProposicoesDesc(a: any, b: any): number {
   const s = b.ano - a.ano;
   return s || b.numero - a.numero;
 }
+
+export const proposicaoPermiteTexotLivre = async (sigla: string, numero: string, ano: number): Promise<any> => {
+  const searchParams = new URLSearchParams({
+    sigla: sigla,
+    numero: numero,
+    ano: ano.toString(),
+  }).toString();
+  const resp = await fetch(`api/proposicao/permite-texto-livre?${searchParams}`);
+  return resp.json();
+};

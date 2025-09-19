@@ -6,7 +6,7 @@ import { customElement, query, state } from 'lit/decorators.js';
 import { Proposicao } from '../model/proposicao';
 import { errorInPromise, errorToBeIgnored, getHttpError, isUserAbortException } from '../utils/error-utils';
 import { buildContent, getUrn } from '../model/lexml/jsonixUtil';
-import { getProposicaoJsonix, pesquisarProposicoes } from '../servicos/proposicoes';
+import { getProposicaoJsonix, pesquisarProposicoes, proposicaoPermiteTexotLivre } from '../servicos/proposicoes';
 import { appStyles } from './app.css';
 import { EdtMenu } from './edt-menu';
 import { getVersao } from '../servicos/info-app';
@@ -43,6 +43,9 @@ export class EdtApp extends LitElement {
 
   @query('edt-modal-texto-livre')
   private modalTextoLivre!: any;
+
+  @query('edt-modal-nao-permite-texto-livre')
+  private modalNaoPermiteTextoLivre!: any;
 
   @query('edt-menu')
   private edtMenu!: EdtMenu;
@@ -461,7 +464,13 @@ export class EdtApp extends LitElement {
 
   private novaEmendaTextoLivre(): void {
     this.fileHandle = undefined;
-    this.modalTextoLivre.show();
+    const { sigla, numero, ano } = this.proposicao;
+    proposicaoPermiteTexotLivre(sigla!, numero!, Number(ano))
+      .then(permiteTextoLivre => {
+        if (permiteTextoLivre) this.modalTextoLivre.show();
+        else this.modalNaoPermiteTextoLivre.show();
+      })
+      .catch(err => console.log('Erro ao verificar texto livre', err));
   }
 
   private abrirEmenda(): void {
@@ -884,6 +893,8 @@ export class EdtApp extends LitElement {
       <edt-modal-texto-livre
         @nova-emenda-texto-livre=${(ev: CustomEvent): void => this.trocarTipoEmenda('emendaTextoLivre', ev.detail.motivo)}
       ></edt-modal-texto-livre>
+
+      <edt-modal-nao-permite-texto-livre></edt-modal-nao-permite-texto-livre>
 
       <edt-modal-confirmacao-salvar @confirm-result=${this.processarResultadoConfirmacao}></edt-modal-confirmacao-salvar>
 
