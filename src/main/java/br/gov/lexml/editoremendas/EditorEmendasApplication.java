@@ -20,12 +20,14 @@ public class EditorEmendasApplication {
 			System.setProperty("lexml-jsonix.cli", "./jsonix-lexml-linux");
 		}
 
-        if (System.getenv().get("LEXEDITWEB_URL") == null) {
-            log.info("Using lexeditweb production url");
-            System.setProperty("LEXEDITWEB_URL", "https://legis.senado.leg.br/lexeditweb");
-        } else {
-            log.info("Using custom lexeditweb url: {}", System.getenv().get("LEXEDITWEB_URL"));
+        if (System.getProperty("LEXEDITWEB_URL") != null) {
+            log.info("Using lexeditweb url from properties: {}", System.getProperty("LEXEDITWEB_URL"));
+        } else if (System.getenv().get("LEXEDITWEB_URL") != null) {
             System.setProperty("LEXEDITWEB_URL", System.getenv().get("LEXEDITWEB_URL"));
+            log.info("Using lexeditweb url from env: {}", System.getProperty("LEXEDITWEB_URL"));
+        } else {
+            System.setProperty("LEXEDITWEB_URL", "https://legis.senado.leg.br/lexeditweb");
+            log.info("Using default lexeditweb production url: {}", System.getProperty("LEXEDITWEB_URL"));
         }
 		SpringApplication.run(EditorEmendasApplication.class, args);
 	}
