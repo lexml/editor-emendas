@@ -63,6 +63,7 @@ public class EditorApiController {
     private final LandingPageMailService landingPageMailService;
     private final ListaParlamentaresService listaParlamentaresService;
     private final AutoCompleteNormaService autoCompleteNormaService;
+    private final ProposicaoService proposicaoService;
     
     private final InfoAppService infoAppService;
     
@@ -75,7 +76,8 @@ public class EditorApiController {
             LandingPageMailService landingPageMailService,
             ListaParlamentaresService listaParlamentaresService,
             InfoAppService infoAppService,
-            AutoCompleteNormaService autoCompleteNormaService) {
+            AutoCompleteNormaService autoCompleteNormaService,
+            ProposicaoService proposicaoService) {
         this.pdfGenerator = pdfGenerator;
         this.jsonGenerator = jsonGenerator;
         this.lexmlJsonixService = lexmlJsonixService;
@@ -85,6 +87,7 @@ public class EditorApiController {
         this.listaParlamentaresService = listaParlamentaresService;
         this.infoAppService = infoAppService;
         this.autoCompleteNormaService = autoCompleteNormaService;
+        this.proposicaoService = proposicaoService;
     }
 
     @GetMapping
@@ -216,5 +219,8 @@ public class EditorApiController {
     	return StringUtils.defaultString(infoAppService.versao(), "«desenvolvimento local»");
     }
 
-    
+    @GetMapping(path = "/proposicao/permite-texto-livre")
+    public boolean permiteTexotLivre(@RequestParam("sigla") String sigla, @RequestParam("numero") String numero, @RequestParam("ano") String ano) {
+        return proposicaoService.permiteEmendaTextoLivre(sigla, numero, ano);
+    }
 }
