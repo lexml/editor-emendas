@@ -1,5 +1,8 @@
 package br.gov.lexml.editoremendas;
 
+import java.net.URI;
+import java.util.Collections;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -9,9 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
-import java.util.*;
-
 @Service
 public class ProposicaoServiceImpl implements ProposicaoService {
 
@@ -20,7 +20,7 @@ public class ProposicaoServiceImpl implements ProposicaoService {
     @Value("${url.servico.permite_texto_livre}")
     private String urlVerificaTextoLivre;
 
-    @Value("${LEXEDITWEB_URL}")
+    @Value("${url.lexeditweb}")
     private String urlLexeditweb;
 
     public ProposicaoServiceImpl(RestTemplate restTemplate) {

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--Log Pattern -->
+    <property name="CONSOLE_LOG_PATTERN" value="${CONSOLE_LOG_PATTERN:-%d{yyyy-MM-dd'T'HH:mm:ss.SSS} %level [%logger] \\(%t\\) [%X{requestId}] [%X{loggedUsername}] [%X{sessionId}] [%X{req.remoteHost}] [%X{req.method}] [%X{req.requestURI}] ['%X{req.userAgent}'] %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}}" />
+    
+    <!-- Inclui as definições básicas do Logback para Spring Boot -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml" />
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+    
+    <!-- 
+    <logger name="com.zaxxer.hikari" level="DEBUG"/>
+     -->
+
+    <!-- Configurações do root logger para ambiente server -->
+    <springProfile name="server">
+      <logger name="br.gov.lexml" level="INFO"/>
+      <logger name="org.apache.catalina.startup.HostConfig" level="INFO"/>
+      <logger name="org.springframework.web.context.ContextLoader" level="INFO"/>
+      <logger name="org.springframework.security.core.SpringSecurityCoreVersion" level="INFO"/>
+      <root level="WARN">
+      	<appender-ref ref="CONSOLE"/>
+      </root>
+    </springProfile>
+
+</configuration>
