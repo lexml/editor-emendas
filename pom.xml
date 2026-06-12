@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -9,7 +8,7 @@
 	</parent>
 	<groupId>br.gov.lexml</groupId>
 	<artifactId>editor-emendas</artifactId>
-	<version>1.9.3</version>
+	<version>1.9.4</version>
 	<name>editor-emendas</name>
 	<description>Editor de Emendas a MPVs do Congresso Nacional</description>
 	<properties>
@@ -72,7 +71,7 @@
 		<dependency>
 			<groupId>br.gov.lexml.eta</groupId>
 			<artifactId>eta-backend-services</artifactId>
-			<version>1.2.0</version>
+			<version>1.2.9</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.apache.logging.log4j</groupId>
@@ -81,9 +80,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>br.gov.lexml</groupId>
-			<artifactId>lexml-jsonix-spring-boot-starter</artifactId>
-			<version>1.0.1</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>		
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

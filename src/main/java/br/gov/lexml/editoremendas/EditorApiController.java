@@ -38,9 +38,9 @@ import br.gov.lexml.eta.etaservices.emenda.EmendaJsonGenerator;
 import br.gov.lexml.eta.etaservices.parsing.lexml.LexmlParser;
 import br.gov.lexml.eta.etaservices.printing.json.EmendaPojo;
 import br.gov.lexml.eta.etaservices.printing.pdf.PdfGenerator;
-import br.leg.camara.lexmljsonixspringbootstarter.conversor.ConversorLexmlJsonix;
-import br.leg.camara.lexmljsonixspringbootstarter.service.LexmlJsonixService;
-import br.leg.camara.lexmljsonixspringbootstarter.service.Proposicao;
+import br.gov.lexml.eta.lexmljsonix.conversor.ConversorLexmlJsonix;
+import br.gov.lexml.eta.lexmljsonix.service.LexmlJsonixService;
+import br.gov.lexml.eta.lexmljsonix.service.Proposicao;
 
 @RestController
 @RequestMapping("/api")
