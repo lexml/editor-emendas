@@ -371,11 +371,14 @@ export class EdtApp extends LitElement {
     return texto.replace(/(<([^>]+)>)/gi, '');
   }
 
-  private async loadTextoProposicao(proposicao: Proposicao): Promise<void> {
+  private async loadTextoProposicao(proposicao: Proposicao): Promise<boolean> {
     this.toggleCarregando();
     try {
       const { sigla, numero, ano } = proposicao;
       this.jsonixProposicao = await getProposicaoJsonix(sigla!, numero!, Number(ano));
+      if (!this.jsonixProposicao) {
+        throw new Error('Texto da proposição indisponível para emenda padrão.');
+      }
       const urn = getUrn(this.jsonixProposicao);
       this.proposicao = {
         ...this.proposicao,
@@ -389,13 +392,17 @@ export class EdtApp extends LitElement {
       this.tituloEmenda = `Emenda ${(this.proposicao.nomeProposicao ?? '').replace('/', ' ')}`;
       this.lexmlEmenda.projetoNorma = this.jsonixProposicao;
       this.showEditor = true;
+      return true;
     } catch (err) {
       console.log(err);
-      this.emitirAlerta('Não se trata de um PDF gerado pelo Editor de Emendas', 'primary');
+      this.emitirAlerta('Texto da proposição indisponível para emenda padrão.', 'primary');
+      return false;
     } finally {
       this.atualizarTituloEditor();
       this.toggleCarregando();
-      this.checkAndShowOrientacoes();
+      if (this.showEditor) {
+        this.checkAndShowOrientacoes();
+      }
     }
   }
 
@@ -458,8 +465,12 @@ export class EdtApp extends LitElement {
     }
   }
 
+  private proposicaoSemTexto(proposicao: Proposicao): boolean {
+    return !proposicao.idSdlegDocumentoItemDigital;
+  }
+
   private emendaSemTexto(): boolean {
-    return this.proposicao.idSdlegDocumentoItemDigital === undefined || this.proposicao.idSdlegDocumentoItemDigital === null;
+    return this.proposicaoSemTexto(this.proposicao);
   }
 
   private novaEmendaTextoLivre(): void {
@@ -559,6 +570,11 @@ export class EdtApp extends LitElement {
   }
 
   private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
+    if (this.proposicaoSemTexto(proposicao)) {
+      this.proposicao = proposicao;
+      this.showModalEmendaSemTexto(proposicao);
+      return;
+    }
     this.criarNovaEmenda(proposicao, 'emenda');
   }
 
@@ -656,7 +672,14 @@ export class EdtApp extends LitElement {
     this.motivo = motivo;
     this.tituloEmenda = `Emenda ${proposicao.nomeProposicao}`;
     this.labelTipoEmenda = this.getTipoEmenda(this.modo); // 'Emenda padrão';
-    await this.loadTextoProposicao(proposicao);
+    const textoCarregado = await this.loadTextoProposicao(proposicao);
+
+    if (!textoCarregado) {
+      if (this.modo === 'emenda') {
+        this.showModalEmendaSemTexto(proposicao);
+      }
+      return;
+    }
 
     this.lexmlEmenda.inicializarEdicao({
       modo: this.modo,

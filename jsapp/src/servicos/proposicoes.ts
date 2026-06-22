@@ -8,7 +8,13 @@ export const getProposicaoJsonix = async (sigla: string, numero: string, ano: nu
     ano: ano.toString(),
   }).toString();
   const resp = await fetch(`api/proposicao/texto-json?${searchParams}`);
-  return await resp.json();
+  const text = await resp.text();
+
+  if (!resp.ok) {
+    throw new Error(text || 'Erro ao carregar texto da proposição.');
+  }
+
+  return text ? JSON.parse(text) : undefined;
 };
 
 const buscarProposicoes = async (url: string): Promise<Proposicao[]> => {

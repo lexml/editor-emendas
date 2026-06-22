@@ -182,6 +182,10 @@ public class EditorApiController {
     	}
 
     	String json = lexmlJsonixService.getTextoProposicaoAsJson(sigla, ano, numero, false);
+
+		if (StringUtils.isBlank(json)) {
+			throw new EditorEmendasException("Texto da proposição indisponível para emenda padrão.");
+		}
     	
     	if(json.contains("LEXML_URN_ID")) {
 		json = json.replace("LEXML_URN_ID", ano + ";" + numero)
