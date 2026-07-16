@@ -126,7 +126,7 @@ export class EdtApp extends LitElement {
     if (sigla && numero && ano) {
       const proposicao = await this.buscarProposicao(sigla, numero, Number(ano));
       if (proposicao) {
-        if (this.emendaSemTexto()) {
+        if (!proposicao.idSdlegDocumentoItemDigital) {
           this.showModalEmendaSemTexto(proposicao);
         } else {
           this.proposicao = proposicao;
@@ -452,20 +452,6 @@ export class EdtApp extends LitElement {
     this.modalOndeCouber.show();
   }
 
-  private novaEmendaSubstituicaoTermo(): void {
-    this.fileHandle = undefined;
-
-    if (this.emendaSemTexto()) {
-      this.criarNovaEmendaSubstituicaoTermoSemTexto(this.proposicao);
-    } else {
-      this.criarNovaEmenda({ ...this.proposicao }, 'emendaSubstituicaoTermo');
-    }
-  }
-
-  private emendaSemTexto(): boolean {
-    return !this.proposicao.idSdlegDocumentoItemDigital;
-  }
-
   private novaEmendaTextoLivre(): void {
     this.fileHandle = undefined;
     const { sigla, numero, ano } = this.proposicao;
@@ -564,14 +550,6 @@ export class EdtApp extends LitElement {
 
   private async criarNovaEmendaPadrao(proposicao: Proposicao): Promise<void> {
     this.criarNovaEmenda(proposicao, 'emenda');
-  }
-
-  private async criarNovaEmendaTextoLivre(proposicao: Proposicao, motivo: string): Promise<void> {
-    if (this.emendaSemTexto()) {
-      this.criarNovaEmendaTextoLivreSemTexto(proposicao);
-    } else {
-      this.criarNovaEmenda(proposicao, 'emendaTextoLivre', motivo);
-    }
   }
 
   private async criarNovaEmendaTextoLivreSemTexto(proposicaoSelecionada: Proposicao): Promise<void> {
