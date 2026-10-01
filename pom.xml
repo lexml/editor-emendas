@@ -136,7 +136,10 @@
 					<useSnapshotInRelease>true</useSnapshotInRelease>
 					<useSnapshotInHotfix>true</useSnapshotInHotfix>
 					<commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
-					<productionBranch>main</productionBranch>
+					<gitFlowConfig>
+						<productionBranchName>main</productionBranchName>
+						<developmentBranchName>develop</developmentBranchName>
+					</gitFlowConfig>
 				</configuration>
 			</plugin>
 		</plugins>
