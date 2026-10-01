@@ -137,8 +137,8 @@
 					<useSnapshotInHotfix>true</useSnapshotInHotfix>
 					<commitDevelopmentVersionAtStart>true</commitDevelopmentVersionAtStart>
 					<gitFlowConfig>
-						<productionBranchName>main</productionBranchName>
-						<developmentBranchName>develop</developmentBranchName>
+						<productionBranch>main</productionBranch>
+						<developmentBranch>develop</developmentBranch>
 					</gitFlowConfig>
 				</configuration>
 			</plugin>
