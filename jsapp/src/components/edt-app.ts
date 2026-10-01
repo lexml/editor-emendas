@@ -285,9 +285,12 @@ export class EdtApp extends LitElement {
           }
           return getHttpError(response, 'Ocorreu um erro ao salvar o arquivo.').then(err => Promise.reject(err));
         })
-        .then(content => {
+        .then(blob => {
+          // showSaveFilePicker não aceita parâmetros no MIME (ex.: ";charset=utf-8")
+          const content = new Blob([blob], { type: 'application/pdf' });
           const options = {
             fileName: this.getFileName(),
+            mimeTypes: ['application/pdf'],
             extensions: ['.pdf'],
             id: 'editor-emendas',
             excludeAcceptAllOption: true,
